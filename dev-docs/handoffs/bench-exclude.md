@@ -1,19 +1,25 @@
 # Benchmark exclusion handoff
 
-Implementation complete; validation blocked by protected targets during the required policy review.
+## Implementation
 
-- Added a PackagePropsTests measurement-project test first, committed it, and observed 1 failed / 0 passed before the fix. After the fix: 1 passed / 0 failed.
-- Axial.Benchmarks explicitly sets AxialGuardrailsEnabled=false. Removed all 16 AXG001 comments (brief said 12; checkout had 16).
-- Removed benchmarks/**/*.fsproj from AXG009/AXG012 exemptions; host listing unchanged. Lock untouched.
-- Updated guardrails guide with explicit measurement exclusion and evaluated-setting review.
-- Existing PolicyReviewTests already cover enabled true -> false loosening; no duplicate test added.
+Axial.Benchmarks explicitly sets AxialGuardrailsEnabled=false. Removed all 16 AXG001 comments (brief said 12; checkout had 16). Removed benchmarks/**/*.fsproj from AXG009/AXG012 exemptions; host listing unchanged. Lock untouched.
 
-## Protected-file blocker
+PackagePropsTests measurement-project test was committed first and failed before the project fix, then passed. Existing PolicyReviewTests cover enabled true -> false loosening.
 
-Required command `dotnet --roll-forward Major artifacts/bin/Axial.Tool/debug/Axial.Tool.dll policy review --since v0.11.3` fails with MSB5029 in src/Axial.Guardrails/build/Axial.Guardrails.targets:66: Exclude expands to `\**\obj\**`, enumerating the drive. Did not edit targets, as forbidden. Policy confirmation cannot be claimed. Owner/coordinator must resolve this protected-targets issue before continuing.
+## Query-mode diagnosis and fix
 
-Solution build timed out after 300 s under shared load; log is in the persistent report directory. Benchmark build, 20x PackagePropsTests, final fail-first script, full axial-verify and done-check remain outstanding. Do not treat this lane as DONE.
+Plain `dotnet build benchmarks/Axial.Benchmarks` succeeds with zero warnings/errors. MSBuild query mode (`-getProperty` / `-getItem`) instead validates exclusions in inactive imported item groups, with an uninitialized _AxialGuardrailsPolicyGlobRoot. Setting Enabled=false globally does not avoid that validation. Supplying the target's existing project-directory fallback fixes query mode without changing the evaluated Enabled value or executing the disabled group. PolicyReview now supplies that safe glob root when querying projects. No targets change.
 
-Logs: /home/adam/projects/scratch/axial-coord/pi/bench-exclude-{red,green,policy,build}.log.
+PolicyReview also records per-project evaluation failures as review findings, preserving other projects' results; --check fails on those findings. Historical projects are evaluated even for pre-policy references, so --since v0.11.3 reports the benchmark's true -> false setting change rather than copying current settings into history.
+
+Two real-target/error-isolation tests were committed and both failed before the tool fix, then both passed after it. Required policy review now exits 0 and lists `benchmarks/Axial.Benchmarks/Axial.Benchmarks.fsproj: AxialGuardrailsEnabled: true -> false`.
+
+User guide and 0.12 release notes document review error handling.
+
+## Validation
+
+Solution Debug build exits 0, 0 errors, no AXG warnings; policy-drift warnings remain expected pending human approval. Plain benchmark build exits 0 with 0 warnings/errors. Final 20x test-class runs and full verification results are recorded in the persistent report, along with fail-first and done-check results when complete.
 
 Human approval: inspect Axial.Guardrails.toml removal of benchmark glob from AXG009 and AXG012 exemptions, plus evaluated project disable. Never ran approval/baseline commands or edited lock/verify/targets.
+
+Logs/report: /home/adam/projects/scratch/axial-coord/pi/bench-exclude*.log and bench-exclude.report.md.

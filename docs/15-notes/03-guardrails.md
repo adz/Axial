@@ -79,6 +79,8 @@ Do not set Guardrails policy through MSBuild severity, boundary, baseline-path, 
 troubleshooting, pass `-p:AxialGuardrailsEnabled=false` on the command line rather than storing it in shared build files.
 Measurement projects explicitly set `<AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>` in their project file;
 this exclusion appears in `axial policy review` as a loosened evaluated setting.
+If a project cannot be evaluated, review lists `cannot evaluate <project>: <reason>` and continues with the other
+projects; `--check` fails until that review item is resolved.
 
 For adoption guidance, see [Installation](/getting-started/installation.html#add-effect-boundary-guardrails-optional).
 

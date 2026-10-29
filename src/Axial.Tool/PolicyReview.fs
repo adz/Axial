@@ -78,7 +78,7 @@ module PolicyReview =
                 elif at "\"" then quoted <- true; i <- i + 1
                 else i <- i + 1 ]
 
-    type private State = { Entries: Map<string, Set<string>>; Rules: Map<string, string>; Projects: Map<string, Map<string, string>> }
+    type private State = { Entries: Map<string, Set<string>>; Rules: Map<string, string>; Projects: Map<string, Map<string, string>>; EvaluationErrors: string list }
     let private files root tracked =
         let skipped = set [".git"; "bin"; "obj"; "artifacts"; "output"; ".livedocs"]
         let rec walk directory = seq {
@@ -93,7 +93,10 @@ module PolicyReview =
         else walk root |> Seq.map (fun path -> Path.GetRelativePath(root, path).Replace('\\', '/')) |> Seq.toList
 
     let private evaluateProject root project extraArgs =
-        let output = command root "dotnet" (["msbuild"; project; "-nologo"; "-getProperty:AxialGuardrailsEnabled,AxialGuardrailsRole,IsTestProject,TargetFrameworks"; "-getItem:AxialGuardrail,PackageReference,PackageVersion"] @ extraArgs)
+        // Query mode validates glob exclusions even in inactive item groups. Supply the
+        // same safe fallback as the targets, without overriding the project's enabled setting.
+        let globRoot = Path.GetDirectoryName(Path.GetFullPath(Path.Combine(root, project)))
+        let output = command root "dotnet" (["msbuild"; project; "-nologo"; $"-p:_AxialGuardrailsPolicyGlobRoot={globRoot}"; "-getProperty:AxialGuardrailsEnabled,AxialGuardrailsRole,IsTestProject,TargetFrameworks"; "-getItem:AxialGuardrail,PackageReference,PackageVersion"] @ extraArgs)
         use json = JsonDocument.Parse output
         let properties = json.RootElement.GetProperty("Properties")
         let items = json.RootElement.GetProperty("Items")
@@ -115,6 +118,18 @@ module PolicyReview =
             frameworks |> Seq.collect (fun framework ->
                 evaluateProject root project [$"-p:TargetFramework={framework}"]
                 |> Map.toSeq |> Seq.map (fun (key, value) -> $"{framework}:{key}", value)) |> Map.ofSeq
+
+    let private inspectProjects root (allFiles: string list) =
+        let errors = ResizeArray<string>()
+        let projects =
+            allFiles |> List.filter (_.EndsWith(".fsproj"))
+            |> List.choose (fun project ->
+                try Some(project, projectSettings root project)
+                with error ->
+                    errors.Add($"cannot evaluate {project}: {error.Message.Trim()}")
+                    None)
+            |> Map.ofList
+        projects, List.ofSeq errors
 
     let private suppressionInventory root allFiles ignores =
         allFiles |> List.filter (fun (path: string) -> path.EndsWith(".fs", StringComparison.Ordinal) && not (ignores |> List.exists (fun pattern -> matchesGlob pattern path)))
@@ -153,6 +168,7 @@ module PolicyReview =
         let automation = automationInventory root allFiles
         // Central package versions are visible even before a project references the analyzer.
         let versions = versionInventory root allFiles
+        let projects, evaluationErrors = inspectProjects root allFiles
         { Entries =
             [ "suppressions/notes", Set.toList suppressions
               "roles", ("default => " + roleName config.DefaultRole) :: (assignments "project" config.Projects @ assignments "file" config.Files)
@@ -160,7 +176,8 @@ module PolicyReview =
               "baseline", baseline; "automation", automation; "analyzer package", versions ]
             |> List.map (fun (name, values) -> name, Set.ofList values) |> Map.ofList
           Rules = snapshot.Rules
-          Projects = allFiles |> List.filter (_.EndsWith(".fsproj")) |> List.map (fun project -> project, projectSettings root project) |> Map.ofList }
+          Projects = projects
+          EvaluationErrors = evaluationErrors }
 
     let review root since =
         try
@@ -189,7 +206,9 @@ module PolicyReview =
                         let historicalFiles = files historicalRoot false
                         // A pre-policy ref has no v2 role semantics to reconstruct. Introduction is
                         // one review item; source directives and automation still have real history.
-                        { after with Entries = after.Entries
+                        let projects, errors = inspectProjects historicalRoot historicalFiles
+                        { after with Projects = projects; EvaluationErrors = errors
+                                     Entries = after.Entries
                                                   .Add("suppressions/notes", suppressionInventory historicalRoot historicalFiles [])
                                                   .Add("automation", automationInventory historicalRoot historicalFiles |> Set.ofList)
                                                   .Add("analyzer package", versionInventory historicalRoot historicalFiles |> Set.ofList) }
@@ -198,6 +217,8 @@ module PolicyReview =
                 let removed = ResizeArray<Finding>()
                 let add group detail = added.Add { Group = group; Detail = detail }
                 let remove group detail = removed.Add { Group = group; Detail = detail }
+                for error in after.EvaluationErrors do add "project settings" error
+                for error in before.EvaluationErrors do add "project settings" ($"historical {error}")
                 if introduced then
                     let roles = after.Entries["roles"] |> Seq.map (fun entry -> entry.Split(" => ") |> Array.last) |> Seq.distinct |> Seq.sort |> String.concat ", "
                     let levels = after.Rules |> Map.toList |> List.filter (fun (_, level) -> level = "allow" || level = "warn") |> List.map (fun (rule, level) -> $"{rule}={level}")
