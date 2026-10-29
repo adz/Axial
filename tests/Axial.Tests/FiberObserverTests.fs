@@ -235,6 +235,36 @@ module FiberObserverTests =
     [<Theory>]
     [<InlineData(false)>]
     [<InlineData(true)>]
+    let ``Raw task loser cancellation is not an unobserved defect`` (race: bool) =
+        let recording = Recording()
+        let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let loser : Flow<ClockEnvironment, string, int> =
+            Flow(fun _ (token: CancellationToken) ->
+                Platform.ofAwaitable (task {
+                    started.TrySetResult() |> ignore
+                    do! Task.Delay(Timeout.Infinite, token)
+                    return 0
+                }))
+        let operation =
+            if race then
+                let winner = Flow.fromTask (fun _ -> task {
+                    do! started.Task
+                    return 42
+                })
+                Flow.race winner loser
+            else
+                loser |> Flow.timeout (TimeSpan.FromMilliseconds 20.0) "timed out"
+        let result =
+            operation
+            |> Flow.withFiberObserver recording.Observer
+            |> Flow.runSync (TestSupport.clockEnv ())
+        if race then test <@ result = Exit.Success 42 @>
+        else test <@ result = Exit.Failure(Cause.Fail "timed out") @>
+        test <@ recording.Unobserved = [] @>
+
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
     let ``Task interop loser exceptions follow the Cause Die contract`` (race: bool) =
         let recording = Recording()
         let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
