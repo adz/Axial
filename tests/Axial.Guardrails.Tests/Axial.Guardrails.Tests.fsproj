@@ -22,6 +22,7 @@
     <Compile Include="GuardrailConfigTests.fs" />
     <Compile Include="PolicyTests.fs" />
     <Compile Include="PolicyLockTests.fs" />
+    <Compile Include="PolicyReviewTests.fs" />
     <Compile Include="PackagePropsTests.fs" />
   </ItemGroup>
 
