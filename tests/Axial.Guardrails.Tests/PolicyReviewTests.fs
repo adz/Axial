@@ -53,10 +53,13 @@ module PolicyReviewTests =
             action root write git cli
         finally Directory.Delete(root, true)
 
-    [<Fact>]
-    let ``check warns once and succeeds for policy changes`` () =
+    [<Theory>]
+    [<InlineData("// axial-allow-AXG001: foreign boundary")>]
+    [<InlineData("// axial-allow-file-AXG001: foreign boundary")>]
+    [<InlineData("// axial-note AXG001: reviewed guide")>]
+    let ``check warns once and succeeds for policy changes`` directive =
         repository (fun _ write _ cli ->
-            write "App.fs" "module App\n// axial-allow-AXG001: foreign boundary\n"
+            write "App.fs" ("module App\n" + directive + "\n")
             let code, output = cli ["check"]
             Assert.Equal(0, code)
             Assert.Contains("1 change", output)
