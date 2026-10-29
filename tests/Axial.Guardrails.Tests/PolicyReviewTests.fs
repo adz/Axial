@@ -233,7 +233,23 @@ module PolicyReviewTests =
             write LockName lockText
             write DefaultBaseline ""
             let code, output = cli ["policy"; "review"; "--since"; "legacy"]
-            Assert.True((code = 0), output))
+            Assert.True((code = 0), output)
+            Assert.Contains("Policy introduced since legacy", output)
+            Assert.Contains("policy files did not exist", output)
+            Assert.Contains("projects: 1", output)
+            Assert.Contains("roles:", output)
+            Assert.Contains("runtime: 0", output)
+            Assert.Contains("baseline: 0", output)
+            let code, output = cli ["policy"; "review"; "--since"; "legacy"; "--check"; "--json"]
+            Assert.NotEqual(0, code)
+            use json = System.Text.Json.JsonDocument.Parse output
+            Assert.Equal(1, json.RootElement.GetProperty("loosened").GetArrayLength())
+            write "App.fs" "module App\n// axial-note AXG001: introduced note\n"
+            let code, output = cli ["policy"; "review"; "--since"; "legacy"; "--check"; "--json"]
+            Assert.NotEqual(0, code)
+            use json = System.Text.Json.JsonDocument.Parse output
+            Assert.Equal(2, json.RootElement.GetProperty("loosened").GetArrayLength())
+            Assert.Contains("introduced note", output))
 
     [<Fact>]
     let ``malformed reviewed point is rejected`` () =
