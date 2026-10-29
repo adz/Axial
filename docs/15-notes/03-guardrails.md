@@ -130,6 +130,14 @@ fingerprints, then approve the resulting policy state with the applicable `axial
 rule with existing findings, run `axial policy baseline --rule <id>`, review the candidate entries, and approve the
 policy change. Ordinary policy approval refuses baseline growth.
 
+## Declare host project exemptions
+
+`[exemptions]` in `Axial.Guardrails.toml` maps `AXG009`, `AXG010`, `AXG011`, or `AXG012`
+to arrays of repository-relative project-path globs. Only matching `host` projects are exempt;
+other roles and other diagnostics are unchanged. No tooling or benchmark directory is implicitly exempt.
+Unknown keys, non-array values, escaping paths, and patterns matching no files are rejected.
+See the [diagnostic reference](04-guardrail-diagnostics.html) for an example.
+
 ## Review the diagnostics
 
 | Code | Name | Detects |

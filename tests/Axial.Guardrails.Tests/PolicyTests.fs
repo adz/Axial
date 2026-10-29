@@ -22,6 +22,25 @@ module PolicyTests =
 
     let private parse root text = Policy.parse root (set [ "effects.ambient"; "domain.async-return" ]) text
 
+    [<Theory>]
+    [<InlineData("AXG008 = [\"src/App/App.fsproj\"]")>]
+    [<InlineData("AXG009 = \"src/App/App.fsproj\"")>]
+    [<InlineData("AXG009 = [\"missing/**/*.fsproj\"]")>]
+    [<InlineData("AXG009 = [\"../outside.fsproj\"]")>]
+    let ``exemptions reject unknown rules wrong types and invalid paths`` entry =
+        withRepository (fun root ->
+            let actual = parse root ("version = 2\n[default]\nrole = \"host\"\n[exemptions]\n" + entry)
+            match actual with
+            | Error _ -> ()
+            | Ok _ -> failwith "invalid exemption accepted")
+
+    [<Fact>]
+    let ``exemptions accept consumer project globs`` () =
+        withRepository (fun root ->
+            let actual = parse root "version = 2\n[default]\nrole = \"host\"\n[exemptions]\nAXG009 = [\"src/**/*.fsproj\"]"
+            let policy = actual |> Result.toOption |> Option.get
+            Assert.Equal<string list>(["src/**/*.fsproj"], policy.Exemptions["AXG009"]))
+
     [<Fact>]
     let ``parses the closed version 2 schema and every rule level`` () =
         withRepository (fun root ->

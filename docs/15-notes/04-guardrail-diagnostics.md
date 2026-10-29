@@ -379,8 +379,19 @@ let retained () = System.Threading.Tasks.Task.FromResult 1
 
 This is an error. Await the task or retain and join the fiber; neither `axial-allow` nor `axial-note` exempts it.
 
-AXG009–AXG012 exempt the `test` role and host-role tooling
-projects under `src/Axial.Guardrails` or `src/Axial.Tool*`; an ordinary host is not exempt.
+AXG009–AXG012 exempt the `test` role. Host-role projects are exempt only when their
+repository-relative project path matches that rule's `[exemptions]` list in `Axial.Guardrails.toml`.
+The table accepts only `AXG009`, `AXG010`, `AXG011`, and `AXG012`, each an array of project-path globs.
+Paths must stay inside the repository and match existing files. Other roles ignore these lists;
+an ordinary host with no matching declaration is not exempt. For example:
+
+```toml
+[exemptions]
+AXG009 = ["tools/**/*.fsproj"]
+AXG012 = ["tools/**/*.fsproj"]
+```
+
+These lists do not change finding severities or exempt other rules.
 AXG001–008 retain their boundary-allowance and baseline behavior. AXG009–013 do not accept allowances or baseline
 severity downgrades. Only guide findings (AXG010 and awaited-delay AXG013) accept `axial-note`; no boundary
 membership or finding approval is needed. AXG002 warns about malformed, empty, unknown, misplaced, or stale notes,
