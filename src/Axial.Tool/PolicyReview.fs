@@ -228,7 +228,8 @@ module PolicyReview =
                     elif rank current > rank old then remove "rule levels" $"{key}: {old} -> {current} (tightened)"
                 for KeyValue(project, settings) in after.Projects do
                     let old = before.Projects.TryFind project |> Option.defaultValue Map.empty
-                    for KeyValue(key, value) in settings do
+                    for key in Set.union (old.Keys |> Set.ofSeq) (settings.Keys |> Set.ofSeq) do
+                        let value = settings.TryFind key |> Option.defaultValue ""
                         let previous = old.TryFind key |> Option.defaultValue ""
                         if value <> previous then
                             let detail = $"{project}: {key}: {previous} -> {value}"

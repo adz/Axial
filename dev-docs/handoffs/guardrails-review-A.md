@@ -11,7 +11,7 @@ Implemented and covered by `review supports the required pre TOML starting tag`.
 ## Implementation
 
 - `axial check` emits one warning with a change count and review instruction for lock drift, exiting zero; malformed lock/config still fails.
-- `policy review [--since <ref>] [--json] [--check]` compares repository state, inventories exceptions and policy changes, and evaluates project properties/items with MSBuild for every target framework.
+- `policy review [--since <ref>] [--json] [--check]` compares repository state, inventories exceptions and policy changes, and evaluates project properties/items with MSBuild for every target framework. Deleted source exceptions tighten policy; conditionally removed analyzer settings still require review. Both removal cases were added as failing regression tests before their fixes.
 - Missing reviewed point requires explicit `--since`; lock supports a validated `REVIEWED_POINT` SHA.
 - Approval prepares the lock with the current commit even if policy itself did not change. The metadata helper is tested without executing the command. `--yes-i-reviewed` remains; help describes approval as human review, not authority.
 - Consumer-build tests and the migration regression now assert warn-only drift while analyzer errors remain errors. Consumer fixtures construct their temporary locks directly rather than invoking approval commands.
@@ -21,7 +21,7 @@ Implemented and covered by `review supports the required pre TOML starting tag`.
 
 Original behavioral red: 21 failed, 2 passed (`artifacts/verify/phase1-red.log`). Extra edge-case red runs cover defaults, removed enforcement, conditional per-TFM settings, notes/file-wide exceptions, and legacy introduction. The approval-text helper test initially failed compilation before implementation.
 
-Focused policy suite: 61 passed, 0 failed (`artifacts/verify/phase1-green.log`). Consumer policy/cache integration slice: 4 passed (`artifacts/verify/package-policy.log`). The migration regression temporarily appends/restores a TOML comment as part of its drift test; this is the only worktree TOML mutation, with no lasting TOML change. Final verification status belongs in `artifacts/verify/result.json` and the persistent report `/home/adam/projects/scratch/axial-coord/pi/guardrails-review-A.report.md`; check those rather than assuming this handoff certifies completion.
+Focused policy suite: 63 passed, 0 failed (`artifacts/verify/phase1-green.log`). Consumer policy/cache integration slice: 4 passed (`artifacts/verify/package-policy.log`). The migration regression temporarily appends/restores a TOML comment as part of its drift test; this is the only worktree TOML mutation, with no lasting TOML change. Final verification status belongs in `artifacts/verify/result.json` and the persistent report `/home/adam/projects/scratch/axial-coord/pi/guardrails-review-A.report.md`; check those rather than assuming this handoff certifies completion.
 
 Phase 2 docs/release automation, its 20x repetitions, and release notes remain explicitly deferred to phase 2. A human must approve the repository lock after merge; agents must not edit it.
 

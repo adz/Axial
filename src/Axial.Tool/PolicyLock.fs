@@ -46,7 +46,7 @@ module PolicyLock =
         childProcess.WaitForExit()
         errors.GetAwaiter().GetResult() |> ignore
         if childProcess.ExitCode = 0 then
-            output.Split('\000',StringSplitOptions.RemoveEmptyEntries) |> Array.map(fun path -> Path.Combine(root,path))
+            output.Split('\000',StringSplitOptions.RemoveEmptyEntries) |> Array.map(fun path -> Path.Combine(root,path)) |> Array.filter File.Exists
         else
             let skipped = set [ ".git"; ".livedocs"; "artifacts"; "bin"; "obj"; "output" ]
             let rec walk directory = seq {
