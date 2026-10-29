@@ -145,7 +145,10 @@ module PolicyReview =
     let private versionInventory root allFiles =
         allFiles |> List.filter (fun (path: string) -> path.EndsWith(".props") || path.EndsWith(".fsproj") || path.EndsWith(".targets"))
         |> List.collect (fun path ->
-            let document = System.Xml.Linq.XDocument.Load(Path.Combine(root, path))
+            // Invalid project XML is reported by inspectProjects, not allowed to abort inventory.
+            let document =
+                try System.Xml.Linq.XDocument.Load(Path.Combine(root, path))
+                with :? System.Xml.XmlException when path.EndsWith(".fsproj") -> System.Xml.Linq.XDocument()
             document.Descendants()
             |> Seq.filter (fun item -> item.Name.LocalName = "PackageReference" || item.Name.LocalName = "PackageVersion")
             |> Seq.filter (fun item ->
