@@ -217,19 +217,20 @@ type ConcurrencyHazardsPolicyTests() =
             System.IO.Directory.CreateDirectory root |> ignore
             let policyPath = System.IO.Path.Combine(root, "Axial.Guardrails.toml")
             let configPath = System.IO.Path.Combine(root, "config.tsv")
+            let exemptionTable = settings |> List.tryPick (fun s -> if s.StartsWith("policy:") then Some(s.Substring(7)) else None) |> Option.defaultValue ""
             let runtimeTable = if runtime then "\n[runtime]\nfiles = [\"Fixture.fs\"]\n" else ""
             let boundaryTable = if boundary then "\n[boundaries]\nfiles = [\"Fixture.fs\"]\n" else ""
             System.IO.File.WriteAllText(ctx.FileName, ctx.SourceText.ToString())
             let projectPath = System.IO.Path.Combine(root, project)
             System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName projectPath) |> ignore
             System.IO.File.WriteAllText(projectPath, "<Project />")
-            System.IO.File.WriteAllText(policyPath, $"version = 2\n[default]\nrole = \"{role}\"\n" + runtimeTable + boundaryTable)
+            System.IO.File.WriteAllText(policyPath, $"version = 2\n[default]\nrole = \"{role}\"\n" + runtimeTable + boundaryTable + exemptionTable)
             System.IO.File.WriteAllLines(configPath,
                 [| "guardrail\tAxial"
                    "setting\tpolicyRoot\t" + root
                    "setting\tpolicyFile\t" + policyPath
                    "setting\tprojectPath\t" + projectPath
-                   yield! settings |])
+                   yield! settings |> List.filter (fun s -> not(s.StartsWith("policy:"))) |])
             let previous = Environment.GetEnvironmentVariable GuardrailConfig.EnvironmentVariable
             try
                 Environment.SetEnvironmentVariable(GuardrailConfig.EnvironmentVariable, configPath)
@@ -243,6 +244,14 @@ type ConcurrencyHazardsPolicyTests() =
 
     let source = "module M\nopen System.Threading\nopen System.Threading.Tasks\nlet source = TaskCompletionSource<int>()\nlet token = CancellationToken.None\nlet swallowed () = try failwith \"bad\" with _ -> ()\nlet discarded () = Task.FromResult 1 |> ignore\n"
     let run role runtime boundary code = runWith role runtime boundary "Fixture.fsproj" source code
+
+    [<Fact>]
+    member _.``analyzer source has no repository path exemptions`` () =
+        let directory = System.IO.Path.GetFullPath(System.IO.Path.Combine(__SOURCE_DIRECTORY__, "../../src/Axial.Guardrails"))
+        for file in System.IO.Directory.GetFiles(directory, "*.fs") do
+            let text = System.IO.File.ReadAllText file
+            for forbidden in [ "\"benchmarks/"; "\"Axial.Tool"; "\"Axial.Guardrails\""; "\"src/Axial"; "\"examples/Axial" ] do
+                Assert.DoesNotContain(forbidden, text)
 
     [<Theory>]
     [<InlineData("domain")>]
@@ -296,7 +305,10 @@ type ConcurrencyHazardsPolicyTests() =
     member _.``host tooling projects are exempt from concurrency rules`` project =
         task {
             for code in [ "AXG009"; "AXG010"; "AXG011"; "AXG012" ] do
-                let! messages = runWith "host" false false project source code
+                let! missing = runWith "host" false false project source code
+                Assert.NotEmpty missing
+                let declaration = $"policy:\n[exemptions]\n{code} = [\"{project}\"]\n"
+                let! messages = runWithSettings [declaration] "host" false false project source code
                 Assert.Empty messages
         }
 
@@ -305,7 +317,11 @@ type ConcurrencyHazardsPolicyTests() =
     [<InlineData("AXG012")>]
     member _.``benchmark projects permit measured raw concurrency baselines`` code =
         task {
-            let! messages = runWith "host" false false "benchmarks/Axial.Benchmarks/Axial.Benchmarks.fsproj" source code
+            let project = "benchmarks/Axial.Benchmarks/Axial.Benchmarks.fsproj"
+            let! missing = runWith "host" false false project source code
+            Assert.NotEmpty missing
+            let declaration = $"policy:\n[exemptions]\n{code} = [\"benchmarks/**/*.fsproj\"]\n"
+            let! messages = runWithSettings [declaration] "host" false false project source code
             Assert.Empty messages
             let! outside = runWith "host" false false "samples/benchmarks/Axial.Benchmarks.fsproj" source code
             Assert.NotEmpty outside
