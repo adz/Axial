@@ -7,6 +7,19 @@ lists the queue. Work on main.
 
 ## Queue
 
+- [ ] T23: Property-based concurrency law suite
+  - Generate random flows over fork/race/zipPar/scope/interrupt and check the laws: a flow that starts work waits for it,
+    cleanup runs once and after cancellation, a loser settles before `race` returns, defects are reported exactly once,
+    interruption is never swallowed by `fold`/`recover`. Extend `examples/Axial.TortureTest` seeds, not a new harness.
+  - Every law that fails becomes a fix with a pinning test. Benchmarks if a runtime path changes.
+- [ ] T24: Fiber dumps show the root, what each fiber waits on, and attach late
+  - Design: `dev-docs/current-ideas/fiber-dump-root-waits-attach.md`. Benchmarks required (FiberCost, Race, Pingpong/Threadring,
+    a tiny `runSync` loop); allocation identical, time within noise. The torture watchdog shows waits in its stall dump.
+- [ ] T25: Platform in the runtime (Clock, Guid, Random, Log) and remove `ISecureRandom`
+  - Spec: `~/projects/scratch/axial-coord/pi/capabilities-spec.md` (write `dev-docs/current-ideas/capabilities.md` first and
+    get the owner's review). Breaking: decide before cutting 0.12 or it waits for 0.13. Benchmark runtime-context reads
+    against env reads on sleep/timeout loops. Decide `platform-env-class.md` afterwards.
+
 - [ ] T16: Split the HTTP host adapters into their own Axial+Reified product before 1.0
   - Move the two cross-product packages out of the Axial release train once their product boundary is settled.
 
