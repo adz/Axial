@@ -59,6 +59,7 @@ module Policy =
         | true, value -> Ok(Integer value)
         | _ when text.StartsWith("[") && text.EndsWith("]") ->
             let body = text.Substring(1, text.Length - 2).Trim()
+            let body = if body.EndsWith(",") then body.Substring(0, body.Length - 1).Trim() else body
             if body = "" then Ok(Strings [])
             else
                 body.Split(',')
@@ -83,9 +84,26 @@ module Policy =
         let mutable tables = Set.empty
         let mutable entries = Map.empty
         let mutable error = None
-        for number, original in text.Replace("\r", "").Split('\n') |> Array.indexed do
-            let lineNumber = number + 1
-            let line = stripComment original
+        // An array whose closing bracket is on a later line is joined into one logical line.
+        let logicalLines =
+            let lines = ResizeArray<int * string>()
+            let mutable pending = None
+            for number, original in text.Replace("\r", "").Split('\n') |> Array.indexed do
+                let line = stripComment original
+                match pending with
+                | Some(start, joined) ->
+                    let joined = joined + " " + line
+                    if line.EndsWith("]") then
+                        lines.Add((start, joined))
+                        pending <- None
+                    else pending <- Some(start, joined)
+                | None ->
+                    let separator = line.IndexOf('=')
+                    if separator > 0 && line.Substring(separator + 1).Trim().StartsWith("[") && not (line.EndsWith("]")) then pending <- Some(number + 1, line)
+                    else lines.Add((number + 1, line))
+            match pending with Some(start, joined) -> lines.Add((start, joined)) | None -> ()
+            lines.ToArray()
+        for lineNumber, line in logicalLines do
             if error.IsNone && line <> "" then
                 if line.StartsWith("[") && line.EndsWith("]") then
                     table <- line.Substring(1, line.Length - 2).Trim()

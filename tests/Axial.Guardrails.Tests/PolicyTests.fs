@@ -147,6 +147,14 @@ host = ["../Program.fs"]
             test <@ baselineEscape = Error [ "baseline path '../outside' must be a canonical repository-relative path with no '..' or backslashes" ] @>)
 
     [<Fact>]
+    let ``reads arrays written one entry per line with comments and a trailing comma`` () =
+        withRepository (fun root ->
+            let text = "version = 2\n[default]\nrole = \"domain\"\n[boundaries]\nfiles = [\n    \"src/App/Boundary.fs\", # exact file\n]\n"
+            let policy = parse root text |> Result.toOption |> Option.get
+            test <@ policy.Boundaries = [ "src/App/Boundary.fs" ] @>
+            test <@ Result.isError (parse root "version = 2\n[default]\nrole = \"domain\"\n[boundaries]\nfiles = [\n    \"src/App/Boundary.fs\"\n") @>)
+
+    [<Fact>]
     let ``rejects unknown and redefined tables with their lines`` () =
         withRepository (fun root ->
             test <@ parse root "version = 2\n[default]\nrole = \"domain\"\n[unknown]" = Error [ "line 4: unknown policy table 'unknown'" ] @>
