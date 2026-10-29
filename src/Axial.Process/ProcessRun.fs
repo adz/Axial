@@ -41,6 +41,13 @@ type private RunCommand =
 
 /// Flow-based process execution with scoped processes, supervised pumps, and one stop coordinator.
 module internal ProcessRun =
+    // Inline so cleanup actions capturing handles do not allocate closures at each call.
+    let inline internal bestEffort (action: unit -> unit) =
+        try action ()
+        with error when not (error :? OutOfMemoryException || error :? StackOverflowException || error :? AccessViolationException) ->
+            // axial-note AXG010: shutdown cleanup is best-effort; ordinary pipe, process or timer failures must not replace the original outcome.
+            ()
+
     let internal classifyInputExit =
         function
         | Exit.Success () -> Exit.Success ()
@@ -81,7 +88,7 @@ module internal ProcessRun =
 
     let private releaseStage (proc: Diagnostics.Process) : Flow<ClockEnvironment, Never, unit> =
         Flow.delay (fun () ->
-            try
+            bestEffort (fun () ->
                 if not proc.HasExited then
 #if NETSTANDARD2_1
                     proc.Kill()
@@ -89,17 +96,12 @@ module internal ProcessRun =
                     // OS bridge: abnormal scope close must terminate the owned process tree.
                     proc.Kill(entireProcessTree = true)
 #endif
-            with _ ->
-                // axial-note AXG010: abnormal shutdown must continue disposing pipes and the process even if OS tree termination fails or races exit.
-                ()
+            )
 
-            try
+            bestEffort (fun () ->
                 if proc.StartInfo.RedirectStandardInput then proc.StandardInput.BaseStream.Dispose()
                 if proc.StartInfo.RedirectStandardOutput then proc.StandardOutput.BaseStream.Dispose()
-                if proc.StartInfo.RedirectStandardError then proc.StandardError.BaseStream.Dispose()
-            with _ ->
-                // axial-note AXG010: pipe teardown may race process exit; retain the original shutdown outcome and still dispose the process handle.
-                ()
+                if proc.StartInfo.RedirectStandardError then proc.StandardError.BaseStream.Dispose())
 
             proc.Dispose()
             Flow.succeed ())
@@ -116,8 +118,7 @@ module internal ProcessRun =
 
     let private closeInput (proc: Diagnostics.Process) =
         Flow.delay (fun () ->
-            // axial-note AXG010: stdin close is idempotent cleanup after a feeder settles; a pipe already closed by the child must not fault the run.
-            try proc.StandardInput.Close() with _ -> ()
+            bestEffort (fun () -> proc.StandardInput.Close())
             Flow.succeed ())
 
     let rec private hasTypedFailure cause =
@@ -235,8 +236,7 @@ module internal ProcessRun =
                     let pending = clock.Sleep(delay, cancellation.Token)
                     let cancel =
                         Flow.delay (fun () ->
-                            // axial-note AXG010: timer cancellation callback failure must not replace the coordinator's selected process event.
-                            try cancellation.Cancel() with _ -> ()
+                            bestEffort (fun () -> cancellation.Cancel())
                             Flow.succeed ())
                     let sleeping =
                         Flow.fromTask (fun token -> task {
@@ -252,8 +252,7 @@ module internal ProcessRun =
                         })
                         |> Flow.ensuring (
                             Flow.delay (fun () ->
-                                // axial-note AXG010: timer finalization must dispose its source and preserve the selected exit even if cancellation callbacks throw.
-                                try cancellation.Cancel() with _ -> ()
+                                bestEffort (fun () -> cancellation.Cancel())
                                 cancellation.Dispose()
                                 Flow.succeed ())
                         )
@@ -349,10 +348,8 @@ module internal ProcessRun =
                 let closePipe (stage: RunStage) =
                     Flow.delay (fun () ->
                         stage.StdinClosed <- true
-                        // axial-note AXG010: closing a feeder pipe must remain idempotent when the child or feeder already closed the stream.
-                        try stage.Process.StandardInput.BaseStream.Dispose() with _ -> ()
-                        // axial-note AXG010: closing the writer must not replace the CloseStdIn reply when the underlying pipe was already disposed.
-                        try stage.Process.StandardInput.Close() with _ -> ()
+                        bestEffort (fun () -> stage.Process.StandardInput.BaseStream.Dispose())
+                        bestEffort (fun () -> stage.Process.StandardInput.Close())
                         Flow.succeed ())
 
                 // Stops input to a stage without waiting: the coordinator must stay responsive. The feeder is
@@ -384,7 +381,7 @@ module internal ProcessRun =
                         do!
                             Flow.delay (fun () ->
                                 for stage in stages do
-                                    try
+                                    bestEffort (fun () ->
 #if NETSTANDARD2_1
                                         stage.Process.Kill()
 #else
@@ -392,13 +389,10 @@ module internal ProcessRun =
                                         // owns its pipes, so abnormal termination always attempts the whole tree.
                                         stage.Process.Kill(entireProcessTree = true)
 #endif
-                                    // axial-note AXG010: tree termination can race OS exit; continue pipe cleanup and preserve the pipeline's original failure.
-                                    with _ -> ()
-                                    try
+                                    )
+                                    bestEffort (fun () ->
                                         if stage.Process.StartInfo.RedirectStandardOutput then stage.Process.StandardOutput.BaseStream.Dispose()
-                                        if stage.Process.StartInfo.RedirectStandardError then stage.Process.StandardError.BaseStream.Dispose()
-                                    // axial-note AXG010: output pipe disposal races pump completion; shutdown must still settle feeders and preserve the original exit.
-                                    with _ -> ()
+                                        if stage.Process.StartInfo.RedirectStandardError then stage.Process.StandardError.BaseStream.Dispose())
                                 Flow.succeed ())
                         for stage in stages do
                             if stage.Feeder.IsSome && not stage.StdinClosed then do! stopFeeder stage
@@ -816,8 +810,7 @@ module internal ProcessRun =
                             // enclosing fiber records its success or failure only after this step completes.
                             stages[stage].FeederClosedPipe <- true
                             stages[stage].StdinClosed <- true
-                            // axial-note AXG010: feeder cleanup may find stdin already closed by CloseStdIn; retain the feeder exit and publish completion facts above.
-                            try processes[stage].StandardInput.Close() with _ -> ()
+                            bestEffort (fun () -> processes[stage].StandardInput.Close())
                             Flow.succeed ())
                         |> Flow.mapError Never.absurd
                     )
