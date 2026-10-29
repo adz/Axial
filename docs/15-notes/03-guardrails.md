@@ -76,8 +76,9 @@ configured baseline path. Version-1 locks remain readable but always require one
 to migrate; they are never silently trusted.
 
 Do not set Guardrails policy through MSBuild severity, boundary, baseline-path, or test-policy settings. For local
-troubleshooting only, pass `-p:AxialGuardrailsEnabled=false` on the command line; do not store that setting in a
-project or shared build file.
+troubleshooting, pass `-p:AxialGuardrailsEnabled=false` on the command line rather than storing it in shared build files.
+Measurement projects explicitly set `<AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>` in their project file;
+this exclusion appears in `axial policy review` as a loosened evaluated setting.
 
 For adoption guidance, see [Installation](/getting-started/installation.html#add-effect-boundary-guardrails-optional).
 

@@ -78,10 +78,8 @@ type FiberCostBenchmarks() =
     [<Benchmark(Baseline = true)>]
     member this.DotNetControl() =
         let wait (pending: Task<int>) =
-            // axial-allow-AXG001: benchmark host boundary
             pending.GetAwaiter().GetResult()
         let waitAll (pending: Task<int array>) =
-            // axial-allow-AXG001: benchmark host boundary
             pending.GetAwaiter().GetResult()
 
         match this.Case with
@@ -98,6 +96,5 @@ type FiberCostBenchmarks() =
         | FiberCostCase.Race ->
             let left = Task.Run(fun () -> 1)
             let right = Task.Run(fun () -> 2)
-            // axial-allow-AXG001: benchmark host boundary
             Task.WhenAny(left, right).GetAwaiter().GetResult() |> wait
         | unknown -> invalidArg (nameof this.Case) $"Unknown fiber cost case: {unknown}"

@@ -13,10 +13,10 @@ test = ["tests/**/*.fsproj"]
 
 # Project exemptions apply only to host-role projects.
 [exemptions]
-AXG009 = ["src/Axial.Guardrails/Axial.Guardrails.fsproj", "src/Axial.Tool*/Axial.Tool*.fsproj", "benchmarks/**/*.fsproj"]
+AXG009 = ["src/Axial.Guardrails/Axial.Guardrails.fsproj", "src/Axial.Tool*/Axial.Tool*.fsproj"]
 AXG010 = ["src/Axial.Guardrails/Axial.Guardrails.fsproj", "src/Axial.Tool*/Axial.Tool*.fsproj"]
 AXG011 = ["src/Axial.Guardrails/Axial.Guardrails.fsproj", "src/Axial.Tool*/Axial.Tool*.fsproj"]
-AXG012 = ["src/Axial.Guardrails/Axial.Guardrails.fsproj", "src/Axial.Tool*/Axial.Tool*.fsproj", "benchmarks/**/*.fsproj"]
+AXG012 = ["src/Axial.Guardrails/Axial.Guardrails.fsproj", "src/Axial.Tool*/Axial.Tool*.fsproj"]
 
 [suppressions]
 ignore = ["tests/Axial.Guardrails*/**", "tests/Axial.PrintfFixture/**", "benchmarks/Axial.Comparative/**"]
