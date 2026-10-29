@@ -142,6 +142,21 @@ module PackagePropsTests =
             Directory.Delete(dir, true)
 
     [<Fact>]
+    let ``measurement project explicitly disables guardrails and consumer emits no AXG diagnostics`` () =
+        let project = System.Xml.Linq.XDocument.Load(Path.Combine(repoRoot (), "benchmarks", "Axial.Benchmarks", "Axial.Benchmarks.fsproj"))
+        let setting = project.Descendants(System.Xml.Linq.XName.Get "AxialGuardrailsEnabled") |> Seq.tryHead
+        Assert.True(setting.IsSome, "Measurement projects must explicitly disable guardrails")
+        let value = setting.Value.Value
+        Assert.Equal("false", value)
+        let result =
+            buildConsumerInTemp (fun dir ->
+                writeConsumerProject dir
+                    ($"<TargetFramework>net10.0</TargetFramework><AxialGuardrailsEnabled>{value}</AxialGuardrailsEnabled>")
+                    "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\nlet run () = System.Threading.Tasks.Task.Delay(1).Wait()\n")
+        Assert.True(result.ExitCode = 0, result.Output)
+        Assert.DoesNotContain("AXG", result.Output)
+
+    [<Fact>]
     let ``guide checkpoint switches invalidate cached analysis and retain noted Info`` () =
         let dir = Path.Combine(Path.GetTempPath(), "axial-guide-checkpoint-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
