@@ -188,6 +188,38 @@ module FiberObserverTests =
         test <@ recording.Ends |> List.map (fun (metadata, defect) -> metadata.Status, defect) = [ FiberStatus.Interrupted, None ] @>
         test <@ recording.Unobserved = [] @>
 
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
+    let ``Escaped loser exception is reported once without replacing winner`` (race: bool) =
+        let recording = Recording()
+        let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let defect = InvalidOperationException "escaped loser"
+        let loser : Flow<ClockEnvironment, string, int> =
+            Flow(fun _ (token: CancellationToken) ->
+                Platform.ofAwaitable (task {
+                    started.TrySetResult() |> ignore
+                    try
+                        do! Task.Delay(Timeout.Infinite, token)
+                    with :? OperationCanceledException -> ()
+                    return raise defect
+                }))
+        let operation =
+            if race then
+                let winner = Flow.fromTask (fun _ -> task { do! started.Task; return 42 })
+                Flow.race winner loser
+            else
+                loser |> Flow.timeout (TimeSpan.FromMilliseconds 20.0) "timed out"
+        let result =
+            operation
+            |> Flow.withFiberObserver recording.Observer
+            |> Flow.runSync (TestSupport.clockEnv ())
+        if race then test <@ result = Exit.Success 42 @>
+        else test <@ result = Exit.Failure(Cause.Fail "timed out") @>
+        match recording.Unobserved with
+        | [ None, reported ] -> test <@ obj.ReferenceEquals(reported, defect) @>
+        | other -> failwithf "Expected exactly one escaped defect, got %A" other
+
     [<Fact>]
     let ``Timeout loser defect is reported without fiber metadata`` () =
         let recording = Recording()
