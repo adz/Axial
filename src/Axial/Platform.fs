@@ -1080,8 +1080,10 @@ let timeoutExecution
                 try
                     let! discarded = running
                     onDiscardedExit discarded
-                // axial-note AXG010: the timeout owns the result; a faulted losing task or defect-reporting sink must not replace that timeout result.
-                with _ -> ()
+                with
+                // Cancellation of the raw task is the timeout's requested interruption, not a defect.
+                | :? OperationCanceledException when running.IsCanceled -> ()
+                | error -> onDiscardedExit (Exit.Failure(Cause.Die error))
                 return! onTimeout ()
             else
                 return! running
@@ -1326,15 +1328,16 @@ let zipParAllExecution
 /// Awaits a race loser and reports its outcome without allowing a faulted task to bypass structured settlement.
 let private awaitRaceLoser
     (losing: Task<Exit<'value, 'error>>)
-    (onLoserSettled: Exit<'value, 'error> option -> unit)
+    (onLoserSettled: Result<Exit<'value, 'error> option, exn> -> unit)
     : Task =
     task {
         try
             let! exit = losing
-            onLoserSettled (Some exit)
-        with _ ->
-            // axial-note AXG010: a faulted interop task has no Exit to report; None tells race settlement to retain the selected winner.
-            onLoserSettled None
+            onLoserSettled (Ok(Some exit))
+        with
+        | :? OperationCanceledException when losing.IsCanceled -> onLoserSettled (Ok None)
+        // Report a raw losing task fault separately from its Exit so settlement retains the selected winner.
+        | error -> onLoserSettled (Error error)
     }
 
 /// Settles a race whose winner has already completed: cancels and awaits the loser before returning the winner.
@@ -1345,14 +1348,14 @@ let private decideRace
     (winner: Execution<'value, 'error>)
     (loser: Execution<'value, 'error>)
     (onDecided: bool -> unit)
-    (onLoserSettled: Exit<'value, 'error> option -> unit)
+    (onLoserSettled: Result<Exit<'value, 'error> option, exn> -> unit)
     : Execution<'value, 'error> =
     cts.Cancel()
     unlink ()
     onDecided leftWon
 
     if loser.IsCompletedSuccessfully then
-        onLoserSettled (Some loser.Result)
+        onLoserSettled (Ok(Some loser.Result))
         ValueTask<Exit<'value, 'error>>(winner.Result)
     else
         ValueTask<Exit<'value, 'error>>(
@@ -1368,7 +1371,7 @@ let private awaitRace
     (leftRun: Execution<'value, 'error>)
     (rightRun: Execution<'value, 'error>)
     (onDecided: bool -> unit)
-    (onLoserSettled: Exit<'value, 'error> option -> unit)
+    (onLoserSettled: Result<Exit<'value, 'error> option, exn> -> unit)
     : Execution<'value, 'error> =
     ValueTask<Exit<'value, 'error>>(
         task {
@@ -1389,14 +1392,14 @@ let private awaitRace
 #endif
 /// Runs two operations concurrently and returns whichever settles first, cancelling and awaiting the loser.
 /// <paramref name="onDecided" /> is told whether the left operation won before the loser is awaited.
-/// <paramref name="onLoserSettled" /> is called before the race returns, with the loser's exit, or with <c>None</c>
-/// when the loser faulted or was cancelled without producing one.
+/// <paramref name="onLoserSettled" /> is called before the race returns, with the loser's exit (None for a canceled
+/// raw task) or an escaped task fault; faults are reported as unobserved without replacing the selected winner.
 let raceExecution
     (leftOp: CancellationToken -> Execution<'value, 'error>)
     (rightOp: CancellationToken -> Execution<'value, 'error>)
     (cancellationToken: CancellationToken)
     (onDecided: bool -> unit)
-    (onLoserSettled: Exit<'value, 'error> option -> unit)
+    (onLoserSettled: Result<Exit<'value, 'error> option, exn> -> unit)
     : Execution<'value, 'error> =
 #if FABLE_COMPILER
     async {
@@ -1414,13 +1417,13 @@ let raceExecution
             rightSource.Cancel()
             onDecided true
             let! loserExit = awaitBranch right
-            onLoserSettled (Some loserExit)
+            onLoserSettled (Ok(Some loserExit))
             return exit
         | Choice2Of2 exit ->
             leftSource.Cancel()
             onDecided false
             let! loserExit = awaitBranch left
-            onLoserSettled (Some loserExit)
+            onLoserSettled (Ok(Some loserExit))
             return exit
     }
 #else

@@ -2192,7 +2192,9 @@ module Flow =
                     rightOp
                     cancellationToken
                     (fun won -> leftWon.Value <- won)
-                    (fun exit -> loserExit.Value <- exit)
+                    (function
+                        | Ok exit -> loserExit.Value <- exit
+                        | Error error -> reportUnobservedCause (Cause.Die error))
 #if !FABLE_COMPILER
             if settled.IsCompletedSuccessfully then
                 Platform.guardStack (fun () -> settle settled.Result)
