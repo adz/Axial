@@ -20,6 +20,12 @@ lists the queue. Work on main.
     get the owner's review). Breaking: decide before cutting 0.12 or it waits for 0.13. Benchmark runtime-context reads
     against env reads on sleep/timeout loops. Decide `platform-env-class.md` afterwards.
 
+- [ ] T26: Spike: absorb FIO's continuation runtime (MIT) behind `Flow`-as-data, torture it with T23
+  - Needs T23 first. Copy only the interpreter and scheduler, with FIO's licence in THIRD-PARTY-NOTICES, a source header naming
+    the upstream commit, and bugs sent upstream. Design: `dev-docs/current-ideas/flow-as-data.md`.
+  - Accept only if every T23 law passes on both runtimes, Pingpong/Threadring improve, and nothing else regresses beyond
+    noise. Fable and NativeAOT must work or it stays a .NET-only switch.
+
 - [ ] T16: Split the HTTP host adapters into their own Axial+Reified product before 1.0
   - Move the two cross-product packages out of the Axial release train once their product boundary is settled.
 
