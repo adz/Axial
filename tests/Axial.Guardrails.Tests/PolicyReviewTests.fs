@@ -36,7 +36,7 @@ module PolicyReviewTests =
             git ["init"; "-q"] |> ignore
             git ["config"; "user.email"; "tests@example.invalid"] |> ignore
             git ["config"; "user.name"; "Test"] |> ignore
-            write ConfigName "version = 2\nbaseline = \"Axial.Guardrails.baseline\"\n[default]\nrole = \"domain\"\n[rules.domain]\n\"clock.datetime\" = \"deny\"\n"
+            write ConfigName "version = 2\nbaseline = \"Axial.Guardrails.baseline\"\n[default]\nrole = \"domain\"\n[roles.domain.rules]\n\"clock.datetime\" = \"deny\"\n"
             write DefaultBaseline ""
             write "App.fs" "module App\n"
             write "App.fsproj" "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net8.0</TargetFramework><AxialGuardrailsEnabled>true</AxialGuardrailsEnabled><AxialGuardrailsRole>domain</AxialGuardrailsRole><IsTestProject>false</IsTestProject></PropertyGroup><ItemGroup><Compile Include=\"App.fs\"/><AxialGuardrail Include=\"Axial.PlatformService\"/></ItemGroup></Project>"
