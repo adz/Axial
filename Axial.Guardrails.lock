@@ -2,7 +2,7 @@ version = 2
 BASELINE_PATH  Axial.Guardrails.baseline
 SHA256  2b078d571a2415b4395d0b789a67fdb6e5020af0f84926f2f61d34c71fad1cee  .editorconfig
 SHA256  cc8a1c075025701e675b9fdb4331bace6421ac1bf71111f91c7772992624c3f5  Axial.Guardrails.baseline
-SHA256  a667de7c6b94da3e747941164da85062e885ef1e7f2d20094bc3847618c08bf2  Axial.Guardrails.toml
+SHA256  ca00babb0c0c587067ddf700f97356f7bd27ac5aed3730b5f3f7eb644f90c969  Axial.Guardrails.toml
 SHA256  26f5a99ad520c214b9f52e7e13d13a1198a5913c717c5b6b010b23f43f806662  Directory.Build.props
 SHA256  34e52624be1432a21e95d160606ee979d9e708355e5efae6673fc27b2fdeabd1  Directory.Build.targets
 SHA256  6d7437334f7cf44d5039e85b6a0b61a77b3f1be3088982b7c4df354b80b724a6  src/Axial.Console/buildTransitive/Axial.Console.props
@@ -60,24 +60,9 @@ BOUNDARY  tests/Axial.ElmishFlows.Tests/SubscriptionTests.fs
 BOUNDARY  tests/Axial.Fable.Tests/Harness.fs
 BOUNDARY  tests/Axial.HttpClient.Tests/HttpServiceTests.fs
 BOUNDARY  tests/Axial.Tests/ScopedResourceOwnershipTests.fs
-SUPPRESSION  benchmarks/Axial.Benchmarks/Common.fs	1	// axial-allow-AXG001:intentional blocking host or live-service boundary
-SUPPRESSION  benchmarks/Axial.Benchmarks/Common.fs	2	// axial-allow-AXG001:intentional blocking host or live-service boundary
-SUPPRESSION  benchmarks/Axial.Benchmarks/Common.fs	3	// axial-allow-AXG001:intentional blocking host or live-service boundary
-SUPPRESSION  benchmarks/Axial.Benchmarks/Common.fs	4	// axial-allow-AXG001:intentional blocking host or live-service boundary
-SUPPRESSION  benchmarks/Axial.Benchmarks/Common.fs	5	// axial-allow-AXG001:intentional blocking host or live-service boundary
-SUPPRESSION  benchmarks/Axial.Benchmarks/FiberCostBenchmarks.fs	1	// axial-allow-AXG001:benchmark host boundary
-SUPPRESSION  benchmarks/Axial.Benchmarks/FiberCostBenchmarks.fs	2	// axial-allow-AXG001:benchmark host boundary
-SUPPRESSION  benchmarks/Axial.Benchmarks/FiberCostBenchmarks.fs	3	// axial-allow-AXG001:benchmark host boundary
-SUPPRESSION  benchmarks/Axial.Benchmarks/Suites.fs	1	// axial-allow-AXG001:benchmark control directly measures the native process baseline
-SUPPRESSION  benchmarks/Axial.Benchmarks/Suites.fs	1	// axial-allow-AXG001:benchmark control directly measures the redirected native process baseline
-SUPPRESSION  benchmarks/Axial.Benchmarks/Suites.fs	1	// axial-allow-AXG001:benchmark host boundary
-SUPPRESSION  benchmarks/Axial.Benchmarks/Suites.fs	1	// axial-allow-AXG001:intentional blocking host or live-service boundary
-SUPPRESSION  benchmarks/Axial.Benchmarks/Suites.fs	2	// axial-allow-AXG001:benchmark host boundary
-SUPPRESSION  benchmarks/Axial.Benchmarks/Suites.fs	2	// axial-allow-AXG001:intentional blocking host or live-service boundary
-SUPPRESSION  benchmarks/Axial.Benchmarks/Suites.fs	3	// axial-allow-AXG001:intentional blocking host or live-service boundary
-SUPPRESSION  benchmarks/Axial.Benchmarks/Suites.fs	4	// axial-allow-AXG001:intentional blocking host or live-service boundary
 SUPPRESSION  examples/Axial.AotProbe/Program.fs	1	// axial-allow-AXG001:intentional blocking host or live-service boundary
 SUPPRESSION  examples/Axial.AotProbe/Program.fs	1	// axial-allow-AXG001:intentional console host or live-service boundary
+SUPPRESSION  examples/Axial.AotProbe/Program.fs	1	// axial-allow-file-AXG001:executable AOT probe performs console, process, and blocking host-boundary effects
 SUPPRESSION  examples/Axial.AotProbe/Program.fs	10	// axial-allow-AXG001:intentional console host or live-service boundary
 SUPPRESSION  examples/Axial.AotProbe/Program.fs	2	// axial-allow-AXG001:intentional blocking host or live-service boundary
 SUPPRESSION  examples/Axial.AotProbe/Program.fs	2	// axial-allow-AXG001:intentional console host or live-service boundary
@@ -91,6 +76,7 @@ SUPPRESSION  examples/Axial.AotProbe/Program.fs	8	// axial-allow-AXG001:intentio
 SUPPRESSION  examples/Axial.AotProbe/Program.fs	9	// axial-allow-AXG001:intentional console host or live-service boundary
 SUPPRESSION  examples/Axial.App.Example/Program.fs	1	// axial-allow-AXG001:intentional blocking host or live-service boundary
 SUPPRESSION  examples/Axial.Comparisons/CheckoutCompensation.fs	1	// axial-allow-AXG005:wrapped operation has no cancellation-token overload
+SUPPRESSION  examples/Axial.Comparisons/OutputPipeline.fs	1	// axial-note AXG010:the raw-task comparison preserves the consumer failure below when observing a producer fault during cleanup.
 SUPPRESSION  examples/Axial.Comparisons/RetryBudget.fs	1	// axial-allow-AXG001:ordinary .NET comparison intentionally demonstrates ambient Task.Delay
 SUPPRESSION  examples/Axial.Comparisons/ScopedWorkspace.fs	1	// axial-allow-AXG001:ordinary .NET comparison intentionally demonstrates ambient filesystem access
 SUPPRESSION  examples/Axial.Comparisons/ScopedWorkspace.fs	2	// axial-allow-AXG001:ordinary .NET comparison intentionally demonstrates ambient filesystem access
@@ -110,27 +96,68 @@ SUPPRESSION  examples/Axial.TortureTest/Interop.fs	1	// axial-allow-AXG005:wrapp
 SUPPRESSION  examples/Axial.TortureTest/Interop.fs	2	// axial-allow-AXG003:foreign API communicates failure by exception
 SUPPRESSION  examples/Axial.TortureTest/Scenario.fs	1	// axial-allow-AXG001:intentional clock host or live-service boundary
 SUPPRESSION  examples/Axial.TortureTest/Scenario.fs	2	// axial-allow-AXG001:intentional clock host or live-service boundary
-SUPPRESSION  src/Axial.ElmishFlows/Sub.fs	1	// axial-allow-AXG005:wrapped operation has no cancellation-token overload
+SUPPRESSION  src/Axial.Console/Console.fs	1	// axial-allow-file-AXG001:this file implements the explicit console boundary
+SUPPRESSION  src/Axial.ElmishFlows/Diagnostics.fs	1	// axial-note AXG010:OnDefect is the final reporting sink; its own failure cannot be sent back to it or fail the runtime job.
+SUPPRESSION  src/Axial.ElmishFlows/Diagnostics.fs	1	// axial-note AXG010:a custom exception Message getter may throw; retain the original exception in Error and still deliver the diagnostic.
+SUPPRESSION  src/Axial.ElmishFlows/Diagnostics.fs	1	// axial-note AXG010:rendering failure must not prevent original defects from reaching OnDefect below.
 SUPPRESSION  src/Axial.ElmishFlows/TestRuntime.fs	1	// axial-allow-AXG001:test-thread polling, not a workflow delay
 SUPPRESSION  src/Axial.ElmishFlows/TestRuntime.fs	1	// axial-allow-AXG001:wall-clock test timeout
 SUPPRESSION  src/Axial.ElmishFlows/TestRuntime.fs	1	// axial-allow-AXG001:wall-clock test timeout, independent of manual workflow clock
+SUPPRESSION  src/Axial.FileSystem/FileSystem.fs	1	// axial-allow-file-AXG001:this file implements the explicit filesystem boundary
+SUPPRESSION  src/Axial.Files/AppendLog.fs	1	// axial-note AXG010:failed recovery poisons the log; rethrow the original write failure below rather than replace it with the reopen failure.
+SUPPRESSION  src/Axial.Files/Files.fs	1	// axial-note AXG010:temporary-file cleanup must not replace the original atomic-write failure rethrown below.
 SUPPRESSION  src/Axial.Guardrails/Suppressions.fs	1	// axial-allow-AXG003:foreign callback translates this exception
 SUPPRESSION  src/Axial.Hosting/Hosting.fs	1	// axial-allow-AXG001:intentional console host or live-service boundary
 SUPPRESSION  src/Axial.Hosting/Hosting.fs	2	// axial-allow-AXG001:intentional console host or live-service boundary
 SUPPRESSION  src/Axial.Hosting/Hosting.fs	3	// axial-allow-AXG001:intentional console host or live-service boundary
+SUPPRESSION  src/Axial.HttpClient/Http.fs	1	// axial-note AXG010:untrusted charset names and custom encoding providers can fail; response text decoding intentionally falls back to UTF8 below.
 SUPPRESSION  src/Axial.PlatformService/Operations.fs	1	// axial-allow-AXG001:intentional secure-random host or live-service boundary
+SUPPRESSION  src/Axial.PlatformService/Operations.fs	1	// axial-allow-file-AXG001:this file implements the explicit clock, guid boundary
 SUPPRESSION  src/Axial.PlatformService/Operations.fs	2	// axial-allow-AXG001:intentional secure-random host or live-service boundary
+SUPPRESSION  src/Axial.PlatformService/Platform.fs	1	// axial-allow-file-AXG001:this file implements the explicit random, environment boundary
 SUPPRESSION  src/Axial.Process/ProcessRun.fs	1	// axial-allow-AXG003:task bridge translates this back to the typed channel
+SUPPRESSION  src/Axial.Process/ProcessRun.fs	1	// axial-allow-file-AXG001:ProcessRun is the live IProcess implementation and owns native process handles
+SUPPRESSION  src/Axial.Process/ProcessRun.fs	1	// axial-note AXG010:an inaccessible or disposed process handle is treated as not live during shutdown, not as a new pipeline failure.
+SUPPRESSION  src/Axial.Process/ProcessRun.fs	1	// axial-note AXG010:shutdown cleanup is best-effort; ordinary pipe, process or timer failures must not replace the original outcome.
 SUPPRESSION  src/Axial.Process/ProcessRun.fs	2	// axial-allow-AXG003:task bridge translates this back to the typed channel
 SUPPRESSION  src/Axial.WebSocket/WebSocket.fs	1	// axial-allow-AXG001:intentional websocket host or live-service boundary
 SUPPRESSION  src/Axial/App.fs	1	// axial-allow-AXG001:StopAndWait is the documented synchronous boundary
 SUPPRESSION  src/Axial/Core.fs	1	// axial-allow-AXG001:IDisposable.Dispose is synchronous by contract
 SUPPRESSION  src/Axial/Core.fs	1	// axial-allow-AXG001:RunSynchronously is the documented blocking runner
+SUPPRESSION  src/Axial/Core.fs	1	// axial-note AXG010:GC finalization must not terminate the process if the last-chance defect reporter fails.
+SUPPRESSION  src/Axial/Core.fs	1	// axial-note AXG010:OnEnd is diagnostic; its failure must not replace the fiber's already settled exit.
+SUPPRESSION  src/Axial/Core.fs	1	// axial-note AXG010:an observer's OnStart failure must not prevent the observed fiber from starting.
+SUPPRESSION  src/Axial/Core.fs	1	// axial-note AXG010:the unobserved-defect sink is the last reporting destination; recursively reporting its failure would call the same sink.
 SUPPRESSION  src/Axial/Flow.fs	1	// axial-allow-AXG001:task already awaited
+SUPPRESSION  src/Axial/Flow.fs	1	// axial-note AXG010:a closing scope can reject registration after startup; keep publishing the already started fiber's handle and interrupt registration.
+SUPPRESSION  src/Axial/Flow.fs	1	// axial-note AXG010:annotation sink failures must not replace the annotated workflow's result.
+SUPPRESSION  src/Axial/Flow.fs	1	// axial-note AXG010:diagnostic history failure must not prevent settlement or replace the original fiber failure.
+SUPPRESSION  src/Axial/Outcome.fs	1	// axial-note AXG010:arbitrary payload ToString implementations can throw; cause rendering must retain the type-name fallback rather than fail while reporting the original cause.
 SUPPRESSION  src/Axial/Parallelism.fs	1	// axial-allow-AXG001:intentional environment host or live-service boundary
 SUPPRESSION  src/Axial/Platform.fs	1	// axial-allow-AXG001:intentional clock host or live-service boundary
+SUPPRESSION  src/Axial/Platform.fs	1	// axial-allow-file-AXG001:this file implements the explicit blocking (runtime platform layer: reads results of tasks it has already checked are complete) boundary
+SUPPRESSION  src/Axial/Platform.fs	1	// axial-allow-file-AXG001:this file implements the explicit clock boundary
 SUPPRESSION  src/Axial/Stream.fs	1	// axial-allow-AXG005:wrapped operation has no cancellation-token overload: MoveNextAsync has no token overload; the enumerator observes the GetAsyncEnumerator token.
 SUPPRESSION  tests/Axial.ElmishFlows.Tests/SubscriptionTests.fs	1	// axial-allow-AXG005:wrapped operation has no cancellation-token overload
 SUPPRESSION  tests/Axial.Fable.Tests/Harness.fs	1	// axial-allow-AXG006:test-only diagnostic formatting never runs trimmed
 SUPPRESSION  tests/Axial.HttpClient.Tests/HttpServiceTests.fs	1	// axial-allow-AXG004:immutable value is safe to share between tests
-SUPPRESSION  tests/Axial.Tests/ScopedResourceOwnershipTests.fs	1	// axial-allow-AXG007:test intentionally demonstrates fiber-owned resource release
+SUPPRESSION  tests/Axial.Integration.Tests/ProcessServiceTests.fs	1	// axial-note AXG013:allow the OS pipe buffer to fill before sampling backpressure; feeding already proves startup.
+SUPPRESSION  tests/Axial.Integration.Tests/ProcessServiceTests.fs	1	// axial-note AXG013:hold the feeder after its entry fact so shutdown, not elapsed time, must run the finalizer.
+SUPPRESSION  tests/Axial.Integration.Tests/ProcessServiceTests.fs	1	// axial-note AXG013:hold the feeder until interruption so the test observes the finalizer defect, not normal input completion.
+SUPPRESSION  tests/Axial.Integration.Tests/ProcessServiceTests.fs	1	// axial-note AXG013:keep finish active after its entry fact so cancellation must execute its finalizer.
+SUPPRESSION  tests/Axial.Integration.Tests/ProcessServiceTests.fs	1	// axial-note AXG013:keep input suspended until shutdown invokes the gated slow finalizer.
+SUPPRESSION  tests/Axial.Integration.Tests/ProcessServiceTests.fs	1	// axial-note AXG013:keep onStarted active so cancellation must interrupt it; entered gates the test.
+SUPPRESSION  tests/Axial.Integration.Tests/ProcessServiceTests.fs	1	// axial-note AXG013:keep stdin open during the EOF-to-TERM escalation; the stdout ready gate orders the test.
+SUPPRESSION  tests/Axial.Integration.Tests/ProcessServiceTests.fs	1	// axial-note AXG013:measure absence of further source pulls over a bounded observation window, not startup readiness.
+SUPPRESSION  tests/Axial.Integration.Tests/ProcessServiceTests.fs	1	// axial-note AXG013:model a suspended next input chunk so CloseStdIn must interrupt the feeder rather than wait for input.
+SUPPRESSION  tests/Axial.Integration.Tests/ProcessServiceTests.fs	1	// axial-note AXG013:schedule external cancellation at the same absolute deadline as the process timeout to exercise the race.
+SUPPRESSION  tests/Axial.Integration.Tests/ProcessServiceTests.fs	1	// axial-note AXG013:stdin remains suspended while the process receives its close signal; no readiness assertion depends on this duration.
+SUPPRESSION  tests/Axial.Integration.Tests/ProcessServiceTests.fs	1	// axial-note AXG013:this callback stays suspended until cancellation; stopped proves its finalizer ran.
+SUPPRESSION  tests/Axial.Integration.Tests/ProcessStreamingTests.fs	1	// axial-note AXG013:delay the consumer failure until after the child's nonzero exit to test preservation of both failures.
+SUPPRESSION  tests/Axial.Integration.Tests/ProcessStreamingTests.fs	1	// axial-note AXG013:keep the consumer suspended after entered so interruption must run the stopped finalizer.
+SUPPRESSION  tests/Axial.Integration.Tests/ProcessStreamingTests.fs	1	// axial-note AXG013:simulate a slow fold consumer to exercise bounded output backpressure rather than wait for readiness.
+SUPPRESSION  tests/Axial.Tests/RunOnTests.fs	1	// axial-note AXG013:force an asynchronous suspension between phases to test scheduler resumption, not elapsed-time readiness.
+SUPPRESSION  tests/Axial.Tests/WorkflowSchedulingTests.fs	1	// axial-note AXG013:suspend inside cleanup to prove scope shutdown awaits asynchronous finalizers.
+SUPPRESSION  tests/Axial.Tests/WorkflowStreamTests.fs	1	// axial-note AXG013:stagger completions to exercise replenishment of the bounded parallel window.
+SUPPRESSION  tests/Axial.Tests/WorkflowStreamTests.fs	1	// axial-note AXG013:stagger worker completion to exercise batch ordering and its concurrency bound.
+REVIEWED_POINT  76c62bcb9f1b317340432a42b717675cfd267a0f
