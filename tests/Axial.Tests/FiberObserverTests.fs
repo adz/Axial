@@ -206,7 +206,10 @@ module FiberObserverTests =
                 }))
         let operation =
             if race then
-                let winner = Flow.fromTask (fun _ -> task { do! started.Task; return 42 })
+                let winner = Flow.fromTask (fun _ -> task {
+                    do! started.Task
+                    return 42
+                })
                 Flow.race winner loser
             else
                 loser |> Flow.timeout (TimeSpan.FromMilliseconds 20.0) "timed out"
