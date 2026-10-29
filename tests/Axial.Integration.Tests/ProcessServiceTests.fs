@@ -43,19 +43,30 @@ module ProcessServiceTests =
     let ``best effort cleanup runs once and preserves effects before ordinary failure`` () =
         let mutable calls = 0
         let effects = ResizeArray<string>()
-        ProcessRun.bestEffort (fun () ->
+        ProcessRun.bestEffort () (fun () ->
             calls <- calls + 1
             effects.Add "disposed"
             raise (InvalidOperationException "already closed"))
         test <@ calls = 1 @>
         test <@ List.ofSeq effects = [ "disposed" ] @>
-        ProcessRun.bestEffort (fun () -> effects.Add "next")
+        ProcessRun.bestEffort () (fun () -> effects.Add "next")
         test <@ List.ofSeq effects = [ "disposed"; "next" ] @>
+
+    [<Fact>]
+    let ``best effort cleanup with explicit state allocates nothing per call`` () =
+        let state = [| 0 |]
+        let action (values: int array) = values[0] <- values[0] + 1
+        for _ in 1 .. 100 do ProcessRun.bestEffort state action
+        let before = GC.GetAllocatedBytesForCurrentThread()
+        for _ in 1 .. 10000 do ProcessRun.bestEffort state action
+        let allocated = GC.GetAllocatedBytesForCurrentThread() - before
+        test <@ state[0] = 10100 @>
+        test <@ allocated = 0L @>
 
     [<Fact>]
     let ``best effort cleanup does not swallow fatal exceptions`` () =
         let fatal = OutOfMemoryException "synthetic fatal exception"
-        let observed = Assert.Throws<OutOfMemoryException>(fun () -> ProcessRun.bestEffort (fun () -> raise fatal))
+        let observed = Assert.Throws<OutOfMemoryException>(fun () -> ProcessRun.bestEffort () (fun () -> raise fatal))
         test <@ obj.ReferenceEquals(fatal, observed) @>
 
     [<Fact>]

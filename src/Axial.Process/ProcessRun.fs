@@ -41,9 +41,9 @@ type private RunCommand =
 
 /// Flow-based process execution with scoped processes, supervised pumps, and one stop coordinator.
 module internal ProcessRun =
-    // Inline so cleanup actions capturing handles do not allocate closures at each call.
-    let inline internal bestEffort (action: unit -> unit) =
-        try action ()
+    // Pass state explicitly so call-site actions are noncapturing, cached functions.
+    let internal bestEffort state (action: 'state -> unit) =
+        try action state
         with
         | :? OutOfMemoryException
         | :? StackOverflowException
@@ -92,7 +92,7 @@ module internal ProcessRun =
 
     let private releaseStage (proc: Diagnostics.Process) : Flow<ClockEnvironment, Never, unit> =
         Flow.delay (fun () ->
-            bestEffort (fun () ->
+            bestEffort proc (fun proc ->
                 if not proc.HasExited then
 #if NETSTANDARD2_1
                     proc.Kill()
@@ -102,7 +102,7 @@ module internal ProcessRun =
 #endif
             )
 
-            bestEffort (fun () ->
+            bestEffort proc (fun proc ->
                 if proc.StartInfo.RedirectStandardInput then proc.StandardInput.BaseStream.Dispose()
                 if proc.StartInfo.RedirectStandardOutput then proc.StandardOutput.BaseStream.Dispose()
                 if proc.StartInfo.RedirectStandardError then proc.StandardError.BaseStream.Dispose())
@@ -122,7 +122,7 @@ module internal ProcessRun =
 
     let private closeInput (proc: Diagnostics.Process) =
         Flow.delay (fun () ->
-            bestEffort (fun () -> proc.StandardInput.Close())
+            bestEffort proc (fun proc -> proc.StandardInput.Close())
             Flow.succeed ())
 
     let rec private hasTypedFailure cause =
@@ -240,7 +240,7 @@ module internal ProcessRun =
                     let pending = clock.Sleep(delay, cancellation.Token)
                     let cancel =
                         Flow.delay (fun () ->
-                            bestEffort (fun () -> cancellation.Cancel())
+                            bestEffort cancellation (fun cancellation -> cancellation.Cancel())
                             Flow.succeed ())
                     let sleeping =
                         Flow.fromTask (fun token -> task {
@@ -256,7 +256,7 @@ module internal ProcessRun =
                         })
                         |> Flow.ensuring (
                             Flow.delay (fun () ->
-                                bestEffort (fun () -> cancellation.Cancel())
+                                bestEffort cancellation (fun cancellation -> cancellation.Cancel())
                                 cancellation.Dispose()
                                 Flow.succeed ())
                         )
@@ -352,8 +352,8 @@ module internal ProcessRun =
                 let closePipe (stage: RunStage) =
                     Flow.delay (fun () ->
                         stage.StdinClosed <- true
-                        bestEffort (fun () -> stage.Process.StandardInput.BaseStream.Dispose())
-                        bestEffort (fun () -> stage.Process.StandardInput.Close())
+                        bestEffort stage (fun stage -> stage.Process.StandardInput.BaseStream.Dispose())
+                        bestEffort stage (fun stage -> stage.Process.StandardInput.Close())
                         Flow.succeed ())
 
                 // Stops input to a stage without waiting: the coordinator must stay responsive. The feeder is
@@ -385,7 +385,7 @@ module internal ProcessRun =
                         do!
                             Flow.delay (fun () ->
                                 for stage in stages do
-                                    bestEffort (fun () ->
+                                    bestEffort stage (fun stage ->
 #if NETSTANDARD2_1
                                         stage.Process.Kill()
 #else
@@ -394,7 +394,7 @@ module internal ProcessRun =
                                         stage.Process.Kill(entireProcessTree = true)
 #endif
                                     )
-                                    bestEffort (fun () ->
+                                    bestEffort stage (fun stage ->
                                         if stage.Process.StartInfo.RedirectStandardOutput then stage.Process.StandardOutput.BaseStream.Dispose()
                                         if stage.Process.StartInfo.RedirectStandardError then stage.Process.StandardError.BaseStream.Dispose())
                                 Flow.succeed ())
@@ -814,7 +814,7 @@ module internal ProcessRun =
                             // enclosing fiber records its success or failure only after this step completes.
                             stages[stage].FeederClosedPipe <- true
                             stages[stage].StdinClosed <- true
-                            bestEffort (fun () -> processes[stage].StandardInput.Close())
+                            bestEffort processes[stage] (fun proc -> proc.StandardInput.Close())
                             Flow.succeed ())
                         |> Flow.mapError Never.absurd
                     )
