@@ -197,7 +197,7 @@ module PolicyReviewTests =
     [<InlineData("scripts/verify.sh")>]
     [<InlineData(".github/workflows/release.yml")>]
     [<InlineData("Directory.Packages.props")>]
-    let ``removing enforcement or analyzer package is reviewed`` path =
+    let ``removing enforcement or analyzer package is reviewed`` (path: string) =
         repository (fun root write git cli ->
             let text = if path.EndsWith(".props") then "<Project><ItemGroup><PackageVersion Include=\"Axial.Guardrails\" Version=\"0.12.0\"/></ItemGroup></Project>" else "original\n"
             write path text
