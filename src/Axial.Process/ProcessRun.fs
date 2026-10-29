@@ -44,7 +44,11 @@ module internal ProcessRun =
     // Inline so cleanup actions capturing handles do not allocate closures at each call.
     let inline internal bestEffort (action: unit -> unit) =
         try action ()
-        with error when not (error :? OutOfMemoryException || error :? StackOverflowException || error :? AccessViolationException) ->
+        with
+        | :? OutOfMemoryException
+        | :? StackOverflowException
+        | :? AccessViolationException -> reraise ()
+        | _ ->
             // axial-note AXG010: shutdown cleanup is best-effort; ordinary pipe, process or timer failures must not replace the original outcome.
             ()
 
