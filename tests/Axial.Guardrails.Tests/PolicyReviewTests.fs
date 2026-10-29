@@ -269,6 +269,32 @@ module PolicyReviewTests =
             Assert.Contains("after review", output))
 
     [<Fact>]
+    let ``deleted source exceptions are reported as removals`` () =
+        repository (fun root write git cli ->
+            write "Other.fs" "module Other\n// axial-note AXG001: old exception\n"
+            git ["add"; "."] |> ignore
+            git ["commit"; "-qm"; "exception file"] |> ignore
+            File.Delete(Path.Combine(root, "Other.fs"))
+            let code, output = cli ["policy"; "review"; "--since"; "HEAD"; "--check"]
+            Assert.True((code = 0), output)
+            Assert.Contains("removed suppressions/notes: Other.fs", output)
+            let code, output = cli ["check"]
+            Assert.True((code = 0), output))
+
+    [<Fact>]
+    let ``conditionally removed analyzer package settings are reviewed`` () =
+        repository (fun root write git cli ->
+            let project = File.ReadAllText(Path.Combine(root, "App.fsproj"))
+            write "App.fsproj" (project.Replace("</Project>", "<Import Project=\"policy.props\"/><ItemGroup Condition=\"'$(EnableAnalyzer)' == 'true'\"><PackageReference Include=\"Axial.Guardrails\" Version=\"0.12.0\"/></ItemGroup></Project>"))
+            write "policy.props" "<Project><PropertyGroup><EnableAnalyzer>true</EnableAnalyzer></PropertyGroup></Project>"
+            git ["add"; "."] |> ignore
+            git ["commit"; "-qm"; "conditional package"] |> ignore
+            write "policy.props" "<Project><PropertyGroup><EnableAnalyzer>false</EnableAnalyzer></PropertyGroup></Project>"
+            let code, output = cli ["policy"; "review"; "--since"; "HEAD"; "--check"]
+            Assert.NotEqual(0, code)
+            Assert.Contains("Axial.Guardrails version", output))
+
+    [<Fact>]
     let ``malformed reviewed point is rejected`` () =
         repository (fun root write _ cli ->
             write LockName (File.ReadAllText(Path.Combine(root, LockName)) + "REVIEWED_POINT  invalid\n")
