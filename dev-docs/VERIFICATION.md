@@ -83,6 +83,7 @@ Record a test here the first time it fails and then passes unchanged; fix or del
 
 | Test | Seen | Symptom | Status |
 |---|---|---|---|
+| `RuntimeSemanticsTests.Fiber metadata records identity parent and lifecycle status` | Guardrails review phase 1 full verification | A 20 ms child could finish before the parent captured the initial Running status; failed once and passed unchanged on the required full retry | Fixed: child waits for an explicit release gate until after the initial dump; passed 20 consecutive filtered runs |
 | `WorkflowStreamTests.debounce keeps the last value of each burst` | T20 slice 2 verify run | Expected `[3; 5]`, got `[5]` under full-suite load | Fixed: burst gaps were too close to the debounce deadline under load; zero-gap bursts and a wide virtual-time boundary separate them |
 | `WorkflowStreamTests.throttle emits the first value then the latest per interval` | CI; reproduced under four full-suite runs pinned to one CPU | Expected `[1; 4; 5]`, got `[1; 3; 4; 5]` | Fixed: `ManualTime` had queued due-sleep continuations, allowing the driver to advance from 15 ms to 100 ms before the 15 ms producer continuation emitted `4`. Manual-time sleep signals now run their continuation chain inline during advance; regression test proves advance does not return first. |
 | `WorkflowSchedulingTests.Flow runtime helpers cover timeout and retry` | 2026-10-18, T4 full run | 20 ms sleep raced a 1 ms timeout under load | Fixed: manual time and a 30 s sleep separate the timeout deadlines |
