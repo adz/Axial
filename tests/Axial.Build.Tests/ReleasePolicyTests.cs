@@ -21,6 +21,6 @@ public sealed class ReleasePolicyTests
         var reviewStep = workflow[workflow.LastIndexOf("      - name:", check, StringComparison.Ordinal)..workflow.IndexOf("      - name:", check, StringComparison.Ordinal)];
         Assert.DoesNotContain("continue-on-error", reviewStep);
         Assert.DoesNotContain("|| true", reviewStep);
-        Assert.Contains("dotnet --roll-forward Major artifacts/bin/Axial.Tool/release/axial.dll policy review --check", reviewStep);
+        Assert.Contains("dotnet --roll-forward Major artifacts/bin/Axial.Tool/release/Axial.Tool.dll policy review --check", reviewStep);
     }
 }

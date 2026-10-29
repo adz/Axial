@@ -21,6 +21,14 @@ Verify changes with `scripts/verify.sh` and report its `artifacts/verify/result.
 and prove new tests can fail; see [`dev-docs/VERIFICATION.md`](dev-docs/VERIFICATION.md). Coordinating delegated agents
 (Codex or Claude workers, quota, handoff across compaction) follows [`dev-docs/AGENT_WORKFLOW.md`](dev-docs/AGENT_WORKFLOW.md).
 
+## Policy review workflow
+
+Guardrails remain open day to day: agents may add valid suppressions or notes with a reason and report them to the
+human. Policy drift warns; analyzer errors still fail. Use `axial policy review` to inspect accumulated loosening
+(`--since <ref>` for a first review). The lock is tamper-evident; enforcement is the repository's choice.
+A human reads the review, runs `axial policy approve`, and commits the lock before release; agents must not run
+approval or baseline commands or edit the lock. Release automation runs `axial policy review --check`.
+
 ## Architecture Invariants
 
 ### EFFECT BOUNDARY — DO NOT HIDE AMBIENT EFFECTS IN SERVICE ADAPTERS

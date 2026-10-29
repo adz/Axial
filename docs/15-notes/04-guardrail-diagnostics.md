@@ -327,7 +327,8 @@ let ownedWork () = Flow.succeed 1
 Raw task findings are errors and cannot be acknowledged or suppressed; move bridges into capability-role modules.
 `lock`, `Monitor` and `Interlocked` are not reported: use `Ref` or `STM` where they fit, but the analyzer does not require it.
 Exact repository-relative paths in `[runtime].files` exempt runtime implementations from AXG009 only.
-This approval-sensitive list is protected by the policy lock; `[boundaries].files` does not exempt raw concurrency.
+Additions to this list appear in `axial policy review`; ordinary policy drift warns rather than blocking builds.
+`[boundaries].files` does not exempt raw concurrency.
 
 ## AXG010: Do not silently swallow exceptions
 
@@ -388,5 +389,8 @@ ownership, cancellation, or exception reporting changes behavior.
 
 The verification build and release workflow set `AxialGuardrailsCheckpoint=true`. Ordinary builds, including
 ordinary Release builds, do not enable it automatically. At checkpoints, unacknowledged guide findings become errors;
-acknowledged findings remain Info with their reasons. Build output is the review list; there is no separate snapshot
-or review manifest. The existing policy lock still protects roles and enforcement configuration.
+acknowledged findings remain Info with their reasons. Build output shows current findings; `axial policy review`
+separately lists added notes and suppressions, changed reasons, and policy loosening since the reviewed commit.
+Suppressions and notes stay active pending human review. `axial check` warns on policy drift; corrupt policy still
+fails, as do analyzer errors. The lock is tamper-evident, not a security boundary; enforcement is the repository's
+choice. Use `axial policy review --check` at a chosen release or merge point to reject unreviewed loosening.

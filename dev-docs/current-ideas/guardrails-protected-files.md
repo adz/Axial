@@ -1,5 +1,10 @@
 # Guardrails v2: locked policy, roles, and agent hooks
 
+> **Superseded in part by [guardrails-review.md](guardrails-review.md).** The lock-as-gate sections below
+> (build-blocking drift, approval as authority, and identical local/CI gates) describe the earlier design.
+> Policy drift now warns; suppressions remain active. A human reviews accumulated loosening at a chosen point.
+> The lock is tamper-evident; enforcement is the repository's choice, using `axial policy review --check` if desired.
+
 ## Decision
 
 Guardrails v2 uses Rust-like lint policy: the repository declares intent; the analyzer never infers whether code is domain, capabilities, host, or test code. Policy has three checked-in files:

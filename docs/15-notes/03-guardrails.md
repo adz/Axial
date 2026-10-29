@@ -8,7 +8,11 @@ description: Use Axial.Guardrails to detect ambient effects, exceptions in workf
 
 ## Repository policy lock
 
-`axial check` compares the repository policy, baseline, and analyzer configuration with `Axial.Guardrails.lock`. The lock is a workflow guard, not a security boundary: direct edits remain visible in Git, and agent hooks that block lock edits arrive in phase 3.
+`axial check` compares the repository policy, baseline, and analyzer configuration with `Axial.Guardrails.lock`. Policy drift produces one loud warning with a change count and an instruction to run `axial policy review`, but exits zero. Corrupt locks and unreadable policy still fail; analyzer errors still fail builds. The lock is tamper-evident, not a security boundary; enforcement is the repository's choice.
+
+Run `axial policy review [--since <ref>] [--json]` to inspect what loosened: new or changed suppression reasons and notes, relaxed roles or rule levels, runtime/boundary/ignore/baseline additions, evaluated project settings, and changes to verification scripts, workflows, or analyzer versions. Removals appear briefly as tightening. The default reference is the reviewed commit recorded in the lock; the first review needs `--since <tag-or-commit>`. If that reference predates policy files, the review reports policy introduction rather than inventing historical policy, and still compares source exceptions.
+
+`axial policy review --check` prints the same review and exits nonzero if anything loosened. Repositories may run it at release or merge time. After reading the review, a human runs `axial policy approve` (optionally `--yes-i-reviewed`) and commits the lock. Approval means a human read the review and records the current commit as the reviewed point; it has no signing, identity, or TTY requirement.
 
 Mandatory protected inputs include the TOML policy, baseline, `.editorconfig`/`.globalconfig`, `Directory.Build.*`, and all `.props`/`.targets` files. Guardrails test sources and project files are not automatically protected; adding, editing, or deleting them does not require approval unless the policy explicitly protects them. The lock itself records the approved snapshot.
 
@@ -52,23 +56,21 @@ services = ["src/App/Services/**"]
 
 The five roles are `capabilities`, `services`, `domain`, `host`, and `test`. File assignments override project
 assignments, which override the default. Rule levels are `allow`, `warn`, `deny`, and `forbid`; `forbid` cannot be
-suppressed. Run `axial policy approve` after reviewing an intentional policy change. The build fails with a categorized
-summary when protected inputs change or policy weakens. Each item appears on its own indented line;
-suppressions and baseline entries are grouped by file, with suppression occurrence numbers and comments beneath it.
-The summary lists all items and shows `none` beside empty categories. JSON output is unchanged. Removing suppressions or shrinking baseline entries does not
-require approval; the next approval refreshes the snapshot.
+suppressed. Suppressions remain active while policy review is pending. Policy changes warn during ordinary builds;
+`axial policy review` groups the changes for later human review. Removing suppressions or shrinking baseline entries
+tightens policy; the next approval refreshes the snapshot.
 
 Use `[suppressions]` with `ignore = ["tests/AnalyzerFixtures/**"]` to exclude fixture sources from the policy
 lock's suppression scan. Without this optional setting, every repository `.fs` file is scanned; no project paths
 are excluded automatically. Patterns use the same repository-relative glob syntax as project and boundary paths:
 `*` matches within a path segment, `**` crosses directories, and `?` matches one non-separator character.
 Ignore patterns may match no files. This setting affects only lock scanning, not analyzer execution. The TOML is
-protected, so changing the ignore list requires reviewed approval.
+tracked, so adding ignore entries appears in the next policy review.
 
 Lock format version 2 records each suppression by repository-relative file, normalized comment text, and occurrence
 number, not source line. Normalization selects the `// axial-allow-AXGnnn:` comment, canonicalizes spacing before the
 rule, and trims the reason's outer whitespace; internal reason text remains significant. Moving a comment within
-its file does not require approval. Adding a duplicate, changing its rule or reason, or moving it to another file does.
+its file does not add a review item. Adding a duplicate, changing its rule or reason, or moving it to another file appears in the review.
 `SUPPRESSION` records contain tab-separated file, occurrence number, and comment text. `BASELINE_PATH` records the
 configured baseline path. Version-1 locks remain readable but always require one reviewed `axial policy approve`
 to migrate; they are never silently trusted.
@@ -124,7 +126,7 @@ axial policy baseline --rule effects.ambient
 Review every entry written to the baseline path declared in TOML. Regenerate and review rather than hand-writing
 fingerprints, then approve the resulting policy state with the applicable `axial` workflow.
 
-`axial check` rejects baseline growth against the approved lock during local and CI builds. To adopt a newly enabled
+`axial check` warns about baseline growth against the reviewed lock during local and CI builds. To adopt a newly enabled
 rule with existing findings, run `axial policy baseline --rule <id>`, review the candidate entries, and approve the
 policy change. Ordinary policy approval refuses baseline growth.
 

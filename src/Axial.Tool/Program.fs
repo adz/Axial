@@ -55,7 +55,7 @@ Approval means a human read the review. The first review requires --since <ref>.
         | Error e, _ | _, Error e -> emit asJson false e
         | Ok current, Ok locked ->
             let changes=diff locked current
-            if isEmpty changes then emit asJson true ("Axial policy check passed.\nThe lock is a workflow guard, not a security boundary; direct edits remain visible in Git.")
+            if isEmpty changes then emit asJson true ("Axial policy check passed.\nThe lock is tamper-evident, not a security boundary. Enforcement is the repository's choice.")
             else
                 let count = changes.RulesDowngraded.Length + changes.BaselineAdded.Length + changes.SuppressionsAdded.Length + changes.BoundariesAdded.Length + (changes.ProtectedChanged |> List.filter ((<>) LockName) |> List.length)
                 emitWith (Some changes) asJson true $"WARNING: Policy changed since the last review: {max 1 count} changes. Run `axial policy review`."
