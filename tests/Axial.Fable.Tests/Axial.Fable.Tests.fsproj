@@ -21,6 +21,7 @@
     <Compile Include="FiberTests.fs" />
     <Compile Include="QueueTests.fs" />
     <Compile Include="RunOnTests.fs" />
+    <Compile Include="ThrownDefectTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <!-- The torture scenarios from examples/Axial.TortureTest, run at a reduced size on Node. -->
