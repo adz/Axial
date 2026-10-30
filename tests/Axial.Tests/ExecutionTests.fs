@@ -39,7 +39,7 @@ module ExecutionTests =
     let ``Flow.toAsync observes ambient cancellation`` () =
         use cts = new CancellationTokenSource()
         let flow = Flow.sleep (TimeSpan.FromSeconds 10.0)
-        let running = Async.StartAsTask(flow.ToAsync(TestSupport.clockEnv ()), cancellationToken = cts.Token)
+        let running = Async.StartAsTask(flow.ToAsync(()), cancellationToken = cts.Token)
 
         cts.Cancel()
 

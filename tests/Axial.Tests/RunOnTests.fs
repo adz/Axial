@@ -273,7 +273,7 @@ module RunOnTests =
 
     [<Fact>]
     let ``runOn preserves resource ownership under parallel combinators and fork`` () =
-        let environment = TestSupport.clockEnv ()
+        let environment = ()
 
         let resource (released: bool ref) (acquired: ManualResetEventSlim option) =
             Resource.create

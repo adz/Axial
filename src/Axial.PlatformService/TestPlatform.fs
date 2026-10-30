@@ -69,7 +69,7 @@ module TestClock =
     let advance (duration: TimeSpan) : Flow<'env, 'error, unit> =
         Flow.delay (fun () -> (current ()).AdvanceBy duration; Flow.ok ())
 
-    /// Explicitly drains deadlines currently registered, including deadlines registered by released continuations.
+    /// Drains registered deadlines. It does not wait for future registrations from asynchronously scheduled work.
     let advanceAll<'env, 'error> : Flow<'env, 'error, unit> =
         Flow.delay (fun () ->
             let clock = current ()

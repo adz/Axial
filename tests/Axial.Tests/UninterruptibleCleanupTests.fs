@@ -31,7 +31,7 @@ module UninterruptibleCleanupTests =
     // The first gate proves cancellation happens during cleanup, not before acquisition or after settlement.
     // The second gate keeps cleanup suspended until the test has checked that the owner is still waiting.
     let private suspendedCleanup (started: TaskCompletionSource<unit>) (resume: TaskCompletionSource<unit>)
-        (finished: TaskCompletionSource<unit>) : Flow<ClockEnvironment, Never, unit> =
+        (finished: TaskCompletionSource<unit>) : Flow<unit, Never, unit> =
         Flow(fun _ token ->
             task {
                 Assert.False(token.CanBeCanceled)
@@ -51,7 +51,7 @@ module UninterruptibleCleanupTests =
             use caller = new CancellationTokenSource()
             let started, resume, finished = signal (), signal (), signal ()
             let cleanup = suspendedCleanup started resume finished
-            let source : Flow<ClockEnvironment, string, unit> =
+            let source : Flow<unit, string, unit> =
                 if resource then
                     flow {
                         let! _value = Flow.scopeAcquireRelease (Flow.ok 1) (fun _ -> cleanup)
@@ -59,7 +59,7 @@ module UninterruptibleCleanupTests =
                     }
                 else
                     Flow.fail "original" |> Flow.ensuring cleanup
-            let running = source.StartAsTask(TestSupport.clockEnv (), caller.Token)
+            let running = source.StartAsTask((), caller.Token)
             try
                 do! started.Task.WaitAsync(deadline ())
                 caller.Cancel()
@@ -77,18 +77,18 @@ module UninterruptibleCleanupTests =
         task {
             use caller = new CancellationTokenSource()
             let acquired, started, resume, finished = signal (), signal (), signal (), signal ()
-            let loser : Flow<ClockEnvironment, string, int> =
+            let loser : Flow<unit, string, int> =
                 flow {
                     let! _value = Flow.scopeAcquireRelease (Flow.ok 1) (fun _ -> suspendedCleanup started resume finished)
                     acquired.SetResult()
                     return! Flow.never
                 }
-            let winner : Flow<ClockEnvironment, string, int> =
+            let winner : Flow<unit, string, int> =
                 flow {
                     do! Flow.fromTask (fun token -> acquired.Task.WaitAsync(token))
                     return 42
                 }
-            let running = Flow.race loser winner |> fun source -> source.StartAsTask(TestSupport.clockEnv (), caller.Token)
+            let running = Flow.race loser winner |> fun source -> source.StartAsTask((), caller.Token)
             try
                 do! started.Task.WaitAsync(deadline ())
                 caller.Cancel()

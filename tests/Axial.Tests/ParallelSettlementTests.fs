@@ -9,13 +9,13 @@ open Xunit
 /// On .NET, branches that have already settled are combined without a task, so these pin that path to the same
 /// outcomes as the asynchronous one.
 module ParallelSettlementTests =
-    let private later (value: Flow<ClockEnvironment, string, 'value>) : Flow<ClockEnvironment, string, 'value> =
+    let private later (value: Flow<unit, string, 'value>) : Flow<unit, string, 'value> =
         Flow.sleep (TimeSpan.FromMilliseconds 20.0) |> Flow.bind (fun () -> value)
 
-    let private run (workflow: Flow<ClockEnvironment, string, 'value>) =
-        Flow.runSync (TestSupport.clockEnv ()) workflow
+    let private run (workflow: Flow<unit, string, 'value>) =
+        Flow.runSync () workflow
 
-    let private throwing () : Flow<ClockEnvironment, string, int> =
+    let private throwing () : Flow<unit, string, int> =
         Flow(fun _ _ -> raise (InvalidOperationException "thrown while starting"))
 
     let private isDefect (exit: Exit<'value, string>) =

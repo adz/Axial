@@ -30,7 +30,7 @@ module FiberDiagnosticsTests =
                 return value, Fiber.dump fiber
             }
             |> Flow.annotate "request_id" "req-9"
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         match result with
         | Exit.Success(value, dump) ->
@@ -47,7 +47,7 @@ module FiberDiagnosticsTests =
                 let! _ = Fiber.join fiber
                 return Fiber.dump fiber
             }
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         match result with
         | Exit.Success dump ->
@@ -63,12 +63,12 @@ module FiberDiagnosticsTests =
         let registry = FiberRegistry()
         use release = new SemaphoreSlim(0)
 
-        let blocked : Flow<ClockEnvironment, string, unit> =
+        let blocked : Flow<unit, string, unit> =
             Flow.fromTask (fun _ -> task { do! release.WaitAsync() })
 
         let result =
             flow {
-                let! clock = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock)
+                let! clock = Axial.PlatformService.Clock.service
                 let! fiber = Flow.forkNamed "blocked-worker" blocked
                 let snapshot = registry.Snapshot()
                 let rendered = registry.DumpAt(clock)
@@ -77,7 +77,7 @@ module FiberDiagnosticsTests =
                 return snapshot, rendered
             }
             |> Flow.withFiberRegistry registry
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         match result with
         | Exit.Success(snapshot, rendered) ->
@@ -103,7 +103,7 @@ module FiberDiagnosticsTests =
             }
             |> Flow.withFiberRegistry registry
             |> Flow.withFiberObserver recording
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success() @>
         test <@ started.Count = 1 @>
@@ -159,7 +159,7 @@ module FiberDiagnosticsTests =
     let ``FiberRegistry interrupts live fibers by id and by name`` () =
         let registry = FiberRegistry()
 
-        let workflow : Flow<ClockEnvironment, string, bool * int * Exit<unit, string> * Exit<unit, string> * bool> =
+        let workflow : Flow<unit, string, bool * int * Exit<unit, string> * Exit<unit, string> * bool> =
             flow {
                 let! stuck = Flow.forkNamed "stuck" (Flow.sleep (TimeSpan.FromSeconds 30.0))
                 let! other = Flow.forkNamed "worker" (Flow.sleep (TimeSpan.FromSeconds 30.0))
@@ -172,18 +172,18 @@ module FiberDiagnosticsTests =
             }
             |> Flow.withFiberRegistry registry
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(true, 1, Exit.Failure Cause.Interrupt, Exit.Failure Cause.Interrupt, false) @>
+        test <@ Flow.runSync () workflow = Exit.Success(true, 1, Exit.Failure Cause.Interrupt, Exit.Failure Cause.Interrupt, false) @>
 
     [<Fact>]
     let ``FiberRegistry keeps settled history, failures, and per-name totals`` () =
         let registry = FiberRegistry()
 
-        let workflow : Flow<ClockEnvironment, string, unit> =
+        let workflow : Flow<unit, string, unit> =
             flow {
                 let! ok1 = Flow.forkNamed "load" (Flow.ok 1)
                 let! ok2 = Flow.forkNamed "load" (Flow.sleep (TimeSpan.FromMilliseconds 20.0) |> Flow.map (fun () -> 2))
-                let! failed = Flow.forkNamed "load" (Flow.fail "not found" : Flow<ClockEnvironment, string, int>)
-                let! died = Flow.forkNamed "save" (Flow.die (InvalidOperationException "disk full") : Flow<ClockEnvironment, string, int>)
+                let! failed = Flow.forkNamed "load" (Flow.fail "not found" : Flow<unit, string, int>)
+                let! died = Flow.forkNamed "save" (Flow.die (InvalidOperationException "disk full") : Flow<unit, string, int>)
                 let! stuck = Flow.forkNamed "save" (Flow.sleep (TimeSpan.FromSeconds 30.0) |> Flow.map (fun () -> 0))
                 let! _ = Fiber.awaitExit ok1
                 let! _ = Fiber.awaitExit ok2
@@ -194,7 +194,7 @@ module FiberDiagnosticsTests =
             }
             |> Flow.withFiberRegistry registry
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success () @>
+        test <@ Flow.runSync () workflow = Exit.Success () @>
 
         let settled = registry.Settled()
         let failureOf name = settled |> List.filter (fun fiber -> fiber.Fiber.Name = Some name) |> List.choose _.Failure
@@ -228,7 +228,7 @@ module FiberDiagnosticsTests =
                     reading
                 member _.Sleep(_, _) = Task.CompletedTask }
 
-        let workflow : Flow<ClockEnvironment, Never, unit> =
+        let workflow : Flow<unit, Never, unit> =
             flow {
                 let! fiber = Flow.forkNamed "clock-jump" (Flow.ok ())
                 let! _ = Fiber.awaitExit fiber
@@ -236,7 +236,7 @@ module FiberDiagnosticsTests =
             }
             |> Flow.withFiberRegistry registry
 
-        test <@ Flow.runSync (ClockEnvironment clock) workflow = Exit.Success () @>
+        test <@ workflow |> Flow.withClock clock |> Flow.runSync () = Exit.Success () @>
         let settled = registry.Settled() |> List.exactlyOne
         test <@ settled.Fiber.SettledAt.Value < settled.Fiber.StartedAt @>
         test <@ settled.Duration > TimeSpan.Zero @>
@@ -245,7 +245,7 @@ module FiberDiagnosticsTests =
     let ``FiberRegistry history is bounded`` () =
         let registry = FiberRegistry(3)
 
-        let workflow : Flow<ClockEnvironment, string, unit> =
+        let workflow : Flow<unit, string, unit> =
             flow {
                 for index in 1..10 do
                     let! fiber = Flow.forkNamed $"job-{index}" (Flow.ok index)
@@ -254,6 +254,6 @@ module FiberDiagnosticsTests =
             }
             |> Flow.withFiberRegistry registry
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success () @>
+        test <@ Flow.runSync () workflow = Exit.Success () @>
         test <@ registry.Settled() |> List.map (fun fiber -> fiber.Fiber.Name) = [ Some "job-8"; Some "job-9"; Some "job-10" ] @>
         test <@ registry.Stats().Length = 10 @>

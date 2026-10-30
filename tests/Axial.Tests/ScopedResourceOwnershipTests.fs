@@ -20,7 +20,7 @@ module ScopedResourceOwnershipTests =
     let private released (events: ResizeArray<string>) =
         snapshot events |> List.filter (fun event -> event.EndsWith ":released") |> List.sort
 
-    let private connection (events: ResizeArray<string>) (name: string) : Resource<ClockEnvironment, string, string> =
+    let private connection (events: ResizeArray<string>) (name: string) : Resource<unit, string, string> =
         Resource.create
             (Flow.delay (fun () ->
                 record events $"{name}:acquired"
@@ -33,37 +33,37 @@ module ScopedResourceOwnershipTests =
     let private acquire events name = connection events name |> Flow.scopeResource
 
     /// Waits on the real clock until `condition` holds, for work the combinator does not wait for (a race loser).
-    let rec private eventually (condition: unit -> bool) (attempts: int) : Flow<ClockEnvironment, string, unit> =
+    let rec private eventually (condition: unit -> bool) (attempts: int) : Flow<unit, string, unit> =
         flow {
             if not (condition ()) && attempts > 0 then
                 do! Flow.sleep (TimeSpan.FromMilliseconds 5.0)
                 return! eventually condition (attempts - 1)
         }
 
-    let private registeredInCurrentScope () : Flow<ClockEnvironment, 'error, int> =
+    let private registeredInCurrentScope () : Flow<unit, 'error, int> =
         Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().Scope.RegisteredCount))
 
     [<Fact>]
     let ``zipPar keeps both branches' scoped resources until the caller's scope closes`` () =
         let events = ResizeArray<string>()
 
-        let workflow : Flow<ClockEnvironment, string, string * string * string list> =
+        let workflow : Flow<unit, string, string * string * string list> =
             flow {
                 let! left, right = Flow.zipPar (acquire events "left") (acquire events "right")
                 return left, right, released events
             }
             |> Flow.scoped
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success("left", "right", []) @>
+        test <@ Flow.runSync () workflow = Exit.Success("left", "right", []) @>
         test <@ released events = [ "left:released"; "right:released" ] @>
 
     [<Fact>]
     let ``A failing zipPar releases its sibling's scoped resources before it returns`` () =
         let events = ResizeArray<string>()
 
-        let workflow : Flow<ClockEnvironment, string, string list> =
+        let workflow : Flow<unit, string, string list> =
             flow {
-                let! acquired = Deferred.make<ClockEnvironment, string, unit> ()
+                let! acquired = Deferred.make<unit, string, unit> ()
 
                 let kept =
                     flow {
@@ -83,29 +83,29 @@ module ScopedResourceOwnershipTests =
             }
             |> Flow.scoped
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success [ "sibling:released" ] @>
+        test <@ Flow.runSync () workflow = Exit.Success [ "sibling:released" ] @>
 
     [<Fact>]
     let ``sequencePar keeps every flow's scoped resources until the caller's scope closes`` () =
         let events = ResizeArray<string>()
 
-        let workflow : Flow<ClockEnvironment, string, string list * string list> =
+        let workflow : Flow<unit, string, string list * string list> =
             flow {
                 let! names = [ "a"; "b"; "c" ] |> List.map (acquire events) |> Flow.sequencePar
                 return names, released events
             }
             |> Flow.scoped
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success([ "a"; "b"; "c" ], []) @>
+        test <@ Flow.runSync () workflow = Exit.Success([ "a"; "b"; "c" ], []) @>
         test <@ released events = [ "a:released"; "b:released"; "c:released" ] @>
 
     [<Fact>]
     let ``race keeps the winner's scoped resources and releases the loser's`` () =
         let events = ResizeArray<string>()
 
-        let workflow : Flow<ClockEnvironment, string, string * string list> =
+        let workflow : Flow<unit, string, string * string list> =
             flow {
-                let! loserAcquired = Deferred.make<ClockEnvironment, string, unit> ()
+                let! loserAcquired = Deferred.make<unit, string, unit> ()
 
                 let loser =
                     flow {
@@ -126,16 +126,16 @@ module ScopedResourceOwnershipTests =
             }
             |> Flow.scoped
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success("winner", [ "loser:released" ]) @>
+        test <@ Flow.runSync () workflow = Exit.Success("winner", [ "loser:released" ]) @>
         test <@ released events = [ "loser:released"; "winner:released" ] @>
 
     [<Fact>]
     let ``race closes a right loser's scope before returning`` () =
         let events = ResizeArray<string>()
 
-        let workflow : Flow<ClockEnvironment, string, string list> =
+        let workflow : Flow<unit, string, string list> =
             flow {
-                let! loserAcquired = Deferred.make<ClockEnvironment, string, unit> ()
+                let! loserAcquired = Deferred.make<unit, string, unit> ()
 
                 let loser =
                     flow {
@@ -150,13 +150,13 @@ module ScopedResourceOwnershipTests =
             }
             |> Flow.scoped
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success [ "right:released" ] @>
+        test <@ Flow.runSync () workflow = Exit.Success [ "right:released" ] @>
 
     [<Fact>]
     let ``race releases an exclusive socket before returning`` () =
         let endpoint = ref None
 
-        let loser : Flow<ClockEnvironment, string, unit> =
+        let loser : Flow<unit, string, unit> =
             flow {
                 let socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
                 socket.ExclusiveAddressUse <- true
@@ -174,7 +174,7 @@ module ScopedResourceOwnershipTests =
                 | None -> Flow.sleep (TimeSpan.FromMilliseconds 1.0) |> Flow.bind wait
             wait ()
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) (Flow.race loser winner) = Exit.Success() @>
+        test <@ Flow.runSync () (Flow.race loser winner) = Exit.Success() @>
 
         use replacement = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
         replacement.ExclusiveAddressUse <- true
@@ -187,7 +187,7 @@ module ScopedResourceOwnershipTests =
         use source = new CancellationTokenSource()
         let mutable releasedCount = 0
 
-        let branch : Flow<ClockEnvironment, string, unit> =
+        let branch : Flow<unit, string, unit> =
             flow {
                 do!
                     Flow.scopeFinalizer (
@@ -203,7 +203,7 @@ module ScopedResourceOwnershipTests =
         let running =
             Task.Run(fun () ->
                 Flow.race branch branch
-                |> Flow.runSyncWithToken (TestSupport.clockEnv ()) source.Token)
+                |> Flow.runSyncWithToken () source.Token)
 
         test <@ started.Wait(TimeSpan.FromSeconds 10.0) @>
         source.Cancel()
@@ -214,7 +214,7 @@ module ScopedResourceOwnershipTests =
     let ``traversePar keeps each item's scoped resources after its worker finishes`` () =
         let events = ResizeArray<string>()
 
-        let workflow : Flow<ClockEnvironment, string, string list * string list> =
+        let workflow : Flow<unit, string, string list * string list> =
             flow {
                 let! names = [ 1..6 ] |> Flow.traversePar (Parallelism.bounded 2) (fun index -> acquire events $"item{index}")
                 return names, released events
@@ -223,17 +223,17 @@ module ScopedResourceOwnershipTests =
 
         let expectedNames = [ for index in 1..6 -> $"item{index}" ]
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(expectedNames, []) @>
+        test <@ Flow.runSync () workflow = Exit.Success(expectedNames, []) @>
         test <@ released events = (expectedNames |> List.map (fun name -> name + ":released") |> List.sort) @>
 
     [<Fact>]
     let ``A single failing flow in sequencePar releases its scoped resources before it returns`` () =
         let events = ResizeArray<string>()
 
-        let failsAfterAcquiring name : Flow<ClockEnvironment, string, string> =
+        let failsAfterAcquiring name : Flow<unit, string, string> =
             acquire events name |> Flow.bind (fun (_: string) -> Flow.fail "boom")
 
-        let workflow : Flow<ClockEnvironment, string, string list * string list> =
+        let workflow : Flow<unit, string, string list * string list> =
             flow {
                 do! Flow.sequencePar [ failsAfterAcquiring "only" ] |> Flow.ignore |> Flow.orElse (Flow.ok ())
                 let afterSequence = released events
@@ -249,7 +249,7 @@ module ScopedResourceOwnershipTests =
 
         test
             <@
-                Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(
+                Flow.runSync () workflow = Exit.Success(
                     [ "only:released" ],
                     [ "first:released"; "only:released" ]
                 )
@@ -259,7 +259,7 @@ module ScopedResourceOwnershipTests =
     let ``traverseParUsing releases each worker's resource but keeps what its items acquired`` () =
         let events = ResizeArray<string>()
 
-        let workflow : Flow<ClockEnvironment, string, string list * string list> =
+        let workflow : Flow<unit, string, string list * string list> =
             flow {
                 let! names =
                     [ 1..4 ]
@@ -276,7 +276,7 @@ module ScopedResourceOwnershipTests =
 
         let workersReleased = [ "worker:released"; "worker:released" ]
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(expectedNames, workersReleased) @>
+        test <@ Flow.runSync () workflow = Exit.Success(expectedNames, workersReleased) @>
 
         test
             <@
@@ -290,7 +290,7 @@ module ScopedResourceOwnershipTests =
     let ``A timed-out flow releases its scoped resources before the fallback, and one in time keeps them`` () =
         let events = ResizeArray<string>()
 
-        let workflow : Flow<ClockEnvironment, string, string * string * string list> =
+        let workflow : Flow<unit, string, string * string * string list> =
             flow {
                 let! fast = acquire events "fast" |> Flow.timeout (TimeSpan.FromSeconds 30.0) "timed out"
 
@@ -306,12 +306,12 @@ module ScopedResourceOwnershipTests =
             }
             |> Flow.scoped
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success("fast", "fallback", [ "slow:released" ]) @>
+        test <@ Flow.runSync () workflow = Exit.Success("fast", "fallback", [ "slow:released" ]) @>
         test <@ released events = [ "fast:released"; "slow:released" ] @>
 
     [<Fact>]
     let ``Parallel calls do not leave empty branch scopes in a long-lived scope`` () =
-        let workflow : Flow<ClockEnvironment, string, int> =
+        let workflow : Flow<unit, string, int> =
             flow {
                 for _ in 1..500 do
                     let! _ = Flow.zipPar (Flow.ok 1) (Flow.ok 2)
@@ -323,19 +323,19 @@ module ScopedResourceOwnershipTests =
             }
             |> Flow.scoped
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 0 @>
+        test <@ Flow.runSync () workflow = Exit.Success 0 @>
 
     [<Fact>]
     let ``Concurrent combinators still run when the caller's scope has already closed`` () =
         // Public code cannot reach a closed scope on demand, so run the flow under one directly.
-        let underClosedScope (inner: Flow<ClockEnvironment, string, 'value>) : Flow<ClockEnvironment, string, 'value> =
+        let underClosedScope (inner: Flow<unit, string, 'value>) : Flow<unit, string, 'value> =
             Flow(fun environment cancellationToken ->
                 let closed = new Scope()
                 (closed :> IDisposable).Dispose()
                 let runtime = RuntimeState.current () |> RuntimeContext.withScope closed
                 RuntimeState.withRuntime runtime (fun () -> FlowInternal.invoke inner environment cancellationToken))
 
-        let workflow : Flow<ClockEnvironment, string, int * int * int * int> =
+        let workflow : Flow<unit, string, int * int * int * int> =
             flow {
                 let! left, right = Flow.zipPar (Flow.ok 1) (Flow.ok 2)
                 let! raced = Flow.race (Flow.ok 3) (Flow.never)
@@ -345,13 +345,13 @@ module ScopedResourceOwnershipTests =
             }
             |> underClosedScope
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(1, 2, 3, 4) @>
+        test <@ Flow.runSync () workflow = Exit.Success(1, 2, 3, 4) @>
 
     [<Fact>]
     let ``A resource acquired after its scope closed is released at once and the flow is interrupted`` () =
         // A race loser can finish acquiring after the race has returned and closed its scope. Nobody can receive the
         // resource then, so it is released instead of leaking, here or in a branch.
-        let underClosedScope (inner: Flow<ClockEnvironment, string, 'value>) : Flow<ClockEnvironment, string, 'value> =
+        let underClosedScope (inner: Flow<unit, string, 'value>) : Flow<unit, string, 'value> =
             Flow(fun environment cancellationToken ->
                 let closed = new Scope()
                 (closed :> IDisposable).Dispose()
@@ -362,7 +362,7 @@ module ScopedResourceOwnershipTests =
         let finalized = ref 0
         let finalizer = Flow.scopeFinalizer (Flow.delay (fun () -> finalized.Value <- finalized.Value + 1; Flow.succeed ()))
 
-        let run inner = Flow.runSync (TestSupport.clockEnv ()) (underClosedScope inner)
+        let run inner = Flow.runSync () (underClosedScope inner)
         let direct = run (acquire events "direct")
         let inBranch = run (Flow.zipPar (acquire events "branch") (Flow.ok 1))
         let registered = run finalizer
@@ -377,7 +377,7 @@ module ScopedResourceOwnershipTests =
     let ``Nested parallel branches hand their scoped resources up to the outermost caller`` () =
         let events = ResizeArray<string>()
 
-        let workflow : Flow<ClockEnvironment, string, string list * int> =
+        let workflow : Flow<unit, string, string list * int> =
             flow {
                 let! _ =
                     Flow.zipPar
@@ -391,17 +391,17 @@ module ScopedResourceOwnershipTests =
 
         // zipPar's two flows share one branch scope, which holds the inner zipPar's scope and the race winner's, so
         // the caller's scope gains a single registration and nothing is released until it closes.
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success([], 1) @>
+        test <@ Flow.runSync () workflow = Exit.Success([], 1) @>
         test <@ released events = [ "inner-left:released"; "inner-right:released"; "raced:released" ] @>
 
     [<Fact>]
     let ``A fiber forked in a parallel branch outlives the branch when the caller keeps its value`` () =
         // A race cancels its branches once it is decided, and a timeout disposes its own token; neither may interrupt
         // a fiber that the winning branch forked and handed to the caller.
-        let forkSeven () : Flow<ClockEnvironment, string, Fiber<string, int>> =
+        let forkSeven () : Flow<unit, string, Fiber<string, int>> =
             Flow.sleep (TimeSpan.FromMilliseconds 50.0) |> Flow.map (fun () -> 7) |> Flow.fork
 
-        let workflow : Flow<ClockEnvironment, string, int list> =
+        let workflow : Flow<unit, string, int list> =
             flow {
                 let! raced = Flow.race (forkSeven ()) Flow.never
                 let! zipped, _ = Flow.zipPar (forkSeven ()) (Flow.ok 1)
@@ -411,13 +411,13 @@ module ScopedResourceOwnershipTests =
             }
             |> Flow.scoped
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success [ 7; 7; 7; 7 ] @>
+        test <@ Flow.runSync () workflow = Exit.Success [ 7; 7; 7; 7 ] @>
 
     [<Fact>]
     let ``A fiber forked in a race loser is interrupted with the loser`` () =
-        let workflow : Flow<ClockEnvironment, string, Exit<unit, string>> =
+        let workflow : Flow<unit, string, Exit<unit, string>> =
             flow {
-                let! forked = Deferred.make<ClockEnvironment, string, Fiber<string, unit>> ()
+                let! forked = Deferred.make<unit, string, Fiber<string, unit>> ()
 
                 let loser =
                     flow {
@@ -439,15 +439,15 @@ module ScopedResourceOwnershipTests =
             }
             |> Flow.scoped
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(Exit.Failure Cause.Interrupt) @>
+        test <@ Flow.runSync () workflow = Exit.Success(Exit.Failure Cause.Interrupt) @>
 
     [<Fact>]
     let ``A fiber closes a finalizer registered after it starts`` () =
         let finalized = ref 0
 
-        let workflow : Flow<ClockEnvironment, string, int> =
+        let workflow : Flow<unit, string, int> =
             flow {
-                let! proceed = Deferred.make<ClockEnvironment, string, unit> ()
+                let! proceed = Deferred.make<unit, string, unit> ()
 
                 let child =
                     flow {
@@ -462,15 +462,15 @@ module ScopedResourceOwnershipTests =
             }
             |> Flow.scoped
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 1 @>
+        test <@ Flow.runSync () workflow = Exit.Success 1 @>
 
     [<Fact>]
     let ``Interrupting a fiber before it registers a finalizer leaves nothing to release`` () =
         let finalized = ref 0
 
-        let workflow : Flow<ClockEnvironment, string, Exit<unit, string> * int> =
+        let workflow : Flow<unit, string, Exit<unit, string> * int> =
             flow {
-                let! proceed = Deferred.make<ClockEnvironment, string, unit> ()
+                let! proceed = Deferred.make<unit, string, unit> ()
 
                 let child =
                     flow {
@@ -484,15 +484,15 @@ module ScopedResourceOwnershipTests =
             }
             |> Flow.scoped
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(Exit.Failure Cause.Interrupt, 0) @>
+        test <@ Flow.runSync () workflow = Exit.Success(Exit.Failure Cause.Interrupt, 0) @>
 
     [<Fact>]
     let ``Interrupting a fiber after it registers a finalizer releases it once`` () =
         let finalized = ref 0
 
-        let workflow : Flow<ClockEnvironment, string, Exit<unit, string> * int> =
+        let workflow : Flow<unit, string, Exit<unit, string> * int> =
             flow {
-                let! registered = Deferred.make<ClockEnvironment, string, unit> ()
+                let! registered = Deferred.make<unit, string, unit> ()
 
                 let child =
                     flow {
@@ -508,13 +508,13 @@ module ScopedResourceOwnershipTests =
             }
             |> Flow.scoped
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(Exit.Failure Cause.Interrupt, 1) @>
+        test <@ Flow.runSync () workflow = Exit.Success(Exit.Failure Cause.Interrupt, 1) @>
 
     [<Fact>]
     let ``A resource returned from a plain fork is already released when join returns it`` () =
         let events = ResizeArray<string>()
 
-        let workflow : Flow<ClockEnvironment, string, string * string list> =
+        let workflow : Flow<unit, string, string * string list> =
             flow {
                 let! fiber = acquire events "db" |> Flow.fork
                 let! name = Fiber.join fiber
@@ -522,13 +522,13 @@ module ScopedResourceOwnershipTests =
             }
             |> Flow.scoped
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success("db", [ "db:released" ]) @>
+        test <@ Flow.runSync () workflow = Exit.Success("db", [ "db:released" ]) @>
 
     [<Fact>]
     let ``forkResource hands join a live resource that the caller's scope releases`` () =
         let events = ResizeArray<string>()
 
-        let workflow : Flow<ClockEnvironment, string, string * string list> =
+        let workflow : Flow<unit, string, string * string list> =
             flow {
                 let! connecting = Flow.forkResource (connection events "db")
                 let! name = Fiber.join connecting
@@ -536,19 +536,19 @@ module ScopedResourceOwnershipTests =
             }
             |> Flow.scoped
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success("db", []) @>
+        test <@ Flow.runSync () workflow = Exit.Success("db", []) @>
         test <@ snapshot events = [ "db:acquired"; "db:released" ] @>
 
     [<Fact>]
     let ``forkResource releases a resource nobody joined when the caller's scope closes`` () =
         let events = ResizeArray<string>()
 
-        let workflow : Flow<ClockEnvironment, string, unit> =
+        let workflow : Flow<unit, string, unit> =
             flow {
                 let! _ = Flow.forkResource (connection events "db")
                 do! eventually (fun () -> snapshot events = [ "db:acquired" ]) 400
             }
             |> Flow.scoped
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success() @>
+        test <@ Flow.runSync () workflow = Exit.Success() @>
         test <@ snapshot events = [ "db:acquired"; "db:released" ] @>

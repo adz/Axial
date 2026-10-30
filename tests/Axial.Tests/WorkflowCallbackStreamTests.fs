@@ -8,7 +8,7 @@ open Swensen.Unquote
 open Xunit
 
 module WorkflowCallbackStreamTests =
-    let private run workflow = Flow.runSync (TestSupport.clockEnv ()) workflow
+    let private run workflow = Flow.runSync () workflow
     let private disposable (release: unit -> unit) = { new IDisposable with member _.Dispose() = release () }
 
     [<Fact>]
@@ -146,7 +146,7 @@ module WorkflowCallbackStreamTests =
         use cancellation = new CancellationTokenSource()
         let source = FlowStream.fromCallback 1 (fun _ ->
             Flow.delay (fun () -> started.Set(); Flow.ok (disposable released.Set)))
-        let running = Task.Run(fun () -> Flow.runSyncWithToken (TestSupport.clockEnv ()) cancellation.Token (FlowStream.runDrain source))
+        let running = Task.Run(fun () -> Flow.runSyncWithToken () cancellation.Token (FlowStream.runDrain source))
         test <@ started.Wait(5000) @>
         cancellation.Cancel()
         test <@ released.Wait(5000) @>

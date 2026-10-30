@@ -24,7 +24,13 @@ module TortureCoverageTests =
 
     /// Members deliberately left out, each with the reason.
     let private excluded () : Map<string, string> =
-        [ "Bind.toFlow", "Compiler-facing helper used by the inline Bind adapters."
+        [ "Flow.withClock", "Runtime service override; fork/branch inheritance is covered by PlatformScopeTests (C1 torture waiver)."
+          "Flow.withRandom", "Runtime service override; fork/branch inheritance is covered by PlatformScopeTests (C1 torture waiver)."
+          "Flow.withGuid", "Runtime service override; fork/branch inheritance is covered by PlatformScopeTests (C1 torture waiver)."
+          "Flow.withLogSink", "Observation destination; fork/branch inheritance is covered by PlatformScopeTests (C1 torture waiver)."
+          "Flow.mapLogSink", "Observation decorator; scoped composition is covered by PlatformScopeTests (C1 torture waiver)."
+          "Flow.withTelemetry", "Observation slots; replacement and guarded callbacks are covered by PlatformScopeTests (C1 torture waiver)."
+          "Bind.toFlow", "Compiler-facing helper used by the inline Bind adapters."
           "Flow.fromColdTask", "Compiler-facing helper used by the inline Source adapter."
           "Flow.fromColdTaskResult", "Compiler-facing helper; also resolves nested Result overload ambiguity."
           "Deferred.fromTask", "BCL interop bridge, covered by BclInteropTests."

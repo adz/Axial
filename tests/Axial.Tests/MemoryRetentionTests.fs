@@ -22,14 +22,14 @@ module MemoryRetentionTests =
         GC.GetTotalMemory true
 
     /// One step that genuinely suspends, so each loop iteration completes asynchronously.
-    let private suspend () : Flow<ClockEnvironment, Never, unit> =
+    let private suspend () : Flow<unit, Never, unit> =
         Flow.fromTask (fun _ -> task { do! Task.Yield() })
 
     /// Returns growth in live managed memory between two iterations. The builder receives the callback to invoke
     /// after each step, while the loop is still running.
     let private retainedBetweenUnder early late
         (cancellationToken: CancellationToken)
-        (build: (int -> unit) -> Flow<ClockEnvironment, Never, unit>)
+        (build: (int -> unit) -> Flow<unit, Never, unit>)
         : int64 =
         let mutable earlyBytes = 0L
         let mutable lateBytes = 0L
@@ -38,7 +38,7 @@ module MemoryRetentionTests =
             if index = early then earlyBytes <- liveBytes ()
             elif index = late then lateBytes <- liveBytes ()
 
-        let exit = build observe |> Flow.runSyncWithToken (TestSupport.clockEnv ()) cancellationToken
+        let exit = build observe |> Flow.runSyncWithToken () cancellationToken
         test <@ exit = Exit.Success () @>
         lateBytes - earlyBytes
 
@@ -188,7 +188,7 @@ module MemoryRetentionTests =
 
     [<Fact>]
     let ``STM: an interrupted retry withdraws its wake-up`` () =
-        let workflow : Flow<ClockEnvironment, Never, int * int> =
+        let workflow : Flow<unit, Never, int * int> =
             flow {
                 let! gate = TRef.make false |> STM.atomically
                 let before = STM.pendingRetries ()
@@ -214,4 +214,4 @@ module MemoryRetentionTests =
                 return waiting, STM.pendingRetries () - before
             }
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(1, 0) @>
+        test <@ Flow.runSync () workflow = Exit.Success(1, 0) @>

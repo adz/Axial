@@ -8,6 +8,22 @@ open Xunit
 
 module PlatformScopeTests =
     let private environment () = ()
+
+    let private signallingClock (clock: IClock) (registered: Threading.SemaphoreSlim) =
+        { new IClock with
+            member _.UtcNow() = clock.UtcNow()
+            member _.Elapsed() = clock.Elapsed()
+            member _.Sleep(delay, token) =
+                let pending = clock.Sleep(delay, token)
+                registered.Release() |> ignore
+                pending }
+
+    let private awaitRegistration (registered: Threading.SemaphoreSlim) =
+        Flow.fromTask (fun token -> task {
+            let! signalled = registered.WaitAsync(TimeSpan.FromSeconds 5., token)
+            Assert.True signalled
+            return ()
+        })
     let private reads () : Flow<unit, string, DateTimeOffset * int * System.Guid> =
         flow {
             let! now = Clock.now
@@ -65,14 +81,13 @@ module PlatformScopeTests =
     [<Fact>]
     let ``explicit stepping wakes a sleeper only at its deadline`` () =
         let platform = TestPlatform.create ()
+        use registered = new Threading.SemaphoreSlim(0)
+        let notifying = signallingClock platform.Clock registered
         let mutable completed = false
         let workflow = flow {
-            let! fiber = (Flow.sleep (TimeSpan.FromSeconds 5.) |> Flow.map (fun () -> completed <- true)) |> Flow.fork
-            // Await the registration fact, not elapsed wall time.
-            do! Flow.fromTask (fun _ -> task {
-                Assert.True(System.Threading.SpinWait.SpinUntil((fun () -> platform.Clock.Sleepers = 1), 5000))
-                return ()
-            })
+            let! fiber = (Flow.sleep (TimeSpan.FromSeconds 5.) |> Flow.map (fun () -> completed <- true))
+                         |> Flow.fork |> Flow.withClock notifying
+            do! awaitRegistration registered
             do! TestClock.advance (TimeSpan.FromSeconds 4.)
             do! Flow.delay (fun () -> Assert.False completed; Flow.ok ())
             do! TestClock.advance (TimeSpan.FromSeconds 1.)
@@ -121,13 +136,28 @@ module PlatformScopeTests =
         Assert.Equal("abc", entries[0].Annotations["trace_id"])
         Assert.Contains(("request", box "scoped"), entries[0].Locals)
 
-    [<Fact>]
-    let ``log sink overrides reach forks and restore outer scope`` () =
+    [<Theory>]
+    [<InlineData("plain")>]
+    [<InlineData("race")>]
+    [<InlineData("zipPar")>]
+    [<InlineData("disconnect")>]
+    [<InlineData("runOn")>]
+    let ``log sink overrides reach forks and restore outer scope`` (branch: string) =
         let outer = ResizeArray<Axial.LogEntry>()
         let inner = ResizeArray<Axial.LogEntry>()
-        let workflow = flow {
-            let! child = Log.info "inner" |> Flow.fork |> Flow.withLogSink (LogSink.fromFunction inner.Add)
+        let forked = flow {
+            let! child = Log.info "inner" |> Flow.fork
             do! Fiber.join child
+        }
+        let descendant =
+            match branch with
+            | "race" -> Flow.race forked Flow.never
+            | "zipPar" -> Flow.zipPar forked (Flow.ok ()) |> Flow.map fst
+            | "disconnect" -> Flow.disconnect forked
+            | "runOn" -> Flow.runOn RunOn.ThreadPool forked
+            | _ -> forked
+        let workflow = flow {
+            do! descendant |> Flow.withLogSink (LogSink.fromFunction inner.Add)
             do! Log.info "outer"
         }
         Assert.Equal(Exit.Success (), workflow |> Flow.withLogSink (LogSink.fromFunction outer.Add) |> Flow.runSync (environment ()))
@@ -162,12 +192,39 @@ module PlatformScopeTests =
                 member _.Annotate(name, _) = entries.Add name
                 member _.Attribute attribute = entries.Add attribute.Name }
         let workflow = flow {
-            do! Flow.ok () |> Flow.annotate "inner" "yes" |> Flow.withTelemetry (sink inner)
+            do! Flow.ok () |> Flow.annotate "inner" "yes"
+                           |> Axial.Telemetry.Context.withEndUserId "inner-user"
+                           |> Flow.withTelemetry (sink inner)
             do! Flow.ok () |> Flow.annotate "outer" "yes"
+                           |> Axial.Telemetry.Context.withEndUserId "outer-user"
         }
         Assert.Equal(Exit.Success (), workflow |> Flow.withTelemetry (sink outer) |> Flow.runSync (environment ()))
-        Assert.Equal<string list>(["inner"], List.ofSeq inner)
-        Assert.Equal<string list>(["outer"], List.ofSeq outer)
+        Assert.Equal<string list>(["enduser.id"; "inner"], List.ofSeq inner)
+        Assert.Equal<string list>(["enduser.id"; "outer"], List.ofSeq outer)
+
+    [<Fact>]
+    let ``tee guards each destination independently including a throwing gate`` () =
+        let entries = ResizeArray<Axial.LogEntry>()
+        let gate = { new ILogSink with
+                        member _.IsEnabled _ = failwith "gate"
+                        member _.Write _ = failwith "unreachable" }
+        let write = LogSink.fromFunction (fun _ -> failwith "write")
+        let sink = LogSink.tee gate (LogSink.tee write (LogSink.fromFunction entries.Add))
+        Assert.Equal(Exit.Success (), Log.info "survived" |> Flow.withLogSink sink |> Flow.runSync ())
+        Assert.Equal("survived", (Assert.Single entries).Message)
+
+    [<Fact>]
+    let ``sink decorators compose without changing the outer destination`` () =
+        let entries = ResizeArray<Axial.LogEntry>()
+        let workflow = flow {
+            do! Log.debug "disabled"
+            do! Log.info "drop"
+            do! Log.info "keep" |> Flow.mapLogSink (LogSink.map (fun entry -> { entry with Message = "mapped:" + entry.Message }))
+            do! Log.info "outside"
+        }
+        let sink = LogSink.fromFunction entries.Add |> LogSink.filter (fun entry -> entry.Message <> "drop") |> LogSink.minLevel LogLevel.Information
+        Assert.Equal(Exit.Success (), workflow |> Flow.withLogSink sink |> Flow.runSync ())
+        Assert.Equal<string list>(["mapped:keep"; "outside"], entries |> Seq.map _.Message |> Seq.toList)
 
     [<Fact>]
     let ``disabled logging execution allocates no entries or execution outcomes`` () =
@@ -196,10 +253,39 @@ module PlatformScopeTests =
         Assert.Equal(Exit.Success (), workflow |> Flow.runTest ())
 
     [<Fact>]
+    let ``advanceAll explicitly drains already registered deadlines`` () =
+        let platform = TestPlatform.create ()
+        use registered = new Threading.SemaphoreSlim(0)
+        let notifying = signallingClock platform.Clock registered
+        let workflow = flow {
+            let! first = Flow.sleep (TimeSpan.FromSeconds 5.) |> Flow.fork |> Flow.withClock notifying
+            let! second = Flow.sleep (TimeSpan.FromSeconds 7.) |> Flow.fork |> Flow.withClock notifying
+            do! awaitRegistration registered
+            do! awaitRegistration registered
+            do! TestClock.advanceAll
+            do! Fiber.join first
+            do! Fiber.join second
+            return! Clock.elapsed
+        }
+        Assert.Equal(Exit.Success(TimeSpan.FromSeconds 7.), workflow |> Flow.runTestWith platform ())
+
+    [<Fact>]
+    let ``TestClock rejects a live clock with a clear defect`` () =
+        match TestClock.advance (TimeSpan.FromSeconds 1.) |> Flow.runSync () with
+        | Exit.Failure(Cause.Die error) -> Assert.Contains("TestClock requires a ManualClock", error.Message)
+        | other -> failwithf "Expected defect, got %A" other
+
+    [<Fact>]
     let ``test platform trace identifies service reads and fibers`` () =
         let platform = TestPlatform.create ()
         platform.trace <- true
-        reads () |> Flow.runTestWith platform (environment ()) |> ignore
+        let workflow = flow {
+            let! _ = reads ()
+            let! fiber = Flow.fork (reads ())
+            return! Fiber.join fiber
+        }
+        workflow |> Flow.runTestWith platform (environment ()) |> ignore
+        Assert.True(platform.Reads |> Seq.map snd |> Seq.distinct |> Seq.length |> fun count -> count >= 2)
         Assert.Contains(platform.Reads, fun (service, _) -> service = "Clock.UtcNow")
         Assert.Contains(platform.Reads, fun (service, _) -> service = "Random.Next")
         Assert.Contains(platform.Reads, fun (service, _) -> service = "Guid.NewGuid")

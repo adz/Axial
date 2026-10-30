@@ -20,7 +20,7 @@ module TortureTests =
             let violated =
                 // The watchdog reports a stalled round with its live fiber tree instead of hanging the test run.
                 let said = System.Collections.Concurrent.ConcurrentQueue<string>()
-                match Program.watchRound said.Enqueue scenario seed |> Flow.runSync (TestSupport.clockEnv ()) with
+                match Program.watchRound said.Enqueue scenario seed |> Flow.runSync () with
                 | Exit.Success(Some checks) ->
                     let violated = checks |> List.filter (fun check -> not check.Held) |> List.map _.Invariant
                     if List.isEmpty violated then [] else violated @ List.ofSeq said

@@ -33,7 +33,7 @@ module WorkflowResourceTests =
                 return resource.Name
             }
 
-        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
+        let result = Flow.runSync () workflow
 
         test <@ result = Exit.Success "resource" @>
         test <@ List.ofSeq events = [ "resource:used"; "resource:disposed" ] @>
@@ -47,7 +47,7 @@ module WorkflowResourceTests =
                 (Flow.succeed 7)
                 (fun _ -> Flow.delay (fun () -> releaseCount.Value <- releaseCount.Value + 1; Flow.succeed ()))
                 (fun _ -> Flow.fail "boom")
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ acquireReleaseResult = Exit.Failure (Cause.Fail "boom") @>
         test <@ releaseCount.Value = 1 @>
@@ -61,7 +61,7 @@ module WorkflowResourceTests =
                 (Flow.succeed 7)
                 (fun _ -> Flow.delay (fun () -> releaseCount.Value <- releaseCount.Value + 1; Flow.succeed ()))
                 (fun _ -> Flow.die (InvalidOperationException "boom"))
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         match acquireReleaseResult with
         | Exit.Failure (Cause.Die error) -> test <@ error.Message = "boom" @>
@@ -78,7 +78,7 @@ module WorkflowResourceTests =
                 (Flow.succeed 7)
                 (fun _ -> Flow.delay (fun () -> releaseCount.Value <- releaseCount.Value + 1; Flow.succeed ()))
                 (fun _ -> interrupted)
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ acquireReleaseResult = Exit.Failure Cause.Interrupt @>
         test <@ releaseCount.Value = 1 @>
@@ -95,7 +95,7 @@ module WorkflowResourceTests =
                         releaseCount.Value <- releaseCount.Value + 1
                         Flow.die (InvalidOperationException "release failed")))
                 (fun _ -> Flow.succeed "ok")
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         match acquireReleaseResult with
         | Exit.Failure (Cause.Die error) -> test <@ error.Message = "release failed" @>
@@ -108,7 +108,7 @@ module WorkflowResourceTests =
         use cts = new CancellationTokenSource()
         let events = ResizeArray<string>()
 
-        let workflow : Flow<ClockEnvironment, string, unit> =
+        let workflow : Flow<unit, string, unit> =
             flow {
                 do!
                     Flow.scopeFinalizer (
@@ -125,7 +125,7 @@ module WorkflowResourceTests =
             }
 
         cts.CancelAfter(TimeSpan.FromMilliseconds 50.0)
-        let result = Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token workflow
+        let result = Flow.runSyncWithToken () cts.Token workflow
 
         test <@ result = Exit.Failure Cause.Interrupt @>
         test <@ List.ofSeq events = [ "acquired"; "released:False" ] @>
@@ -138,7 +138,7 @@ module WorkflowResourceTests =
         let completed = ref false
         let tokenCancelled = ref true
 
-        let workflow : Flow<ClockEnvironment, string, unit> =
+        let workflow : Flow<unit, string, unit> =
             flow {
                 do! Flow.scopeFinalizer (flow {
                     entered.TrySetResult () |> ignore
@@ -149,7 +149,7 @@ module WorkflowResourceTests =
                 })
             }
 
-        let running = Task.Run(fun () -> Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token workflow)
+        let running = Task.Run(fun () -> Flow.runSyncWithToken () cts.Token workflow)
         Assert.True(entered.Task.Wait(TimeSpan.FromSeconds 10.0))
         cts.Cancel()
         gate.TrySetResult () |> ignore
@@ -164,7 +164,7 @@ module WorkflowResourceTests =
         let gate = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let events = ResizeArray<string>()
 
-        let workflow : Flow<ClockEnvironment, string, unit> =
+        let workflow : Flow<unit, string, unit> =
             flow {
                 do! Flow.scopeFinalizer (flow {
                     let! _ = Flow.scopeAcquireRelease (Flow.succeed "inner") (fun _ ->
@@ -175,7 +175,7 @@ module WorkflowResourceTests =
                 })
             }
 
-        let running = Task.Run(fun () -> Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token workflow)
+        let running = Task.Run(fun () -> Flow.runSyncWithToken () cts.Token workflow)
         Assert.True(entered.Task.Wait(TimeSpan.FromSeconds 10.0))
         cts.Cancel()
         gate.TrySetResult () |> ignore
@@ -187,38 +187,38 @@ module WorkflowResourceTests =
         let events = ResizeArray<string>()
         let defect = InvalidOperationException "middle"
         let release name = Flow.delay (fun () -> events.Add name; Flow.succeed ())
-        let workflow : Flow<ClockEnvironment, string, unit> =
+        let workflow : Flow<unit, string, unit> =
             flow {
                 do! Flow.scopeFinalizer (release "first")
                 do! Flow.scopeFinalizer (Flow.delay (fun () -> events.Add "middle"; Flow.die defect))
                 do! Flow.scopeFinalizer (release "third")
             }
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Failure(Cause.Die defect) @>
+        test <@ Flow.runSync () workflow = Exit.Failure(Cause.Die defect) @>
         test <@ List.ofSeq events = [ "third"; "middle"; "first" ] @>
 
     [<Fact>]
     let ``Synchronous release construction defect does not skip other finalizers`` () =
         let events = ResizeArray<string>()
         let defect = InvalidOperationException "construct release"
-        let workflow : Flow<ClockEnvironment, string, unit> =
+        let workflow : Flow<unit, string, unit> =
             flow {
                 do! Flow.scopeFinalizer (Flow.delay (fun () -> events.Add "first"; Flow.succeed ()))
                 let! _ = Flow.scopeAcquireRelease (Flow.succeed "resource") (fun _ -> raise defect)
                 do! Flow.scopeFinalizer (Flow.delay (fun () -> events.Add "last"; Flow.succeed ()))
             }
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Failure(Cause.Die defect) @>
+        test <@ Flow.runSync () workflow = Exit.Failure(Cause.Die defect) @>
         test <@ List.ofSeq events = [ "last"; "first" ] @>
 
     [<Fact>]
     let ``Nested scope defect followed by parent release defect preserves ordered cause`` () =
         let inner = InvalidOperationException "inner"
         let outer = InvalidOperationException "outer"
-        let workflow : Flow<ClockEnvironment, string, unit> =
+        let workflow : Flow<unit, string, unit> =
             flow {
                 do! Flow.scopeFinalizer (Flow.die outer)
                 do! Flow.scoped (Flow.scopeFinalizer (Flow.die inner))
             }
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Failure(Cause.Then(Cause.Die inner, Cause.Die outer)) @>
+        test <@ Flow.runSync () workflow = Exit.Failure(Cause.Then(Cause.Die inner, Cause.Die outer)) @>
 
     [<Fact>]
     let ``A release sees the environment captured at acquisition`` () =
@@ -246,14 +246,14 @@ module WorkflowResourceTests =
         let events = ResizeArray<string>()
         let releaseDefect = InvalidOperationException "release threw"
 
-        let workflow : Flow<ClockEnvironment, string, unit> =
+        let workflow : Flow<unit, string, unit> =
             flow {
                 do! Flow.scopeFinalizer (Flow.delay (fun () -> events.Add "first released"; Flow.succeed ()))
                 do! Flow.scopeFinalizer (Flow.delay (fun () -> raise releaseDefect))
             }
             |> Flow.scoped
 
-        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
+        let result = Flow.runSync () workflow
 
         test <@ result = Exit.Failure(Cause.Die releaseDefect) @>
         test <@ List.ofSeq events = [ "first released" ] @>
@@ -262,7 +262,7 @@ module WorkflowResourceTests =
     let ``A release closes the resources it acquires itself`` () =
         let events = ResizeArray<string>()
 
-        let workflow : Flow<ClockEnvironment, string, unit> =
+        let workflow : Flow<unit, string, unit> =
             Flow.scopeFinalizer (
                 flow {
                     do! Flow.scopeFinalizer (Flow.delay (fun () -> events.Add "inner released"; Flow.succeed ()))
@@ -271,7 +271,7 @@ module WorkflowResourceTests =
             )
             |> Flow.scoped
 
-        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
+        let result = Flow.runSync () workflow
 
         test <@ result = Exit.Success () @>
         test <@ List.ofSeq events = [ "outer released"; "inner released" ] @>
@@ -292,7 +292,7 @@ module WorkflowResourceTests =
                     events.Add("used")
                 })
 
-        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
+        let result = Flow.runSync () workflow
 
         test <@ result = Exit.Success () @>
         test <@ List.ofSeq events = [ "used"; "finalized"; "disposable:disposed" ] @>
@@ -319,7 +319,7 @@ module WorkflowResourceTests =
                 return resource
             }
 
-        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
+        let result = Flow.runSync () workflow
 
         test <@ result = Exit.Success "resource" @>
         test <@ List.ofSeq events = [ "resource:after-acquire"; "resource:subflow"; "resource:after-subflow"; "resource:released" ] @>
@@ -335,7 +335,7 @@ module WorkflowResourceTests =
                 do! Flow.scopeFinalizer (Flow.delay (fun () -> events.Add "second"; Flow.succeed ()))
             }
 
-        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
+        let result = Flow.runSync () workflow
 
         test <@ result = Exit.Success () @>
         test <@ List.ofSeq events = [ "second"; "first" ] @>
@@ -359,7 +359,7 @@ module WorkflowResourceTests =
         let result =
             workflow
             |> Layer.provide layer
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success "service" @>
         test <@ List.ofSeq events = [ "service:used"; "service:released" ] @>
@@ -379,7 +379,7 @@ module WorkflowResourceTests =
         let result =
             Flow.env<string * string, string>
             |> Layer.provide (Layer.merge successful failed)
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Failure (Cause.Fail "failed") @>
         test <@ List.ofSeq events = [ "service:released" ] @>
@@ -470,7 +470,7 @@ module WorkflowResourceTests =
         let result =
             workflow
             |> Layer.provide (Layer.pool 3 Layer.succeed)
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success [ 0; 1; 2; 0; 1 ] @>
 
@@ -486,7 +486,7 @@ module WorkflowResourceTests =
         let result =
             (Flow.env<Pool<int>, string> |> Flow.map (fun pool -> pool.Count))
             |> Layer.provide layer
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success 3 @>
         test <@ List.ofSeq events = [ 0; 1; 2 ] @>
@@ -507,7 +507,7 @@ module WorkflowResourceTests =
         let result =
             Flow.env<Pool<int>, string>
             |> Layer.provide layer
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Failure (Cause.Fail "boom") @>
         test <@ List.ofSeq events = [ "1:released"; "0:released" ] @>
@@ -517,7 +517,7 @@ module WorkflowResourceTests =
         raises<ArgumentException> <@ Layer.pool 0 Layer.succeed @>
 
     // Reads how many finalizers the running flow's scope still holds.
-    let private registeredInCurrentScope () : Flow<ClockEnvironment, 'error, int> =
+    let private registeredInCurrentScope () : Flow<unit, 'error, int> =
         Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().Scope.RegisteredCount))
 
     [<Fact>]
@@ -531,7 +531,7 @@ module WorkflowResourceTests =
             }
             |> Flow.scoped
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 0 @>
+        test <@ Flow.runSync () workflow = Exit.Success 0 @>
 
     [<Fact>]
     let ``A settled fiber no longer occupies the scope that forked it`` () =
@@ -545,7 +545,7 @@ module WorkflowResourceTests =
                     let! _ = Fiber.interrupt fiber
                     ()
 
-                let! gate = Deferred.make<ClockEnvironment, string, unit> ()
+                let! gate = Deferred.make<unit, string, unit> ()
                 let! running = Flow.fork (Deferred.await gate)
                 let! whileRunning = registeredInCurrentScope ()
                 let! _ = Fiber.interrupt running
@@ -555,7 +555,7 @@ module WorkflowResourceTests =
             |> Flow.scoped
 
         // Supervision is the running fiber's only parent registration; settling releases it.
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(1, 0) @>
+        test <@ Flow.runSync () workflow = Exit.Success(1, 0) @>
 
     [<Fact>]
     let ``A forked fiber releases what it acquired when it settles, not when its parent scope closes`` () =
@@ -576,14 +576,14 @@ module WorkflowResourceTests =
             }
             |> Flow.scoped
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success [ "released" ] @>
+        test <@ Flow.runSync () workflow = Exit.Success [ "released" ] @>
 
     [<Fact>]
     let ``A forked consumer's hub subscription ends with the consumer`` () =
-        let workflow : Flow<ClockEnvironment, Never, int * PublishResult> =
+        let workflow : Flow<unit, Never, int * PublishResult> =
             flow {
                 let! (hub: Hub<int>) = Hub.make ()
-                let! subscribed = Deferred.make<ClockEnvironment, Never, unit> ()
+                let! subscribed = Deferred.make<unit, Never, unit> ()
 
                 let! consumer =
                     flow {
@@ -603,11 +603,11 @@ module WorkflowResourceTests =
                 return remaining, later
             }
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(0, PublishResult.empty) @>
+        test <@ Flow.runSync () workflow = Exit.Success(0, PublishResult.empty) @>
 
     [<Fact>]
     let ``forkGraceful lets a consumer drain its queue when the scope closes`` () =
-        let workflow : Flow<ClockEnvironment, Never, int> =
+        let workflow : Flow<unit, Never, int> =
             flow {
                 let flushed = ref 0
 
@@ -629,11 +629,11 @@ module WorkflowResourceTests =
                 return flushed.Value
             }
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 50 @>
+        test <@ Flow.runSync () workflow = Exit.Success 50 @>
 
     [<Fact>]
     let ``forkGraceful interrupts a fiber that ignores its stop after the grace period`` () =
-        let workflow : Flow<ClockEnvironment, Never, bool * bool> =
+        let workflow : Flow<unit, Never, bool * bool> =
             flow {
                 let interrupted = ref false
                 let started = Diagnostics.Stopwatch.StartNew()
@@ -652,14 +652,14 @@ module WorkflowResourceTests =
                 return interrupted.Value, started.Elapsed < TimeSpan.FromSeconds 30.0
             }
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(true, true) @>
+        test <@ Flow.runSync () workflow = Exit.Success(true, true) @>
 
     [<Fact>]
     let ``forkGraceful drains even when the forking flow is interrupted`` () =
-        let workflow : Flow<ClockEnvironment, Never, int> =
+        let workflow : Flow<unit, Never, int> =
             flow {
                 let flushed = ref 0
-                let! ready = Deferred.make<ClockEnvironment, Never, unit> ()
+                let! ready = Deferred.make<unit, Never, unit> ()
 
                 let! owner =
                     flow {
@@ -683,24 +683,24 @@ module WorkflowResourceTests =
                 return flushed.Value
             }
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 20 @>
+        test <@ Flow.runSync () workflow = Exit.Success 20 @>
 
     [<Fact>]
     let ``ensuring runs its finalizer after every kind of outcome and keeps the outcome`` () =
         let runs = ref 0
-        let finalizer : Flow<ClockEnvironment, Never, unit> = Flow.delay (fun () -> runs.Value <- runs.Value + 1; Flow.ok ())
+        let finalizer : Flow<unit, Never, unit> = Flow.delay (fun () -> runs.Value <- runs.Value + 1; Flow.ok ())
         let boom = InvalidOperationException "boom"
 
-        let succeeded = Flow.ok 1 |> Flow.ensuring finalizer |> Flow.runSync (TestSupport.clockEnv ())
-        let failed : Exit<int, string> = Flow.fail "expected" |> Flow.ensuring finalizer |> Flow.runSync (TestSupport.clockEnv ())
-        let died : Exit<int, string> = Flow.die boom |> Flow.ensuring finalizer |> Flow.runSync (TestSupport.clockEnv ())
+        let succeeded = Flow.ok 1 |> Flow.ensuring finalizer |> Flow.runSync ()
+        let failed : Exit<int, string> = Flow.fail "expected" |> Flow.ensuring finalizer |> Flow.runSync ()
+        let died : Exit<int, string> = Flow.die boom |> Flow.ensuring finalizer |> Flow.runSync ()
 
         let interrupted : Exit<unit, string> =
             flow {
-                let! fiber = Flow.never<ClockEnvironment, string, unit> |> Flow.ensuring finalizer |> Flow.fork
+                let! fiber = Flow.never<unit, string, unit> |> Flow.ensuring finalizer |> Flow.fork
                 return! Fiber.interrupt fiber
             }
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
             |> Exit.bind id
 
         test <@ succeeded = Exit.Success 1 && failed = Exit.Failure(Cause.Fail "expected") @>
@@ -712,17 +712,17 @@ module WorkflowResourceTests =
     let ``onExit sees the outcome, and a defect in the handler is added to it`` () =
         let seen = ResizeArray<string>()
 
-        let record (exit: Exit<int, string>) : Flow<ClockEnvironment, Never, unit> =
+        let record (exit: Exit<int, string>) : Flow<unit, Never, unit> =
             Flow.delay (fun () ->
                 seen.Add(match exit with Exit.Success value -> $"success {value}" | Exit.Failure _ -> "failure")
                 Flow.ok ())
 
-        let succeeded = Flow.ok 2 |> Flow.onExit record |> Flow.runSync (TestSupport.clockEnv ())
-        let failed = Flow.fail "expected" |> Flow.onExit record |> Flow.runSync (TestSupport.clockEnv ())
+        let succeeded = Flow.ok 2 |> Flow.onExit record |> Flow.runSync ()
+        let failed = Flow.fail "expected" |> Flow.onExit record |> Flow.runSync ()
         let broken = InvalidOperationException "cleanup failed"
-        let brokenHandler : Flow<ClockEnvironment, Never, unit> = Flow.die broken
-        let successThenDefect : Exit<int, string> = Flow.ok 3 |> Flow.ensuring brokenHandler |> Flow.runSync (TestSupport.clockEnv ())
-        let failureThenDefect : Exit<int, string> = Flow.fail "expected" |> Flow.ensuring brokenHandler |> Flow.runSync (TestSupport.clockEnv ())
+        let brokenHandler : Flow<unit, Never, unit> = Flow.die broken
+        let successThenDefect : Exit<int, string> = Flow.ok 3 |> Flow.ensuring brokenHandler |> Flow.runSync ()
+        let failureThenDefect : Exit<int, string> = Flow.fail "expected" |> Flow.ensuring brokenHandler |> Flow.runSync ()
 
         test <@ succeeded = Exit.Success 2 && failed = Exit.Failure(Cause.Fail "expected") @>
         test <@ List.ofSeq seen = [ "success 2"; "failure" ] @>
@@ -734,21 +734,21 @@ module WorkflowResourceTests =
         let cleaned = ref 0
 
         // The handler itself waits; it must still finish, because it runs without the interrupted flow's cancellation.
-        let cleanup : Flow<ClockEnvironment, Never, unit> =
+        let cleanup : Flow<unit, Never, unit> =
             flow {
                 do! Flow.sleep (TimeSpan.FromMilliseconds 20.0)
                 cleaned.Value <- cleaned.Value + 1
             }
 
-        let completed = Flow.ok "done" |> Flow.onInterrupt cleanup |> Flow.runSync (TestSupport.clockEnv ())
-        let failed : Exit<string, string> = Flow.fail "expected" |> Flow.onInterrupt cleanup |> Flow.runSync (TestSupport.clockEnv ())
+        let completed = Flow.ok "done" |> Flow.onInterrupt cleanup |> Flow.runSync ()
+        let failed : Exit<string, string> = Flow.fail "expected" |> Flow.onInterrupt cleanup |> Flow.runSync ()
 
         let interrupted =
             flow {
-                let! fiber = Flow.never<ClockEnvironment, Never, unit> |> Flow.onInterrupt cleanup |> Flow.fork
+                let! fiber = Flow.never<unit, Never, unit> |> Flow.onInterrupt cleanup |> Flow.fork
                 return! Fiber.interrupt fiber
             }
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ completed = Exit.Success "done" && failed = Exit.Failure(Cause.Fail "expected") @>
         test <@ (match interrupted with Exit.Success(Exit.Failure cause) -> Cause.isInterrupted cause | _ -> false) @>

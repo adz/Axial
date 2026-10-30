@@ -11,9 +11,7 @@ open Fable.Core
 type Check = { Label: string; Passed: bool; Detail: string }
 
 /// A named test: a flow that returns its checks. A typed failure, defect, or interruption fails the test.
-type Test = { Name: string; Body: Flow<Axial.ClockEnvironment, Never, Check list> }
-
-let clockEnvironment = ClockEnvironment(Clock.live)
+type Test = { Name: string; Body: Flow<unit, Never, Check list> }
 
 let equal (label: string) (expected: 'value) (actual: 'value) : Check =
     let passed = (actual = expected)
@@ -30,7 +28,7 @@ let isTrue (label: string) (condition: bool) : Check =
       Passed = condition
       Detail = "expected true" }
 
-let test (name: string) (body: Flow<Axial.ClockEnvironment, Never, Check list>) : Test = { Name = name; Body = body }
+let test (name: string) (body: Flow<unit, Never, Check list>) : Test = { Name = name; Body = body }
 
 /// Runs a flow and returns its outcome as a value, so a test can check failures and interruptions.
 let exitOf (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error>> =
@@ -72,7 +70,7 @@ let run (allTests: Test list) : unit =
 
         for current in tests do
             let watchdog = startWatchdog current.Name
-            let! exit = current.Body |> Flow.timeoutToOk testTimeout timedOut |> Flow.toAsync clockEnvironment
+            let! exit = current.Body |> Flow.timeoutToOk testTimeout timedOut |> Flow.toAsync ()
 
             stopWatchdog watchdog
 

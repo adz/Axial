@@ -11,17 +11,11 @@ let private ms (value: float) = TimeSpan.FromMilliseconds value
 let private elapsedSince started = nowMilliseconds () - started
 
 let tests : Test list =
-    [ test "BaseRuntime record dispatches same-named services" (flow {
+    [ test "scoped platform values remain independent of application authority" (flow {
           let logged = ResizeArray<string>()
-          let runtime =
-              { BaseRuntime.liveValue with
-                  Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))
-                  Log = Log.fromSink (fun _ message -> logged.Add message)
-                  Random = Random.fromValue 7
-                  Guid = Guid.fromValue global.System.Guid.Empty
-                  EnvironmentVariables = EnvironmentVariables.fromPairs [ "REGION", "eu" ] }
-
-          let services : Flow<BaseRuntime, Never, int * int * global.System.Guid * string option> =
+          let variables = EnvironmentVariables.fromPairs ["REGION", "eu"]
+          let environment = { new IHasEnvironmentVariables with member _.EnvironmentVariables = variables }
+          let services : Flow<IHasEnvironmentVariables, Never, int * int * global.System.Guid * string option> =
               flow {
                   let! now = Clock.now
                   let! number = Random.next
@@ -31,7 +25,12 @@ let tests : Test list =
                   return now.Year, number, id, region
               }
 
-          let! actual = services |> Flow.localEnv (fun (_: ClockEnvironment) -> runtime)
+          let! actual = services
+                        |> Flow.withClock (Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)))
+                        |> Flow.withLogSink (Log.fromSink (fun entry -> logged.Add entry.Message))
+                        |> Flow.withRandom (Random.fromValue 7)
+                        |> Flow.withGuid (Guid.fromValue global.System.Guid.Empty)
+                        |> Flow.localEnv (fun (_: unit) -> environment)
           return
               [ equal "services" (2026, 7, global.System.Guid.Empty, Some "eu") actual
                 equal "log" [ "seen" ] (List.ofSeq logged) ]

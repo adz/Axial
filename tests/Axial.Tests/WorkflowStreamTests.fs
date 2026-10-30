@@ -20,7 +20,7 @@ module WorkflowStreamTests =
             |> FlowStream.map (fun v -> v * 2)
             |> FlowStream.runForEach (fun v -> sum <- sum + v)
 
-        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
+        let result = Flow.runSync () workflow
         test <@ result = Exit.Success () @>
         test <@ sum = 30 @>
 
@@ -33,7 +33,7 @@ module WorkflowStreamTests =
             |> FlowStream.skip 1
             |> FlowStream.take 2
             |> FlowStream.runCollect
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success [ 40; 60 ] @>
 
@@ -45,7 +45,7 @@ module WorkflowStreamTests =
             |> FlowStream.mapFlow (fun value -> Flow.ok (value * 2))
             |> FlowStream.tapFlow (fun value -> flow { seen.Add value })
 
-        let result = stream |> FlowStream.runFold (+) 0 |> Flow.runSync (TestSupport.clockEnv ())
+        let result = stream |> FlowStream.runFold (+) 0 |> Flow.runSync ()
         test <@ result = Exit.Success 12 @>
         test <@ seen |> Seq.toList = [ 2; 4; 6 ] @>
 
@@ -55,7 +55,7 @@ module WorkflowStreamTests =
             FlowStream.fromSeq [ 1..7 ]
             |> FlowStream.chunkBySize 3
             |> FlowStream.runCollect
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success [ [ 1; 2; 3 ]; [ 4; 5; 6 ]; [ 7 ] ] @>
         raises<ArgumentException> <@ FlowStream.fromSeq [ 1 ] |> FlowStream.chunkBySize 0 |> ignore @>
@@ -85,7 +85,7 @@ module WorkflowStreamTests =
             |> FlowStream.mapFlow (List.map mapper >> Flow.sequencePar)
             |> FlowStream.collect FlowStream.fromSeq
             |> FlowStream.runCollect
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success [ for value in 1..12 -> value * 10 ] @>
         test <@ maximum = 3 @>
@@ -106,7 +106,7 @@ module WorkflowStreamTests =
             |> FlowStream.mapFlow (List.map mapper >> Flow.sequencePar)
             |> FlowStream.collect FlowStream.fromSeq
             |> FlowStream.runCollect
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Failure(Cause.Fail "failed") @>
         test <@ started |> Seq.forall (fun value -> value <= 3) @>
@@ -136,7 +136,7 @@ module WorkflowStreamTests =
             FlowStream.fromSeq [ 1..12 ]
             |> FlowStream.mapFlowPar (Parallelism.bounded 3) mapper
             |> FlowStream.runCollect
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         match result with
         | Exit.Success values -> test <@ List.sort values = [ for value in 1..12 -> value * 10 ] @>
@@ -163,7 +163,7 @@ module WorkflowStreamTests =
             FlowStream.fromSeq [ 1; 2 ]
             |> FlowStream.mapFlowPar (Parallelism.bounded 2) mapper
             |> FlowStream.runCollect
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Failure(Cause.Fail "failed") @>
         test <@ active = 0 @>
@@ -181,7 +181,7 @@ module WorkflowStreamTests =
                 do! resource |> FlowStream.fromFlow |> FlowStream.runDrain
                 return released
             }
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success true @>
 
@@ -205,7 +205,7 @@ module WorkflowStreamTests =
             |> FlowStream.mapFlowPar (Parallelism.bounded 4) mapper
             |> FlowStream.take 1
             |> FlowStream.runCollect
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success [ 1 ] @>
         test <@ active = 0 @>
@@ -221,12 +221,12 @@ module WorkflowStreamTests =
             expanded
             |> FlowStream.zip (FlowStream.fromSeq [ "a"; "b"; "c"; "d"; "e"; "f" ])
             |> FlowStream.runCollect
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success [ (1, "a"); (10, "b"); (2, "c"); (20, "d"); (3, "e"); (30, "f") ] @>
 
     // Emits `values`, waiting `gap` before each one after the first.
-    let private timed (gaps: (int * int) list) : FlowStream<ClockEnvironment, string, int> =
+    let private timed (gaps: (int * int) list) : FlowStream<unit, string, int> =
         FlowStream.unfoldFlow
             (fun remaining ->
                 flow {
@@ -240,7 +240,7 @@ module WorkflowStreamTests =
 
     [<Fact>]
     let ``fromHub subscribes for the life of the stream`` () =
-        let workflow : Flow<ClockEnvironment, Never, int list * int> =
+        let workflow : Flow<unit, Never, int list * int> =
             flow {
                 let! (hub: Hub<int>) = Hub.make ()
 
@@ -260,7 +260,7 @@ module WorkflowStreamTests =
                 return values, remaining
             }
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success([ 1; 2 ], 0) @>
+        test <@ Flow.runSync () workflow = Exit.Success([ 1; 2 ], 0) @>
 
     [<Fact>]
     let ``fromSchedule ticks on the fixed-rate grid`` () =
@@ -275,13 +275,13 @@ module WorkflowStreamTests =
                     |> FlowStream.mapFlow (fun tick -> runtimeNow () |> Flow.map (fun now -> tick, (now - started).TotalMilliseconds))
                     |> FlowStream.runCollect
             }
-            |> runOnManualTime
+            |> runWithSteps (serialSteps (List.replicate 4 (TimeSpan.FromMilliseconds 50.)))
 
         test <@ ticks = Exit.Success [ 0, 50.0; 1, 100.0; 2, 150.0; 3, 200.0 ] @>
 
     [<Fact>]
     let ``runIntoQueue and runIntoHub feed every value in order`` () =
-        let workflow : Flow<ClockEnvironment, Never, int list * int list> =
+        let workflow : Flow<unit, Never, int list * int list> =
             flow {
                 let! (queue: Queue<int>) = Queue.bounded 2
                 let! consumer = queue |> FlowStream.fromDequeue |> FlowStream.runCollect |> Flow.fork
@@ -296,15 +296,15 @@ module WorkflowStreamTests =
                 return fromQueue, fromHub
             }
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success([ 1..10 ], [ 1..5 ]) @>
+        test <@ Flow.runSync () workflow = Exit.Success([ 1..10 ], [ 1..5 ]) @>
 
     [<Fact>]
     let ``buffer keeps order, never drops the end, and delivers a failure after buffered values`` () =
-        let lossless = FlowStream.fromSeq [ 1..200 ] |> FlowStream.buffer (QueueStrategy.BackPressure 2) |> FlowStream.runCollect |> Flow.runSync (TestSupport.clockEnv ())
+        let lossless = FlowStream.fromSeq [ 1..200 ] |> FlowStream.buffer (QueueStrategy.BackPressure 2) |> FlowStream.runCollect |> Flow.runSync ()
         test <@ lossless = Exit.Success [ 1..200 ] @>
 
         // A sliding buffer may skip values, but it always keeps the newest one, and the end still arrives.
-        match FlowStream.fromSeq [ 1..1000 ] |> FlowStream.buffer (QueueStrategy.Sliding 1) |> FlowStream.runCollect |> Flow.runSync (TestSupport.clockEnv ()) with
+        match FlowStream.fromSeq [ 1..1000 ] |> FlowStream.buffer (QueueStrategy.Sliding 1) |> FlowStream.runCollect |> Flow.runSync () with
         | Exit.Success values ->
             test <@ List.last values = 1000 && values = List.sort values && values = List.distinct values @>
         | other -> failwith $"Expected values, got {other}"
@@ -316,17 +316,19 @@ module WorkflowStreamTests =
             |> FlowStream.append (FlowStream.fromFlow (Flow.fail "boom"))
             |> FlowStream.buffer (QueueStrategy.BackPressure 4)
             |> FlowStream.runForEach seen.Add
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ failing = Exit.Failure(Cause.Fail "boom") && List.ofSeq seen = [ 1; 2 ] @>
 
     [<Fact>]
     let ``mergePar interleaves streams by arrival and ends when all end`` () =
+        use observed = new SemaphoreSlim(0)
         let merged =
             [ timed [ 1, 10; 4, 30 ]; timed [ 2, 20; 5, 30 ]; timed [ 3, 30 ] ]
             |> FlowStream.mergePar
+            |> FlowStream.map (fun value -> observed.Release() |> ignore; value)
             |> FlowStream.runCollect
-            |> runOnManualTime
+            |> runWithCheckpoints ([3; 4; 5; 5; 5] |> List.map (fun required -> required, TimeSpan.FromMilliseconds 10., awaitSignal observed))
 
         test <@ merged = Exit.Success [ 1; 2; 3; 4; 5 ] @>
 
@@ -338,45 +340,59 @@ module WorkflowStreamTests =
             [ endless; FlowStream.fromFlow (Flow.fail "boom") ]
             |> FlowStream.mergePar
             |> FlowStream.runCollect
-            |> runOnManualTime
+            |> runWithSteps []
 
         let stoppedEarly =
             [ endless; endless ]
             |> FlowStream.mergePar
             |> FlowStream.take 3
             |> FlowStream.runCollect
-            |> runOnManualTime
+            |> runWithSteps [2, TimeSpan.FromHours 1.; 4, TimeSpan.FromHours 1.]
 
         test <@ failed = Exit.Failure(Cause.Fail "boom") @>
         test <@ stoppedEarly = Exit.Success [ 0; 0; 0 ] @>
 
     [<Fact>]
     let ``groupedWithin emits on size, on window, and flushes the tail`` () =
+        use observed = new SemaphoreSlim(0)
         let groups =
             timed [ 1, 0; 2, 0; 3, 0; 4, 0; 5, 600; 6, 0 ]
             |> FlowStream.groupedWithin 3 (TimeSpan.FromMilliseconds 200.0)
+            |> FlowStream.map (fun value -> observed.Release() |> ignore; value)
             |> FlowStream.runCollect
-            |> runOnManualTime
+            |> runWithCheckpoints [0, TimeSpan.Zero, awaitSignal observed
+                                   4, TimeSpan.FromMilliseconds 200., awaitSignal observed
+                                   4, TimeSpan.FromMilliseconds 400., awaitSignal observed]
 
         test <@ groups = Exit.Success [ [ 1; 2; 3 ]; [ 4 ]; [ 5; 6 ] ] @>
 
     [<Fact>]
     let ``debounce keeps the last value of each burst`` () =
+        use observed = new SemaphoreSlim(0)
         let values =
             timed [ 1, 0; 2, 0; 3, 0; 4, 10000; 5, 0 ]
             |> FlowStream.debounce (TimeSpan.FromSeconds 1.0)
+            |> FlowStream.map (fun value -> observed.Release() |> ignore; value)
             |> FlowStream.runCollect
-            |> runOnManualTime
+            |> runWithCheckpoints [4, TimeSpan.FromSeconds 1., awaitSignal observed
+                                   4, TimeSpan.FromSeconds 9., awaitSignal observed]
 
         test <@ values = Exit.Success [ 3; 5 ] @>
 
     [<Fact>]
     let ``throttle emits the first value then the latest per interval`` () =
+        use observed = new SemaphoreSlim(0)
         let values =
             timed [ 1, 0; 2, 5; 3, 5; 4, 5; 5, 300 ]
             |> FlowStream.throttle (TimeSpan.FromMilliseconds 100.0)
+            |> FlowStream.map (fun value -> observed.Release() |> ignore; value)
             |> FlowStream.runCollect
-            |> runOnManualTime
+            |> runWithCheckpoints [0, TimeSpan.Zero, awaitSignal observed
+                                   1, TimeSpan.FromMilliseconds 5., Flow.ok ()
+                                   3, TimeSpan.FromMilliseconds 5., Flow.ok ()
+                                   5, TimeSpan.FromMilliseconds 5., Flow.ok ()
+                                   7, TimeSpan.FromMilliseconds 85., awaitSignal observed
+                                   7, TimeSpan.FromMilliseconds 215., awaitSignal observed]
 
         test <@ values = Exit.Success [ 1; 4; 5 ] @>
 
@@ -386,7 +402,7 @@ module WorkflowStreamTests =
         let started = [| for _ in 1..3 -> TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously) |]
         let observedThird = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
-        let search (query: int) : Flow<ClockEnvironment, string, string> =
+        let search (query: int) : Flow<unit, string, string> =
             Flow.fromTask (fun cancellationToken -> task {
                 if query <= 3 then started.[query - 1].TrySetResult(()) |> ignore
                 if query < 3 then
@@ -414,7 +430,7 @@ module WorkflowStreamTests =
                 if value = "result-3" then observedThird.TrySetResult(()) |> ignore
             })
             |> FlowStream.runCollect
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ results = Exit.Success [ "result-3"; "result-4" ] @>
         test <@ interrupted.Value = 2 @>
@@ -422,8 +438,9 @@ module WorkflowStreamTests =
     [<Fact>]
     let ``time operators stop their producer when the consumer stops early`` () =
         let pulled = ref 0
+        use observed = new SemaphoreSlim(0)
 
-        let endless : FlowStream<ClockEnvironment, string, int> =
+        let endless : FlowStream<unit, string, int> =
             FlowStream.unfoldFlow
                 (fun n ->
                     flow {
@@ -436,9 +453,10 @@ module WorkflowStreamTests =
         let first =
             endless
             |> FlowStream.throttle (TimeSpan.FromMilliseconds 1.0)
+            |> FlowStream.map (fun value -> observed.Release() |> ignore; value)
             |> FlowStream.take 3
             |> FlowStream.runCollect
-            |> runOnManualTime
+            |> runWithCheckpoints ([1..3] |> List.map (fun required -> required, TimeSpan.FromMilliseconds 5., awaitSignal observed))
 
         // The run returns only after the throttle's producer fiber has settled, so the count is final: at most the
         // three values taken plus the one pull the producer had in flight.
@@ -448,9 +466,9 @@ module WorkflowStreamTests =
     [<Fact>]
     let ``repeatFlow runs its flow once per pull`` () =
         let runs = ref 0
-        let next : Flow<ClockEnvironment, string, int> = Flow.delay (fun () -> runs.Value <- runs.Value + 1; Flow.ok runs.Value)
+        let next : Flow<unit, string, int> = Flow.delay (fun () -> runs.Value <- runs.Value + 1; Flow.ok runs.Value)
 
-        let values = FlowStream.repeatFlow next |> FlowStream.take 3 |> FlowStream.runCollect |> Flow.runSync (TestSupport.clockEnv ())
+        let values = FlowStream.repeatFlow next |> FlowStream.take 3 |> FlowStream.runCollect |> Flow.runSync ()
 
         test <@ values = Exit.Success [ 1; 2; 3 ] @>
         test <@ runs.Value = 3 @>
@@ -460,22 +478,22 @@ module WorkflowStreamTests =
         let acquired = ref 0
         let released = ref 0
 
-        let resource : Resource<ClockEnvironment, string, int> =
+        let resource : Resource<unit, string, int> =
             Resource.create
                 (Flow.delay (fun () -> acquired.Value <- acquired.Value + 1; Flow.ok 10))
                 (fun _ -> Flow.delay (fun () -> released.Value <- released.Value + 1; Flow.succeed ()))
 
         let numbers = FlowStream.using resource (fun start -> FlowStream.fromSeq [ start .. start + 4 ])
 
-        let all = numbers |> FlowStream.runCollect |> Flow.runSync (TestSupport.clockEnv ())
+        let all = numbers |> FlowStream.runCollect |> Flow.runSync ()
         let releasedAfterAll = released.Value
-        let first = numbers |> FlowStream.take 2 |> FlowStream.runCollect |> Flow.runSync (TestSupport.clockEnv ())
+        let first = numbers |> FlowStream.take 2 |> FlowStream.runCollect |> Flow.runSync ()
         let releasedAfterTake = released.Value
 
         let failing =
-            FlowStream.using resource (fun _ -> FlowStream.fromFlow (Flow.fail "boom" : Flow<ClockEnvironment, string, int>))
+            FlowStream.using resource (fun _ -> FlowStream.fromFlow (Flow.fail "boom" : Flow<unit, string, int>))
             |> FlowStream.runDrain
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ all = Exit.Success [ 10..14 ] @>
         test <@ first = Exit.Success [ 10; 11 ] @>
@@ -487,14 +505,14 @@ module WorkflowStreamTests =
     let ``runTryHead pulls one value, runTryLast and runCount consume everything`` () =
         let pulled = ref 0
 
-        let counted : FlowStream<ClockEnvironment, string, int> =
+        let counted : FlowStream<unit, string, int> =
             FlowStream.repeatFlow (Flow.delay (fun () -> pulled.Value <- pulled.Value + 1; Flow.ok pulled.Value))
 
-        let head = counted |> FlowStream.runTryHead |> Flow.runSync (TestSupport.clockEnv ())
-        let emptyHead : Exit<int option, string> = FlowStream.empty |> FlowStream.runTryHead |> Flow.runSync (TestSupport.clockEnv ())
-        let last = FlowStream.fromSeq [ 1..5 ] |> FlowStream.runTryLast |> Flow.runSync (TestSupport.clockEnv ())
-        let emptyLast : Exit<int option, string> = FlowStream.empty |> FlowStream.runTryLast |> Flow.runSync (TestSupport.clockEnv ())
-        let count : Exit<int64, string> = FlowStream.fromSeq [ 1..7 ] |> FlowStream.runCount |> Flow.runSync (TestSupport.clockEnv ())
+        let head = counted |> FlowStream.runTryHead |> Flow.runSync ()
+        let emptyHead : Exit<int option, string> = FlowStream.empty |> FlowStream.runTryHead |> Flow.runSync ()
+        let last = FlowStream.fromSeq [ 1..5 ] |> FlowStream.runTryLast |> Flow.runSync ()
+        let emptyLast : Exit<int option, string> = FlowStream.empty |> FlowStream.runTryLast |> Flow.runSync ()
+        let count : Exit<int64, string> = FlowStream.fromSeq [ 1..7 ] |> FlowStream.runCount |> Flow.runSync ()
 
         test <@ head = Exit.Success(Some 1) && pulled.Value = 1 @>
         test <@ emptyHead = Exit.Success None @>
@@ -508,7 +526,7 @@ module WorkflowStreamTests =
         let consumed = ref 0
         let lead = ref 0
 
-        let source : FlowStream<ClockEnvironment, string, int> =
+        let source : FlowStream<unit, string, int> =
             FlowStream.repeatFlow (Flow.delay (fun () -> Flow.ok (Interlocked.Increment(&produced.contents))))
             |> FlowStream.take 20
 
@@ -521,7 +539,7 @@ module WorkflowStreamTests =
                     lead.Value <- max lead.Value (produced.Value - consumed.Value)
                     do! Flow.sleep (TimeSpan.FromMilliseconds 5.0)
                 })
-            |> runOnManualTime
+            |> runWithSteps (serialSteps (List.replicate 20 (TimeSpan.FromMilliseconds 5.)))
 
         test <@ result = Exit.Success () @>
         test <@ consumed.Value = 20 @>

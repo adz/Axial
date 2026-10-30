@@ -2315,8 +2315,8 @@ module Flow =
     /// <returns>A <see cref="T:Axial`3" /> containing the projected value.</returns>
     /// <example>
     /// <code>
-    /// let currentTime () =
-    ///     Flow.envWith (fun (environment: BaseRuntime) -> environment.Clock.UtcNow())
+    /// let region () =
+    ///     Flow.envWith (fun (environment: {| Region: string |}) -> environment.Region)
     /// </code>
     /// </example>
     let envWith (projection: 'env -> 'value) : Flow<'env, 'error, 'value> =

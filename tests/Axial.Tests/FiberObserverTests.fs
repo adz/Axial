@@ -26,7 +26,7 @@ module FiberObserverTests =
 
     /// A flow that waits for runtime cancellation and then settles with a defect, so a race or
     /// timeout loser has a genuine Cause.Die exit for the runtime to discard.
-    let private dieOnCancel (message: string) : Flow<ClockEnvironment, string, unit> =
+    let private dieOnCancel (message: string) : Flow<unit, string, unit> =
         Flow(fun _ (token: CancellationToken) ->
             Platform.ofAwaitable (task {
                 try
@@ -42,7 +42,7 @@ module FiberObserverTests =
 
     /// Waits for a fiber to settle without consuming its outcome, so it stays unobserved.
     /// Deterministic replacement for fixed sleeps, which race the thread pool under load.
-    let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<ClockEnvironment, 'testError, unit> =
+    let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<unit, 'testError, unit> =
         flow {
             if fiber.Metadata.Status = FiberStatus.Running then
                 do! Flow.sleep (TimeSpan.FromMilliseconds 5.0)
@@ -59,7 +59,7 @@ module FiberObserverTests =
                 return! Fiber.join fiber
             }
             |> Flow.withFiberObserver recording.Observer
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success 42 @>
         test <@ recording.Starts |> List.length = 1 @>
@@ -75,13 +75,13 @@ module FiberObserverTests =
 
         let result =
             flow {
-                let! fiber = Flow.fork (Flow.die (InvalidOperationException "silent crash") : Flow<ClockEnvironment, string, int>)
+                let! fiber = Flow.fork (Flow.die (InvalidOperationException "silent crash") : Flow<unit, string, int>)
                 retained.Value <- Some fiber
                 do! waitForSettled fiber
                 return "done"
             }
             |> Flow.withFiberObserver recording.Observer
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         retained.Value <- None
 
@@ -99,11 +99,11 @@ module FiberObserverTests =
 
         let result =
             flow {
-                let! fiber = Flow.fork (Flow.die (InvalidOperationException "handled crash") : Flow<ClockEnvironment, string, int>)
+                let! fiber = Flow.fork (Flow.die (InvalidOperationException "handled crash") : Flow<unit, string, int>)
                 return! Fiber.join fiber
             }
             |> Flow.withFiberObserver recording.Observer
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         match result with
         | Exit.Failure (Cause.Die error) -> test <@ error.Message = "handled crash" @>
@@ -119,12 +119,12 @@ module FiberObserverTests =
 
         let result =
             flow {
-                let! fiber = Flow.forkDetached (Flow.die (InvalidOperationException "intentional") : Flow<ClockEnvironment, string, int>)
+                let! fiber = Flow.forkDetached (Flow.die (InvalidOperationException "intentional") : Flow<unit, string, int>)
                 do! waitForSettled fiber
                 return "done"
             }
             |> Flow.withFiberObserver recording.Observer
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success "done" @>
         // OnEnd still fires for diagnostics; the defect is just never unobserved.
@@ -138,7 +138,7 @@ module FiberObserverTests =
         let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         use cancellation = new CancellationTokenSource()
 
-        let stubborn : Flow<ClockEnvironment, string, unit> =
+        let stubborn : Flow<unit, string, unit> =
             Flow(fun _ _ ->
                 Platform.ofAwaitable (task {
                     started.TrySetResult() |> ignore
@@ -154,7 +154,7 @@ module FiberObserverTests =
                 |> Flow.disconnect
                 |> Flow.onExit (fun exit -> Flow.delay (fun () -> callerDone.TrySetResult exit |> ignore; Flow.succeed ()))
                 |> Flow.withFiberObserver recording.Observer
-                |> Flow.runSyncWithToken (TestSupport.clockEnv ()) cancellation.Token)
+                |> Flow.runSyncWithToken () cancellation.Token)
 
         test <@ started.Task.Wait(TimeSpan.FromSeconds 5.0) @>
         cancellation.Cancel()
@@ -177,12 +177,12 @@ module FiberObserverTests =
 
         let result =
             flow {
-                let! fiber = Flow.fork (Flow.sleep (TimeSpan.FromSeconds 30.0) : Flow<ClockEnvironment, string, unit>)
+                let! fiber = Flow.fork (Flow.sleep (TimeSpan.FromSeconds 30.0) : Flow<unit, string, unit>)
                 let! _exit = Fiber.interrupt fiber
                 return "done"
             }
             |> Flow.withFiberObserver recording.Observer
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success "done" @>
         test <@ recording.Ends |> List.map (fun (metadata, defect) -> metadata.Status, defect) = [ FiberStatus.Interrupted, None ] @>
@@ -204,7 +204,7 @@ module FiberObserverTests =
             else recording.Observer
         let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let defect = InvalidOperationException "escaped loser"
-        let loser : Flow<ClockEnvironment, string, int> =
+        let loser : Flow<unit, string, int> =
             Flow(fun _ (token: CancellationToken) ->
                 Platform.ofAwaitable (task {
                     started.TrySetResult() |> ignore
@@ -225,7 +225,7 @@ module FiberObserverTests =
         let result =
             operation
             |> Flow.withFiberObserver observer
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
         if race then test <@ result = Exit.Success 42 @>
         else test <@ result = Exit.Failure(Cause.Fail "timed out") @>
         match recording.Unobserved with
@@ -238,7 +238,7 @@ module FiberObserverTests =
     let ``Raw task loser cancellation is not an unobserved defect`` (race: bool) =
         let recording = Recording()
         let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
-        let loser : Flow<ClockEnvironment, string, int> =
+        let loser : Flow<unit, string, int> =
             Flow(fun _ (token: CancellationToken) ->
                 Platform.ofAwaitable (task {
                     started.TrySetResult() |> ignore
@@ -257,7 +257,7 @@ module FiberObserverTests =
         let result =
             operation
             |> Flow.withFiberObserver recording.Observer
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
         if race then test <@ result = Exit.Success 42 @>
         else test <@ result = Exit.Failure(Cause.Fail "timed out") @>
         test <@ recording.Unobserved = [] @>
@@ -269,7 +269,7 @@ module FiberObserverTests =
         let recording = Recording()
         let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let defect = InvalidOperationException "interop loser"
-        let loser : Flow<ClockEnvironment, string, int> =
+        let loser : Flow<unit, string, int> =
             Flow.fromTask (fun token -> task {
                 started.TrySetResult() |> ignore
                 try
@@ -289,7 +289,7 @@ module FiberObserverTests =
         let result =
             operation
             |> Flow.withFiberObserver recording.Observer
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
         if race then
             match result with
             | Exit.Failure(Cause.Die reported) -> test <@ obj.ReferenceEquals(reported, defect) @>
@@ -309,7 +309,7 @@ module FiberObserverTests =
             dieOnCancel "timeout loser"
             |> Flow.timeout (TimeSpan.FromMilliseconds 20.0) "timed out"
             |> Flow.withFiberObserver recording.Observer
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Failure(Cause.Fail "timed out") @>
 
@@ -324,7 +324,7 @@ module FiberObserverTests =
         let result =
             Flow.race (Flow.succeed ()) (dieOnCancel "race loser" |> Flow.map ignore)
             |> Flow.withFiberObserver recording.Observer
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         match result with
         | Exit.Failure(Cause.Die defect) -> test <@ defect.Message = "race loser" @>
@@ -347,7 +347,7 @@ module FiberObserverTests =
                 return! Fiber.join fiber
             }
             |> Flow.withFiberObserver throwing
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success 42 @>
 
@@ -439,10 +439,10 @@ module FiberObserverTests =
 
     [<Fact>]
     let ``settled disconnected fibers do not stay registered with the root scope`` () =
-        let rootRegistrations : Flow<ClockEnvironment, string, int> =
+        let rootRegistrations : Flow<unit, string, int> =
             Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().RootScope.RegisteredCount))
 
-        let defective : Flow<ClockEnvironment, string, unit> =
+        let defective : Flow<unit, string, unit> =
             Flow.die (InvalidOperationException "disconnected defect")
             |> Flow.disconnect
             |> Flow.foldCause Flow.succeed (fun _ -> Flow.succeed ())
@@ -455,6 +455,6 @@ module FiberObserverTests =
                 return before, after
             }
 
-        match Flow.runSync (TestSupport.clockEnv ()) workflow with
+        match Flow.runSync () workflow with
         | Exit.Success(before, after) -> test <@ after = before @>
         | other -> failwithf "Expected success, got %A" other

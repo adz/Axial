@@ -11,18 +11,6 @@ type IClock =
     abstract Elapsed: unit -> TimeSpan
     abstract Sleep: delay: TimeSpan * cancellationToken: CancellationToken -> Task
 
-/// <summary>Declares the clock required by timed workflows and fiber diagnostics.</summary>
-#if FABLE_COMPILER
-[<Fable.Core.Mangle>]
-#endif
-type IHasClock =
-    abstract Clock: IClock
-
-/// <summary>An environment containing only a clock, for timed flows with no other services.</summary>
-type ClockEnvironment(clock: IClock) =
-    member _.Clock = clock
-    interface IHasClock with member _.Clock = clock
-
 /// Rendering of arbitrary payload values inside outcome types that stays safe under NativeAOT.
 module internal OutcomeText =
     /// A payload's own ToString, with null spelled out.

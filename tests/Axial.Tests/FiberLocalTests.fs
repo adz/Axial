@@ -9,7 +9,7 @@ module FiberLocalTests =
     [<Fact>]
     let ``get returns the initial value`` () =
         let local = FiberLocal.make 10
-        test <@ Flow.runSync (TestSupport.clockEnv ()) (FiberLocal.get local) = Exit.Success 10 @>
+        test <@ Flow.runSync () (FiberLocal.get local) = Exit.Success 10 @>
 
     [<Fact>]
     let ``locally overrides and restores`` () =
@@ -20,7 +20,7 @@ module FiberLocalTests =
             let! after = FiberLocal.get local
             return before, inside, after
         }
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success (10, 20, 10) @>
+        test <@ Flow.runSync () workflow = Exit.Success (10, 20, 10) @>
 
     [<Fact>]
     let ``nested locally restores outer value`` () =
@@ -32,7 +32,7 @@ module FiberLocalTests =
                 return nested, outer
             }
             |> FiberLocal.locally 1 local
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success (2, 1) @>
+        test <@ Flow.runSync () workflow = Exit.Success (2, 1) @>
 
     [<Fact>]
     let ``fork inherits locally value`` () =
@@ -43,7 +43,7 @@ module FiberLocalTests =
                 return! Fiber.join fiber
             }
             |> FiberLocal.locally 7 local
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 7 @>
+        test <@ Flow.runSync () workflow = Exit.Success 7 @>
 
     [<Fact>]
     let ``typed failure restores the outer local`` () =
@@ -53,7 +53,7 @@ module FiberLocalTests =
             let! restored = FiberLocal.get local
             return outcome, restored
         }
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success (Exit.Failure (Cause.Fail "expected"), 0) @>
+        test <@ Flow.runSync () workflow = Exit.Success (Exit.Failure (Cause.Fail "expected"), 0) @>
 
     [<Fact>]
     let ``defect restores the outer local`` () =
@@ -64,7 +64,7 @@ module FiberLocalTests =
             let! restored = FiberLocal.get local
             return outcome, restored
         }
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success (Exit.Failure (Cause.Die defect), 0) @>
+        test <@ Flow.runSync () workflow = Exit.Success (Exit.Failure (Cause.Die defect), 0) @>
 
     [<Fact>]
     let ``timeout interruption restores the outer local`` () =
@@ -78,7 +78,7 @@ module FiberLocalTests =
             let! restored = FiberLocal.get local
             return outcome, restored
         }
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success (Exit.Failure (Cause.Fail "timed out"), 0) @>
+        test <@ Flow.runSync () workflow = Exit.Success (Exit.Failure (Cause.Fail "timed out"), 0) @>
 
     [<Fact>]
     let ``local survives asynchronous suspension and restores afterward`` () =
@@ -93,13 +93,13 @@ module FiberLocalTests =
             let! restored = FiberLocal.get local
             return inside, restored
         }
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success (1, 0) @>
+        test <@ Flow.runSync () workflow = Exit.Success (1, 0) @>
 
     [<Fact>]
     let ``fork retains inherited local after parent leaves scope`` () =
         let local = FiberLocal.make 0
         let workflow = flow {
-            let! gate = Deferred.make<ClockEnvironment, string, unit> ()
+            let! gate = Deferred.make<unit, string, unit> ()
             let! child =
                 Flow.fork (flow {
                     do! Deferred.await gate
@@ -111,7 +111,7 @@ module FiberLocalTests =
             let! inherited = Fiber.join child
             return parent, inherited
         }
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success (0, 7) @>
+        test <@ Flow.runSync () workflow = Exit.Success (0, 7) @>
 
     [<Fact>]
     let ``parallel locally values remain isolated`` () =
@@ -120,4 +120,4 @@ module FiberLocalTests =
             Flow.zipPar
                 (FiberLocal.get local |> FiberLocal.locally 1 local)
                 (FiberLocal.get local |> FiberLocal.locally 2 local)
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success (1, 2) @>
+        test <@ Flow.runSync () workflow = Exit.Success (1, 2) @>
