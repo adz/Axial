@@ -35,9 +35,9 @@ let private startWithSink kind sink (source: Flow<unit, Never, unit>) =
 let private label = function 0 -> "Node" | 1 -> "Browser mount" | _ -> "Browser signal"
 
 let private metadata (args: obj array) =
-    args.Length = 4 &&
-    (unbox<(string * string) array> args.[2] |> Array.contains ("request", "js-request")) &&
-    (unbox<(string * obj) array> args.[3] |> Array.contains ("job", box "js-job"))
+    args.Length = 5 && string args.[0] = "%s" &&
+    (unbox<(string * string) array> args.[3] |> Array.contains ("request", "js-request")) &&
+    (unbox<(string * obj) array> args.[4] |> Array.contains ("job", box "js-job"))
 
 let tests =
     [ for kind in 0 .. 2 do
@@ -49,7 +49,7 @@ let tests =
                   let source =
                       (flow {
                           do! Log.debug "disabled"
-                          do! Log.info "root-message"
+                          do! Log.info "root-message %s %c"
                           let! child = Log.errorExn error "child-message" |> Flow.forkNamed "js-log-child"
                           do! Fiber.join child
                       }) |> Flow.annotate "request" "js-request" |> FiberLocal.locally "js-job" local
@@ -61,11 +61,11 @@ let tests =
                       return [ equal "successful root" (Exit.Success ()) exit
                                equal "info method" (if kind = 0 then "error" else "info") firstMethod
                                equal "error method" "error" secondMethod
-                               isTrue "info level and message" ((string first.[0]).Contains "Information: root-message")
-                               isTrue "error level and message" ((string second.[0]).Contains "Error: child-message")
+                               equal "literal info level and message" "Information: root-message %s %c" (string first.[1])
+                               isTrue "error level and message" ((string second.[1]).Contains "Error: child-message")
                                isTrue "info metadata snapshot" (metadata first)
                                isTrue "fork metadata snapshot" (metadata second)
-                               equal "exception" "js-error" (unbox<exn> second.[1]).Message ]
+                               equal "exception" "js-error" (unbox<exn> second.[2]).Message ]
                   | _ -> return [ equal "two entries, no disabled entry" 2 captured.Length ]
               finally restore state
           })
