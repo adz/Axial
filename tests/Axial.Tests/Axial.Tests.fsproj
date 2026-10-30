@@ -46,6 +46,7 @@
     <Compile Include="WorkflowCallbackStreamTests.fs" />
     <Compile Include="StreamInteropTests.fs" />
     <Compile Include="PolicyTests.fs" />
+    <Compile Include="ThrowSafetyMatrixTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

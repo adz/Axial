@@ -7,6 +7,28 @@ lists the queue. Work on main.
 
 ## Queue
 
+- [ ] T30: Throw safety: user code that throws is `Cause.Die` at every combinator (matrix in place; leaf wrapper next)
+  - Invariant: an exception thrown by user code inside a flow (a mapper or handler, a user flow, a Task/ValueTask/Async factory,
+    a sequence, a `Dispose`, a scope finalizer, a schedule step), synchronously or after an await, is observed as `Cause.Die`
+    carrying that exception by every combinator: it never hangs, never skips compensation, never completes twice, never leaks a
+    resource or a fiber. T28/T28b patched the known sites one by one; nothing enforces it centrally.
+  - Matrix (done): `tests/Axial.Tests/ThrowSafetyMatrixTests.fs`, 273 cells x 2 modes (Sync: throws when called; AfterAwait:
+    throws on a continuation after a real suspension). Each case runs within a 5 s bound and checks the outcome (Die with the
+    original exception exactly once, or the documented value), compensation once, acquired = released, and that a started
+    sibling (forked waiter, second memoize/Cache caller, joiner, back-pressured Hub/Queue producer) is released. A reflection
+    fact fails when a public member of Flow/FlowStream/Layer/Cache/Hub/Queue/Dequeue/Schedule/Retry/Resource or a `Scope`
+    method has neither a cell nor an exemption. `knownGaps` must equal the failing set, so a fix forces removing its entry.
+    Reduced Fable copy with an explicit table: `tests/Axial.Fable.Tests/ThrowSafetyMatrixTests.fs`. Gap list and analysis:
+    `~/projects/scratch/axial-coord/pi/t30-matrix.report.md`.
+  - Next, the leaf wrapper: convert a throw at each user-code call site (binder/mapper invocation in bind/map/delay and the
+    trampoline continuation after an await, builder continuations, interop factories) into `Execution.ofCause (causeOfThrown
+    ct e)`, so no combinator is handed a thrown or faulted execution. It must close the matrix's throw-specific gaps (parallel
+    siblings leaked after an await; `buffer`/`mergePar` hang through `feed`) with the sync path allocation-free (FiberCost,
+    PlatformRead, FoldCause, a bind/map loop). Then fold the per-site T28 copies it makes redundant (T29 N3).
+  - Combinator gaps the wrapper does not fix (they fail with `Flow.die` too): `Layer.zipPar` waits for both branches and never
+    interrupts the other one (hang beside a long-running branch; decide: interrupt, or document and change the cell);
+    `timeoutToOk` drops a defect raised by the timed-out flow's `onInterrupt` cleanup instead of combining it, as `race` does.
+
 - [ ] T23: Property-based concurrency law suite
   - Generate random flows over fork/race/zipPar/scope/interrupt and check the laws: a flow that starts work waits for it,
     cleanup runs once and after cancellation, a loser settles before `race` returns, defects are reported exactly once,
