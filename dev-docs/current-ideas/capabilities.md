@@ -372,7 +372,7 @@ edge with `Flow.withClock`, wrapping the root flow before `App.start` (there is 
   `ILogSink` has `IsEnabled` and `Write`; `LogEntry` carries Annotations and named FiberLocals (the latter feed MEL scopes).
 - **D11. Hosts install the sink.** Generic Host installs the MEL sink around the root app (category `Axial`); ASP.NET Core `flowEndpoint` installs it per request
   (category `Axial.Endpoint`); GenHttp leaves the default unless `EndpointOptions.LogSink` is set; Node and Browser ship their own console sinks. Host-specific options (`HostedAppOptions`, `EndpointOptions`, `NodeAppOptions`, `BrowserAppOptions`) can replace or turn off the host sink; for a plain `App.start` the application wraps the root flow with `Flow.withClock`/`withLogSink`/`withTelemetry`.
-- 2026-10-31: `App.start` options (`AppOptions.Clock/LogSink/Telemetry`) implemented as wrapping the root flow in `Flow.with*`; options record dropped for simplicity - pending owner confirmation.
+- 2026-10-31: `App.start` options (`AppOptions.Clock/LogSink/Telemetry`) implemented as wrapping the root flow in `Flow.with*`; options record dropped for simplicity. Confirmed by the owner 2026-10-31.
 - **D12. The fiber observer is not a sink.** `FiberLogging.observe` stays opt-in and unchanged.
 - **D9. Carrier.** The runtime context stays in `RuntimeState` (`AsyncLocal` on .NET) behind one accessor; section 3.3a and the section 7 benchmark decide whether that is acceptable.
 

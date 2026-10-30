@@ -29,6 +29,23 @@ lists the queue. Work on main.
     interrupts the other one (hang beside a long-running branch; decide: interrupt, or document and change the cell);
     `timeoutToOk` drops a defect raised by the timed-out flow's `onInterrupt` cleanup instead of combining it, as `race` does.
 
+- [ ] T31: 0.12 package reshape (owner decisions 2026-10-31)
+  - Move the `Clock`/`Random`/`Guid`/`Log` operations and `TestLog`/`TestPlatform`/`TestClock`/`runTest` from `Axial.PlatformService`
+    into core `Axial` (keep their namespaces for 0.12); delete the duplicate live services so one implementation remains (T29 item).
+  - Rename what is left (environment variables) into `Axial.Configuration` (T32); deprecate the `Axial.PlatformService` NuGet id.
+  - Merge `Axial.Files` into `Axial.FileSystem`. Check what Files, Hosting, Hosting.Node, HttpClient and Process still need from the
+    old package after the move, and drop references they no longer need.
+  - Migration rows in `dev-docs/releases/0.12.0.md`. Do this before T33 so docs pages move once.
+- [ ] T32: `Axial.Configuration` and time zone/culture in the platform services (0.12; design first, owner review before code)
+  - Configuration: typed reads with validation errors; sources: environment variables, command-line arguments (all hosts, not only
+    Node), config files, an `IConfiguration` adapter; explicit precedence. Authority stays in the env (`IHasConfiguration`-style).
+  - Time zone and culture join Clock/Random/Guid in the runtime's `PlatformServices`, with `Flow.withTimeZone`/`withCulture` and fixed
+    values under `runTest`; no reads of `TimeZoneInfo.Local`/`CultureInfo.CurrentCulture` in Axial code paths.
+  - Design in `dev-docs/current-ideas/configuration.md`.
+- [ ] T33: A docs set per non-core package, shaped like `docs/process` and `docs/http`
+  - Folder, `_index.md`, numbered pages, `api/`, an entry in `docs/packages/index.md`: FileSystem (with Files), Console,
+    Configuration, WebSocket, Hosting (one set, a page per host package), Elmish, Telemetry (one set), Guardrails (with `Axial.Tool`).
+  - Core chapters keep only core and link to the sets. After T31/T32.
 - [ ] T23: Property-based concurrency law suite
   - Generate random flows over fork/race/zipPar/scope/interrupt and check the laws: a flow that starts work waits for it,
     cleanup runs once and after cancellation, a loser settles before `race` returns, defects are reported exactly once,
@@ -53,7 +70,7 @@ lists the queue. Work on main.
 - [ ] T25c: Guardrails rules for capabilities (naming, no generic IHas chains, no generic ICapability calls, Replaces resolve and
   are unique, Live only in host role)
   - Spec section 5. After T25b.
-- [ ] T29: T25a review nice-to-haves
+- [ ] T29: T25a review nice-to-haves (0.12: the renames, the Elmish `LogSink` option, the WebSocket `Connect` hook; rest can follow)
   - Elmish: add `ElmishRuntimeOptions.LogSink: ILogSink option`, installed where `Clock` is (`Pump()`, `startLayer`); today Fable's
     default sink sends `Log.info` to `console.error` (red) and the pump is internal. Do it before 0.12 so it is one break.
   - WebSocket `Connect` hook (`WebSocket.fs` ~230) runs as a fresh root and ignores the caller's `withClock`/`withLogSink`; capture
@@ -95,7 +112,7 @@ lists the queue. Work on main.
 - [ ] T22: Resilience policies for Polly parity (shared, stateful policies beside the stateless `Schedule`)
   - Bulkhead: a bounded wait queue on `Semaphore` that rejects with a typed error when full.
   - Circuit breaker: `CircuitBreaker.make` and `CircuitBreaker.protect`; shared `Ref`/STM state, open duration on
-    `IHasClock`, typed-error failure predicate, defects configurable, interruption never counts, open error mapped
+    the runtime clock, typed-error failure predicate, defects configurable, interruption never counts, open error mapped
     into the caller's error type, consecutive-failure trip plus half-open probes, state changes on a `Hub`.
   - Rate limiter bridge to `System.Threading.RateLimiting` with a typed rejection (.NET only; decide Fable).
   - Hedging as a documented recipe over `Flow.race`; a "Coming from Polly" page mapping every Polly strategy.
@@ -107,3 +124,7 @@ lists the queue. Work on main.
 - Core `Axial` and operational packages contain no Reified references.
 - Only the isolated HTTP adapters cross the product boundary here; the reference app lives in [axial-examples](https://github.com/adz/axial-examples).
 - Package, AOT, Fable, documentation, and site checks pass at release boundaries.
+- [ ] T34: `Axial.Sql`: provider-agnostic ADO.NET access (after 0.12)
+  - Connection as a layer, transaction as a scope (commit on success, roll back on failure or interruption), transient-error retry.
+- [ ] T35: Browser storage capability for Fable apps (after 0.12)
+  - `localStorage`/`sessionStorage`/IndexedDB behind a capability with a fake.
