@@ -45,15 +45,19 @@ namespace Axial
 
 // IClock: unchanged. IRandom, IGuid: moved from Axial.PlatformService, unchanged members.
 
-/// One log record. Annotations are the fiber's current annotations (Flow.annotate), so a sink sees trace_id etc. without the caller threading them.
+/// One log record. Annotations are the fiber's current annotations (Flow.annotate) and Locals its named FiberLocals, so a sink sees
+/// trace_id and scoped values without the caller threading them. Both are snapshots taken at the call.
 type LogEntry =
     { Level: LogLevel
       Message: string
       Error: exn option
-      Annotations: Map<string, string> }
+      Annotations: Map<string, string>
+      Locals: (string * obj) list }
 
 /// Write-only. Anyone may implement one. Must not throw; a throwing sink is guarded, like fiber observers.
 type ILogSink =
+    /// Asked before an entry is built, so a disabled call allocates nothing.
+    abstract IsEnabled: LogLevel -> bool
     abstract Write: LogEntry -> unit
 
 /// Write-only telemetry. The existing runtime slots (annotation sink, attribute sink, ambient tracer) behind one public interface.
@@ -201,6 +205,61 @@ Telemetry stays an observation slot. Today the slots are internal (`Telemetry.wi
 tracer), not in `Axial`, which keeps no dependency on `System.Diagnostics.DiagnosticSource`. The bridge is `Telemetry.withActivitySource source`. A
 bridge from `ILogSink` to `Microsoft.Extensions.Logging` goes in `Axial.Hosting`, next to the existing logger-backed fiber observer.
 
+### 3.8 Installing a log sink: manual, composed, and by the hosts
+
+Precedence, innermost wins: the runtime default (console, Info and above, stderr), then whatever the host installs at the root, then any
+`Flow.withLogSink` inside the application.
+
+**Manual.**
+
+```fsharp
+Flow.withLogSink   : ILogSink -> Flow<'env,'error,'value> -> Flow<'env,'error,'value>               // replace
+Flow.mapLogSink    : (ILogSink -> ILogSink) -> Flow<'env,'error,'value> -> Flow<'env,'error,'value>  // decorate the sink already in force
+
+module LogSink =                                        // combinators, all pure
+    val tee      : ILogSink -> ILogSink -> ILogSink     // both receive each entry; each guarded
+    val minLevel : LogLevel -> ILogSink -> ILogSink
+    val filter   : (LogEntry -> bool) -> ILogSink -> ILogSink
+    val map      : (LogEntry -> LogEntry) -> ILogSink -> ILogSink   // for example, prefix a category
+    val console  : LogLevel -> ILogSink                 // the default, at a chosen level
+    val none     : ILogSink
+    val fromFunction : (LogEntry -> unit) -> ILogSink   // IsEnabled is always true
+```
+
+`mapLogSink` is what makes "add a second destination for this subtree" or "silence Debug inside this subtree" a one-liner without reading the current sink out
+of the context. `App.start` and `App.startWith` take the sink as an option (`AppOptions.LogSink`), which is just `withLogSink` at the root.
+
+**Generic Host (`Axial.Hosting`).** Today `MicrosoftLogging.create : ILogger -> ILog` and `layer : Layer<ILoggerFactory, Never, ILog>` produce an env service, and
+`FiberLogging.observe` installs a fiber observer. After:
+
+- `MicrosoftLogging.sink : ILogger -> ILogSink` and `MicrosoftLogging.fromFactory : category -> ILoggerFactory -> ILogSink` replace `create`/`fromFactory`.
+  The layer is deleted (nothing to put in an env). `IsEnabled` is `logger.IsEnabled`, so the host's own filtering applies with no allocation. `Write` maps `Locals` to
+  `logger.BeginScope` exactly as `ScopedLogging.withScope` does now, and adds `Annotations` to the same scope.
+- `FlowHostedService` installs `MicrosoftLogging.sink` over the host's `ILoggerFactory` around the root application, category `Axial`, unless
+  `HostedAppOptions.LogSink` supplies another (`ILoggerFactory -> ILogSink`, or `None` to leave the runtime default). Applications that registered
+  `MicrosoftLogging.layer` today delete that line and get the same output.
+- The fiber observer stays opt-in: `FiberLogging.observe` is a separate concern (defects), it is not a log sink, and installing it silently would change
+  behaviour. A later change may fold it into the hosted-service default.
+- The watchdogs (`watchdog`, `watchdogWith`) drop `IHasClock` and `IHasLog` and call `Log.*`.
+
+**ASP.NET Core (`Axial.Hosting.AspNetCore`).** `flowEndpoint` starts each request as its own root run (`workflow.StartAsTask`), so a host-level install does not reach it.
+`flowEndpoint` installs `MicrosoftLogging.sink` over `context.RequestServices`' `ILoggerFactory`, category `Axial.Endpoint`, around the request flow. MEL
+scopes opened by ASP.NET stay in effect because the sink calls the same logger on the same async flow. An `EndpointOptions.LogSink` overrides it.
+
+**GenHttp.** GenHttp has no logging abstraction. `flowEndpoint` leaves the runtime default in force unless `EndpointOptions.LogSink` is set; the application
+composes whichever sink it wants with `LogSink.fromFunction`.
+
+**Node and Browser (Fable).** The runtime default on Fable cannot assume `System.Console.Error`. `Axial.Hosting.Node` provides `NodeLogging.sink` (`console.error`
+with a level prefix, honouring a minimum level) and `NodeApp.start` installs it. `Axial.Hosting.Browser` provides `BrowserLogging.sink` mapping levels to
+`console.debug/info/warn/error`, installed by its entry point. Whether Axial's own default sink can use Fable's `Console` mapping directly is checked by invariant test 9; if it can, these two
+install the same sink with Node/browser-specific formatting only.
+
+**Telemetry packages.** `Axial.Telemetry` and `Axial.Telemetry.JavaScript` do not install a log sink. A `Telemetry.logSink` that records entries as span events on the
+current `Activity` is possible and is deferred: it composes with `LogSink.tee` and needs no runtime change.
+
+**Why the sink is installed per run and not once per process.** A flow started by anything other than the host (a background `StartAsTask`, a test, a
+tool) gets the console default, never silence and never a hidden global. The only global is the default itself.
+
 ## 4. What gets removed (the breaking change)
 
 | Removed | Replacement |
@@ -208,7 +267,7 @@ bridge from `ILogSink` to `Microsoft.Extensions.Logging` goes in `Axial.Hosting`
 | `IHasClock`, `IHasLog`, `IHasRandom`, `IHasGuid` | Runtime context; delete the field and the interface line from your env |
 | `ClockEnvironment` | Not needed: `Flow.runTest ()` or any env |
 | `ISecureRandom`, `IHasSecureRandom`, `SecureRandom` module | Nothing. Use `System.Security.Cryptography` inside a capability |
-| `ILog`, `IHasLog`, `Log.service` | `ILogSink`, `Flow.withLogSink`, `Log.info` |
+| `ILog`, `IHasLog`, `Log.service`, `MicrosoftLogging.create`/`layer` | `ILogSink`, `Flow.withLogSink`/`mapLogSink`, `Log.info`, `MicrosoftLogging.sink` (host installs it) |
 | `BaseRuntime` and `servicesFromServiceProvider` | `IEnvironmentVariables` is a capability, not Platform (it reads external state): `IHasEnvironmentVariables` stays on the env; T25b declares it |
 | `TestRuntime` env members | `TestPlatform` |
 | `runOnManualTime` | Explicit stepping |
@@ -289,9 +348,9 @@ edge with `Flow.withClock`; `App.start` gains matching options. 0.12 release not
 1. Invariant tests, failing (section 6), plus the benchmark harness for section 7 (baseline numbers recorded first).
 2. Remove `ISecureRandom` (independent, unreleased; decision D1).
 3. Move `IRandom`/`IGuid` into `Axial`; add `PlatformServices` and `LogSink` to the runtime context; `with*`; `Flow.sleep` and the combinators lose `IHasClock`.
-4. `ILogSink`, console default, `Log.*`; `ITelemetry` over existing slots; `Axial.Telemetry` bridge.
+4. `ILogSink`, console default, `LogSink` combinators, `Log.*`; `ITelemetry` over existing slots; `Axial.Telemetry` bridge.
 5. `TestPlatform`, `Flow.runTestWith`, `TestClock`; delete `runOnManualTime` and port its callers.
-6. Hosting, Process, Elmish clock plumbing; Fable suite.
+6. Hosting (Generic Host, ASP.NET Core, GenHttp, Node, Browser) log-sink installation; Process and Elmish clock plumbing; Fable suite.
 7. Docs, release notes, migration guide, benchmarks recorded in `dev-docs/benchmarks/`.
 
 ## 12. Decisions that closed the open questions (owner, 2026-10-30)
@@ -308,6 +367,11 @@ edge with `Flow.withClock`; `App.start` gains matching options. 0.12 release not
   context from inside their flows.
 - **D7. Trace mode.** The recording hook for Clock/Random/Guid reads ships in T25a (`TestPlatform.trace`); T25b documents it and surfaces it in `axial capabilities`.
 - **D8. `platform-env-class.md` is withdrawn** (section 8).
+- **D10. Log adapters.** `Flow.withLogSink` replaces, `Flow.mapLogSink` decorates, and `LogSink` has `tee`, `minLevel`, `filter`, `map`, `console`, `none`, `fromFunction`.
+  `ILogSink` has `IsEnabled` and `Write`; `LogEntry` carries Annotations and named FiberLocals (the latter feed MEL scopes).
+- **D11. Hosts install the sink.** Generic Host installs the MEL sink around the root app (category `Axial`); ASP.NET Core `flowEndpoint` installs it per request
+  (category `Axial.Endpoint`); GenHttp leaves the default unless `EndpointOptions.LogSink` is set; Node and Browser ship their own console sinks. Each can be overridden or turned off by an option.
+- **D12. The fiber observer is not a sink.** `FiberLogging.observe` stays opt-in and unchanged.
 - **D9. Carrier.** The runtime context stays in `RuntimeState` (`AsyncLocal` on .NET) behind one accessor; section 3.3a and the section 7 benchmark decide whether that is acceptable.
 
 Smaller points settled here so they do not stay open:
