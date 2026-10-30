@@ -41,6 +41,41 @@ type PlatformReadBenchmarks() =
         for _ in 1 .. 1000 do
             completed |> Flow.retry (Schedule.recurs 3) |> fun workflow -> workflow.RunSynchronously(environment) |> ignore
 
+// T28: foldCause and mapBoth observe a thrown source; the non-throwing paths must stay as cheap as before.
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(3)>]
+[<IterationCount(3)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
+type FoldCauseBenchmarks() =
+    let environment = ()
+    let completed : Flow<unit, string, int> = Flow.ok 1
+    let failed : Flow<unit, string, int> = Flow.fail "failed"
+    let hop : Flow<unit, string, int> =
+        Flow.fromTask (fun _ ->
+            task {
+                do! Task.Yield()
+                return 1
+            })
+    let onSuccess (value: int) : Flow<unit, string, int> = Flow.ok (value + 1)
+    let onFailure (_: Cause<string>) : Flow<unit, string, int> = Flow.ok 0
+    let successX1000 = flow { for _ in 1 .. 1000 do let! _ = completed |> Flow.foldCause onSuccess onFailure in () }
+    let failureX1000 = flow { for _ in 1 .. 1000 do let! _ = failed |> Flow.foldCause onSuccess onFailure in () }
+    let mapBothX1000 = flow { for _ in 1 .. 1000 do let! _ = completed |> Flow.mapBoth id id in () }
+    let asyncX100 = flow { for _ in 1 .. 100 do let! _ = hop |> Flow.foldCause onSuccess onFailure in () }
+
+    [<Benchmark>]
+    member _.FoldCauseSuccessX1000() = successX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.FoldCauseFailureX1000() = failureX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.MapBothSuccessX1000() = mapBothX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.FoldCauseAsyncX100() = asyncX100.RunSynchronously(environment) |> ignore
+
 [<MemoryDiagnoser>]
 [<InProcess>]
 [<WarmupCount(3)>]

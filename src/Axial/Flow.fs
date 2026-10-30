@@ -2484,6 +2484,19 @@ module Flow =
     /// </example>
     let widenError (flow: Flow<'env, Never, 'value>) : Flow<'env, 'error, 'value> = mapError Never.absurd flow
 
+    // Invokes a flow, turning an exception it throws while being invoked into its cause, as Flow.catch does. The
+    // combinators that hand the whole cause to a handler pair it with Platform.foldObserved or mapBothObserved, which
+    // also observe an exception the execution faults with later, so they see thrown defects as well as Flow.die.
+    let private invokeCatching
+        (flow: Flow<'env, 'error, 'value>)
+        (environment: 'env)
+        (cancellationToken: CancellationToken)
+        : Execution<'value, 'error> =
+        try
+            invoke flow environment cancellationToken
+        with error ->
+            Execution.ofCause (Platform.causeOfThrown cancellationToken error)
+
     /// <summary>Attaches diagnostic trace text to any failure cause of the flow.</summary>
     /// <remarks>
     /// On failure the cause is wrapped in <c>Cause.Traced</c>, so retries, parallel composition, and
@@ -2504,8 +2517,8 @@ module Flow =
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
-            invoke flow environment cancellationToken
-            |> Execution.mapBoth id (Cause.traced trace))
+            invokeCatching flow environment cancellationToken
+            |> Platform.mapBothObserved cancellationToken id (Cause.traced trace))
 
     /// <summary>Maps both the successful value and the failure cause of a synchronous flow.</summary>
     /// <param name="onSuccess">The function to transform the success value.</param>
@@ -2518,8 +2531,8 @@ module Flow =
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'nextError, 'next> =
         Flow(fun environment cancellationToken ->
-            invoke flow environment cancellationToken
-            |> Execution.mapBoth onSuccess onFailure)
+            invokeCatching flow environment cancellationToken
+            |> Platform.mapBothObserved cancellationToken onSuccess onFailure)
 
     /// <summary>Folds both the successful value and the full failure cause into a new flow.</summary>
     /// <remarks>
@@ -2541,8 +2554,8 @@ module Flow =
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'nextError, 'next> =
         Flow(fun environment cancellationToken ->
-            invoke flow environment cancellationToken
-            |> Execution.fold
+            invokeCatching flow environment cancellationToken
+            |> Platform.foldObserved cancellationToken
                 (fun value -> invoke (onSuccess value) environment cancellationToken)
                 (fun cause -> invoke (onFailure cause) environment cancellationToken))
 

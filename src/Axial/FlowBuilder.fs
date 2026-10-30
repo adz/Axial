@@ -8,6 +8,15 @@ module internal FlowBuilderRuntime =
     let run environment cancellationToken source =
         FlowInternal.invoke source environment cancellationToken
 
+    // Rethrows an exception caught earlier, keeping its original stack trace where the platform can.
+    let rethrow (error: exn) : 'value =
+#if FABLE_COMPILER
+        raise error
+#else
+        System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw()
+        Unchecked.defaultof<'value>
+#endif
+
     let fromResult<'env, 'error, 'value> (result: Result<'value, 'error>) : Flow<'env, 'error, 'value> =
         Flow(fun _ _ -> Execution.ofResult result)
 
@@ -111,18 +120,77 @@ type FlowBuilder() =
             flow: Flow<'env, 'error, 'value>,
             handler: exn -> Flow<'env, 'error, 'value>
         ) : Flow<'env, 'error, 'value> =
+        // The handler sees an exception the body throws while it is invoked and one its execution faults with
+        // after an async hop, as `try/with` around `return!` in a task would. Typed failures and `Cause.Die`
+        // values are outcomes, not exceptions, and pass through. A completed body allocates nothing extra.
         Flow(fun environment cancellationToken ->
-            try
-                FlowBuilderRuntime.run environment cancellationToken flow
-            with error ->
-                FlowBuilderRuntime.run environment cancellationToken (handler error))
+            let mutable thrown: exn = null
+
+            let body =
+                try
+                    FlowBuilderRuntime.run environment cancellationToken flow
+                with error ->
+                    thrown <- error
+                    Unchecked.defaultof<Execution<'value, 'error>>
+
+            if not (isNull thrown) then
+                FlowBuilderRuntime.run environment cancellationToken (handler thrown)
+            else
+#if FABLE_COMPILER
+                Platform.tryExecution
+                    (fun () -> body)
+                    (fun error -> FlowBuilderRuntime.run environment cancellationToken (handler error))
+#else
+                if body.IsCompletedSuccessfully then
+                    body
+                else
+                    Platform.tryExecution
+                        (fun () -> body)
+                        (fun error -> FlowBuilderRuntime.run environment cancellationToken (handler error))
+#endif
+        )
 
     member _.TryFinally(flow: Flow<'env, 'error, 'value>, compensation: unit -> unit) : Flow<'env, 'error, 'value> =
+        // The compensation runs exactly once however the body ends: with a value, a cause, a synchronous throw, or
+        // a faulted execution. A thrown exception is rethrown after it, so an enclosing `try/with` still sees it.
         Flow(fun environment cancellationToken ->
-            FlowBuilderRuntime.run environment cancellationToken flow
-            |> Execution.mapBoth
-                (fun value -> compensation (); value)
-                (fun cause -> compensation (); cause))
+            let mutable thrown: exn = null
+
+            let body =
+                try
+                    FlowBuilderRuntime.run environment cancellationToken flow
+                with error ->
+                    thrown <- error
+                    Unchecked.defaultof<Execution<'value, 'error>>
+
+            if not (isNull thrown) then
+                compensation ()
+                FlowBuilderRuntime.rethrow thrown
+            else
+#if FABLE_COMPILER
+                Platform.tryExecution (fun () -> body) (fun error ->
+                    compensation ()
+                    FlowBuilderRuntime.rethrow error)
+                |> Execution.mapBoth
+                    (fun value -> compensation (); value)
+                    (fun cause -> compensation (); cause))
+#else
+                // One state machine, as before: the compensation runs after the outcome, or before a rethrow.
+                Platform.execution {
+                    let mutable exit = Unchecked.defaultof<Exit<'value, 'error>>
+
+                    try
+                        let! settled = body
+                        exit <- settled
+                    with error ->
+                        compensation ()
+                        FlowBuilderRuntime.rethrow error
+
+                    compensation ()
+                    return exit
+                }
+                |> Platform.ofAwaitable)
+#endif
 
     member this.Using
         (
@@ -130,12 +198,19 @@ type FlowBuilder() =
             binder: 'resource -> Flow<'env, 'error, 'value>
         ) : Flow<'env, 'error, 'value>
         when 'resource :> IDisposable =
-        this.TryFinally(
-            binder resource,
-            fun () ->
-                if not (isNull (box resource)) then
-                    resource.Dispose()
-        )
+        let dispose () =
+            if not (isNull (box resource)) then
+                resource.Dispose()
+
+        // The binder builds the body eagerly, so a body that throws before its first await throws here.
+        let body =
+            try
+                binder resource
+            with _ ->
+                dispose ()
+                reraise ()
+
+        this.TryFinally(body, dispose)
 
     member this.While
         (

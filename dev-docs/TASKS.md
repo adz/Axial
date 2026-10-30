@@ -24,23 +24,13 @@ lists the queue. Work on main.
     breaking: 0.12 only if it finishes with benchmarks, else 0.13. Benchmark runtime-context reads against env reads on
     sleep/timeout loops. Decide `platform-env-class.md` afterwards.
   - Status: implementation is complete locally (phases A-F and the R3 review fixes) and awaits the final verify and push. The
-    0.12 breaking table is rebuilt against v0.11.3. The R3 follow-ups are tracked in T28 and T29.
+    0.12 breaking table is rebuilt against v0.11.3. The R3 follow-ups are tracked in T29 (T28 is fixed).
 - [ ] T25b: Capability declarations (`ICapability`: Live/Fake/Replaces) and the build-time manifest
   - Spec sections 3, 4, 10. After T25a ships. Manifest in `obj/axial-capabilities.json` and the nupkg, `axial capabilities`,
     docs and `llms.txt`, agent skill; Guardrails effect rules built from merged manifests (28 built-in rules shrink).
 - [ ] T25c: Guardrails rules for capabilities (naming, no generic IHas chains, no generic ICapability calls, Replaces resolve and
   are unique, Live only in host role)
   - Spec section 5. After T25b.
-- [ ] T28: `Flow.foldCause` does not observe exceptions thrown inside a flow, so a stream over a throwing `IProcess` hangs
-  - Core bug, present at 2996c1575 (not a T25a regression). `Flow.foldCause` (`src/Axial/Flow.fs` ~2540) sees `Flow.die` but not
-    an exception thrown from the flow body (`flow { return invalidOp "boom" } |> Flow.foldCause ...` returns `Die`, the handler
-    never runs). `ProcessStream.runDrain`/`runCollect` over an `IProcess` whose `Execute` throws, including `Process.test ()` with no
-    `RunHandler`, hangs forever because the producer relies on `foldCause` to publish the outcome.
-  - Fix: wrap the body in `Platform.tryExecution` as `Flow.catch` does, so the failure handler receives `Cause.Die`. Check the other
-    internal `foldCause` users (`ProcessStream.terminal`, `mapEngineFailure`, Hosting) that settle something.
-  - Regression tests: core `foldCause` over a synchronous throw and over a throw after an async hop; `runDrain` over a throwing
-    `IProcess` and over `Process.test ()` without `RunHandler` expecting `Die` with the RunHandler message, under a timeout.
-    Benchmark `foldCause` and its callers (no slowdown on the non-throwing path). Should land before 0.12.
 - [ ] T29: T25a review nice-to-haves
   - Elmish: add `ElmishRuntimeOptions.LogSink: ILogSink option`, installed where `Clock` is (`Pump()`, `startLayer`); today Fable's
     default sink sends `Log.info` to `console.error` (red) and the pump is internal. Do it before 0.12 so it is one break.

@@ -350,6 +350,109 @@ let tryExecution
     |> ofAwaitable
 
 #if FABLE_COMPILER
+// Fable erases a directly constructed OperationCanceledException to Exception. Keep one private marker so
+// internal cancellation continuations retain identity without classifying any foreign exception as ours.
+let private runtimeCancellation = Exception "Axial runtime cancellation"
+let runtimeCancellationException () : exn = runtimeCancellation
+#endif
+
+/// True when <paramref name="error" /> is a cancellation the runtime's own token asked for. A library that cancels
+/// for its own reasons has failed, and reporting that as an interruption nobody requested would hide it.
+let isOwnCancellation (cancellationToken: CancellationToken) (error: exn) : bool =
+    let isCancellation =
+        error :? OperationCanceledException
+#if FABLE_COMPILER
+        || obj.ReferenceEquals(error, runtimeCancellation)
+#endif
+    isCancellation && cancellationToken.IsCancellationRequested
+
+/// The cause a thrown exception stands for: an interruption when the runtime's token asked for it, else a defect.
+let causeOfThrown (cancellationToken: CancellationToken) (error: exn) : Cause<'error> =
+    if isOwnCancellation cancellationToken error then Cause.Interrupt else Cause.Die error
+
+/// Like <c>fold</c>, but an exception the execution faults with reaches <paramref name="onFailure" /> as the cause
+/// <c>causeOfThrown</c> gives it, as <c>tryExecution</c> would. Exceptions from the continuations are not caught.
+/// A completed execution continues directly; a pending one is awaited by a single state machine.
+let foldObserved
+    (cancellationToken: CancellationToken)
+    (onSuccess: 'value -> Execution<'next, 'nextError>)
+    (onFailure: Cause<'error> -> Execution<'next, 'nextError>)
+    (effect: Execution<'value, 'error>)
+    : Execution<'next, 'nextError> =
+#if FABLE_COMPILER
+    async {
+        let! exit =
+            async {
+                try
+                    return! effect
+                with error ->
+                    return Exit.Failure(causeOfThrown cancellationToken error)
+            }
+
+        match exit with
+        | Exit.Success value -> return! onSuccess value
+        | Exit.Failure cause -> return! onFailure cause
+    }
+#else
+    if effect.IsCompletedSuccessfully then
+        fold onSuccess onFailure effect
+    else
+        execution {
+            let mutable exit = Unchecked.defaultof<Exit<'value, 'error>>
+
+            try
+                let! settled = effect
+                exit <- settled
+            with error ->
+                exit <- Exit.Failure(causeOfThrown cancellationToken error)
+
+            match exit with
+            | Exit.Success value -> return! onSuccess value
+            | Exit.Failure cause -> return! onFailure cause
+        }
+        |> ofAwaitable
+#endif
+
+/// Like <c>mapBoth</c>, but an exception the execution faults with is mapped as the cause <c>causeOfThrown</c>
+/// gives it. Exceptions from the mapping functions are not caught. A completed execution goes through <c>mapBoth</c>
+/// unchanged; a pending one is awaited by a single state machine.
+let mapBothObserved
+    (cancellationToken: CancellationToken)
+    (onSuccess: 'value -> 'next)
+    (onFailure: Cause<'error> -> Cause<'nextError>)
+    (effect: Execution<'value, 'error>)
+    : Execution<'next, 'nextError> =
+#if FABLE_COMPILER
+    async {
+        let! exit =
+            async {
+                try
+                    return! effect
+                with error ->
+                    return Exit.Failure(causeOfThrown cancellationToken error)
+            }
+
+        return mapBothExit onSuccess onFailure exit
+    }
+#else
+    if effect.IsCompletedSuccessfully then
+        mapBoth onSuccess onFailure effect
+    else
+        execution {
+            let mutable exit = Unchecked.defaultof<Exit<'value, 'error>>
+
+            try
+                let! settled = effect
+                exit <- settled
+            with error ->
+                exit <- Exit.Failure(causeOfThrown cancellationToken error)
+
+            return mapBothExit onSuccess onFailure exit
+        }
+        |> ofAwaitable
+#endif
+
+#if FABLE_COMPILER
 // ---------------------------------------------------------------------------------------------
 // The ambient slot on JavaScript. There is one thread but many interleaved fibers: a fiber that suspends leaves
 // whatever value it installed in place for the code that runs next. So every point in this module that resumes a

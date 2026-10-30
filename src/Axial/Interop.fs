@@ -8,22 +8,13 @@ open System.Threading
 /// disposed client) has failed, and reporting that as an interruption nobody requested would hide it.
 module internal ForeignCancellation =
 #if FABLE_COMPILER
-    // Fable erases a directly constructed OperationCanceledException to Exception. Keep one private marker so
-    // internal cancellation continuations retain identity without classifying any foreign exception as ours.
-    let private runtimeCancellation = Exception "Axial runtime cancellation"
-    let runtimeCancellationException () : exn = runtimeCancellation
+    let runtimeCancellationException () : exn = Platform.runtimeCancellationException ()
 #endif
 
-    let isOurs (cancellationToken: CancellationToken) (error: exn) =
-        let isCancellation =
-            error :? OperationCanceledException
-#if FABLE_COMPILER
-            || obj.ReferenceEquals(error, runtimeCancellation)
-#endif
-        isCancellation && cancellationToken.IsCancellationRequested
+    let isOurs (cancellationToken: CancellationToken) (error: exn) = Platform.isOwnCancellation cancellationToken error
 
     let causeOf (cancellationToken: CancellationToken) (error: exn) : Cause<'error> =
-        if isOurs cancellationToken error then Cause.Interrupt else Cause.Die error
+        Platform.causeOfThrown cancellationToken error
 
 module internal AsyncInterop =
     let from (mapExit: 'source -> Exit<'value, 'error>) (operation: Async<'source>) : Flow<'env, 'error, 'value> =
