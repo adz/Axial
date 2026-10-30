@@ -228,7 +228,7 @@ module LogSink =                                        // combinators, all pure
 ```
 
 `mapLogSink` is what makes "add a second destination for this subtree" or "silence Debug inside this subtree" a one-liner without reading the current sink out
-of the context. `App.start` and `App.startWith` take the sink as an option (`AppOptions.LogSink`), which is just `withLogSink` at the root.
+of the context. `App.start` and `App.startWith` take no sink option: a host entry point is configured by wrapping the root flow in `Flow.withLogSink` (likewise `Flow.withClock` and `Flow.withTelemetry`).
 
 **Generic Host (`Axial.Hosting`).** Today `MicrosoftLogging.create : ILogger -> ILog` and `layer : Layer<ILoggerFactory, Never, ILog>` produce an env service, and
 `FiberLogging.observe` installs a fiber observer. After:
@@ -342,7 +342,7 @@ withdrawn and point it at this document. Revisit only if T25b leaves envs with m
 Per environment: delete the `Clock`, `Log`, `Random`, `Guid` and `SecureRandom` fields and their `IHas*` implementations. Per call site: delete `IHasClock`
 etc. from constraints; `Log.service` becomes `Log.info`; scripted randoms and guids move from env fields to `Flow.withRandom`/`withGuid`. Tests that used
 `runOnManualTime` fork, `TestClock.advance`, and join. Applications that supplied a custom clock (for example from `IServiceProvider`) install it once at the
-edge with `Flow.withClock`; `App.start` gains matching options. 0.12 release notes and the docs pages for clock, random-and-guid, log and test runtime are rewritten.
+edge with `Flow.withClock`, wrapping the root flow before `App.start` (there is no `AppOptions.Clock`). 0.12 release notes and the docs pages for clock, random-and-guid, log and test runtime are rewritten.
 
 ## 11. Order of work after approval
 
@@ -371,7 +371,8 @@ edge with `Flow.withClock`; `App.start` gains matching options. 0.12 release not
 - **D10. Log adapters.** `Flow.withLogSink` replaces, `Flow.mapLogSink` decorates, and `LogSink` has `tee`, `minLevel`, `filter`, `map`, `console`, `none`, `fromFunction`.
   `ILogSink` has `IsEnabled` and `Write`; `LogEntry` carries Annotations and named FiberLocals (the latter feed MEL scopes).
 - **D11. Hosts install the sink.** Generic Host installs the MEL sink around the root app (category `Axial`); ASP.NET Core `flowEndpoint` installs it per request
-  (category `Axial.Endpoint`); GenHttp leaves the default unless `EndpointOptions.LogSink` is set; Node and Browser ship their own console sinks. Each can be overridden or turned off by an option.
+  (category `Axial.Endpoint`); GenHttp leaves the default unless `EndpointOptions.LogSink` is set; Node and Browser ship their own console sinks. Host-specific options (`HostedAppOptions`, `EndpointOptions`, `NodeAppOptions`, `BrowserAppOptions`) can replace or turn off the host sink; for a plain `App.start` the application wraps the root flow with `Flow.withClock`/`withLogSink`/`withTelemetry`.
+- 2026-10-31: `App.start` options (`AppOptions.Clock/LogSink/Telemetry`) implemented as wrapping the root flow in `Flow.with*`; options record dropped for simplicity - pending owner confirmation.
 - **D12. The fiber observer is not a sink.** `FiberLogging.observe` stays opt-in and unchanged.
 - **D9. Carrier.** The runtime context stays in `RuntimeState` (`AsyncLocal` on .NET) behind one accessor; section 3.3a and the section 7 benchmark decide whether that is acceptable.
 
@@ -381,7 +382,7 @@ Smaller points settled here so they do not stay open:
 - `LogEntry.Annotations` is a snapshot of the fiber's annotations at the call, so a sink sees `trace_id` without the caller passing it.
 - A throwing sink is guarded like a fiber observer: it cannot alter a flow's outcome (invariant test 8).
 - `Schedule<'env,'input,'output>` keeps its `'env`; only the clock requirement leaves it.
-- `App.start` gets `Clock`, `LogSink` and `Telemetry` options that install at the root; nothing else in `App` changes.
+- `App.start` is unchanged and has no `Clock`, `LogSink` or `Telemetry` options; entry points wrap the root flow in `Flow.withClock`, `Flow.withLogSink` and `Flow.withTelemetry`.
 - Fable: the override and `captureAmbient` behaviour is proven by invariant test 9 before any Fable-facing change merges.
 
 Nothing remains open for T25a. What follows from it is the generation of envs from specs, which is its own design (T25b territory).
