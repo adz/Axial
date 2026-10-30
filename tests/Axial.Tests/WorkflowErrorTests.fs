@@ -264,6 +264,99 @@ module WorkflowErrorTests =
 
         test <@ requestedCancellation = Exit.Failure Cause.Interrupt @>
 
+    // T28: foldCause and mapBoth must observe an exception thrown by the source flow, as Flow.catch does.
+    let private dieHandler (defect: exn) (cause: Cause<string>) : Flow<unit, string, int> =
+        match Cause.untraced cause with
+        | Cause.Die error when obj.ReferenceEquals(error, defect) -> Flow.succeed -1
+        | other -> Flow.succeed -2
+
+    [<Fact>]
+    let ``Flow foldCause sends a synchronously thrown exception to the failure handler as Die`` () =
+        let defect = InvalidOperationException "boom"
+
+        let thrownByBuilder : Exit<int, string> =
+            flow { return raise defect }
+            |> Flow.foldCause Flow.succeed (dieHandler defect)
+            |> Flow.runSync ()
+
+        let thrownByInvoke : Exit<int, string> =
+            Flow(fun (_: unit) _ -> raise defect)
+            |> Flow.foldCause Flow.succeed (dieHandler defect)
+            |> Flow.runSync ()
+
+        test <@ thrownByBuilder = Exit.Success -1 @>
+        test <@ thrownByInvoke = Exit.Success -1 @>
+
+    [<Fact>]
+    let ``Flow foldCause sends an exception thrown after an async hop to the failure handler as Die`` () =
+        let defect = InvalidOperationException "boom after hop"
+
+        let afterSleep : Exit<int, string> =
+            Flow.sleep (TimeSpan.FromMilliseconds 5.0)
+            |> Flow.bind (fun () -> raise defect)
+            |> Flow.foldCause Flow.succeed (dieHandler defect)
+            |> Flow.runSync ()
+
+        let afterTask : Exit<int, string> =
+            flow {
+                do! Flow.fromTask (fun _ -> task { do! Task.Yield() })
+                return raise defect
+            }
+            |> Flow.foldCause Flow.succeed (dieHandler defect)
+            |> Flow.runSync ()
+
+        test <@ afterSleep = Exit.Success -1 @>
+        test <@ afterTask = Exit.Success -1 @>
+
+    [<Fact>]
+    let ``Flow foldCause keeps a throw from the success handler out of the failure handler`` () =
+        let defect = InvalidOperationException "success handler"
+        let mutable failureHandlerRan = false
+
+        let result : Exit<int, string> =
+            Flow.succeed 1
+            |> Flow.foldCause
+                (fun _ -> raise defect)
+                (fun _ ->
+                    failureHandlerRan <- true
+                    Flow.succeed -1)
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure(Cause.Die defect) @>
+        test <@ not failureHandlerRan @>
+
+    [<Fact>]
+    let ``Flow foldCause reports a runtime cancellation thrown by the source as Interrupt`` () =
+        use cancellation = new CancellationTokenSource()
+
+        let result : Exit<string, string> =
+            Flow(fun (_: unit) _ ->
+                cancellation.Cancel()
+                raise (OperationCanceledException cancellation.Token))
+            |> Flow.foldCause
+                (fun _ -> Flow.succeed "success")
+                (fun cause ->
+                    match Cause.untraced cause with
+                    | Cause.Interrupt -> Flow.succeed "interrupt"
+                    | other -> Flow.succeed $"other: %A{other}")
+            |> Flow.runSyncWithToken () cancellation.Token
+
+        test <@ result = Exit.Success "interrupt" @>
+
+    [<Fact>]
+    let ``Flow mapBoth maps an exception thrown by the source as Die`` () =
+        let defect = InvalidOperationException "boom"
+
+        let result : Exit<int, string> =
+            flow { return raise defect }
+            |> Flow.mapBoth id (fun cause ->
+                match Cause.untraced cause with
+                | Cause.Die error when obj.ReferenceEquals(error, defect) -> Cause.Fail "mapped"
+                | other -> Cause.Fail "unmapped")
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure(Cause.Fail "mapped") @>
+
     [<Fact>]
     let ``Flow catch converts simple defects and preserves typed failures and interruptions`` () =
         let defect = InvalidOperationException "boom"

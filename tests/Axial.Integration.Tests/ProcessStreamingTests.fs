@@ -742,3 +742,44 @@ module ProcessStreamingTests =
         match outcome with
         | Exit.Failure(Cause.Fail(ProcessError.IoFailed _)) -> ()
         | other -> failwithf "Expected route IO failure, got %A" other
+
+    // T28: a producer whose IProcess throws must publish its defect; before the fix the consumer waited forever.
+    let private completesWithin (run: unit -> Exit<'value, ProcessError>) : Exit<'value, ProcessError> =
+        let running = Task.Run(fun () -> run ())
+        Assert.True(running.Wait(TimeSpan.FromSeconds 20.0), "The process stream did not finish; the producer defect was not published.")
+        running.Result
+
+    let private expectDie (message: string) (outcome: Exit<'value, ProcessError>) =
+        match outcome with
+        | Exit.Failure cause ->
+            Assert.True(
+                Cause.defects cause |> List.exists (fun error -> error.Message = message),
+                $"Expected a defect with message {message}, got %A{cause}")
+        | other -> failwithf "Expected a producer defect, got %A" other
+
+    [<Fact>]
+    let ``process stream over a TestProcess without RunHandler fails with the RunHandler message`` () =
+        let host = ProcessHostEnvironment.test ()
+
+        completesWithin (fun () ->
+            shText "printf unused" |> streamStdoutLines |> ProcessStream.runDrain |> Process.tryRunWith host.Environment)
+        |> expectDie "Configure TestProcess.RunHandler."
+
+        completesWithin (fun () ->
+            shText "printf unused" |> streamStdoutLines |> ProcessStream.runCollect |> Process.tryRunWith host.Environment)
+        |> expectDie "Configure TestProcess.RunHandler."
+
+    [<Fact>]
+    let ``process stream over an IProcess whose Execute throws fails with that defect`` () =
+        let host = ProcessHostEnvironment.test ()
+        host.Process.ExecuteHandler <- Some(fun _ _ -> flow { return raise (InvalidOperationException "execute threw") })
+
+        completesWithin (fun () ->
+            shText "printf unused" |> streamStdoutLines |> ProcessStream.runDrain |> Process.tryRunWith host.Environment)
+        |> expectDie "execute threw"
+
+        host.Process.ExecuteHandler <- Some(fun _ _ -> Flow.delay (fun () -> raise (InvalidOperationException "execute threw")))
+
+        completesWithin (fun () ->
+            shText "printf unused" |> streamStdoutLines |> ProcessStream.runDrain |> Process.tryRunWith host.Environment)
+        |> expectDie "execute threw"
