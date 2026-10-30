@@ -32,16 +32,29 @@ lists the queue. Work on main.
 - [ ] T31: 0.12 package reshape (owner decisions 2026-10-31)
   - Move the `Clock`/`Random`/`Guid`/`Log` operations and `TestLog`/`TestPlatform`/`TestClock`/`runTest` from `Axial.PlatformService`
     into core `Axial` (keep their namespaces for 0.12); delete the duplicate live services so one implementation remains (T29 item).
-  - Rename what is left (environment variables) into `Axial.Configuration` (T32); deprecate the `Axial.PlatformService` NuGet id.
+  - Delete `Axial.PlatformService` (not deprecated); environment variables become a source in `Axial.Configuration` (T32), and old
+    env-var typed reads are deleted. DECIDED (owner, 2026-10-31).
   - Merge `Axial.Files` into `Axial.FileSystem`. Check what Files, Hosting, Hosting.Node, HttpClient and Process still need from the
     old package after the move, and drop references they no longer need.
   - Migration rows in `dev-docs/releases/0.12.0.md`. Do this before T33 so docs pages move once.
-- [ ] T32: `Axial.Configuration` and time zone/culture in the platform services (0.12; design first, owner review before code)
-  - Configuration: typed reads with validation errors; sources: environment variables, command-line arguments (all hosts, not only
-    Node), config files, an `IConfiguration` adapter; explicit precedence. Authority stays in the env (`IHasConfiguration`-style).
-  - Time zone and culture join Clock/Random/Guid in the runtime's `PlatformServices`, with `Flow.withTimeZone`/`withCulture` and fixed
-    values under `runTest`; no reads of `TimeZoneInfo.Local`/`CultureInfo.CurrentCulture` in Axial code paths.
-  - Design in `dev-docs/current-ideas/configuration.md`.
+- [ ] T32: `Axial.Configuration`, culture and time zone (0.12; DECIDED, owner, 2026-10-31)
+  - `Axial.Configuration` lives here and references Reified; core remains Reified-free. Sources produce Reified Data: environment,
+    CLI args on every host, JSON via FileSystem/Reified, an IConfiguration adapter in Axial.Hosting, browser query string.
+    `Data.mergeAll` gives later-wins precedence; Schema decoding accumulates keyed errors; required/optional strings cover simple cases.
+    Default `Config.load` returns a plain value captured by consumers; fake with Data.
+  - Reified 0.12 prerequisites: Data.merge/mergeAll/ofEnvironment, case-insensitive key parse option, nested CLI `--Db:Port`, and
+    `Secret<'v>` in Refinements with redacted errors/ToString. Axial 0.12 requires Reified 0.12.
+  - Culture/TimeZone are sealed values outside the runtime context. `Culture.system`/`TimeZone.local` are explicit effects;
+    TestPlatform supplies invariant/UTC under `runTest`; browser/Fable culture comes from navigator.language.
+    Keep values in the app model or pass them to pure `Format.number/currency/date/time` and `TimeZone.toLocal` (UTC-to-local only).
+    Culture implements IFormatProvider on .NET; Fable formatting uses Intl.
+  - `Culture.setProcessDefault` is an effect called once at desktop/browser startup, not in App; Fable no-op. API servers use
+    invariant globalization; ASP.NET automatically passes RequestLocalization's request culture as a value when enabled.
+    Verify .NET WASM culture data in Avalonia browser builds. Guardrails implements the F# culture bans itself, retaining CA ids.
+  - Optional `Config.watch sources schema` returns a SubscriptionRef of latest valid config: filesystem watches, FlowStream.debounce,
+    re-read/merge/decode; env/args static, successful decodes published, last good retained, failures logged and exposed as an error stream.
+  - Configuration docs present Axial.Configuration as Axial's approach and document Microsoft IConfiguration/Options via Axial.Hosting
+    as a supported alternative, including the bridge. Design in `dev-docs/current-ideas/configuration.md`.
 - [ ] T33: A docs set per non-core package, shaped like `docs/process` and `docs/http`
   - Folder, `_index.md`, numbered pages, `api/`, an entry in `docs/packages/index.md`: FileSystem (with Files), Console,
     Configuration, WebSocket, Hosting (one set, a page per host package), Elmish, Telemetry (one set), Guardrails (with `Axial.Tool`).
@@ -97,8 +110,9 @@ lists the queue. Work on main.
   - Accept only if every T23 law passes on both runtimes, Pingpong/Threadring improve, and nothing else regresses beyond
     noise. Fable and NativeAOT must work or it stays a .NET-only switch.
 
-- [ ] T16: Split the HTTP host adapters into their own Axial+Reified product before 1.0
-  - Move the two cross-product packages out of the Axial release train once their product boundary is settled.
+- [ ] T16: Reassess extraction of packages using Reified once their product boundary is settled
+  - DECIDED (owner, 2026-10-31): core `Axial` has no Reified references; packages that need Reified data (the HTTP adapters,
+    `Axial.Configuration`) may. They live in this repo for now and may be extracted later.
 
 - [ ] T15b: Migrate gitkay and LogDug to Axial.Files and Axial.ElmishFlows once 0.11 is published
   - Remove gitkay's walk/lines/watch Guardrails suppressions and swap LogDug's Files internals for the package.
@@ -126,6 +140,7 @@ lists the queue. Work on main.
 ## Acceptance
 
 - `Axial.slnx` builds and tests without Reified.
-- Core `Axial` and operational packages contain no Reified references.
-- Only the isolated HTTP adapters cross the product boundary here; the reference app lives in [axial-examples](https://github.com/adz/axial-examples).
+- DECIDED (owner, 2026-10-31): core `Axial` has no Reified references; packages that need Reified data (the HTTP adapters,
+  `Axial.Configuration`) may. They live in this repo for now and may be extracted later.
+- The reference app lives in [axial-examples](https://github.com/adz/axial-examples).
 - Package, AOT, Fable, documentation, and site checks pass at release boundaries.
