@@ -46,7 +46,7 @@ approval or baseline commands or edit the lock. Release automation runs `axial p
 
 - `Flow<'env, 'error, 'value>` is the public workflow model. Do not reintroduce public `Effect`, `EffectFlow`, `AsyncFlow`, `TaskFlow`, or carrier-specific workflow concepts.
 - Core `Axial` and its operational packages must not depend on Reified. Only the explicit HTTP host adapters may reference Reified packages.
-- Model application and operational dependencies explicitly in `'env`. Timed flows require `IHasClock`; the executor adapts that supplied clock for its own scheduling. Ambient timers belong only inside named live implementations.
+- Model application and operational authority explicitly in `'env`. Clock, random and GUID values come from scoped runtime services; install test clocks with `Flow.withClock` / `Flow.runTest`. The executor adapts the installed clock for scheduling. Ambient timers belong only inside named live implementations. Process and Elmish boundaries outside a flow still receive explicit clocks.
 - Use `BindError` only at a `flow { }` bind site when a source error must be assigned or mapped immediately before binding.
 - Prefer AOT- and trimming-safe designs. Do not introduce runtime reflection as the foundation for workflow or service-access APIs.
 

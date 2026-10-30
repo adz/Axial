@@ -50,7 +50,7 @@ let private rule id guardrail category matching message replacement =
 let builtInRules: EffectRule list =
     [ rule "random.new" "Axial.PlatformService" "random" (ConstructorOf "System.Random")
           "constructs System.Random directly, which makes behavior depend on ambient, untestable randomness; use System.Security.Cryptography inside capability code for secrets, tokens, and nonces"
-          "Axial.PlatformService.IRandom (Random.service / Random.nextDouble); for secrets, use System.Security.Cryptography inside capability code"
+          "Axial.IRandom (Random.service / Random.nextDouble); for secrets, use System.Security.Cryptography inside capability code"
 
       rule "random.cryptographic" "Axial.PlatformService" "secure-random"
           (MembersOf(
@@ -62,7 +62,7 @@ let builtInRules: EffectRule list =
 
       rule "guid.new" "Axial.PlatformService" "guid" (MembersOf("System.Guid", [ "NewGuid" ]))
           "calls Guid.NewGuid() directly, which makes generated identifiers untestable"
-          "Axial.PlatformService.IGuid (Guid.service / Guid.newGuid)"
+          "Axial.IGuid (Guid.service / Guid.newGuid)"
 
       rule "clock.datetime" CoreGuardrail "clock"
           (MembersOf("System.DateTime", [ "get_Now"; "Now"; "get_UtcNow"; "UtcNow"; "get_Today"; "Today" ]))

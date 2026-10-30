@@ -18,7 +18,7 @@ open Fable.Core
 /// <summary>Helpers for the clock service.</summary>
 [<RequireQualifiedAccess>]
 module Clock =
-    /// Reads the service from the environment.
+    /// Reads the clock installed in the current runtime scope.
     let service<'env, 'error> : Flow<'env, 'error, IClock> =
         Flow(fun _ _ -> Execution.ofValue (RuntimePlatform.current().Platform.Clock))
 
@@ -196,10 +196,6 @@ module Clock =
                         System.Threading.Tasks.ValueTask.CompletedTask } }
 #endif
 
-    /// <summary>Builds the live clock as a layer.</summary>
-    let layer : Layer<unit, Never, IClock> =
-        Layer.succeed live
-
 /// <summary>A thread-safe recording log sink. Entries are immutable snapshots.</summary>
 type TestLog() =
     let entries = ResizeArray<LogEntry>()
@@ -240,31 +236,31 @@ module Log =
     /// Writes only if the current destination enables this level.
     let log<'env, 'error> (level: LogLevel) (message: string) : Flow<'env, 'error, unit> = emit level None message
 
-    /// <summary>Writes a trace log message through an explicit logging service.</summary>
+    /// <summary>Writes a trace message to the installed log sink.</summary>
     let trace<'env, 'error> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Trace message
 
-    /// <summary>Writes a debug log message through an explicit logging service.</summary>
+    /// <summary>Writes a debug message to the installed log sink.</summary>
     let debug<'env, 'error> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Debug message
 
-    /// <summary>Writes an informational log message through an explicit logging service.</summary>
+    /// <summary>Writes an informational message to the installed log sink.</summary>
     let info<'env, 'error> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Information message
 
-    /// <summary>Writes a warning log message through an explicit logging service.</summary>
+    /// <summary>Writes a warning message to the installed log sink.</summary>
     let warning<'env, 'error> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Warning message
 
-    /// <summary>Writes an error log message through an explicit logging service.</summary>
+    /// <summary>Writes an error message to the installed log sink.</summary>
     let error<'env, 'error> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Error message
 
-    /// <summary>Writes a critical log message through an explicit logging service.</summary>
+    /// <summary>Writes a critical message to the installed log sink.</summary>
     let critical<'env, 'error> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Critical message
 
-    /// <summary>Writes a log message carrying an exception through an explicit logging service.</summary>
+    /// <summary>Writes a message carrying an exception to the installed log sink.</summary>
     let logException<'env, 'error>
         (level: LogLevel)
         (error: exn)
@@ -272,11 +268,11 @@ module Log =
         : Flow<'env, 'error, unit> =
         emit level (Some error) message
 
-    /// <summary>Writes an error log message carrying an exception through an explicit logging service.</summary>
+    /// <summary>Writes an error message carrying an exception to the installed log sink.</summary>
     let errorExn<'env, 'error> (error: exn) (message: string) : Flow<'env, 'error, unit> =
         logException LogLevel.Error error message
 
-    /// <summary>Writes a critical log message carrying an exception through an explicit logging service.</summary>
+    /// <summary>Writes a critical message carrying an exception to the installed log sink.</summary>
     let criticalExn<'env, 'error> (error: exn) (message: string) : Flow<'env, 'error, unit> =
         logException LogLevel.Critical error message
 
@@ -289,7 +285,7 @@ module Log =
 /// <summary>Helpers for the random-number service.</summary>
 [<RequireQualifiedAccess>]
 module Random =
-    /// Reads the service from the environment.
+    /// Reads the random generator installed in the current runtime scope.
     let service<'env, 'error> : Flow<'env, 'error, IRandom> =
         Flow(fun _ _ -> Execution.ofValue (RuntimePlatform.current().Platform.Random))
 
@@ -407,14 +403,10 @@ module Random =
                 for index in 0 .. buffer.Length - 1 do
                     buffer[index] <- byte (next ()) }
 
-    /// <summary>Builds the live random-number generator as a layer.</summary>
-    let layer : Layer<unit, Never, IRandom> =
-        Layer.succeed live
-
 /// <summary>Helpers for the GUID service.</summary>
 [<RequireQualifiedAccess>]
 module Guid =
-    /// Reads the service from the environment.
+    /// Reads the GUID generator installed in the current runtime scope.
     let service<'env, 'error> : Flow<'env, 'error, IGuid> =
         Flow(fun _ _ -> Execution.ofValue (RuntimePlatform.current().Platform.Guid))
 
@@ -449,10 +441,6 @@ module Guid =
 
     /// Produces the supplied GUIDs in order, failing clearly on exhaustion.
     let sequence (values: seq<System.Guid>) : IGuid = fromSequence values
-
-    /// <summary>Builds the live GUID service as a layer.</summary>
-    let layer : Layer<unit, Never, IGuid> =
-        Layer.succeed live
 
 /// <summary>Helpers for the environment-variable service.</summary>
 [<RequireQualifiedAccess>]
