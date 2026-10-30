@@ -45,22 +45,30 @@ module MicrosoftLogging =
             | LogLevel.Critical, Some error -> logger.LogCritical(error, message))
 
     /// <summary>Creates an Axial logger backed by a supplied Microsoft logger.</summary>
-    let create (logger: ILogger) : ILog =
+    let sink (logger: ILogger) : ILogSink =
         if isNull logger then nullArg (nameof logger)
-
-        { new ILog with
-            member _.Log level message = write logger level None message
-            member _.LogException level error message = write logger level (Some error) message }
+        { new ILogSink with
+            member _.IsEnabled level =
+                logger.IsEnabled(
+                    match level with
+                    | LogLevel.Trace -> Microsoft.Extensions.Logging.LogLevel.Trace
+                    | LogLevel.Debug -> Microsoft.Extensions.Logging.LogLevel.Debug
+                    | LogLevel.Information -> Microsoft.Extensions.Logging.LogLevel.Information
+                    | LogLevel.Warning -> Microsoft.Extensions.Logging.LogLevel.Warning
+                    | LogLevel.Error -> Microsoft.Extensions.Logging.LogLevel.Error
+                    | LogLevel.Critical -> Microsoft.Extensions.Logging.LogLevel.Critical)
+            member _.Write entry =
+                let scope = Dictionary<string, obj>()
+                for name, value in entry.Locals do scope[name] <- value
+                for KeyValue(name, value) in entry.Annotations do scope[name] <- box value
+                use _scope = logger.BeginScope(scope)
+                write logger entry.Level entry.Error entry.Message }
 
     /// <summary>Creates an Axial logger with an explicit Microsoft logging category.</summary>
-    let fromFactory (categoryName: string) (loggerFactory: ILoggerFactory) : ILog =
+    let fromFactory (categoryName: string) (loggerFactory: ILoggerFactory) : ILogSink =
         if String.IsNullOrWhiteSpace categoryName then invalidArg (nameof categoryName) "A logging category is required."
         if isNull loggerFactory then nullArg (nameof loggerFactory)
-        create (loggerFactory.CreateLogger categoryName)
-
-    /// <summary>Builds an Axial logger from a Microsoft logger factory supplied in the layer input.</summary>
-    let layer (categoryName: string) : Layer<ILoggerFactory, Never, ILog> =
-        Layer.envWith (fromFactory categoryName)
+        sink (loggerFactory.CreateLogger categoryName)
 
 /// <summary>Fiber-lifecycle logging through Microsoft.Extensions.Logging.</summary>
 [<RequireQualifiedAccess>]
@@ -213,7 +221,7 @@ module SystemdNotify =
 [<RequireQualifiedAccess>]
 module Hosting =
     /// <summary>Runs a scheduler heartbeat gated by an optional application health flow. Requires a clock and logger in the environment.</summary>
-    let watchdogWithHeartbeat<'env when 'env :> IHasClock and 'env :> IHasLog>
+    let watchdogWithHeartbeat<'env>
         (heartbeatGate: Flow<'env, Never, unit>)
         (variables: IEnvironmentVariables)
         (processId: int)
@@ -258,13 +266,13 @@ module Hosting =
         }
 
     /// <summary>Runs the scheduler heartbeat with an application-owned progress check; use this to detect stalled work.</summary>
-    let watchdogWith<'env when 'env :> IHasClock and 'env :> IHasLog>
+    let watchdogWith<'env>
         (variables: IEnvironmentVariables) (processId: int) (notifier: ISystemdNotifier)
         (isHealthy: Flow<'env, Never, bool>) : Flow<'env, Never, unit> =
         watchdogWithHeartbeat (Flow.succeed ()) variables processId notifier isHealthy
 
     /// <summary>Detects a wedged Axial scheduler or starved thread pool; supply watchdogWith isHealthy to tie the watchdog to your application's progress.</summary>
-    let watchdog<'env when 'env :> IHasClock and 'env :> IHasLog>
+    let watchdog<'env>
         (variables: IEnvironmentVariables) (processId: int) (notifier: ISystemdNotifier) : Flow<'env, Never, unit> =
         watchdogWith variables processId notifier (Flow.succeed true)
 

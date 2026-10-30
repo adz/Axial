@@ -326,16 +326,15 @@ module PlatformScopeTests =
         let workflow = flow {
             let! child = Flow.sleep (TimeSpan.FromSeconds 5.) |> Flow.forkNamed "unadvanced-sleeper" |> Flow.withClock notifying
             do! awaitRegistration registered
-            let! watchdog =
-                Fiber.join child |> Flow.map (fun () -> true)
-                |> Flow.timeoutToOk (TimeSpan.FromMilliseconds 20.) false
-                |> Flow.withClock Clock.live
+            // A real-time watchdog observes the stalled manual-time fiber without joining it.
+            do! Flow.sleep (TimeSpan.FromMilliseconds 20.) |> Flow.withClock Clock.live
             let dump = registry.DumpAt(platform.Clock)
+            let stalled = platform.Clock.Sleepers = 1 && registry.LiveFiberCount > 0
             do! Fiber.interrupt child |> Flow.ignore
-            return watchdog, dump
+            return stalled, dump
         }
         match workflow |> Flow.withFiberRegistry registry |> Flow.runTestWith platform () with
-        | Exit.Success(false, dump) -> Assert.Contains("unadvanced-sleeper", dump)
+        | Exit.Success(true, dump) -> Assert.Contains("unadvanced-sleeper", dump)
         | other -> failwithf "Expected watchdog stall, got %A" other
 
     [<Fact>]

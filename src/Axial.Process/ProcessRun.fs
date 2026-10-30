@@ -90,7 +90,7 @@ module internal ProcessRun =
                     proc.Dispose()
                     Flow.fail (processError command error))
 
-    let private releaseStage (proc: Diagnostics.Process) : Flow<ClockEnvironment, Never, unit> =
+    let private releaseStage (proc: Diagnostics.Process) : Flow<unit, Never, unit> =
         Flow.delay (fun () ->
             bestEffort proc (fun proc ->
                 if not proc.HasExited then
@@ -143,7 +143,7 @@ module internal ProcessRun =
                 else
                     Flow.ofExit (Exit.Failure(Cause.map ProcessError.InputFailed cause)))
 
-    let private mapEngineFailure (source: Flow<ClockEnvironment, ProcessError, 'value>) =
+    let private mapEngineFailure (source: Flow<unit, ProcessError, 'value>) =
         source
         |> Flow.foldCause
             Flow.succeed
@@ -160,10 +160,10 @@ module internal ProcessRun =
         (specification: ProcessSpec)
         (observe: ProcessOutput -> Async<unit>)
         : Flow<unit, ProcessError, ProcessResult> =
-        let clockEnvironment = ClockEnvironment clock
+        let clockEnvironment = ()
         let observesOutput = not (obj.ReferenceEquals(observe, ProcessObserver.ignore))
 
-        let run : Flow<ClockEnvironment, ProcessError, ProcessResult> =
+        let run : Flow<unit, ProcessError, ProcessResult> =
             flow {
                 let commands = specification.Commands |> List.toArray
                 let stdoutLimit, stderrLimit = specification.MaxOutputBytes
@@ -221,18 +221,18 @@ module internal ProcessRun =
 
                 let! exits =
                     commands
-                    |> Flow.traverse (fun _ -> Deferred.make<ClockEnvironment, Never, int> ())
+                    |> Flow.traverse (fun _ -> Deferred.make<unit, Never, int> ())
                     |> Flow.widenError
                 let! (commandsQueue: Queue<RunCommand>) = Queue.unbounded ()
                 let timerFibers = ResizeArray<Fiber<ProcessError, unit>>()
 
                 let postTimedStop cause error =
                     flow {
-                        let! reply = Deferred.make<ClockEnvironment, Never, StopCause> () |> Flow.widenError
+                        let! reply = Deferred.make<unit, Never, StopCause> () |> Flow.widenError
                         let! _ = commandsQueue |> Queue.offer (Stop(cause, reply))
                         let! winner = Deferred.await reply |> Flow.widenError
                         if winner = cause then return! Flow.fail error
-                        else return! Flow.never<ClockEnvironment, ProcessError, unit>
+                        else return! Flow.never<unit, ProcessError, unit>
                     }
 
                 let sleepStartedNow (delay: TimeSpan) =
@@ -436,10 +436,10 @@ module internal ProcessRun =
 
                 let mutable firstStop: StopCause option = None
                 let! stopFinished =
-                    Deferred.make<ClockEnvironment, Never, StopCause> ()
+                    Deferred.make<unit, Never, StopCause> ()
                     |> Flow.widenError
                 let! ioStop =
-                    Deferred.make<ClockEnvironment, Never, unit> ()
+                    Deferred.make<unit, Never, unit> ()
                     |> Flow.widenError
 
                 let stop cause reply =
@@ -470,7 +470,7 @@ module internal ProcessRun =
                             state.Exited <- true
                             if state.Feeder.IsSome && not state.StdinClosed then do! stopFeeder state
                             if not (commands[stage].SuccessCodes.Value.Contains code) then
-                                let! ignored = Deferred.make<ClockEnvironment, Never, StopCause> ()
+                                let! ignored = Deferred.make<unit, Never, StopCause> ()
                                 do! stop WorkerFailure ignored
                         | Close(stage, request, reply) ->
                             let state = stages[stage]
@@ -511,7 +511,7 @@ module internal ProcessRun =
 
                 let requestStop cause =
                     flow {
-                        let! reply = Deferred.make<ClockEnvironment, Never, StopCause> ()
+                        let! reply = Deferred.make<unit, Never, StopCause> ()
                         let! offered =
                             (commandsQueue |> Queue.offer (Stop(cause, reply)) |> Flow.map Some)
                             |> Flow.foldCause Flow.succeed (fun _ -> Flow.succeed None)
@@ -523,7 +523,7 @@ module internal ProcessRun =
                 let closeCallback stage request = async {
                     let requestFlow =
                         flow {
-                            let! reply = Deferred.make<ClockEnvironment, StopRequestError, unit> ()
+                            let! reply = Deferred.make<unit, StopRequestError, unit> ()
                             let! _ = commandsQueue |> Queue.offer (Close(stage, request, reply))
                             return!
                                 Deferred.await reply
@@ -532,7 +532,7 @@ module internal ProcessRun =
                         }
                         |> Flow.foldCause Flow.succeed (fun _ -> Flow.succeed (Ok ()))
 
-                    let! exit = Flow.toAsync clockEnvironment requestFlow
+                    let! exit = Flow.toAsync clockEnvironment (requestFlow |> Flow.withClock clock)
                     return
                         match exit with
                         | Exit.Success result -> result
@@ -746,7 +746,7 @@ module internal ProcessRun =
                     |> List.groupBy (fun (_, target, _) -> target)
                     |> List.map (fun (target, connections) -> pipelinePump target connections)
 
-                let reads = ResizeArray<Flow<ClockEnvironment, ProcessError, unit>>()
+                let reads = ResizeArray<Flow<unit, ProcessError, unit>>()
                 let final = Set.minElement specification.Leaves
 
                 if not (NativeProcess.inherited stdoutTargets[final]) then
@@ -789,7 +789,7 @@ module internal ProcessRun =
                                 source
                                 |> FlowStream.runForEachFlow (writeInput stage >> Flow.localEnv (fun () -> clockEnvironment))
                                 |> mapInputFailure
-                                |> Flow.localEnv (fun (_: ClockEnvironment) -> ())
+                                |> Flow.localEnv (fun (_: unit) -> ())
 
                             work
 
@@ -925,7 +925,7 @@ module internal ProcessRun =
                     flow {
                         let! winner = requestStop requested |> Flow.widenError
                         if winner = requested then return! Flow.fail error
-                        else return! Flow.never<ClockEnvironment, ProcessError, _>
+                        else return! Flow.never<unit, ProcessError, _>
                     }
 
                 let completeRun =
@@ -1017,7 +1017,7 @@ module internal ProcessRun =
                             |> Seq.map Fiber.join
                             |> List.ofSeq
                             |> Flow.sequencePar
-                            |> Flow.bind (fun _ -> Flow.never<ClockEnvironment, ProcessError, ProcessResult>)
+                            |> Flow.bind (fun _ -> Flow.never<unit, ProcessError, ProcessResult>)
                         Flow.race completeRun timerFailure
 
                 let! result =
@@ -1035,5 +1035,5 @@ module internal ProcessRun =
             |> mapEngineFailure
             |> Flow.scoped
 
-        run |> Flow.localEnv (fun () -> clockEnvironment)
+        run |> Flow.withClock clock
 #endif

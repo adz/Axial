@@ -18,11 +18,12 @@ type CommandDefect =
 type ElmishRuntimeOptions =
     { Post: (unit -> unit) -> unit
       OnDefect: CommandDefect -> unit
-      HistoryCapacity: int }
+      HistoryCapacity: int
+      Clock: IClock option }
 
 /// Owns the root scope for all commands in one Elmish program.
 [<Sealed>]
-type ElmishRuntime<'env when 'env :> IHasClock> internal (options: ElmishRuntimeOptions) =
+type ElmishRuntime<'env> internal (options: ElmishRuntimeOptions) =
     let registry = FiberRegistry(options.HistoryCapacity)
     let queue = ConcurrentQueue<Flow<'env, Never, unit>>()
     let signal = new SemaphoreSlim(0)
@@ -52,7 +53,10 @@ type ElmishRuntime<'env when 'env :> IHasClock> internal (options: ElmishRuntime
     member internal _.Options = options
     member internal _.Pending = Volatile.Read(&pending)
     member internal _.LatestCount = lock gate (fun () -> latest.Count)
-    member internal _.Pump() : Flow<'env, Never, unit> = pump ()
+    member internal _.Pump() : Flow<'env, Never, unit> =
+        match options.Clock with
+        | Some clock -> pump () |> Flow.withClock clock
+        | None -> pump ()
 
     member internal _.SetEnvironment(environmentValue: 'env) =
         environment <- environmentValue

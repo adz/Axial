@@ -9,7 +9,7 @@ open global.Elmish
 
 /// A program runtime with queued UI delivery and captured defects.
 [<Sealed>]
-type TestRuntime<'env when 'env :> IHasClock> internal (environment: 'env) =
+type TestRuntime<'env> internal (clock: ManualClock, environment: 'env) =
     let deliveries = ConcurrentQueue<unit -> unit>()
     let messages = ConcurrentQueue<obj>()
     let errors = ConcurrentQueue<CommandDefect>()
@@ -18,7 +18,8 @@ type TestRuntime<'env when 'env :> IHasClock> internal (environment: 'env) =
             new ElmishRuntime<'env>(
                 { Post = deliveries.Enqueue
                   OnDefect = errors.Enqueue
-                  HistoryCapacity = 128 })
+                  HistoryCapacity = 128
+                  Clock = Some clock })
         let handle = App.start environment (Flow.withFiberRegistry runtime.Registry (runtime.Pump()))
         runtime.SetEnvironment(environment)
         runtime.Attach(handle)
@@ -56,9 +57,9 @@ type TestRuntime<'env when 'env :> IHasClock> internal (environment: 'env) =
 module ElmishRuntime =
     /// <summary>Starts a runtime around a caller-supplied environment.</summary>
     /// <param name="options">Host delivery and diagnostic policy.</param>
-    /// <param name="environment">The environment every command runs with; it must implement <see cref="T:Axial.IHasClock" />.</param>
+    /// <param name="environment">The application dependencies every command runs with.</param>
     /// <returns>A running <see cref="T:Axial.ElmishFlows.ElmishRuntime`1" />.</returns>
-    let start (options: ElmishRuntimeOptions) (environment: 'env when 'env :> IHasClock) =
+    let start (options: ElmishRuntimeOptions) (environment: 'env) =
         let runtime = new ElmishRuntime<'env>(options)
         let handle = App.start environment (Flow.withFiberRegistry runtime.Registry (runtime.Pump()))
         runtime.SetEnvironment(environment)
@@ -106,6 +107,7 @@ module ElmishRuntime =
                             | [] -> Deferred.dieNow (OperationCanceledException("Elmish runtime provisioning was interrupted.")) ready |> ignore
                         Flow.ok ())
                 |> Flow.withFiberRegistry runtime.Registry
+                |> fun source -> match options.Clock with Some clock -> Flow.withClock clock source | None -> source
 
             let handle = App.start input root
             runtime.Attach(handle)
@@ -113,7 +115,7 @@ module ElmishRuntime =
         }
 
     /// Creates a runtime with queued dispatch and captured defects for tests.
-    let test (environment: 'env when 'env :> IHasClock) = new TestRuntime<'env>(environment)
+    let test (clock: ManualClock) (environment: 'env) = new TestRuntime<'env>(clock, environment)
 
 [<RequireQualifiedAccess>]
 module TestRuntime =

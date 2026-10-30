@@ -40,7 +40,7 @@ module Files =
     /// <remarks>A process crash cannot leave a partial destination file. Surviving power loss on some file systems
     /// also requires fsync of the parent directory after rename; this function does not perform directory fsync.
     /// A killed process may leave a .&lt;name&gt;.*.tmp sibling, safe to remove with cleanupStaleTemps.</remarks>
-    let writeAtomic (path: string) (contents: byte array) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem and 'env :> IHasGuid =
+    let writeAtomic (path: string) (contents: byte array) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem =
         flow {
             let! fs = FileSystem.service
             let! guid = Guid.service
@@ -80,15 +80,15 @@ module Files =
 
     /// <summary>Deletes sibling atomic-write temporary files older than age for the target path.</summary>
     /// <remarks>Only names matching .&lt;name&gt;.&lt;32 hex digits&gt;.tmp are removed. Do not run concurrently with writers using an age shorter than their write duration.</remarks>
-    let cleanupStaleTemps (path: string) (age: TimeSpan) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem and 'env :> IHasClock =
+    let cleanupStaleTemps (path: string) (age: TimeSpan) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem =
         flow {
             let! fs = FileSystem.service
-            let! environment = Flow.env
+            let! now = Clock.now
             return!
                 Flow.attemptBlocking (fun token ->
                     let directory = Path.GetDirectoryName(Path.GetFullPath path)
                     let prefix = "." + Path.GetFileName path + "."
-                    let cutoff = (environment :> IHasClock).Clock.UtcNow().UtcDateTime - age
+                    let cutoff = now.UtcDateTime - age
                     for candidate in fs.EnumerateFiles(directory, prefix + "*.tmp", SearchOption.TopDirectoryOnly) do
                         token.ThrowIfCancellationRequested()
                         let name = Path.GetFileName candidate
@@ -100,11 +100,11 @@ module Files =
         }
 
     /// <summary>Encodes text as UTF-8 and atomically replaces a file.</summary>
-    let writeAllTextAtomic (path: string) (contents: string) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem and 'env :> IHasGuid =
+    let writeAllTextAtomic (path: string) (contents: string) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem =
         writeAtomic path (Encoding.UTF8.GetBytes contents)
 
     /// <summary>Encodes text with the supplied encoding and atomically replaces a file.</summary>
-    let writeAllTextAtomicWithEncoding (path: string) (contents: string) (encoding: Encoding) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem and 'env :> IHasGuid =
+    let writeAllTextAtomicWithEncoding (path: string) (contents: string) (encoding: Encoding) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem =
         writeAtomic path (encoding.GetBytes contents)
 
     /// <summary>Watches a directory (optionally recursively) or one file until consumption ends.</summary>

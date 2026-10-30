@@ -27,9 +27,6 @@ type ProcessHostEnvironment = {
     interface IHasConsole with
         member this.Console = this.Console
 
-    interface IHasClock with
-        member this.Clock = this.Clock
-
 type TestProcessHostEnvironment = {
     Environment: ProcessHostEnvironment
     Process: TestProcess
@@ -796,7 +793,7 @@ module Process =
         toFlowSpecification (toSpecification source)
 
     [<EditorBrowsable(EditorBrowsableState.Never)>]
-    let createOutputStream<'env when 'env :> IHasProcess and 'env :> IHasClock>
+    let createOutputStream<'env when 'env :> IHasProcess>
         requestedChannel
         (specification: ProcessSpec)
         : ProcessStream<'env, ProcessOutput> =
