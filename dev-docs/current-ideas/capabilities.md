@@ -201,7 +201,7 @@ module Log =
 sink's level gate passes (decision D3).
 
 Telemetry stays an observation slot. Today the slots are internal (`Telemetry.withSink` is hidden); `ITelemetry` makes them public and
-`Flow.withTelemetry` composes them. The `Activity`/`ActivitySource` bridge lives in **`Axial.Telemetry`** (the only package that already boxes the
+`Flow.withTelemetry` installs one, replacing the previous one in its scope (like `withLogSink`); only the `Axial.Telemetry` adapters tee, through the existing `withComposed*` helpers. The `Activity`/`ActivitySource` bridge lives in **`Axial.Telemetry`** (the only package that already boxes the
 tracer), not in `Axial`, which keeps no dependency on `System.Diagnostics.DiagnosticSource`. The bridge is `Telemetry.withActivitySource source`. A
 bridge from `ILogSink` to `Microsoft.Extensions.Logging` goes in `Axial.Hosting`, next to the existing logger-backed fiber observer.
 
