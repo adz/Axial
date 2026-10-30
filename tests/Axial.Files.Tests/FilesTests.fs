@@ -11,12 +11,10 @@ open Axial.Files
 type private CleanupEnv =
     { FileSystem: IFileSystem; Clock: IClock }
     interface IHasFileSystem with member this.FileSystem = this.FileSystem
-    interface IHasClock with member this.Clock = this.Clock
 
 type private AtomicEnv =
-    { FileSystem: IFileSystem; Guid: Axial.PlatformService.IGuid }
+    { FileSystem: IFileSystem; Guid: Axial.IGuid }
     interface IHasFileSystem with member this.FileSystem = this.FileSystem
-    interface Axial.PlatformService.IHasGuid with member this.Guid = this.Guid
 
 type FilesTests() = 
     [<Fact>]
@@ -38,7 +36,7 @@ type FilesTests() =
                     member _.Elapsed() = TimeSpan.Zero
                     member _.Sleep(_, _) = System.Threading.Tasks.Task.CompletedTask }
             let env = { FileSystem = FileSystem.live; Clock = clock }
-            Assert.Equal(Exit.Success (), Files.cleanupStaleTemps path (TimeSpan.FromHours 1.) |> Flow.run env)
+            Assert.Equal(Exit.Success (), Files.cleanupStaleTemps path (TimeSpan.FromHours 1.) |> Flow.withClock clock |> Flow.run env)
             Assert.False(File.Exists old)
             Assert.True(File.Exists fresh)
             Assert.True(File.Exists unrelated)

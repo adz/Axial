@@ -10,7 +10,7 @@ module TestRuntimeTests =
     [<Fact>]
     let ``test runtime queues delivery and collects defects`` () =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
-        use test = ElmishRuntime.test (ClockEnvironment(clock))
+        use test = ElmishRuntime.test clock ()
         TestRuntime.run (Cmd.OfFlow.perform "answer" test.Runtime (Flow.succeed 42) id) test
         Assert.True(TestRuntime.settle (TimeSpan.FromSeconds 5.0) test)
         Assert.Equal<obj list>([ box 42 ], TestRuntime.dispatched test)
@@ -21,7 +21,7 @@ module TestRuntimeTests =
     [<Fact>]
     let ``stop drains jobs not yet started`` () =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
-        use test = ElmishRuntime.test (ClockEnvironment(clock))
+        use test = ElmishRuntime.test clock ()
         for i in 1 .. 1000 do
             TestRuntime.run (Cmd.OfFlow.perform "queued" test.Runtime (Flow.succeed i) id) test
         Assert.True(test.Runtime.StopAndWait(TimeSpan.FromSeconds 5.0))

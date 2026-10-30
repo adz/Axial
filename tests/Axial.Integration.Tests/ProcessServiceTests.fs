@@ -19,8 +19,6 @@ type ProcessTestEnv =
     { Process: IProcess; Clock: IClock }
     interface IHasProcess with
         member this.Process = this.Process
-    interface IHasClock with
-        member this.Clock = this.Clock
 
 module ProcessServiceTests =
     let private env () = { Process = Process.live Clock.live FileSystem.live Console.live; Clock = Clock.live }
@@ -154,8 +152,6 @@ module ProcessServiceTests =
                 })
                 // The source ignores interruption; disconnect is the explicit choice not to wait for it.
                 |> Flow.disconnect
-                // disconnect needs a clock for its fiber; stdin sources run without an environment.
-                |> Flow.localEnv (fun () -> ClockEnvironment(Clock.live))
                 |> FlowStream.fromFlow)
         let processDone = TaskCompletionSource<Exit<ProcessResult, ProcessError>>(TaskCreationOptions.RunContinuationsAsynchronously)
         let running =
@@ -1434,8 +1430,6 @@ module ProcessServiceTests =
                     sourceRelease.Task)
                 // Without disconnect the run would wait for this source, which ignores interruption.
                 |> Flow.disconnect
-                // disconnect needs a clock for its fiber; stdin sources run without an environment.
-                |> Flow.localEnv (fun () -> ClockEnvironment(Clock.live))
                 |> FlowStream.fromFlow
             let specification =
                 shText "trap '' TERM; echo ready; exec sleep 30"

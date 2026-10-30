@@ -17,8 +17,6 @@ type HttpTestEnv =
 
     interface IHasHttp with
         member this.Http = this.Http
-    interface IHasClock with
-        member this.Clock = this.Clock
 
 module HttpServiceTests =
     let private syntheticTime = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) // axial-allow-AXG004: immutable value is safe to share between tests

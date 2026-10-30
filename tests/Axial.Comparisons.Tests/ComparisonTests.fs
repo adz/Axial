@@ -106,8 +106,6 @@ module RetryTests =
 
         interface IHasHttp with
             member this.Http = this.Http
-        interface IHasClock with
-            member this.Clock = this.Clock
 
     [<Fact>]
     let ``transient transport failures are retried within the budget`` () =
@@ -421,7 +419,7 @@ module StmTests =
                 return warehouseA, warehouseB, localLeft, regionalLeft, reservations
             }
 
-        match Flow.runSync (ClockEnvironment(Clock.live)) program with
+        match Flow.runSync () program with
         | Exit.Success(warehouseA, warehouseB, localLeft, regionalLeft, reservations) ->
             // One reservation takes Local, the other falls back to Regional — never both Local.
             test <@ List.sort [ warehouseA; warehouseB ] = [ Local; Regional ] @>
@@ -452,7 +450,7 @@ module StmTests =
                 return suspended, warehouse, regionalLeft, reservations
             }
 
-        test <@ Flow.runSync (ClockEnvironment(Clock.live)) program = Exit.Success(true, Regional, 0, 1) @>
+        test <@ Flow.runSync () program = Exit.Success(true, Regional, 0, 1) @>
 
     [<Fact>]
     let ``ordinary lock-based inventory also works but each guarantee is hand-maintained`` () =

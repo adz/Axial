@@ -13,9 +13,6 @@ type FileSystemTestEnv =
     { FileSystem: IFileSystem
       Clock: IClock }
 
-    interface IHasClock with
-        member this.Clock = this.Clock
-
     interface IHasFileSystem with
         member this.FileSystem = this.FileSystem
 

@@ -15,7 +15,7 @@ module SubscriptionTests =
                 member _.UtcNow() = DateTimeOffset.UtcNow
                 member _.Elapsed() = TimeSpan.FromTicks(Environment.TickCount64)
                 member _.Sleep(delay, token) = Task.Delay(delay, token) }
-        ElmishRuntime.start { Post = post; OnDefect = defect; HistoryCapacity = 32 } (ClockEnvironment(clock))
+        ElmishRuntime.start { Post = post; OnDefect = defect; HistoryCapacity = 32; Clock = Some clock } ()
 
     [<Fact>]
     let ``inbox drops full offers and counts them`` () =
@@ -57,7 +57,7 @@ module SubscriptionTests =
         let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let finished = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         use runtime = owner (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
-        let source : FlowStream<ClockEnvironment, string, int> =
+        let source : FlowStream<unit, string, int> =
             FlowStream.repeatFlow (flow {
                 do! Flow.scopeFinalizer (Flow.fromTask (fun _ -> task {
                     finalizing.TrySetResult() |> ignore
@@ -92,10 +92,10 @@ module SubscriptionTests =
     [<Fact>]
     let ``manual clock search pipeline dispatches only the latest query`` () =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
-        use test = ElmishRuntime.test (ClockEnvironment(clock))
+        use test = ElmishRuntime.test clock ()
         let inbox = Inbox.create 8 test.Runtime
         let searching = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
-        let search query : Flow<ClockEnvironment, string, string> = flow {
+        let search query : Flow<unit, string, string> = flow {
             searching.TrySetResult() |> ignore
             do! Flow.sleep (TimeSpan.FromMilliseconds 100.0)
             return $"result-{query}"
@@ -135,11 +135,11 @@ module SubscriptionTests =
         let messages = ConcurrentQueue<int>()
         let defects = ConcurrentQueue<CommandDefect>()
         use runtime = owner (fun callback -> callback ()) defects.Enqueue
-        let failing : FlowStream<ClockEnvironment, string, int> = FlowStream.unfoldFlow (fun _ -> Flow.fail "bad") ()
+        let failing : FlowStream<unit, string, int> = FlowStream.unfoldFlow (fun _ -> Flow.fail "bad") ()
         use typed = snd (List.head (Sub.OfFlowStream.subscribe ["typed"] runtime failing (fun _ -> 9))) messages.Enqueue
         Assert.True(SpinWait.SpinUntil((fun () -> messages.Count = 1), 5000))
         Assert.Equal(9, messages.ToArray().[0])
-        let broken : FlowStream<ClockEnvironment, string, int> = FlowStream.unfoldFlow (fun _ -> Flow.die (Exception("boom"))) ()
+        let broken : FlowStream<unit, string, int> = FlowStream.unfoldFlow (fun _ -> Flow.die (Exception("boom"))) ()
         use defect = snd (List.head (Sub.OfFlowStream.subscribe ["broken"] runtime broken (fun _ -> 0))) messages.Enqueue
         Assert.True(SpinWait.SpinUntil((fun () -> defects.Count = 1), 5000))
         Assert.Equal(1, messages.Count)

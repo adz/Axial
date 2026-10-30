@@ -39,7 +39,7 @@ module ScopeFromRunAnalyzerTests =
     [<InlineData("Queue.makeScoped QueueStrategy.Unbounded")>]
     let ``real constructors outlive run`` constructor =
         task {
-            let! found = realFindings ("let result () = Flow.run (Unchecked.defaultof<IHasClock>) (" + constructor + ")")
+            let! found = realFindings ("let result () = Flow.run () (" + constructor + ")")
             test <@ found = [ "AXG008" ] @>
         }
 
@@ -49,7 +49,7 @@ module ScopeFromRunAnalyzerTests =
     [<InlineData("Hub.make ()")>]
     let ``unscoped constructors outlive run safely`` constructor =
         task {
-            let! found = realFindings ("let result () = Flow.run (Unchecked.defaultof<IHasClock>) (" + constructor + ")")
+            let! found = realFindings ("let result () = Flow.run () (" + constructor + ")")
             test <@ found = [] @>
         }
 
@@ -58,7 +58,7 @@ module ScopeFromRunAnalyzerTests =
     [<InlineData("Cache.make (fun k -> Flow.ok k) |> Flow.map id")>]
     let ``composed cache result outlives run`` expression =
         task {
-            let! found = realFindings ("let result () = Flow.run (Unchecked.defaultof<IHasClock>) (" + expression + ")")
+            let! found = realFindings ("let result () = Flow.run () (" + expression + ")")
             test <@ found = [ "AXG008" ] @>
         }
 

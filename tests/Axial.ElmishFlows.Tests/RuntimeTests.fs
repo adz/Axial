@@ -16,32 +16,29 @@ module RuntimeTests =
             member _.Sleep(delay, token) = Task.Delay(delay, token) }
 
     let private options post onDefect =
-        { Post = post; OnDefect = onDefect; HistoryCapacity = 32 }
+        { Post = post; OnDefect = onDefect; HistoryCapacity = 32; Clock = Some(liveClock ()) }
 
-    type CacheEnvironment = { Clock: IClock; Cache: Cache<int, Never, string> } with
-        interface IHasClock with
-            member this.Clock = this.Clock
+    type CacheEnvironment = { Cache: Cache<int, Never, string> }
 
     [<Fact>]
     let ``startLayer provisions a cache and release flow until stop`` () =
         let messages = ConcurrentQueue<string>()
         let released = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
-        let cacheLayer : Layer<ClockEnvironment, string, CacheEnvironment> =
+        let cacheLayer : Layer<unit, string, CacheEnvironment> =
             Layer.fromFlow (flow {
                 let! cache =
                     Cache.make (fun (key: int) ->
-                        Flow.succeed $"value-{key}" : Flow<ClockEnvironment, Never, string>)
+                        Flow.succeed $"value-{key}" : Flow<unit, Never, string>)
                 do! Flow.scopeFinalizer (Flow.fromTask (fun _ ->
                     released.TrySetResult() |> ignore
                     Task.FromResult(())))
-                let! clock = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock)
-                return { Clock = clock; Cache = cache }
+                return { Cache = cache }
             })
         let result =
             ElmishRuntime.startLayer
                 (options (fun callback -> callback ()) (fun defect -> failwith defect.Rendered))
                 cacheLayer
-                (ClockEnvironment(liveClock ()))
+                ()
             |> Async.RunSynchronously
         use runtime =
             match result with
@@ -63,7 +60,7 @@ module RuntimeTests =
     [<Fact>]
     let ``startLayer returns Error and starts no runtime when provisioning fails`` () =
         let released = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
-        let failing : Layer<ClockEnvironment, string, ClockEnvironment> =
+        let failing : Layer<unit, string, unit> =
             Layer.fromFlow (flow {
                 do! Flow.scopeFinalizer (Flow.fromTask (fun _ ->
                     released.TrySetResult() |> ignore
@@ -74,7 +71,7 @@ module RuntimeTests =
             ElmishRuntime.startLayer
                 (options (fun callback -> callback ()) (fun defect -> failwith defect.Rendered))
                 failing
-                (ClockEnvironment(liveClock ()))
+                ()
             |> Async.RunSynchronously
         match result with
         | Ok _ -> failwith "startLayer should have returned Error"

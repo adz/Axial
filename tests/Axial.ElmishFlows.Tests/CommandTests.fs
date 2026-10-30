@@ -16,8 +16,8 @@ module CommandTests =
                 member _.Elapsed() = TimeSpan.FromTicks(Environment.TickCount64)
                 member _.Sleep(delay, token) = Task.Delay(delay, token) }
         ElmishRuntime.start
-            { Post = post; OnDefect = onDefect; HistoryCapacity = 1024 }
-            (ClockEnvironment(clock))
+            { Post = post; OnDefect = onDefect; HistoryCapacity = 1024; Clock = Some clock }
+            ()
 
     [<Fact>]
     let ``success and typed failure dispatch through Post`` () =
@@ -26,7 +26,8 @@ module CommandTests =
         let options =
             { Post = fun callback -> posts.Enqueue(Thread.CurrentThread.ManagedThreadId); callback ()
               OnDefect = fun defect -> failwith defect.Rendered
-              HistoryCapacity = 32 }
+              HistoryCapacity = 32
+              Clock = None }
         use runtime = runtime options.Post options.OnDefect
         let success = Cmd.OfFlow.either "ok" runtime (Flow.succeed 42) id (fun (_: string) -> -1)
         let failure = Cmd.OfFlow.either "bad" runtime (Flow.fail "bad") (fun (_: int) -> 0) (fun _ -> -1)
@@ -54,7 +55,7 @@ module CommandTests =
         let ran = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let messages = ConcurrentQueue<int>()
         use owner = runtime (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
-        let work : Flow<ClockEnvironment, Never, unit> =
+        let work : Flow<unit, Never, unit> =
             Flow.fromTask (fun _ -> ran.TrySetResult() |> ignore; Task.FromResult(()))
         for start in Cmd.OfFlow.start "background" owner work do start messages.Enqueue
         Assert.True(ran.Task.Wait(5000))
@@ -65,7 +66,7 @@ module CommandTests =
         let defects = ConcurrentQueue<CommandDefect>()
         let messages = ConcurrentQueue<int>()
         use owner = runtime (fun callback -> callback ()) defects.Enqueue
-        let work : Flow<ClockEnvironment, Never, unit> = Flow.die (InvalidOperationException("boom"))
+        let work : Flow<unit, Never, unit> = Flow.die (InvalidOperationException("boom"))
         for start in Cmd.OfFlow.start "background" owner work do start messages.Enqueue
         Assert.True(SpinWait.SpinUntil((fun () -> defects.Count = 1), 5000))
         Assert.Empty(messages)
@@ -78,10 +79,10 @@ module CommandTests =
         let messages = ConcurrentQueue<int>()
         use owner = runtime (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
         let gate =
-            match App.run owner.Environment (Deferred.make<ClockEnvironment, Never, unit> ()) |> Async.RunSynchronously with
+            match App.run owner.Environment (Deferred.make<unit, Never, unit> ()) |> Async.RunSynchronously with
             | Exit.Success value -> value
             | _ -> failwith "Could not create gate"
-        let work : Flow<ClockEnvironment, Never, unit> =
+        let work : Flow<unit, Never, unit> =
             flow {
                 do! Flow.fromTask (fun _ -> started.TrySetResult() |> ignore; Task.FromResult(()))
                 do! Deferred.await gate
@@ -100,7 +101,7 @@ module CommandTests =
         let interrupted = new TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         use owner = runtime (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
         let gate =
-            match App.run owner.Environment (Deferred.make<ClockEnvironment, Never, int> ()) |> Async.RunSynchronously with
+            match App.run owner.Environment (Deferred.make<unit, Never, int> ()) |> Async.RunSynchronously with
             | Exit.Success value -> value
             | _ -> failwith "Could not create gate"
         let slow =
@@ -123,7 +124,7 @@ module CommandTests =
         let released = new TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         use owner = runtime (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
         let gate =
-            match App.run owner.Environment (Deferred.make<ClockEnvironment, Never, int> ()) |> Async.RunSynchronously with
+            match App.run owner.Environment (Deferred.make<unit, Never, int> ()) |> Async.RunSynchronously with
             | Exit.Success value -> value
             | _ -> failwith "Could not create gate"
         let work = flow {

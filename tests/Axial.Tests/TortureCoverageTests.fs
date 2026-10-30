@@ -24,10 +24,8 @@ module TortureCoverageTests =
 
     /// Members deliberately left out, each with the reason.
     let private excluded () : Map<string, string> =
-        [ "Flow.withClock", "Runtime service override; fork/branch inheritance is covered by PlatformScopeTests (C1 torture waiver)."
-          "Flow.withRandom", "Runtime service override; fork/branch inheritance is covered by PlatformScopeTests (C1 torture waiver)."
+        [ "Flow.withRandom", "Runtime service override; fork/branch inheritance is covered by PlatformScopeTests (C1 torture waiver)."
           "Flow.withGuid", "Runtime service override; fork/branch inheritance is covered by PlatformScopeTests (C1 torture waiver)."
-          "Flow.withLogSink", "Observation destination; fork/branch inheritance is covered by PlatformScopeTests (C1 torture waiver)."
           "Flow.mapLogSink", "Observation decorator; scoped composition is covered by PlatformScopeTests (C1 torture waiver)."
           "Flow.withTelemetry", "Observation slots; replacement and guarded callbacks are covered by PlatformScopeTests (C1 torture waiver)."
           "Bind.toFlow", "Compiler-facing helper used by the inline Bind adapters."

@@ -53,63 +53,36 @@ module DependencyInjectionIntegrationTests =
         override _.SendAsync(_: HttpRequestMessage, _: CancellationToken) =
             Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent(responseText)))
 
-    let private serviceProviderWithBaseRuntimeServices () =
+    type VariablesEnvironment = { Variables: IEnvironmentVariables } with
+        interface IHasEnvironmentVariables with member this.EnvironmentVariables = this.Variables
+
+    [<Fact>]
+    let ``DI supplies authority while platform overrides are installed at the edge`` () =
         let clock = CoreClock.fromValue (DateTimeOffset(2026, 5, 20, 9, 30, 0, TimeSpan.Zero))
-        let logMessages = ResizeArray<LogLevel * string>()
-        let logger = CoreLog.fromSink (fun level message -> logMessages.Add(level, message))
-        let random = CoreRandom.fromValue 17
-        let guid = CoreGuid.fromValue (System.Guid.Parse "cccccccc-cccc-cccc-cccc-cccccccccccc")
-        let envVars = CoreEnvironmentVariables.fromPairs [ "AXIAL_DI", "registered" ]
-
-        let provider =
-            ServiceCollection()
-                .AddSingleton<IClock>(clock)
-                .AddSingleton<ILog>(logger)
-                .AddSingleton<IRandom>(random)
-                .AddSingleton<IGuid>(guid)
-                .AddSingleton<IEnvironmentVariables>(envVars)
-                .BuildServiceProvider()
-
-        provider, logMessages
-
-    [<Fact>]
-    let ``base runtime layer provisions services from Microsoft DI`` () =
-        let provider, logMessages = serviceProviderWithBaseRuntimeServices ()
-        use provider = provider
-
-        let workflow : Flow<BaseRuntime, BaseRuntimeError, string> =
-            flow {
-                let! now = CoreClock.now<BaseRuntime, BaseRuntimeError>
-                let formattedNow = now.ToString("HH:mm")
-                do! CoreLog.info<BaseRuntime, BaseRuntimeError> $"di-now={formattedNow}"
-                let! next = CoreRandom.nextInt<BaseRuntime, BaseRuntimeError> 1 100
-                let! id = CoreGuid.newGuid<BaseRuntime, BaseRuntimeError>
-                let! value = CoreEnvironmentVariables.tryGet<BaseRuntime, BaseRuntimeError> "AXIAL_DI"
-                let environmentValue = defaultArg value "<missing>"
-                return $"{next}:{id}:{environmentValue}"
-            }
-
-        let result =
-            workflow
-            |> Layer.provide BaseRuntime.fromServiceProvider
-            |> Flow.runSync (provider :> IServiceProvider)
-
-        test <@ result = Exit.Success "17:cccccccc-cccc-cccc-cccc-cccccccccccc:registered" @>
-        test <@ List.ofSeq logMessages = [ LogLevel.Information, "di-now=09:30" ] @>
-
-    [<Fact>]
-    let ``base runtime layer reports missing Microsoft DI registrations as typed failures`` () =
+        let log = CoreLog.memory ()
         use provider =
             ServiceCollection()
-                .AddSingleton<IClock>(CoreClock.live)
+                .AddSingleton<IEnvironmentVariables>(CoreEnvironmentVariables.fromPairs [ "AXIAL_DI", "registered" ])
                 .BuildServiceProvider()
-
+        let workflow : Flow<VariablesEnvironment, unit, string> = flow {
+            let! now = CoreClock.now
+            let formattedNow = now.ToString("HH:mm")
+            do! CoreLog.info $"di-now={formattedNow}"
+            let! next = CoreRandom.nextInt 1 100
+            let! id = CoreGuid.newGuid
+            let! value = CoreEnvironmentVariables.tryGet "AXIAL_DI"
+            let environmentValue = defaultArg value "<missing>"
+            return $"{next}:{id}:{environmentValue}"
+        }
         let result =
-            Flow.env<BaseRuntime, BaseRuntimeError>
-            |> Layer.provide BaseRuntime.fromServiceProvider
-            |> Flow.runSync (provider :> IServiceProvider)
-
-        test <@ result = Exit.Failure(Cause.Fail(BaseRuntimeError.MissingService "ILog")) @>
+            workflow
+            |> Flow.withClock clock
+            |> Flow.withLogSink log
+            |> Flow.withRandom (CoreRandom.fromValue 17)
+            |> Flow.withGuid (CoreGuid.fromValue (System.Guid.Parse "cccccccc-cccc-cccc-cccc-cccccccccccc"))
+            |> Flow.runSync { Variables = provider.GetRequiredService<IEnvironmentVariables>() }
+        test <@ result = Exit.Success "17:cccccccc-cccc-cccc-cccc-cccccccccccc:registered" @>
+        test <@ log.Entries |> Seq.map (fun entry -> entry.Level, entry.Message) |> Seq.toList = [ LogLevel.Information, "di-now=09:30" ] @>
 
     [<Fact>]
     let ``service resolve treats missing provider registrations as defects`` () =
