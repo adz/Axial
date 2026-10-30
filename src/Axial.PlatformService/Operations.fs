@@ -15,51 +15,33 @@ open Axial
 open Fable.Core
 #endif
 
-/// <summary>Groups the standard operational services commonly used by workflow hosts.</summary>
-type BaseRuntime =
-    { Clock: IClock
-      Log: ILog
-      Random: IRandom
-      Guid: IGuid
-      EnvironmentVariables: IEnvironmentVariables }
-    interface IHasClock with
-        member this.Clock = this.Clock
-    interface IHasLog with
-        member this.Log = this.Log
-    interface IHasRandom with
-        member this.Random = this.Random
-    interface IHasGuid with
-        member this.Guid = this.Guid
-    interface IHasEnvironmentVariables with
-        member this.EnvironmentVariables = this.EnvironmentVariables
-
 /// <summary>Helpers for the clock service.</summary>
 [<RequireQualifiedAccess>]
 module Clock =
     /// Reads the service from the environment.
-    let service<'env, 'error when 'env :> IHasClock> : Flow<'env, 'error, IClock> =
-        Flow.envWith _.Clock
+    let service<'env, 'error> : Flow<'env, 'error, IClock> =
+        Flow(fun _ _ -> Execution.ofValue (RuntimePlatform.current().Platform.Clock))
 
     /// <summary>Reads the current UTC timestamp from an explicit clock service.</summary>
-    let now<'env, 'error when 'env :> IHasClock> : Flow<'env, 'error, DateTimeOffset> =
+    let now<'env, 'error> : Flow<'env, 'error, DateTimeOffset> =
         service
         |> Flow.map (fun clock -> clock.UtcNow())
 
     /// <summary>Reads the current UTC date/time from an explicit clock service.</summary>
-    let utcDateTime<'env, 'error when 'env :> IHasClock> : Flow<'env, 'error, DateTime> =
+    let utcDateTime<'env, 'error> : Flow<'env, 'error, DateTime> =
         now |> Flow.map _.UtcDateTime
 
     /// <summary>Reads the current Unix timestamp in seconds from an explicit clock service.</summary>
-    let unixTimeSeconds<'env, 'error when 'env :> IHasClock> : Flow<'env, 'error, int64> =
+    let unixTimeSeconds<'env, 'error> : Flow<'env, 'error, int64> =
         now |> Flow.map _.ToUnixTimeSeconds()
 
     /// <summary>Reads the current Unix timestamp in milliseconds from an explicit clock service.</summary>
-    let unixTimeMilliseconds<'env, 'error when 'env :> IHasClock> : Flow<'env, 'error, int64> =
+    let unixTimeMilliseconds<'env, 'error> : Flow<'env, 'error, int64> =
         now |> Flow.map _.ToUnixTimeMilliseconds()
 
     /// <summary>Reads a monotonic timestamp from an explicit clock service.</summary>
     /// <remarks>Only differences between readings are meaningful. Prefer <c>Clock.timed</c> to measure a flow.</remarks>
-    let elapsed<'env, 'error when 'env :> IHasClock> : Flow<'env, 'error, TimeSpan> =
+    let elapsed<'env, 'error> : Flow<'env, 'error, TimeSpan> =
         service
         |> Flow.map (fun clock -> clock.Elapsed())
 
@@ -74,7 +56,7 @@ module Clock =
     /// let! report, took = buildReport |&gt; Clock.timed
     /// </code>
     /// </example>
-    let timed<'env, 'error, 'value when 'env :> IHasClock>
+    let timed<'env, 'error, 'value>
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value * TimeSpan> =
         service
@@ -220,23 +202,17 @@ module Clock =
     let layer : Layer<unit, Never, IClock> =
         Layer.succeed live
 
-/// <summary>A single entry recorded by a <see cref="T:Axial.PlatformService.TestLog" />.</summary>
-type LogEntry =
-    { Level: LogLevel
-      Message: string
-      Error: exn option }
-
 /// <summary>A test double for <see cref="T:Axial.PlatformService.ILog" /> that records entries for assertions.</summary>
 type TestLog() =
     let entries = ResizeArray<LogEntry>()
 
     /// <summary>Records a message at the supplied level.</summary>
     member _.Log(level: LogLevel, message: string) =
-        entries.Add { Level = level; Message = message; Error = None }
+        entries.Add { Level = level; Message = message; Error = None; Annotations = Map.empty; Locals = [] }
 
     /// <summary>Records a message carrying an exception at the supplied level.</summary>
     member _.LogException(level: LogLevel, error: exn, message: string) =
-        entries.Add { Level = level; Message = message; Error = Some error }
+        entries.Add { Level = level; Message = message; Error = Some error; Annotations = Map.empty; Locals = [] }
 
     /// <summary>The recorded entries, in the order they were written.</summary>
     member _.Entries : IReadOnlyList<LogEntry> = entries
@@ -244,106 +220,95 @@ type TestLog() =
     /// <summary>Removes all recorded entries.</summary>
     member _.Clear() = entries.Clear()
 
-    interface ILog with
-        member this.Log level message = this.Log(level, message)
-        member this.LogException level error message = this.LogException(level, error, message)
+    interface ILogSink with
+        member _.IsEnabled _ = true
+        member _.Write entry = lock entries (fun () -> entries.Add entry)
 
 /// <summary>Helpers for the logging service.</summary>
 [<RequireQualifiedAccess>]
 module Log =
-    /// Reads the service from the environment.
-    let service<'env, 'error when 'env :> IHasLog> : Flow<'env, 'error, ILog> =
-        Flow.envWith _.Log
+    let private emit (level: LogLevel) (error: exn option) (message: string) : Flow<'env, 'error, unit> =
+        let completed = Execution.ofValue ()
+        Flow(fun _ _ ->
+            let runtime = RuntimePlatform.current ()
+            let sink = runtime.LogSink
+            if LogSink.enabled sink level then
+                LogSink.write sink
+                    { Level = level; Message = message; Error = error
+                      Annotations = runtime.Context.Annotations
+                      Locals = runtime.Context.Locals |> Map.toList |> List.choose (fun (_, struct (name, value)) -> name |> Option.map (fun key -> key, value)) }
+            completed)
 
-    /// <summary>Writes a log message at the requested level through an explicit logging service.</summary>
-    let log<'env, 'error when 'env :> IHasLog>
-        (level: LogLevel)
-        (message: string)
-        : Flow<'env, 'error, unit> =
-        service
-        |> Flow.map (fun log -> log.Log level message)
+    /// Writes only if the current destination enables this level.
+    let log<'env, 'error> (level: LogLevel) (message: string) : Flow<'env, 'error, unit> = emit level None message
 
     /// <summary>Writes a trace log message through an explicit logging service.</summary>
-    let trace<'env, 'error when 'env :> IHasLog> (message: string) : Flow<'env, 'error, unit> =
+    let trace<'env, 'error> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Trace message
 
     /// <summary>Writes a debug log message through an explicit logging service.</summary>
-    let debug<'env, 'error when 'env :> IHasLog> (message: string) : Flow<'env, 'error, unit> =
+    let debug<'env, 'error> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Debug message
 
     /// <summary>Writes an informational log message through an explicit logging service.</summary>
-    let info<'env, 'error when 'env :> IHasLog> (message: string) : Flow<'env, 'error, unit> =
+    let info<'env, 'error> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Information message
 
     /// <summary>Writes a warning log message through an explicit logging service.</summary>
-    let warning<'env, 'error when 'env :> IHasLog> (message: string) : Flow<'env, 'error, unit> =
+    let warning<'env, 'error> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Warning message
 
     /// <summary>Writes an error log message through an explicit logging service.</summary>
-    let error<'env, 'error when 'env :> IHasLog> (message: string) : Flow<'env, 'error, unit> =
+    let error<'env, 'error> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Error message
 
     /// <summary>Writes a critical log message through an explicit logging service.</summary>
-    let critical<'env, 'error when 'env :> IHasLog> (message: string) : Flow<'env, 'error, unit> =
+    let critical<'env, 'error> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Critical message
 
     /// <summary>Writes a log message carrying an exception through an explicit logging service.</summary>
-    let logException<'env, 'error when 'env :> IHasLog>
+    let logException<'env, 'error>
         (level: LogLevel)
         (error: exn)
         (message: string)
         : Flow<'env, 'error, unit> =
-        service
-        |> Flow.map (fun log -> log.LogException level error message)
+        emit level (Some error) message
 
     /// <summary>Writes an error log message carrying an exception through an explicit logging service.</summary>
-    let errorExn<'env, 'error when 'env :> IHasLog> (error: exn) (message: string) : Flow<'env, 'error, unit> =
+    let errorExn<'env, 'error> (error: exn) (message: string) : Flow<'env, 'error, unit> =
         logException LogLevel.Error error message
 
     /// <summary>Writes a critical log message carrying an exception through an explicit logging service.</summary>
-    let criticalExn<'env, 'error when 'env :> IHasLog> (error: exn) (message: string) : Flow<'env, 'error, unit> =
+    let criticalExn<'env, 'error> (error: exn) (message: string) : Flow<'env, 'error, unit> =
         logException LogLevel.Critical error message
 
-    /// <summary>Creates a no-op logger for tests and local service bundles.</summary>
-    let live : ILog =
-        { new ILog with
-            member _.Log _ _ = ()
-            member _.LogException _ _ _ = () }
-
-    /// <summary>Creates a logger from a synchronous sink function. Exceptions are appended to the message text.</summary>
-    let fromSink (sink: LogLevel -> string -> unit) : ILog =
-        { new ILog with
-            member _.Log level message = sink level message
-            member _.LogException level error message = sink level (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}{1}{2}", message, Environment.NewLine, error)) }
-
-    /// <summary>Creates a recording logger whose entries are exposed for assertions.</summary>
-    let capturing () : TestLog = TestLog()
-
-    /// <summary>Builds the live logger as a layer.</summary>
-    let layer : Layer<unit, Never, ILog> =
-        Layer.succeed live
+    /// Console destination, Information and above, on stderr.
+    let live : ILogSink = LogSink.console LogLevel.Information
+    let none : ILogSink = LogSink.none
+    let fromSink (sink: LogEntry -> unit) : ILogSink = LogSink.fromFunction sink
+    let memory () : TestLog = TestLog()
 
 /// <summary>Helpers for the random-number service.</summary>
 [<RequireQualifiedAccess>]
 module Random =
     /// Reads the service from the environment.
-    let service<'env, 'error when 'env :> IHasRandom> : Flow<'env, 'error, IRandom> =
-        Flow.envWith _.Random
+    let service<'env, 'error> : Flow<'env, 'error, IRandom> =
+        Flow(fun _ _ -> Execution.ofValue (RuntimePlatform.current().Platform.Random))
 
     /// <summary>Reads a non-negative random integer from an explicit random-number service.</summary>
-    let next<'env, 'error when 'env :> IHasRandom> : Flow<'env, 'error, int> =
+    let next<'env, 'error> : Flow<'env, 'error, int> =
         service
         |> Flow.map (fun random -> random.Next())
 
     /// <summary>Reads a random integer less than the supplied maximum from an explicit random-number service.</summary>
-    let nextMax<'env, 'error when 'env :> IHasRandom>
+    let nextMax<'env, 'error>
         (maxExclusive: int)
         : Flow<'env, 'error, int> =
         service
         |> Flow.map (fun random -> random.NextMax maxExclusive)
 
     /// <summary>Reads a random integer from an explicit random-number service.</summary>
-    let nextInt<'env, 'error when 'env :> IHasRandom>
+    let nextInt<'env, 'error>
         (minInclusive: int)
         (maxExclusive: int)
         : Flow<'env, 'error, int> =
@@ -351,19 +316,19 @@ module Random =
         |> Flow.map (fun random -> random.NextInt minInclusive maxExclusive)
 
     /// <summary>Reads a random floating-point value from an explicit random-number service.</summary>
-    let nextDouble<'env, 'error when 'env :> IHasRandom> : Flow<'env, 'error, float> =
+    let nextDouble<'env, 'error> : Flow<'env, 'error, float> =
         service
         |> Flow.map (fun random -> random.NextDouble())
 
     /// <summary>Fills a byte buffer through an explicit random-number service.</summary>
-    let nextBytes<'env, 'error when 'env :> IHasRandom>
+    let nextBytes<'env, 'error>
         (buffer: byte array)
         : Flow<'env, 'error, unit> =
         service
         |> Flow.map (fun random -> random.NextBytes buffer)
 
     /// <summary>Creates a byte array filled through an explicit random-number service.</summary>
-    let bytes<'env, 'error when 'env :> IHasRandom>
+    let bytes<'env, 'error>
         (count: int)
         : Flow<'env, 'error, byte array> =
         flow {
@@ -375,6 +340,17 @@ module Random =
     /// <summary>Creates a live random-number generator backed by <see cref="T:System.Random" />.</summary>
     let live : IRandom =
         Platform.random ()
+
+    /// Creates a reproducible generator, independent for each test run.
+    let seeded (seed: int) : IRandom =
+        let generator = System.Random(seed)
+        let gate = obj()
+        { new IRandom with
+            member _.Next() = lock gate generator.Next
+            member _.NextMax maximum = lock gate (fun () -> generator.Next maximum)
+            member _.NextInt minimum maximum = lock gate (fun () -> generator.Next(minimum, maximum))
+            member _.NextDouble() = lock gate generator.NextDouble
+            member _.NextBytes buffer = lock gate (fun () -> generator.NextBytes buffer) }
 
     /// <summary>Creates a deterministic random generator that always returns the supplied value.</summary>
     /// <remarks>
@@ -441,11 +417,11 @@ module Random =
 [<RequireQualifiedAccess>]
 module Guid =
     /// Reads the service from the environment.
-    let service<'env, 'error when 'env :> IHasGuid> : Flow<'env, 'error, IGuid> =
-        Flow.envWith _.Guid
+    let service<'env, 'error> : Flow<'env, 'error, IGuid> =
+        Flow(fun _ _ -> Execution.ofValue (RuntimePlatform.current().Platform.Guid))
 
     /// <summary>Reads a GUID from an explicit GUID service.</summary>
-    let newGuid<'env, 'error when 'env :> IHasGuid> : Flow<'env, 'error, global.System.Guid> =
+    let newGuid<'env, 'error> : Flow<'env, 'error, global.System.Guid> =
         service
         |> Flow.map (fun guid -> guid.NewGuid())
 
@@ -472,6 +448,9 @@ module Guid =
                 let value = values[index]
                 index <- index + 1
                 value }
+
+    /// Produces the supplied GUIDs in order, failing clearly on exhaustion.
+    let sequence (values: seq<System.Guid>) : IGuid = fromSequence values
 
     /// <summary>Builds the live GUID service as a layer.</summary>
     let layer : Layer<unit, Never, IGuid> =
@@ -672,70 +651,4 @@ module EnvironmentVariableErrors =
         | EnvironmentVariableError.InvalidVariable(name, value, expected) ->
             (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Environment variable '{0}' had value '{1}' but expected {2}.", name, value, expected))
 
-/// <summary>Helpers for constructing the standard explicit service bundle used by workflow hosts.</summary>
-[<RequireQualifiedAccess>]
-module BaseRuntime =
-    /// <summary>Creates the standard live base runtime as an explicit service bundle.</summary>
-    let liveValue : BaseRuntime =
-        { Clock = Clock.live
-          Log = Log.live
-          Random = Random.live
-          Guid = Guid.live
-          EnvironmentVariables = EnvironmentVariables.live }
 
-    /// <summary>Builds the standard live base runtime as an explicit service bundle.</summary>
-    let live : Layer<unit, Never, BaseRuntime> =
-        Layer.succeed liveValue
-
-    /// <summary>Builds the base runtime from an <see cref="T:System.IServiceProvider" />.</summary>
-    let fromServiceProvider : Layer<IServiceProvider, BaseRuntimeError, BaseRuntime> =
-        Platform.servicesFromServiceProvider
-        |> Layer.map (fun (clock, log, random, guid, environmentVariables) ->
-            { Clock = clock
-              Log = log
-              Random = random
-              Guid = guid
-              EnvironmentVariables = environmentVariables })
-
-#if !FABLE_COMPILER
-/// <summary>A deterministic test environment: a manual clock, a recording log, and scripted random, GUID, and
-/// environment-variable services. Replace the random, GUID, and environment-variable services with scripted values
-/// before running a test that depends on them.</summary>
-type TestRuntime(startUtc: DateTimeOffset) =
-    /// <summary>The manual clock; advance it with <c>AdvanceBy</c> or <c>AdvanceToNextDeadline</c>.</summary>
-    member val Clock = ManualClock(startUtc)
-
-    /// <summary>The recording logger; inspect <c>Entries</c> after a run.</summary>
-    member val Log = TestLog()
-
-    /// <summary>The random service; assign a scripted generator such as <c>Random.fromSequence</c>.</summary>
-    member val Random : IRandom = Random.fromSequence Seq.empty with get, set
-
-
-    /// <summary>The GUID service; assign a scripted generator such as <c>Guid.fromSequence</c>.</summary>
-    member val Guid : IGuid = Guid.fromSequence Seq.empty with get, set
-
-    /// <summary>The environment-variable service; assign an in-memory provider such as <c>EnvironmentVariables.fromPairs</c>.</summary>
-    member val EnvironmentVariables : IEnvironmentVariables = EnvironmentVariables.fromPairs Seq.empty with get, set
-
-    interface IHasClock with
-        member this.Clock = this.Clock
-    interface IHasLog with
-        member this.Log = this.Log
-    interface IHasRandom with
-        member this.Random = this.Random
-    interface IHasGuid with
-        member this.Guid = this.Guid
-    interface IHasEnvironmentVariables with
-        member this.EnvironmentVariables = this.EnvironmentVariables
-
-/// <summary>Helpers for constructing deterministic test environments.</summary>
-[<RequireQualifiedAccess>]
-module TestRuntime =
-    /// <summary>Creates a deterministic test environment whose clock starts at the supplied instant.</summary>
-    let create (startUtc: DateTimeOffset) : TestRuntime = TestRuntime(startUtc)
-
-    /// <summary>Builds a deterministic test environment as a layer.</summary>
-    let layer (startUtc: DateTimeOffset) : Layer<unit, Never, TestRuntime> =
-        Layer.succeed (create startUtc)
-#endif

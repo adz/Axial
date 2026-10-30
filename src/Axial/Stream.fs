@@ -148,9 +148,9 @@ module FlowStream =
     /// Schedule.fixedRate (TimeSpan.FromMilliseconds 50.0) |&gt; FlowStream.fromSchedule
     /// </code>
     /// </example>
-    let fromSchedule<'env, 'error, 'output when 'env :> IHasClock> (schedule: Schedule<'env, unit, 'output>) : FlowStream<'env, 'error, 'output> =
+    let fromSchedule<'env, 'error, 'output> (schedule: Schedule<'env, unit, 'output>) : FlowStream<'env, 'error, 'output> =
         FlowStream(fun env cancellationToken ->
-            let time = Platform.timeOfClock env.Clock
+            let time = Platform.timeOfClock (RuntimePlatform.current().Platform.Clock)
             let started = time.Now()
             let runState = ScheduleContext.newRunState ()
 
@@ -640,11 +640,11 @@ module FlowStream =
                     Execution.ofValue None)
 
     // The next pumped event, or None if none arrives within `timeout`.
-    let private takeWithin<'env, 'value, 'error when 'env :> IHasClock> queue (timeout: TimeSpan) (env: 'env) ct : Execution<Pumped<'value, 'error> option, 'error> =
+    let private takeWithin<'env, 'value, 'error> queue (timeout: TimeSpan) (env: 'env) ct : Execution<Pumped<'value, 'error> option, 'error> =
         if timeout <= TimeSpan.Zero then
             Flow.invoke (Dequeue.poll queue) env ct
         else
-            takeUnless queue (Platform.cancelAfter (Platform.timeOfClock env.Clock) timeout) ct
+            takeUnless queue (Platform.cancelAfter (Platform.timeOfClock (RuntimePlatform.current().Platform.Clock)) timeout) ct
 
     let private finished () : Execution<StreamStep<'value, 'error>, 'error> = Execution.ofValue Done
 
@@ -656,13 +656,13 @@ module FlowStream =
     /// without waiting indefinitely for a full batch.
     /// </remarks>
     /// <example><code>events |&gt; FlowStream.groupedWithin 100 (TimeSpan.FromSeconds 1.0)</code></example>
-    let groupedWithin<'env, 'error, 'value when 'env :> IHasClock> (size: int) (window: TimeSpan) stream : FlowStream<'env, 'error, 'value list> =
+    let groupedWithin<'env, 'error, 'value> (size: int) (window: TimeSpan) stream : FlowStream<'env, 'error, 'value list> =
         if size <= 0 then invalidArg (nameof size) "Group size must be positive."
         if window <= TimeSpan.Zero then invalidArg (nameof window) "The window must be positive."
         let (FlowStream op) = stream
 
         FlowStream(fun env ct ->
-            let time = Platform.timeOfClock env.Clock
+            let time = Platform.timeOfClock (RuntimePlatform.current().Platform.Clock)
 
             pump op env ct
             |> Execution.bind (fun queue ->
@@ -725,12 +725,12 @@ module FlowStream =
     /// current state matters.
     /// </remarks>
     /// <example><code>progress |&gt; FlowStream.throttle (TimeSpan.FromMilliseconds 100.0)</code></example>
-    let throttle<'env, 'error, 'value when 'env :> IHasClock> (interval: TimeSpan) stream : FlowStream<'env, 'error, 'value> =
+    let throttle<'env, 'error, 'value> (interval: TimeSpan) stream : FlowStream<'env, 'error, 'value> =
         if interval <= TimeSpan.Zero then invalidArg (nameof interval) "The interval must be positive."
         let (FlowStream op) = stream
 
         FlowStream(fun env ct ->
-            let time = Platform.timeOfClock env.Clock
+            let time = Platform.timeOfClock (RuntimePlatform.current().Platform.Clock)
 
             pump op env ct
             |> Execution.bind (fun queue ->

@@ -77,7 +77,7 @@ module Cache =
     let private create capacity ttl (lookup: Cache<'key, 'error, 'value> -> 'key -> Flow<'env, 'error, 'value>) : Flow<'env, 'none, Cache<'key, 'error, 'value>> =
         Flow(fun environment _ ->
             let owner = RuntimeState.current()
-            let clock = (environment :> IHasClock).Clock
+            let clock = RuntimePlatform.current().Platform.Clock
             let self: Cache<'key, 'error, 'value> option ref = ref None
             let start key onSettled = Flow.startShared owner environment (lookup self.Value.Value key) onSettled
             let cache = Cache(start, capacity, ttl, clock)
@@ -85,7 +85,7 @@ module Cache =
             Execution.ofValue cache)
 
     /// <summary>Creates a cache that computes missing values with <paramref name="lookup" />.</summary>
-    /// <remarks>Requires <c>'env :&gt; IHasClock</c> because the runtime schedules detached lookup fibers using the supplied clock.
+    /// <remarks>Captures the runtime clock when the cache is created to schedule detached lookup fibers.
     /// Lookups capture the environment and scope where the cache is made. Closing that scope interrupts them.</remarks>
     let make (lookup: 'key -> Flow<'env, 'error, 'value>) : Flow<'env, 'none, Cache<'key, 'error, 'value>> =
         create None None (fun _ key -> lookup key)

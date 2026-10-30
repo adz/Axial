@@ -18,13 +18,14 @@ open Axial.Process.DSL
 [<IterationCount(3)>]
 [<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
 type PlatformReadBenchmarks() =
-    let environment = ClockEnvironment(ManualClock(DateTimeOffset.UnixEpoch))
-    let completed : Flow<ClockEnvironment, string, int> = Flow.ok 1
+    let environment = ()
+    let clock = ManualClock(DateTimeOffset.UnixEpoch)
+    let completed : Flow<unit, string, int> = Flow.ok 1
 
     [<Benchmark>]
     member _.TimeoutX1000() =
         for _ in 1 .. 1000 do
-            completed |> Flow.timeout (TimeSpan.FromSeconds 1.) "timed out" |> fun workflow -> workflow.RunSynchronously(environment) |> ignore
+            completed |> Flow.timeout (TimeSpan.FromSeconds 1.) "timed out" |> Flow.withClock clock |> fun workflow -> workflow.RunSynchronously(environment) |> ignore
 
     [<Benchmark>]
     member _.ClockNowX1000() =
@@ -33,12 +34,12 @@ type PlatformReadBenchmarks() =
                 let! _ = Clock.now
                 ()
         }
-        workflow.RunSynchronously(environment) |> ignore
+        (workflow |> Flow.withClock clock).RunSynchronously(environment) |> ignore
 
     [<Benchmark>]
     member _.RetrySuccessX1000() =
         for _ in 1 .. 1000 do
-            completed |> Flow.retry (Schedule.recurs 3) |> fun workflow -> workflow.RunSynchronously(environment) |> ignore
+            completed |> Flow.retry (Schedule.recurs 3) |> Flow.withClock clock |> fun workflow -> workflow.RunSynchronously(environment) |> ignore
 
 [<MemoryDiagnoser>]
 [<InProcess>]

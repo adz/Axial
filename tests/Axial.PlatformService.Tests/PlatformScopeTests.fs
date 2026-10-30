@@ -7,8 +7,8 @@ open Axial.PlatformService
 open Xunit
 
 module PlatformScopeTests =
-    let private environment () = BaseRuntime.liveValue
-    let private reads () : Flow<BaseRuntime, string, DateTimeOffset * int * System.Guid> =
+    let private environment () = ()
+    let private reads () : Flow<unit, string, DateTimeOffset * int * System.Guid> =
         flow {
             let! now = Clock.now
             let! random = Random.next
@@ -93,7 +93,9 @@ module PlatformScopeTests =
             do! Log.info "observed"
             return 42
         }
-        let actual = workflow |> Flow.annotate "trace_id" "test" |> Flow.withLogSink sink |> Flow.withTelemetry telemetry
+        let actual = workflow |> Flow.annotate "trace_id" "test"
+                              |> Axial.Telemetry.Context.withEndUserId "user"
+                              |> Flow.withLogSink sink |> Flow.withTelemetry telemetry
         Assert.Equal(Exit.Success 42, actual |> Flow.runSync (environment ()))
 
     [<Fact>]
@@ -166,6 +168,32 @@ module PlatformScopeTests =
         Assert.Equal(Exit.Success (), workflow |> Flow.withTelemetry (sink outer) |> Flow.runSync (environment ()))
         Assert.Equal<string list>(["inner"], List.ofSeq inner)
         Assert.Equal<string list>(["outer"], List.ofSeq outer)
+
+    [<Fact>]
+    let ``disabled logging execution allocates no entries or execution outcomes`` () =
+        let sink = { new ILogSink with
+                        member _.IsEnabled _ = false
+                        member _.Write _ = failwith "disabled" }
+        let runtime = { RuntimeContext.create (new Scope()) with LogSink = sink }
+        let source: Flow<unit, string, unit> = Log.info "disabled"
+        // Measure the primitive's execution, excluding Invoke's existing stack-guard closure.
+        let execute = match source with Flow operation -> operation | _ -> failwith "Expected primitive log flow"
+        RuntimeState.withRuntime runtime (fun () ->
+            for _ in 1 .. 100 do execute () Threading.CancellationToken.None |> ignore
+            let before = GC.GetAllocatedBytesForCurrentThread()
+            for _ in 1 .. 1000 do execute () Threading.CancellationToken.None |> ignore
+            let allocated = GC.GetAllocatedBytesForCurrentThread() - before
+            Assert.Equal(0L, allocated))
+
+    [<Fact>]
+    let ``timed primitives compile and run under unit without a clock interface`` () =
+        let workflow: Flow<unit, string, unit> =
+            Flow.sleep TimeSpan.Zero
+            |> Flow.timeout (TimeSpan.FromHours 1.) "timeout"
+            |> Flow.retry (Schedule.recurs 0)
+            |> Flow.repeat (Schedule.recurs 0)
+            |> Flow.supervise (Schedule.recurs 0)
+        Assert.Equal(Exit.Success (), workflow |> Flow.runTest ())
 
     [<Fact>]
     let ``test platform trace identifies service reads and fibers`` () =

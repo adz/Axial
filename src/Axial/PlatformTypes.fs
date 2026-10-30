@@ -40,15 +40,3 @@ type ITelemetry =
     abstract Annotate: name: string * value: string -> unit
     abstract Attribute: Axial.Telemetry.Attribute -> unit
 
-[<RequireQualifiedAccess>]
-module LogSink =
-    let none : ILogSink =
-        { new ILogSink with
-            member _.IsEnabled _ = false
-            member _.Write _ = () }
-    let fromFunction (write: LogEntry -> unit) : ILogSink = failwith "T25a: not implemented"
-    let console (minimum: LogLevel) : ILogSink = failwith "T25a: not implemented"
-    let tee (first: ILogSink) (second: ILogSink) : ILogSink = failwith "T25a: not implemented"
-    let minLevel (minimum: LogLevel) (sink: ILogSink) : ILogSink = failwith "T25a: not implemented"
-    let filter (predicate: LogEntry -> bool) (sink: ILogSink) : ILogSink = failwith "T25a: not implemented"
-    let map (mapper: LogEntry -> LogEntry) (sink: ILogSink) : ILogSink = failwith "T25a: not implemented"

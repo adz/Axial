@@ -929,17 +929,30 @@ module Flow =
             RuntimeState.withRuntime runtime (fun () -> invoke flow environment cancellationToken))
 
     /// Overrides the clock within this flow and its descendants.
-    let withClock (clock: IClock) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> = failwith "T25a: not implemented"
+    let withClock (clock: IClock) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        withRuntime (fun runtime -> { runtime with Platform = { runtime.Platform with Clock = clock } }) source
     /// Overrides random values within this flow and its descendants.
-    let withRandom (random: IRandom) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> = failwith "T25a: not implemented"
+    let withRandom (random: IRandom) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        withRuntime (fun runtime -> { runtime with Platform = { runtime.Platform with Random = random } }) source
     /// Overrides GUID generation within this flow and its descendants.
-    let withGuid (guid: IGuid) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> = failwith "T25a: not implemented"
+    let withGuid (guid: IGuid) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        withRuntime (fun runtime -> { runtime with Platform = { runtime.Platform with Guid = guid } }) source
     /// Replaces the log destination within this flow and its descendants.
-    let withLogSink (sink: ILogSink) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> = failwith "T25a: not implemented"
+    let withLogSink (sink: ILogSink) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        withRuntime (fun runtime -> { runtime with LogSink = sink }) source
     /// Decorates the destination already installed in this scope.
-    let mapLogSink (mapper: ILogSink -> ILogSink) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> = failwith "T25a: not implemented"
+    let mapLogSink (mapper: ILogSink -> ILogSink) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        withRuntime (fun runtime -> { runtime with LogSink = mapper runtime.LogSink }) source
     /// Replaces both telemetry slots within this flow and its descendants.
-    let withTelemetry (telemetry: ITelemetry) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> = failwith "T25a: not implemented"
+    let withTelemetry (telemetry: ITelemetry) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        withRuntime (fun runtime ->
+            { runtime with
+                AnnotationSink = fun name value ->
+                    // axial-note AXG010: telemetry is an observation and cannot change the workflow outcome.
+                    try telemetry.Annotate(name, value) with _ -> ()
+                TelemetrySink = fun attribute ->
+                    // axial-note AXG010: telemetry is an observation and cannot change the workflow outcome.
+                    try telemetry.Attribute attribute with _ -> () }) source
 
     /// <summary>Installs runtime fiber-lifecycle hooks for diagnostics and telemetry.</summary>
     /// <remarks>
@@ -1117,8 +1130,8 @@ module Flow =
     /// <summary>Suspends the flow for the specified duration, observing cancellation.</summary>
     /// <param name="delay">The duration to sleep.</param>
     /// <returns>A flow that completes after the specified delay, or is interrupted if cancelled first.</returns>
-    let sleep<'env, 'error when 'env :> IHasClock> (delay: TimeSpan) : Flow<'env, 'error, unit> =
-        Flow(fun environment cancellationToken -> Platform.timeOfClock environment.Clock |> fun time -> time.Sleep(delay, cancellationToken))
+    let sleep<'env, 'error> (delay: TimeSpan) : Flow<'env, 'error, unit> =
+        Flow(fun _ cancellationToken -> Platform.timeOfClock (RuntimePlatform.current().Platform.Clock) |> fun time -> time.Sleep(delay, cancellationToken))
 
     /// <summary>Reads the current runtime scope.</summary>
     /// <returns>A flow that succeeds with the scope owned by the current execution boundary.</returns>
@@ -1147,7 +1160,7 @@ module Flow =
 
     // A timed flow runs as a branch: the caller keeps its scoped resources only when it finishes in time and
     // succeeds. When the timeout wins, the interrupted flow's scope is closed before the fallback runs.
-    let private timeoutBranch<'env, 'error, 'value when 'env :> IHasClock>
+    let private timeoutBranch<'env, 'error, 'value>
         (environment: 'env)
         (cancellationToken: CancellationToken)
         (after: TimeSpan)
@@ -1159,7 +1172,7 @@ module Flow =
         let timedOut = ref false
 
         Platform.timeoutExecution
-            (Platform.timeOfClock environment.Clock)
+            (Platform.timeOfClock (RuntimePlatform.current().Platform.Clock))
             after
             operation
             cancellationToken
@@ -1187,7 +1200,7 @@ module Flow =
     /// <param name="timeoutError">The typed error returned when the timeout wins.</param>
     /// <param name="flow">The source flow.</param>
     /// <returns>A flow that returns the source outcome or the timeout error.</returns>
-    let timeout<'env, 'error, 'value when 'env :> IHasClock>
+    let timeout<'env, 'error, 'value>
         (after: TimeSpan)
         (timeoutError: 'error)
         (flow: Flow<'env, 'error, 'value>)
@@ -1201,7 +1214,7 @@ module Flow =
     /// <param name="value">The success value returned when the timeout wins.</param>
     /// <param name="flow">The source flow.</param>
     /// <returns>A flow that returns the source outcome or the supplied success value.</returns>
-    let timeoutToOk<'env, 'error, 'value when 'env :> IHasClock>
+    let timeoutToOk<'env, 'error, 'value>
         (after: TimeSpan)
         (value: 'value)
         (flow: Flow<'env, 'error, 'value>)
@@ -1223,7 +1236,7 @@ module Flow =
     /// <param name="fallback">Creates the fallback flow when the timeout wins.</param>
     /// <param name="flow">The source flow.</param>
     /// <returns>A flow that returns the source outcome or the fallback outcome.</returns>
-    let timeoutWith<'env, 'error, 'value when 'env :> IHasClock>
+    let timeoutWith<'env, 'error, 'value>
         (after: TimeSpan)
         (fallback: unit -> Flow<'env, 'error, 'value>)
         (flow: Flow<'env, 'error, 'value>)
@@ -1308,13 +1321,13 @@ module Flow =
     /// fetch |&gt; Flow.retry (Retry.schedule { Retry.defaults with When = HttpError.isTransient })
     /// </code>
     /// </example>
-    let retry<'env, 'error, 'value, 'output when 'env :> IHasClock>
+    let retry<'env, 'error, 'value, 'output>
         (schedule: Schedule<'env, 'error, 'output>)
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
         // A loop rather than recursion, so retrying for the life of an application runs in constant memory.
         Flow(fun environment cancellationToken ->
-            let time = Platform.timeOfClock environment.Clock
+            let time = Platform.timeOfClock (RuntimePlatform.current().Platform.Clock)
             let runState = ScheduleContext.newRunState ()
             let loopStarted = time.Now()
 
@@ -1358,14 +1371,14 @@ module Flow =
     /// heartbeat |&gt; Flow.repeat (Schedule.spaced (TimeSpan.FromSeconds 5.0))
     /// </code>
     /// </example>
-    let repeat<'env, 'error, 'value, 'output when 'env :> IHasClock>
+    let repeat<'env, 'error, 'value, 'output>
         (schedule: Schedule<'env, 'value, 'output>)
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
         // A loop rather than recursion, so a schedule that repeats for the life of an application (a control
         // scan, a heartbeat) runs in constant memory.
         Flow(fun environment cancellationToken ->
-            let time = Platform.timeOfClock environment.Clock
+            let time = Platform.timeOfClock (RuntimePlatform.current().Platform.Clock)
             let runState = ScheduleContext.newRunState ()
             let loopStarted = time.Now()
             let firstScope, first = runAttempt flow environment cancellationToken
@@ -1406,7 +1419,7 @@ module Flow =
     /// worker |&gt; Flow.supervise (Retry.schedule { Retry.defaults with Retries = 5 })
     /// </code>
     /// </example>
-    let supervise<'env, 'error, 'value, 'output when 'env :> IHasClock>
+    let supervise<'env, 'error, 'value, 'output>
         (schedule: Schedule<'env, exn, 'output>)
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
@@ -1418,7 +1431,7 @@ module Flow =
             | _ -> None
 
         Flow(fun environment cancellationToken ->
-            let time = Platform.timeOfClock environment.Clock
+            let time = Platform.timeOfClock (RuntimePlatform.current().Platform.Clock)
             let runState = ScheduleContext.newRunState ()
             let loopStarted = time.Now()
 
@@ -1460,7 +1473,7 @@ module Flow =
         /// No scope; an internal caller manages the fiber through its handle.
         | Unowned
 
-    let private forkWith<'env, 'error, 'value, 'none when 'env :> IHasClock>
+    let private forkWith<'env, 'error, 'value, 'none>
         (owner: ForkOwner)
         (name: string option)
         (graceful: GracefulStop<'env> option)
@@ -1469,7 +1482,7 @@ module Flow =
         Flow(fun environment cancellationToken ->
             let parentRuntime = RuntimeState.current()
             let observer = parentRuntime.Observer
-            let clock = environment.Clock
+            let clock = RuntimePlatform.current().Platform.Clock
             let time = Platform.timeOfClock clock
 
             let metadata: FiberMetadata =

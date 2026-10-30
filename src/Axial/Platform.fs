@@ -41,6 +41,15 @@ open System.Threading.Tasks
 open Fable.Core
 #endif
 
+#if FABLE_COMPILER
+[<Emit("console.error($0)")>]
+let logError (_message: string) : unit = jsNative
+#else
+let logError (message: string) : unit =
+    // axial-allow-AXG001: live runtime console log destination.
+    Console.Error.WriteLine message
+#endif
+
 module Cancellation =
     // Roots without a parent and scheduling operations need an inert token, not a cleanup region.
     let never: CancellationToken = CancellationToken.None

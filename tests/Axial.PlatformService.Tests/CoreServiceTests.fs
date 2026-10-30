@@ -7,113 +7,87 @@ open Swensen.Unquote
 open Xunit
 
 module CoreServiceTests =
-    let private makeRuntime clock random guid envVars : BaseRuntime =
-        { Clock = clock
-          Log = Log.live
-          Random = random
-          Guid = guid
-          EnvironmentVariables = envVars }
+    type private VariablesEnvironment =
+        { Variables: IEnvironmentVariables }
+        interface IHasEnvironmentVariables with member this.EnvironmentVariables = this.Variables
 
     [<Fact>]
-    let ``operational service contracts belong to the optional platform-service package`` () =
+    let ``runtime contracts belong to core and authority remains optional`` () =
         test <@ typeof<IClock>.Assembly.GetName().Name = "Axial" @>
-        test <@ typeof<IRandom>.Assembly.GetName().Name = "Axial.PlatformService" @>
+        test <@ typeof<IRandom>.Assembly.GetName().Name = "Axial" @>
+        test <@ typeof<IGuid>.Assembly.GetName().Name = "Axial" @>
+        test <@ typeof<ILogSink>.Assembly.GetName().Name = "Axial" @>
         test <@ typeof<IEnvironmentVariables>.Assembly.GetName().Name = "Axial.PlatformService" @>
 
     [<Fact>]
-    let ``clock random guid and environment-variable services are deterministic when fixed`` () =
-        let clock = Clock.fromValue (DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero))
-        let random = Random.fromFixed 4 0.25 0x2Auy
-        let guid = Guid.fromValue (global.System.Guid.Parse "11111111-1111-1111-1111-111111111111")
-        let envVars =
-            EnvironmentVariables.fromPairs
-                [ "AXIAL_SERVICES_PORT", "8080"
-                  "AXIAL_SERVICES_LONG", "9000000000"
-                  "AXIAL_SERVICES_DOUBLE", "12.5"
-                  "AXIAL_SERVICES_DECIMAL", "99.95"
-                  "AXIAL_SERVICES_ENABLED", "true"
-                  "AXIAL_SERVICES_SESSION", "22222222-2222-2222-2222-222222222222"
-                  "AXIAL_SERVICES_URI", "https://example.com/api"
-                  "AXIAL_SERVICES_TIMEOUT", "00:00:05" ]
-        let runtime = makeRuntime clock random guid envVars
+    let ``clock random and guid reads use scoped overrides under unit`` () =
+        let instant = DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero)
+        let id = System.Guid.Parse "11111111-1111-1111-1111-111111111111"
+        let workflow = flow {
+            let! now = Clock.now
+            let! utc = Clock.utcDateTime
+            let! seconds = Clock.unixTimeSeconds
+            let! next = Random.next
+            let! maximum = Random.nextMax 10
+            let! ranged = Random.nextInt 0 10
+            let! fraction = Random.nextDouble
+            let! bytes = Random.bytes 3
+            let! guid = Guid.newGuid
+            return now, utc, seconds, next, maximum, ranged, fraction, bytes, guid
+        }
+        let actual = workflow |> Flow.withClock (Clock.fromValue instant)
+                              |> Flow.withRandom (Random.fromFixed 4 0.25 0x2Auy)
+                              |> Flow.withGuid (Guid.fromValue id)
+                              |> Flow.runSync ()
+        Assert.Equal(Exit.Success(instant, instant.UtcDateTime, 1778414400L, 4, 4, 4, 0.25, [|0x2Auy; 0x2Auy; 0x2Auy|], id), actual)
 
-        test <@ Flow.runSync runtime Clock.now = Exit.Success (DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero)) @>
-        test <@ Flow.runSync runtime Clock.utcDateTime = Exit.Success (DateTime(2026, 5, 10, 12, 0, 0, DateTimeKind.Utc)) @>
-        test <@ Flow.runSync runtime Clock.unixTimeSeconds = Exit.Success 1778414400L @>
-        test <@ Flow.runSync runtime Random.next = Exit.Success 4 @>
-        test <@ Flow.runSync runtime (Random.nextMax 10) = Exit.Success 4 @>
-        test <@ Flow.runSync runtime (Random.nextInt 0 10) = Exit.Success 4 @>
-        test <@ Flow.runSync runtime Random.nextDouble = Exit.Success 0.25 @>
-        test <@ Flow.runSync runtime (Random.bytes 3) = Exit.Success [| 0x2Auy; 0x2Auy; 0x2Auy |] @>
-        test <@ Flow.runSync runtime Guid.newGuid = Exit.Success (global.System.Guid.Parse "11111111-1111-1111-1111-111111111111") @>
-        test <@ Flow.runSync runtime (EnvironmentVariables.tryGet "AXIAL_SERVICES_PORT") = Exit.Success (Some "8080") @>
-        test <@ Flow.runSync runtime EnvironmentVariables.getAll |> function Exit.Success values -> values["AXIAL_SERVICES_PORT"] = "8080" | _ -> false @>
-        test <@ Flow.runSync runtime (EnvironmentVariables.expand "%AXIAL_SERVICES_PORT%") = Exit.Success "8080" @>
-        test <@ Flow.runSync runtime (EnvironmentVariable.get "AXIAL_SERVICES_PORT") = Exit.Success "8080" @>
-        test <@ Flow.runSync runtime (EnvironmentVariable.getInt "AXIAL_SERVICES_PORT") = Exit.Success 8080 @>
-        test <@ Flow.runSync runtime (EnvironmentVariable.getInt64 "AXIAL_SERVICES_LONG") = Exit.Success 9000000000L @>
-        test <@ Flow.runSync runtime (EnvironmentVariable.getDouble "AXIAL_SERVICES_DOUBLE") = Exit.Success 12.5 @>
-        test <@ Flow.runSync runtime (EnvironmentVariable.getDecimal "AXIAL_SERVICES_DECIMAL") = Exit.Success 99.95M @>
-        test <@ Flow.runSync runtime (EnvironmentVariable.getBool "AXIAL_SERVICES_ENABLED") = Exit.Success true @>
-        test <@ Flow.runSync runtime (EnvironmentVariable.getGuid "AXIAL_SERVICES_SESSION") = Exit.Success (global.System.Guid.Parse "22222222-2222-2222-2222-222222222222") @>
-        test <@ Flow.runSync runtime (EnvironmentVariable.getUri "AXIAL_SERVICES_URI") = Exit.Success (Uri "https://example.com/api") @>
-        test <@ Flow.runSync runtime (EnvironmentVariable.getTimeSpan "AXIAL_SERVICES_TIMEOUT") = Exit.Success (TimeSpan.FromSeconds 5.0) @>
-
-        test <@ Flow.runSync runtime (EnvironmentVariables.set "AXIAL_SERVICES_DYNAMIC" "set") = Exit.Success () @>
-        test <@ Flow.runSync runtime (EnvironmentVariable.get "AXIAL_SERVICES_DYNAMIC") = Exit.Success "set" @>
-        test <@ Flow.runSync runtime (EnvironmentVariables.clear "AXIAL_SERVICES_DYNAMIC") = Exit.Success () @>
-        test <@ Flow.runSync runtime (EnvironmentVariables.tryGet "AXIAL_SERVICES_DYNAMIC") = Exit.Success None @>
+    [<Fact>]
+    let ``environment-variable parsing retains explicit authority`` () =
+        let environment = { Variables = EnvironmentVariables.fromPairs [
+            "PORT", "8080"; "LONG", "9000000000"; "DOUBLE", "12.5"; "DECIMAL", "99.95"
+            "ENABLED", "true"; "SESSION", "22222222-2222-2222-2222-222222222222"
+            "URI", "https://example.com/api"; "TIMEOUT", "00:00:05" ] }
+        test <@ EnvironmentVariables.tryGet "PORT" |> Flow.runSync environment = Exit.Success(Some "8080") @>
+        test <@ EnvironmentVariables.getAll |> Flow.runSync environment |> function Exit.Success values -> values["PORT"] = "8080" | _ -> false @>
+        test <@ EnvironmentVariables.expand "%PORT%" |> Flow.runSync environment = Exit.Success "8080" @>
+        test <@ EnvironmentVariable.get "PORT" |> Flow.runSync environment = Exit.Success "8080" @>
+        test <@ EnvironmentVariable.getInt "PORT" |> Flow.runSync environment = Exit.Success 8080 @>
+        test <@ EnvironmentVariable.getInt64 "LONG" |> Flow.runSync environment = Exit.Success 9000000000L @>
+        test <@ EnvironmentVariable.getDouble "DOUBLE" |> Flow.runSync environment = Exit.Success 12.5 @>
+        test <@ EnvironmentVariable.getDecimal "DECIMAL" |> Flow.runSync environment = Exit.Success 99.95M @>
+        test <@ EnvironmentVariable.getBool "ENABLED" |> Flow.runSync environment = Exit.Success true @>
+        test <@ EnvironmentVariable.getGuid "SESSION" |> Flow.runSync environment = Exit.Success(System.Guid.Parse "22222222-2222-2222-2222-222222222222") @>
+        test <@ EnvironmentVariable.getUri "URI" |> Flow.runSync environment = Exit.Success(Uri "https://example.com/api") @>
+        test <@ EnvironmentVariable.getTimeSpan "TIMEOUT" |> Flow.runSync environment = Exit.Success(TimeSpan.FromSeconds 5.) @>
+        test <@ EnvironmentVariables.set "DYNAMIC" "set" |> Flow.runSync environment = Exit.Success () @>
+        test <@ EnvironmentVariable.get "DYNAMIC" |> Flow.runSync environment = Exit.Success "set" @>
+        test <@ EnvironmentVariables.clear "DYNAMIC" |> Flow.runSync environment = Exit.Success () @>
+        test <@ EnvironmentVariables.tryGet "DYNAMIC" |> Flow.runSync environment = Exit.Success None @>
 
     [<Fact>]
     let ``environment variable helpers return typed errors for missing and invalid values`` () =
-        let envVars =
-            EnvironmentVariables.fromPairs
-                [ "AXIAL_SERVICES_PORT_TEXT", "abc"
-                  "AXIAL_SERVICES_ENABLED_TEXT", "maybe" ]
-        let runtime = makeRuntime Clock.live Random.live Guid.live envVars
-
-        test <@ Flow.runSync runtime (EnvironmentVariable.get "AXIAL_SERVICES_MISSING") = Exit.Failure(Cause.Fail (EnvironmentVariableError.MissingVariable "AXIAL_SERVICES_MISSING")) @>
-        test <@ Flow.runSync runtime (EnvironmentVariable.getInt "AXIAL_SERVICES_PORT_TEXT") = Exit.Failure(Cause.Fail (EnvironmentVariableError.InvalidVariable("AXIAL_SERVICES_PORT_TEXT", "abc", "an integer"))) @>
-        test <@ Flow.runSync runtime (EnvironmentVariable.getBool "AXIAL_SERVICES_ENABLED_TEXT") = Exit.Failure(Cause.Fail (EnvironmentVariableError.InvalidVariable("AXIAL_SERVICES_ENABLED_TEXT", "maybe", "a boolean"))) @>
+        let environment = { Variables = EnvironmentVariables.fromPairs ["PORT", "abc"; "ENABLED", "maybe"] }
+        test <@ EnvironmentVariable.get "MISSING" |> Flow.runSync environment = Exit.Failure(Cause.Fail(EnvironmentVariableError.MissingVariable "MISSING")) @>
+        test <@ EnvironmentVariable.getInt "PORT" |> Flow.runSync environment = Exit.Failure(Cause.Fail(EnvironmentVariableError.InvalidVariable("PORT", "abc", "an integer"))) @>
+        test <@ EnvironmentVariable.getBool "ENABLED" |> Flow.runSync environment = Exit.Failure(Cause.Fail(EnvironmentVariableError.InvalidVariable("ENABLED", "maybe", "a boolean"))) @>
 
     [<Fact>]
-    let ``live services work correctly with a live base runtime`` () =
-        let runtime = BaseRuntime.liveValue
-
-        let timestamp = Flow.runSync runtime Clock.now |> function Exit.Success t -> t | _ -> failwith "Failed"
-        let randomValue = Flow.runSync runtime (Random.nextInt 0 10) |> function Exit.Success v -> v | _ -> failwith "Failed"
-        let generatedGuid = Flow.runSync runtime Guid.newGuid |> function Exit.Success g -> g | _ -> failwith "Failed"
-        
-        let envName = $"AXIAL_SERVICES_CORE_{global.System.Guid.NewGuid():N}"
-        let previous = Environment.GetEnvironmentVariable envName
-
-        try
-            Environment.SetEnvironmentVariable(envName, "live-value")
-
-            test <@ timestamp <= DateTimeOffset.UtcNow.AddMinutes(1.0) @>
-            test <@ randomValue >= 0 && randomValue < 10 @>
-            test <@ generatedGuid <> global.System.Guid.Empty @>
-            test <@ Flow.runSync runtime (EnvironmentVariable.get envName) = Exit.Success "live-value" @>
-        finally
-            Environment.SetEnvironmentVariable(envName, previous)
+    let ``live platform defaults work without an environment`` () =
+        let timestamp = Clock.now |> Flow.runSync () |> function Exit.Success value -> value | _ -> failwith "clock"
+        let random = Random.nextInt 0 10 |> Flow.runSync () |> function Exit.Success value -> value | _ -> failwith "random"
+        let guid = Guid.newGuid |> Flow.runSync () |> function Exit.Success value -> value | _ -> failwith "guid"
+        Assert.True(timestamp <= DateTimeOffset.UtcNow.AddMinutes 1.)
+        Assert.InRange(random, 0, 9)
+        Assert.NotEqual(System.Guid.Empty, guid)
 
     [<Fact>]
-    let ``Clock.timed measures a flow with the clock's monotonic timer`` () =
-        let readings = ref 0
-
-        let stepping =
-            { new IClock with
-                member _.UtcNow() = DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero)
-                member _.Elapsed() =
-                    readings.Value <- readings.Value + 1
-                    TimeSpan.FromMilliseconds(float (readings.Value * 250))
-                member _.Sleep(_, _) = System.Threading.Tasks.Task.CompletedTask }
-
-        let runtime = makeRuntime stepping (Random.fromValue 1) (Guid.fromValue Guid.Empty) (EnvironmentVariables.fromPairs [])
-
-        let timed : Exit<string * TimeSpan, string> = Flow.ok "done" |> Clock.timed |> Flow.runSync runtime
-        let fixedClock = makeRuntime (Clock.fromValue DateTimeOffset.UnixEpoch) (Random.fromValue 1) (Guid.fromValue Guid.Empty) (EnvironmentVariables.fromPairs [])
-        let underFixedClock : Exit<int * TimeSpan, string> = Flow.ok 1 |> Clock.timed |> Flow.runSync fixedClock
-
-        test <@ timed = Exit.Success("done", TimeSpan.FromMilliseconds 250.0) @>
-        test <@ underFixedClock = Exit.Success(1, TimeSpan.Zero) @>
+    let ``Clock timed measures with the installed monotonic timer`` () =
+        let mutable readings = 0
+        let clock = { new IClock with
+                        member _.UtcNow() = DateTimeOffset.UnixEpoch
+                        member _.Elapsed() = readings <- readings + 1; TimeSpan.FromMilliseconds(float (readings * 250))
+                        member _.Sleep(_, _) = System.Threading.Tasks.Task.CompletedTask }
+        let actual = Flow.ok "done" |> Clock.timed |> Flow.withClock clock |> Flow.runSync ()
+        test <@ actual = Exit.Success("done", TimeSpan.FromMilliseconds 250.) @>
+        let fixedResult = Flow.ok 1 |> Clock.timed |> Flow.withClock (Clock.fromValue DateTimeOffset.UnixEpoch) |> Flow.runSync ()
+        test <@ fixedResult = Exit.Success(1, TimeSpan.Zero) @>

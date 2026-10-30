@@ -1097,8 +1097,114 @@ type internal FiberContext =
 module internal FiberContext =
     let empty = { Annotations = Map.empty; Locals = Map.empty }
 
+/// Pure decorators for runtime log destinations. Observation failures never escape into the workflow.
+[<RequireQualifiedAccess>]
+module LogSink =
+    let internal enabled (sink: ILogSink) level =
+        // axial-note AXG010: a broken observation gate cannot fail the application.
+        try sink.IsEnabled level with _ -> false
+    let internal write (sink: ILogSink) entry =
+        // axial-note AXG010: log destinations are write-only observations.
+        try sink.Write entry with _ -> ()
+    let none : ILogSink =
+        { new ILogSink with
+            member _.IsEnabled _ = false
+            member _.Write _ = () }
+    let fromFunction (destination: LogEntry -> unit) : ILogSink =
+        { new ILogSink with
+            member _.IsEnabled _ = true
+            member _.Write entry = destination entry }
+    let console (minimum: LogLevel) : ILogSink =
+        { new ILogSink with
+            member _.IsEnabled level = level >= minimum
+            member _.Write entry =
+                Platform.logError (entry.Level.ToString() + ": " + entry.Message)
+                entry.Error |> Option.iter (fun error ->
+                    Platform.logError (error.ToString())) }
+    let tee (first: ILogSink) (second: ILogSink) : ILogSink =
+        { new ILogSink with
+            member _.IsEnabled level = enabled first level || enabled second level
+            member _.Write entry =
+                if enabled first entry.Level then write first entry
+                if enabled second entry.Level then write second entry }
+    let minLevel (minimum: LogLevel) (sink: ILogSink) : ILogSink =
+        { new ILogSink with
+            member _.IsEnabled level = level >= minimum && enabled sink level
+            member _.Write entry = if entry.Level >= minimum && enabled sink entry.Level then write sink entry }
+    let filter (predicate: LogEntry -> bool) (sink: ILogSink) : ILogSink =
+        { new ILogSink with
+            member _.IsEnabled level = enabled sink level
+            member _.Write entry = if predicate entry then write sink entry }
+    let map (mapper: LogEntry -> LogEntry) (sink: ILogSink) : ILogSink =
+        { new ILogSink with
+            member _.IsEnabled level = enabled sink level
+            member _.Write entry = write sink (mapper entry) }
+
+type internal PlatformServices = { Clock: IClock; Random: IRandom; Guid: IGuid }
+
+module internal PlatformDefaults =
+    let clock : IClock =
+        { new IClock with
+            // axial-allow-AXG001: live runtime clock implementation.
+            member _.UtcNow() = DateTimeOffset.UtcNow
+            member _.Elapsed() = Platform.monotonicNow ()
+            member _.Sleep(delay, cancellationToken) =
+#if FABLE_COMPILER
+                let pending = Fable.Core.JS.Constructors.Promise.Create<unit>(fun resolve reject ->
+                    let settled = ref false
+                    let timer: obj ref = ref null
+                    let registration: IDisposable option ref = ref None
+                    let finish error =
+                        if not settled.Value then
+                            settled.Value <- true
+                            Platform.cancelTimer timer.Value
+                            registration.Value |> Option.iter _.Dispose()
+                            match error with
+                            | None -> resolve (box ())
+                            | Some (error: exn) -> reject (box error)
+                    let deadline = Platform.monotonicNow () + delay
+                    let rec wait () =
+                        let remaining = deadline - Platform.monotonicNow ()
+                        if remaining <= TimeSpan.Zero then finish None
+                        else timer.Value <- Platform.scheduleTimer wait (int (min 2147483647.0 (Math.Ceiling remaining.TotalMilliseconds)))
+                    if cancellationToken.IsCancellationRequested then finish (Some(OperationCanceledException()))
+                    else
+                        let registered = unbox<IDisposable> (box (cancellationToken.Register(fun () -> finish (Some(OperationCanceledException())))))
+                        registration.Value <- Some registered
+                        if settled.Value then registered.Dispose()
+                        else wait ())
+                unbox<Task> pending
+#else
+                task {
+                    let! exit = (Platform.sleepExecution delay cancellationToken : Platform.Execution<unit, unit>).AsTask()
+                    match exit with
+                    | Exit.Success () -> ()
+                    | Exit.Failure Cause.Interrupt -> raise (OperationCanceledException(cancellationToken))
+                    | Exit.Failure _ -> failwith "Live clock sleep failed."
+                } :> Task
+#endif
+        }
+    let random : IRandom =
+        // axial-allow-AXG001: live runtime random implementation.
+        let generator = System.Random()
+        let gate = obj()
+        { new IRandom with
+            member _.Next() = lock gate generator.Next
+            member _.NextMax maximum = lock gate (fun () -> generator.Next maximum)
+            member _.NextInt minimum maximum = lock gate (fun () -> generator.Next(minimum, maximum))
+            member _.NextDouble() = lock gate generator.NextDouble
+            member _.NextBytes buffer = lock gate (fun () -> generator.NextBytes buffer) }
+    let guid : IGuid =
+        { new IGuid with
+            // axial-allow-AXG001: live runtime GUID implementation.
+            member _.NewGuid() = System.Guid.NewGuid() }
+    let live = { Clock = clock; Random = random; Guid = guid }
+    let logSink = LogSink.console LogLevel.Information
+
 type internal RuntimeContext =
     {
+        Platform: PlatformServices
+        LogSink: ILogSink
         Scope: Scope
         /// The scope of the root run (Flow.run, App). Work started with Flow.disconnect registers here: its caller
         /// does not wait for it, but the root does, so nothing outlives the application unreported.
@@ -1127,6 +1233,8 @@ type internal RuntimeContext =
 module internal RuntimeContext =
     let create (scope: Scope) : RuntimeContext =
         {
+            Platform = PlatformDefaults.live
+            LogSink = PlatformDefaults.logSink
             Scope = scope
             RootScope = scope
             Context = FiberContext.empty
@@ -1230,6 +1338,10 @@ module internal RuntimeState =
     /// the whole <c>ExecutionContext</c> themselves, which costs one allocation instead of two.
     let enter (runtime: RuntimeContext) : unit = currentRuntime.Current.Value <- runtime
 #endif
+
+/// The only accessor for platform and log reads. Keep carrier changes local to this function.
+module internal RuntimePlatform =
+    let current () = RuntimeState.current ()
 
 /// <summary>
 /// Represents a cold workflow that reads an environment, returns a typed result, and is executed
