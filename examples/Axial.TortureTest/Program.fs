@@ -13,9 +13,9 @@ let stallAfter = System.TimeSpan.FromSeconds 60.0
 /// A round slower than <c>progressEvery</c> reports its live fiber count. A round past <c>stallAfter</c> reports the
 /// live fiber tree, interrupts every live fiber, and fails with a stall check, so a hang names the fibers still waiting
 /// instead of blocking the run. Returns <c>None</c> if the round's fibers still do not settle after the interrupt.
-let watchRound (say: string -> unit) (scenario: Scenario) (seed: int) : Flow<ClockEnvironment, Never, Check list option> =
+let watchRound (say: string -> unit) (scenario: Scenario) (seed: int) : Flow<unit, Never, Check list option> =
     let registry = FiberRegistry()
-    let clock = clockEnvironment.Clock
+    let clock = Axial.PlatformService.Clock.live
     let failed (cause: Cause<Never>) =
         let reason = Cause.prettyPrint (fun (_: Never) -> "") cause
         [ check $"the round completed (it ended with {reason})" false ]

@@ -8,8 +8,7 @@ open Axial.State
 open Axial.TortureTest.Scenario
 
 type private Tenant =
-    { Tenant: string; Clock: IClock }
-    interface IHasClock with member this.Clock = this.Clock
+    { Tenant: string }
 
 let private settledOk (exit: Exit<'value, 'error> option) =
     match exit with
@@ -18,7 +17,7 @@ let private settledOk (exit: Exit<'value, 'error> option) =
     | None -> false
 
 // <snippet:torture-fibers>
-let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
+let run (round: Round) : Flow<unit, Never, Check list> =
     let requests = round.Size 60
 
     flow {
@@ -83,7 +82,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
             // addAnnotationSink composes with the sink installed outside it; withAnnotationSink replaces it.
             |> Flow.addAnnotationSink (fun _ _ -> increment sinkCount |> ignore)
             |> Flow.withAnnotationSink (fun _ _ -> ())
-            |> Flow.localEnv (fun (env: ClockEnvironment) -> { Tenant = "acme"; Clock = env.Clock })
+            |> Flow.localEnv (fun (_: unit) -> { Tenant = "acme" })
 
         let annotationsHeld =
             inherited
@@ -96,8 +95,38 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let distinctIds = inherited |> List.map (fun (_, _, _, id, _) -> id) |> List.distinct |> List.length
         let annotated = sinkCount.Value
 
+        let outerTime = DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero)
+        let innerTime = outerTime.AddYears 1
+        let outerLog = Axial.PlatformService.Log.memory ()
+        let innerLog = Axial.PlatformService.Log.memory ()
+        let read = flow {
+            let! now = Axial.PlatformService.Clock.now
+            do! Axial.PlatformService.Log.info "scope"
+            return now
+        }
+        let descendant = flow {
+            let! child = Flow.forkNamed "platform-descendant" read
+            return! Fiber.join child
+        }
+        let! scoped =
+            (flow {
+                let! nested =
+                    [ 1 .. round.Size 30 ]
+                    |> Flow.traverse (fun iteration ->
+                        (if iteration % 2 = 0 then Flow.race descendant Flow.never
+                         else Flow.zipPar descendant descendant |> Flow.map fst)
+                        |> Flow.withClock (Axial.PlatformService.Clock.fromValue innerTime)
+                        |> Flow.withLogSink innerLog)
+                let! restored = read
+                return List.forall ((=) innerTime) nested && restored = outerTime
+            })
+            |> Flow.withClock (Axial.PlatformService.Clock.fromValue outerTime)
+            |> Flow.withLogSink outerLog
+        let platformScopesHeld = scoped && outerLog.Entries.Count = 1 && innerLog.Entries.Count >= round.Size 30
+
         return
-            [ check "the last request's result is delivered" (lastResult = requests)
+            [ check "clock and log overrides reach forks under race and zipPar and restore their outer scope" platformScopesHeld
+              check "the last request's result is delivered" (lastResult = requests)
               check "every replaced request finished or was interrupted, and none is left running" (polled |> List.forall settledOk)
               check "every request that started cleaned up" (cleaned = startedCount && startedCount >= 1 && searchExits.Length = requests)
               check "the last preview per key finished, and interruptAll left none running" (lastPreviews |> List.forall (function Exit.Success _ -> true | _ -> false) && remaining = 0 && previewPolls |> List.forall settledOk)
@@ -107,11 +136,11 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     }
 
 /// The fiber registry and observers under a burst of named fibers that succeed, fail, and are interrupted.
-let diagnostics (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
+let diagnostics (round: Round) : Flow<unit, Never, Check list> =
     let workers = round.Size 40
 
     flow {
-        let! clock = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock)
+        let! clock = Axial.PlatformService.Clock.service
         let registry = FiberRegistry(10)
         let starts = ref 0
         let ends = ref 0
@@ -131,7 +160,7 @@ let diagnostics (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list>
                     [ for index in 1..workers ->
                           match index % 3 with
                           | 0 -> Flow.sleep (TimeSpan.FromMinutes 5.0) |> Flow.forkNamed "sleeper" |> Flow.map Choice1Of2
-                          | 1 -> (Flow.fail "expected" : Flow<Axial.ClockEnvironment, string, unit>) |> Flow.forkNamed "failer" |> Flow.map Choice2Of2
+                          | 1 -> (Flow.fail "expected" : Flow<unit, string, unit>) |> Flow.forkNamed "failer" |> Flow.map Choice2Of2
                           | _ -> Flow.ok () |> Flow.forkNamed "worker" |> Flow.map Choice1Of2 ]
                     |> Flow.sequence
 

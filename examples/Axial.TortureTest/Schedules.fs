@@ -10,14 +10,14 @@ let private ms (value: float) = TimeSpan.FromMilliseconds value
 
 // <snippet:torture-schedules>
 /// Retries a flow that fails every time and returns how many times it ran.
-let private runsUntilStopped (schedule: Schedule<Axial.ClockEnvironment, string, 'output>) : Flow<Axial.ClockEnvironment, Never, int> =
+let private runsUntilStopped (schedule: Schedule<unit, string, 'output>) : Flow<unit, Never, int> =
     flow {
         let runs = ref 0
         let! _ = Flow.delay (fun () -> increment runs |> ignore; Flow.fail "always") |> Flow.retry schedule |> exitOf
         return runs.Value
     }
 
-let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
+let run (round: Round) : Flow<unit, Never, Check list> =
     let cases = round.Size 40
 
     flow {
@@ -113,7 +113,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     }
 
 /// supervise restarts defects only; timeouts stop their operation before returning.
-let supervision (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
+let supervision (round: Round) : Flow<unit, Never, Check list> =
     let workers = round.Size 30
 
     flow {
@@ -154,7 +154,7 @@ let supervision (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list>
             flow {
                 let settled = ref false
 
-                let operation : Flow<Axial.ClockEnvironment, string, int> =
+                let operation : Flow<unit, string, int> =
                     Flow.sleep (ms (float (round.Next 5))) |> Flow.map (fun () -> index) |> Flow.onExit (fun _ -> Flow.delay (fun () -> settled.Value <- true; Flow.ok ()))
 
                 let! exit =

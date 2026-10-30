@@ -13,12 +13,11 @@ type private Services =
       Workers: Pool<int>
       Region: string
       Clock: IClock }
-    interface IHasClock with member this.Clock = this.Clock
 
 // <snippet:torture-layers>
-let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
+let run (round: Round) : Flow<unit, Never, Check list> =
     flow {
-        let! clock = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock)
+        let! clock = Axial.PlatformService.Clock.service
         let gate = obj ()
         let acquired = ResizeArray<string>()
         let released = ResizeArray<string>()
@@ -77,10 +76,10 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
                 return $"{services.Primary},{services.Secondary},{region}", first + second + services.Workers.Count + Seq.length services.Workers.Instances
             }
 
-        let! runner = work |> Layer.provide services |> Flow.localEnv (fun (_: ClockEnvironment) -> "eu") |> Flow.fork
+        let! runner = work |> Layer.provide services |> Flow.localEnv (fun (_: unit) -> "eu") |> Flow.fork
         if round.Chance 30 then do! Flow.sleep (TimeSpan.FromMilliseconds(float (round.Next 3)))
         let! outcome = if round.Chance 30 then Fiber.interrupt runner else Fiber.awaitExit runner
-        let! length = Flow.ok () |> Flow.map (fun () -> 0) |> Layer.provide (applied |> Layer.map id) |> Flow.localEnv (fun (_: ClockEnvironment) -> "eu") |> exitOf
+        let! length = Flow.ok () |> Flow.map (fun () -> 0) |> Layer.provide (applied |> Layer.map id) |> Flow.localEnv (fun (_: unit) -> "eu") |> exitOf
 
         let acquiredNames, releasedNames = lock gate (fun () -> List.ofSeq acquired, List.ofSeq released)
 

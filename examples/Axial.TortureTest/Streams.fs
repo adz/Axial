@@ -45,7 +45,7 @@ let private asyncItems (items: int list) =
 #endif
 
 // <snippet:torture-streams>
-let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
+let run (round: Round) : Flow<unit, Never, Check list> =
     let input = [ for _ in 1 .. round.Size 300 -> round.Next 20 ]
     let source () = FlowStream.fromSeq input
 
@@ -79,7 +79,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
             |> FlowStream.runCollect
         let! localized =
             (FlowStream.fromSeq input : FlowStream<unit, Never, int>)
-            |> FlowStream.localEnv (fun (_: ClockEnvironment) -> ())
+            |> FlowStream.localEnv (fun (_: unit) -> ())
             |> FlowStream.runCollect
 #if FABLE_COMPILER
         let interop = input
@@ -90,7 +90,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let! counted = source () |> FlowStream.runCount
         let! head = source () |> FlowStream.runTryHead
         let! last = source () |> FlowStream.runTryLast
-        let! nothing = FlowStream.empty<Axial.ClockEnvironment, Never, int> |> FlowStream.runTryHead
+        let! nothing = FlowStream.empty<unit, Never, int> |> FlowStream.runTryHead
         let seen = ResizeArray<int>()
         do! source () |> FlowStream.tapFlow (fun value -> Flow.delay (fun () -> seen.Add value; Flow.ok ())) |> FlowStream.runDrain
         do! source () |> FlowStream.runForEach seen.Add

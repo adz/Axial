@@ -9,9 +9,8 @@ open Axial.TortureTest.Scenario
 type private Environment =
     { Process: IProcess; Clock: IClock }
     interface IHasProcess with member this.Process = this.Process
-    interface IHasClock with member this.Clock = this.Clock
 
-let run (round: Round) : Flow<ClockEnvironment, Never, Check list> =
+let run (round: Round) : Flow<unit, Never, Check list> =
     let input = [for _ in 1..round.Size 100 -> round.Next 20]
     let captured = {Text="";Bytes=[||];Truncated=false;Available=true}
     let result =
@@ -29,7 +28,7 @@ let run (round: Round) : Flow<ClockEnvironment, Never, Check list> =
             }}
     let env = {Process=service;Clock=Axial.PlatformService.Clock.live}
     let source () = Process.command $"scripted" |> Process.streamStdout
-    let observe workflow = workflow |> Flow.localEnv(fun (_: ClockEnvironment) -> env) |> Flow.foldCause (Exit.Success >> Flow.succeed) (Exit.Failure >> Flow.succeed)
+    let observe workflow = workflow |> Flow.localEnv(fun (_: unit) -> env) |> Flow.foldCause (Exit.Success >> Flow.succeed) (Exit.Failure >> Flow.succeed)
     flow {
         let! collected = source() |> ProcessStream.map(fun item -> int item.Text) |> ProcessStream.filter(fun item -> item%2=0) |> ProcessStream.runCollect |> observe
         let! folded = source() |> ProcessStream.runFold(fun total item -> total+int item.Text) 0 |> observe

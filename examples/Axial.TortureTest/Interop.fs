@@ -12,11 +12,11 @@ type private Kind =
     | Thrown
 
 // <snippet:torture-interop>
-let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
+let run (round: Round) : Flow<unit, Never, Check list> =
     let calls = round.Size 120
 
     flow {
-        let! clock = Flow.envWith (fun (environment: ClockEnvironment) -> environment.Clock)
+        let! clock = Axial.PlatformService.Clock.service
         let interruptionsSeen = ref 0
 
         // The operation waits a little, observing its cancellation token, then produces its kind of outcome.
@@ -45,7 +45,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
             }
 
         // Each call adapts a random kind of foreign operation, and is interrupted a third of the time.
-        let adapted index : Flow<Axial.ClockEnvironment, string, int> =
+        let adapted index : Flow<unit, string, int> =
             let kind = [| Value; Failure; Thrown |].[round.Next 3]
 
             let result value : Result<int, string> =
@@ -97,7 +97,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
                 | Exit.Failure cause -> not (Cause.failures cause).IsEmpty || not (Cause.defects cause).IsEmpty)
 
         // A flow run as a task or an async gives the same exit as running it inside a flow.
-        let sample : Flow<Axial.ClockEnvironment, string, int> = Flow.ok 5 |> Flow.bind (fun value -> if value > 3 then Flow.fail "big" else Flow.ok value)
+        let sample : Flow<unit, string, int> = Flow.ok 5 |> Flow.bind (fun value -> if value > 3 then Flow.fail "big" else Flow.ok value)
         let! direct = sample |> exitOf
         let! viaAsync = Flow.fromAsync (Flow.toAsync clockEnvironment sample)
 #if FABLE_COMPILER
@@ -181,7 +181,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let! parentToken = Flow.cancellationToken
         let spinnerToken = ref parentToken
 
-        let spinner : Flow<Axial.ClockEnvironment, Never, unit> =
+        let spinner : Flow<unit, Never, unit> =
             flow {
                 let! token = Flow.cancellationToken
                 spinnerToken.Value <- token

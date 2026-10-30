@@ -29,13 +29,13 @@ let private throwingObserver (starts: int ref) (ends: int ref) =
         OnEnd = fun _ _ -> increment ends |> ignore; raise (InvalidOperationException "observer end") }
 
 // Gates force interruption into suspended cleanup rather than relying on a scheduling delay.
-let private interruptedCleanup () : Flow<ClockEnvironment, Never, Check list> =
+let private interruptedCleanup () : Flow<unit, Never, Check list> =
     [ 0; 1; 2 ]
     |> Flow.traverse (fun mode ->
         flow {
-            let! started = Deferred.make<ClockEnvironment, Never, unit> ()
-            let! resume = Deferred.make<ClockEnvironment, Never, unit> ()
-            let! acquired = Deferred.make<ClockEnvironment, Never, unit> ()
+            let! started = Deferred.make<unit, Never, unit> ()
+            let! resume = Deferred.make<unit, Never, unit> ()
+            let! acquired = Deferred.make<unit, Never, unit> ()
             let! finished = Ref.make 0
             let starts, ends = ref 0, ref 0
             let observer = throwingObserver starts ends
@@ -46,7 +46,7 @@ let private interruptedCleanup () : Flow<ClockEnvironment, Never, Check list> =
                     do! Flow.ensureNotCanceled
                     do! finished |> Ref.update ((+) 1)
                 }
-            let resource : Flow<ClockEnvironment, string, unit> =
+            let resource : Flow<unit, string, unit> =
                 flow {
                     let! _ = Flow.scopeAcquireRelease (Flow.ok ()) (fun _ -> cleanup)
                     if mode = 2 then
@@ -83,7 +83,7 @@ let private interruptedCleanup () : Flow<ClockEnvironment, Never, Check list> =
     |> Flow.map List.concat
 
 // <snippet:torture-scopes>
-let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
+let run (round: Round) : Flow<unit, Never, Check list> =
     flow {
         let events = ResizeArray<Event>()
         let nextId = ref 0
@@ -94,7 +94,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let interrupted = ref 0
 
         // Acquires one resource in the current scope, in one of the ways Axial offers, and logs its release.
-        let acquire (scope: int) : Flow<Axial.ClockEnvironment, string, unit> =
+        let acquire (scope: int) : Flow<unit, string, unit> =
             let id = fresh ()
             let release () = record (Released(scope, id))
             let acquired value = Flow.delay (fun () -> record (Acquired(scope, id)); Flow.ok value)
@@ -127,7 +127,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
             // A release that reads the environment it was acquired with.
             | 5 ->
                 Flow.scopeAcquireRelease (acquired id) (fun _ ->
-                    Flow.envWith (fun (env: ClockEnvironment) -> env.Clock) |> Flow.bind (fun _ -> finalizer release))
+                    Axial.PlatformService.Clock.service |> Flow.bind (fun _ -> finalizer release))
                 |> Flow.ignore
 #if FABLE_COMPILER
             | _ -> Flow.scopeResource (Resource.create (acquired id) (fun _ -> finalizer release)) |> Flow.ignore
@@ -141,7 +141,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
 
         // A scope acquires a few resources, then may open child scopes, fork children (joined, interrupted, or left
         // running for the scope to interrupt), fail, or die. Every level counts itself in and out.
-        let rec nest depth : Flow<Axial.ClockEnvironment, string, unit> =
+        let rec nest depth : Flow<unit, string, unit> =
             flow {
                 let scope = fresh ()
 
