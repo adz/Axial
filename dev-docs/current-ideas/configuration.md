@@ -1,284 +1,309 @@
-# Configuration and time zone/culture (T32)
+# Configuration, culture and time zone (T32)
 
-Status: **draft for owner review**. No code until approved. Covers T32. T31 (the 0.12 package reshape) lands first and leaves only the
-environment-variable code in `Axial.PlatformService`; this document is what that code becomes.
+Status: **owner decisions applied (2026-10-31)**. Decisions are listed in section 12, each one marked DECIDED or OPEN. Code starts
+once the OPEN ones are answered or accepted as recommended. Breaking, so it ships in 0.12.0 with Reified 0.12.0.
 
-Inputs: T31/T32 in `dev-docs/TASKS.md`, `capabilities.md` (T25a, binding), `dev-docs/decisions/README.md`, and the code as of `30c508020`:
-`Axial.PlatformService` (`Services.fs`, `Platform.fs`, `Operations.fs` modules `EnvironmentVariables`, `EnvironmentVariable`,
-`EnvironmentVariableErrors`), `Axial.Hosting` `Configuration`, `NodeApp.arguments`, `PlatformServices` in `src/Axial/Core.fs`, and
-`Flow.withClock`/`withRandom`/`withGuid` in `src/Axial/Flow.fs`. Guiding principle: closer to Elm (pure domain, effects as values, no
-exceptions or null, no hidden globals, behaviour from explicit inputs, never from env-var switches).
+Inputs: T30-T32 in `dev-docs/TASKS.md`, `capabilities.md` (binding), Axial at `859578a16`, and `~/projects/Reified-main`: `Data`,
+`Data.ofCliArgs`, `Data.ofConfigurationPairs`, `Json.tryParseData`, `Schema.parse` (`Parsing.fs` turns `Number`/`Bool` into text before
+parsing a field, so a string from any source decodes into a typed field), and `Data.merge`/`mergeAll`/`ofEnvironment`, new in
+**Reified 0.12.0**. Guiding principle: closer to Elm (pure domain, effects as values, no exceptions or null, no hidden globals).
 
 ## 1. Problem
 
-1. **Configuration is untyped and fails fast.** `EnvironmentVariable.getInt "PORT"` returns one `EnvironmentVariableError` and stops. A
-   service with ten settings reports its mistakes one restart at a time. There is no notion of a default, a section, or a secret.
-2. **One source.** Only environment variables. Command-line arguments exist only on Node (`NodeApp.arguments ()`), as a raw list. JSON
-   files and Generic Host `IConfiguration` are reached by pretending they are environment variables
-   (`Axial.Hosting.Configuration.environmentVariables`, whose `Set` throws `NotSupportedException`).
-3. **Precedence is implicit.** Whatever builds the `IEnvironmentVariables` decides, and nothing reports which source supplied a value.
-4. **Parsing is culture-leaky and target-dependent.** `getDouble` uses `NumberStyles.AllowThousands`, so `"1,5"` parses as `15`. On
-   Fable the parsers drop the culture argument and use JS rules, so .NET and Fable can disagree on the same text.
-5. **Time zone and culture are ambient.** Nothing in Axial provides them, so user code reads `TimeZoneInfo.Local`, `DateTime.Now` and
-   `CultureInfo.CurrentCulture`, and tests depend on the machine. Guardrails flags `TimeZoneInfo.Local` but points at "an explicit
-   TimeZoneInfo supplied through 'env", which does not exist.
+1. **Untyped and fail-fast.** `EnvironmentVariable.getInt "PORT"` returns one error and stops: ten bad settings, ten restarts.
+2. **One source.** Arguments exist only on Node; `IConfiguration` is reached by pretending it is an environment
+   (`Axial.Hosting.Configuration.environmentVariables`, whose `Set` throws).
+3. **Culture leaks.** `getDouble` uses `AllowThousands` (`"1,5"` is `15`); user code reads `CultureInfo.CurrentCulture` and
+   `TimeZoneInfo.Local`; implicit-culture overloads give machine-dependent text. Probe, .NET 10: `Double.Parse "1.5"` is `15` under
+   `de-DE`; `"i".ToUpper()` is `"İ"` under `tr-TR`.
 
-## 2. Decisions already made (owner, T31/T32, 2026-10-31)
+## 2. Packages in 0.12
 
-- The environment-variable code leaves `Axial.PlatformService` and becomes **`Axial.Configuration`**; the old NuGet id is deprecated.
-- Configuration has typed reads with validation errors; sources are environment variables, command-line arguments (every host),
-  config files and an `IConfiguration` adapter; precedence is explicit.
-- **Authority stays in `'env`** (`IHasConfiguration`-style). Configuration is not Platform.
-- **Time zone and culture join Clock/Random/Guid** in the runtime's `PlatformServices`, with `Flow.withTimeZone`/`withCulture` and fixed
-  values under `runTest`. Axial code never reads `TimeZoneInfo.Local` or `CultureInfo.CurrentCulture`.
+- **`Axial.PlatformService` is deleted** (not deprecated). T31 moves `Clock`/`Random`/`Guid`/`Log` and `TestLog`/`TestPlatform`/
+  `TestClock`/`runTest` into core `Axial`. Environment variables become a configuration source in `Axial.Configuration` (section 3.2);
+  no env-var capability remains in a platform-services package.
+- **`Axial.Configuration`** lives in the Axial repo, is released with Axial, and **references `Reified.Schema` and `Reified.Data`
+  directly**, as `Axial.Hosting.AspNetCore` and `Axial.Hosting.GenHttp` already do. It references `Axial` and `Axial.FileSystem` (for
+  `ConfigSource.jsonFile`). Targets `netstandard2.1;net8.0`, AOT- and Fable-compatible. It may be extracted later.
+- **Core `Axial` keeps no Reified reference.** Culture and time zone (sections 4 and 5) are core and Reified-free.
+- **Axial 0.12 requires Reified 0.12** (`merge`, `mergeAll`, `ofEnvironment`).
+- Coordinator edits outside this doc: `dev-docs/TASKS.md` T16's acceptance rule becomes "core Axial has no Reified references;
+  packages that need Reified data may"; the `AGENTS.md` invariant "Only the explicit HTTP host adapters may reference Reified packages"
+  needs the same restatement.
 
 ## 3. `Axial.Configuration`
 
-### 3.1 Package and what moves
+### 3.1 The typed model is a Reified Schema
 
-`Axial.Configuration` targets `netstandard2.1;net8.0`, is AOT-compatible and Fable-compatible, and references only `Axial`.
+The settings type is an ordinary record described by a `schema<_> { }`. Reified gives the explicit model, accumulated errors keyed by
+`SchemaPath`, refinements, Fable and AOT. Axial adds no decoder and no parsers of its own.
 
-| From `Axial.PlatformService` | To `Axial.Configuration` |
-|---|---|
-| `IEnvironmentVariables`, `IHasEnvironmentVariables` | same names, namespace `Axial.Configuration` |
-| `EnvironmentVariables` module (`tryGet`, `getAll`, `set`, `clear`, `expand`, `live`, `fromPairs`, `layer`) | same module, unchanged |
-| `Platform.environmentVariables*` | internal to `Axial.Configuration` |
-| `EnvironmentVariable` (typed `get*`), `EnvironmentVariableError`, `EnvironmentVariableErrors` | **deprecated** for 0.12, removed in 0.13 (section 5) |
+```fsharp
+open Reified.Schema
+open Reified.SchemaDSL
 
-`IEnvironmentVariables` keeps `Set` and `Expand`: mutating the process environment is an authority of its own, and it stays its own
-capability (one interface per service). Configuration reads a **snapshot** taken from it; it never writes.
+type Db = { Host: NonBlankString; Port: int; Password: Secret<string> }
+type AppSettings = { Db: Db; Timeout: int; Proxy: string option }
 
-### 3.2 The capability
+let dbSchema = schema<Db> { field _.Host; field _.Port { constrain (atLeast 1); constrain (atMost 65535) }; field _.Password; construct Db.create }
+let settingsSchema = schema<AppSettings> { field _.Db { withSchema dbSchema }; field _.Timeout; field _.Proxy; construct AppSettings.create }
+```
+
+`"5432"` from an environment variable, `5432` from JSON and `--db.port 5432` all reach `Port` as text and parse with Reified's
+invariant rules; `"1,5"` is an error on .NET and Fable alike. Defaults are a source (`ConfigSource.ofData "defaults" ...`), not a schema
+feature, so they appear in precedence order like any other layer.
+
+### 3.2 Sources produce `Data`; `Data.mergeAll` combines them
+
+```fsharp
+/// One named layer. Read is the effect; the result is plain Reified Data.
+type ConfigSource<'env> =
+    { Name: string                      // "env", "args", "appsettings.json"
+      Spell: string list -> string      // how this source writes a path, for messages: ["Db";"Port"] -> "MYAPP__Db__Port"
+      Read: Flow<'env, ConfigError, Data> }
+
+module ConfigSource =
+    val environment     : prefix: string option -> ConfigSource<'env>           // live process environment, Data.ofEnvironmentWith
+    val environmentOf   : prefix: string option -> (string * string) seq -> ConfigSource<'env>  // same, from given pairs (tests)
+    val commandLine     : args: string list -> ConfigSource<'env>               // Data.ofCliArgs; pure
+    val jsonFile        : path: string -> ConfigSource<'env> when 'env :> IHasFileSystem   // missing file is SourceFailed
+    val optionalJsonFile: path: string -> ConfigSource<'env> when 'env :> IHasFileSystem   // missing file is Data.Object []
+    val json            : name: string -> text: string -> ConfigSource<'env>    // Json.tryParseData
+    val queryString     : search: string -> ConfigSource<'env>                  // browser "?a=1&b.c=2", pure
+    val ofData          : name: string -> Data -> ConfigSource<'env>            // defaults, fixtures
+```
+
+| Source | Built with | Notes |
+|---|---|---|
+| Environment | `Data.ofEnvironmentWith` (`__` separator, optional prefix stripped) | live read: `Environment.GetEnvironmentVariables()` / `process.env`, once |
+| Command line, every host | `Data.ofCliArgs` | `--k=v`, `--k v`, `--flag`, `--no-flag`, `--`; repeats become a list; positionals under `_` |
+| JSON file | `FileSystem.readAllText` then `Json.tryParseData` | the file read is visible as `IHasFileSystem` in the signature |
+| `IConfiguration` | `Axial.Hosting`: `HostConfiguration.source name cfg` = `Data.ofConfigurationPairs (cfg.AsEnumerable())` | users keep appsettings.json, env, args, user-secrets |
+| Browser query string | `BrowserApp.queryParameters ()` (new) into `ConfigSource.queryString` | the only browser source |
+
+**Precedence is list order, later wins**: `Config.load schema [ defaults; file; env; args ]` reads every source, then
+`Data.mergeAll` (right-biased deep merge: objects merge by field, lists and scalars replace, a later `Null` overrides). This matches
+`ConfigurationBuilder`. There is no implicit source; an empty list is `Data.Object []`.
+
+`Data.ofCliArgs` keeps `--Db:Port=5` as one flat key `"Db:Port"`; `ConfigSource.commandLine` re-nests `:`-separated names (the MEL
+spelling) through `Data.ofConfigurationPairs` so they merge with the other layers (C13, OPEN).
+
+### 3.3 Key case
+
+Reified keeps names as written and matches schema fields exactly (`field _.Port` is `port`; an env var `MYAPP__DB__PORT` gives
+`DB.PORT`). MEL is case-insensitive, so `Db:Port` in appsettings.json and `DB__PORT` in the environment are one key there and two keys
+after `Data.mergeAll`. `Config.load` therefore canonicalises each source's names against the schema **before** merging: a name equal to
+a schema field under ordinal-ignore-case is renamed to the field's canonical name (found with Reified `Inspect.model`); two different
+spellings of one field inside one source are a `SourceFailed`; unknown names are left alone. Plain string reads (3.6) compare paths
+ordinal-ignore-case. Alternative: a case-insensitive option in Reified's `SchemaParseOptions` (C12, OPEN).
+
+### 3.4 The capability
 
 ```fsharp
 namespace Axial.Configuration
 
-/// One resolved value and where it came from. Value is never null.
-type ConfigEntry = { Value: string; Source: string }
-
-/// Read-only, immutable configuration snapshot.
+/// The merged snapshot. Immutable; never reloaded.
 type IConfig =
-    abstract TryFind: path: string -> ConfigEntry option     // path is "Db:Port"; case-insensitive (ordinal-ignore-case)
-    abstract Children: path: string -> string list            // immediate child segments, in first-seen order
-    abstract Describe: path: string -> string list           // where the path was looked for: "env MYAPP_DB__PORT", "arg --Db:Port"
+    abstract Data: Data
+    abstract Sources: (string * (string list -> string)) list   // name and spelling, in precedence order, for messages
 
 type IHasConfig =
     abstract Config: IConfig
 ```
 
-The naming rule (decisions README, 2026-08-10) gives `IHasConfig` with member `Config`. `IConfiguration` is avoided because
-`Microsoft.Extensions.Configuration.IConfiguration` is open in every host file (decision C1).
+- **Live**: `Config.loadData sources : Flow<'env, ConfigError list, IConfig>` at the entry point.
+- **Fake**: `Config.ofData (data [ "Db" => [ "Host" => "localhost" ] ])`. Same type as live; there is no other fake.
+- `Replaces` (T25b): `Environment.GetEnvironmentVariable(s)`, `GetCommandLineArgs`, `Microsoft.Extensions.Configuration` reads.
 
-- **Live**: `Config.ofSources sources`, built once at the entry point (section 3.6). It is a pure value: the effects were reading the sources.
-- **Fake**: `Config.ofPairs [ "Db:Port", "5432" ]` (source name `"test"`). There is no other fake; the fake is the same type.
-- `Replaces` (T25b): `System.Environment.GetEnvironmentVariable`, `GetCommandLineArgs`, `Microsoft.Extensions.Configuration` reads.
+`IConfig` avoids the name `IConfiguration`, which MEL has open in every host file.
 
-There is no reload. A snapshot is taken at start; applications that need `IOptionsMonitor` reload keep it on the MEL side (decision C9).
-
-### 3.3 Typed reads: decoders, not reflection
-
-A settings record is decoded by a small applicative decoder, the shape of Elm's `Json.Decode` with `and!`. Reflection over record fields
-is rejected: it breaks under NativeAOT trimming, does not exist on Fable, and hides the key names (decision C4).
+### 3.5 Load once, then pass the value
 
 ```fsharp
-/// A description of how to read 'value from an IConfig. Pure; running it never throws.
-type ConfigDecoder<'value>
-
-/// Parses one string. The string is what the user wrote; the error is the "expected" phrase ("an integer").
-type Parse<'value> = string -> Result<'value, string>
-
 module Config =
-    val required    : key: string -> Parse<'v> -> ConfigDecoder<'v>
-    val optional    : key: string -> Parse<'v> -> ConfigDecoder<'v option>   // absent -> None; present but invalid -> error
-    val withDefault : 'v -> key: string -> Parse<'v> -> ConfigDecoder<'v>      // absent -> default; invalid -> error, never the default
-    val secret      : key: string -> Parse<'v> -> ConfigDecoder<Secret<'v>>   // required; value redacted in every error
-    val section     : key: string -> ConfigDecoder<'v> -> ConfigDecoder<'v>   // prefixes every key inside with "key:"
-    val list        : key: string -> ConfigDecoder<'v> -> ConfigDecoder<'v list>  // children "key:0", "key:1", ... in index order
-    val succeed     : 'v -> ConfigDecoder<'v>
-    val map         : ('a -> 'b) -> ConfigDecoder<'a> -> ConfigDecoder<'b>
-    val validate    : ('a -> Result<'b, string>) -> ConfigDecoder<'a> -> ConfigDecoder<'b>  // cross-field rules, attributed to the section
-    val andThen     : ('a -> ConfigDecoder<'b>) -> ConfigDecoder<'a> -> ConfigDecoder<'b>    // dependent reads; stops accumulating here
-    val decode      : ConfigDecoder<'v> -> IConfig -> Result<'v, ConfigError list>           // pure; the list is never empty on Error
-    val read        : ConfigDecoder<'v> -> Flow<'env, ConfigError list, 'v> when 'env :> IHasConfig
-    val ofSources   : ConfigSource list -> IConfig
-    val ofPairs     : (string * string) seq -> IConfig
-
-/// Applicative only: BindReturn + MergeSources, no Bind. Two sequential let! do not compile, so errors always accumulate.
-val config : ConfigBuilder
+    val load     : Schema<'model> -> ConfigSource<'env> list -> Flow<'env, ConfigError list, 'model>   // read, canonicalise, merge, parse
+    val loadData : ConfigSource<'env> list -> Flow<'env, ConfigError list, IConfig>
+    val parse    : Schema<'model> -> IConfig -> Result<'model, ConfigError list>                       // pure
+    val section  : path: string -> Schema<'model> -> Flow<'env, ConfigError list, 'model> when 'env :> IHasConfig
+    val ofData   : Data -> IConfig
 ```
 
-Example:
+Configuration is loaded **once at startup into a plain value**, Elm-flags style. The typed record, not `IConfig`, goes where it is
+used, and every later consumer captures it:
+
+- **Flows**: put `settings` (or the part a service needs) in the `'env` record; read it with `Flow.envWith _.Settings`.
+- **ASP.NET/GenHttp handlers and middleware**: the handler is a closure built after loading, `app.MapGet("/", handler settings)`, or a
+  middleware constructed with the value. No per-request configuration lookup, no `IOptions<T>` resolution.
+- **Elmish**: `Program.mkProgram (init settings) (update settings) view`; the value is an argument, like Elm's `flags`.
+- **Callbacks** (timers, `Process` output handlers, UI events): capture the value in the closure that is registered.
+
+Nothing reloads (an app that needs `IOptionsMonitor` keeps it on the MEL side). Every consumer sees one snapshot, and a test passes a
+record literal. `IHasConfig` and `Config.section` are for libraries that own a section (`Config.section "Http" HttpSettings.schema`).
+
+### 3.6 Plain string reads
+
+For a tool with two settings a schema is ceremony. Two reads over `IHasConfig`, plus a pure form:
 
 ```fsharp
-type Mode = Development | Production
-type DbSettings = { Host: string; Port: int; Password: Secret<string> }
-type AppSettings = { Db: DbSettings; Timeout: TimeSpan; Proxy: Uri option; Mode: Mode }
-
-let db =
-    config {
-        let! host = Config.required "Host" Parse.string
-        and! port = Config.withDefault 5432 "Port" Parse.port
-        and! password = Config.secret "Password" Parse.string
-        return { Host = host; Port = port; Password = password }
-    }
-
-let settings =
-    config {
-        let! db = Config.section "Db" db
-        and! timeout = Config.withDefault (TimeSpan.FromSeconds 30.) "Timeout" Parse.duration
-        and! proxy = Config.optional "Proxy" Parse.absoluteUri
-        and! mode = Config.required "Mode" (Parse.oneOf [ "development", Development; "production", Production ])
-        return { Db = db; Timeout = timeout; Proxy = proxy; Mode = mode }
-    }
+module Config =
+    val required : path: string -> Flow<'env, ConfigError, string> when 'env :> IHasConfig          // absent -> Missing
+    val optional : path: string -> Flow<'env, ConfigError, string option> when 'env :> IHasConfig   // absent -> None
+    val tryFind  : path: string -> IConfig -> Result<string option, ConfigError>                     // pure
 ```
 
-Recommended use, Elm-flags style: decode once at the entry point and put the typed record (not `IConfig`) into `'env`. `IHasConfig` and
-`Config.read` exist for libraries that own a section (`Config.read (Config.section "Http" HttpSettings.decoder)`).
+Paths use Reified's `DataPath` syntax (`"Db.Port"`). `Number`/`Bool` leaves come back as their text; an object or list is `NotText`.
 
-### 3.4 Errors
+### 3.7 Errors
 
 ```fsharp
-type ConfigProblem =
-    | Missing                                         // no source had the key
-    | Invalid of expected: string * shown: string option   // shown = None for secrets
-    | Rejected of message: string                     // Config.validate / Parse.custom refinement
-    | Malformed of message: string                    // a source could not be read: bad JSON (line:col), bad argument
+type ConfigError =
+    | SourceFailed of source: string * message: string   // unreadable file, bad JSON (Json.tryParseData's message), duplicate spelling
+    | Invalid of SchemaErrors                            // every schema issue from one parse, keyed by SchemaPath
+    | Missing of path: string                            // plain read
+    | NotText of path: string                            // plain read
 
-type ConfigError = { Path: string; Problem: ConfigProblem; Source: string option; LookedIn: string list }
-
-module ConfigErrors =
-    val describe   : ConfigError -> string            // invariant culture, one line
-    val describeAll: ConfigError list -> string       // one line per error, sorted by Path
+module ConfigError =
+    val describe : sources: IConfig -> ConfigError -> string     // invariant culture; one line per issue, sorted by path
 ```
 
-`Missing` carries `LookedIn` from `IConfig.Describe`, so the message says how to supply it:
-`Db:Host is missing (looked in: arg --Db:Host, env MYAPP_DB__HOST, file appsettings.json Db.Host)`. Errors are values in the typed
-channel; nothing in the package throws. Paths are case-insensitive but errors print the decoder's spelling.
+`Config.load` reads every source and reports **all** `SourceFailed` errors; it parses only when every source was read, so a broken file
+does not also produce a page of misleading `Omitted` issues. `describe` appends where a missing path could come from, using each
+source's `Spell`: `Db.Host was omitted (set one of: --Db:Host, MYAPP__Db__Host, appsettings.json Db.Host)`. Nothing throws.
 
-### 3.5 Parsing and secrets
+### 3.8 Secrets
 
-`Parse` gives the same answer on .NET and Fable for the same text: each parser is written against an explicit grammar, not a culture.
+A secret is declared, never guessed from key names: the field's type is `Secret<'v>` (sealed; `ToString()` is `"<redacted>"`; no
+structural equality; read with `Secret.reveal`; its schema replaces any issue under it with a value-free one, so `SchemaErrors`,
+`describe`, `%A`/`%O` and log entries never contain the value). `IConfig` and `describe` print paths and source names, never values.
 
-| Parser | Accepts | Notes |
-|---|---|---|
-| `string`, `nonEmpty` | any / non-blank | `""` is a present value; `nonEmpty` rejects it |
-| `int`, `int64`, `port` | `[+-]?[0-9]+`, in range | no thousands separators, no hex; `port` is 1..65535 |
-| `float`, `decimal` | `[+-]?digits[.digits][e[+-]digits]` | `.` only; `"1,5"` is Invalid (today it is 15) |
-| `bool` | `true`/`false`, any case | `1/0/yes/no` rejected (decision C6) |
-| `duration` | invariant `c` format `[d.]hh:mm:ss[.fff]` and `250ms`, `30s`, `5m`, `2h`, `1d` | suffixes are integer-only |
-| `dateTimeOffset` | ISO 8601 with offset or `Z` | a date-time without offset is Invalid |
-| `guid`, `absoluteUri` | `D` format / absolute URI | |
-| `oneOf` | case-insensitive table of `(text, value)` | how enums and unions are read; no reflection |
-| `custom`, `map`, `refine` | user functions | `refine "a port" (fun p -> p > 0)` |
+Where `Secret` lives (C7a, OPEN). **Recommendation: Reified (`Reified.Refinements`, canonical `Schema` member).** Redaction has to happen
+where the error is produced, inside `Schema.parse` and the refinement constructor; Axial only sees the finished `SchemaErrors`. In
+Reified it also covers HTTP bodies and JSON encoding (a `Secret` field encodes as an error or as redacted, never as plain text). If it
+cannot make Reified 0.12, `Axial.Configuration` ships it with `Schema.refine` and the same contract, and moves it later.
 
-**Secrets.** `Secret<'v>` is a sealed class with a private field: `ToString()` is `"<redacted>"`, it has no structural equality, and the
-value is read only with `Secret.reveal`. `Config.secret` marks the path, so `Invalid` for it has `shown = None`. Snapshots never render
-values: `IConfig.Describe` and diagnostics print paths and sources only. Axial does not guess secrecy from key names (no `*Password*`
-heuristics); the decoder says so (decision C7).
-
-### 3.6 Sources and precedence
-
-```fsharp
-type ConfigSource                                      // a name plus flattened (path, value) pairs; pure data
-
-module ConfigSource =
-    val ofPairs     : name: string -> (string * string) seq -> ConfigSource
-    val environment : prefix: string -> Flow<'env, 'error, ConfigSource> when 'env :> IHasEnvironmentVariables
-    val ofEnvironment : prefix: string -> IReadOnlyDictionary<string, string> -> ConfigSource   // pure form, for tests
-    val commandLine : args: string list -> Result<ConfigSource * positional: string list, ConfigError list>
-    val json        : name: string -> text: string -> Result<ConfigSource, ConfigError list>
-```
-
-- **Precedence is the list order: later sources override earlier ones** (`Config.ofSources [ defaults; file; env; args ]`), the same
-  as `ConfigurationBuilder`, so ASP.NET users read it correctly (decision C3). There is no implicit source: an empty list is empty config.
-- **Environment variables**: only variables starting with `prefix` (`"MYAPP_"`; `""` takes all), prefix stripped, `__` becomes `:`.
-  Reads go through `IHasEnvironmentVariables`, so a test passes `EnvironmentVariables.fromPairs`.
-- **Command line**: `--key=value`, `--key value`, bare `--flag` (= `"true"` when followed by another `--` option or the end), `--` ends
-  options; keys may use `:` (`--Db:Port=5`). Later duplicates win. Short options and positional typing are out of scope: this is
-  configuration, not a CLI parser. Positionals are returned, not dropped. `-x` is `Malformed`.
-- **JSON**: objects flatten to `a:b`, arrays to `a:0`, `a:1`; numbers keep their source lexeme (`1.0` stays `"1.0"`); `true`/`false` become
-  `"true"`/`"false"`; `null` means absent. Parsed by one small hand-written reader shared by .NET and Fable (no `System.Text.Json`, which
-  is a package dependency on `netstandard2.1` and behaves differently from `JSON.parse`; decision C5). Comments and trailing commas: rejected.
-- **Files**: `Axial.Configuration` does not read files. The entry point reads text with `Axial.FileSystem` and hands it to `json`, so a
-  config file is visibly a file read (decision C8).
-- **`IConfiguration` adapter** (in `Axial.Hosting`, which already references MEL): `MicrosoftConfiguration.source : name -> IConfiguration ->
-  ConfigSource` snapshots the flattened tree (the existing `flatten`). Its keys already use `:`.
-
-Key rules: segments separated by `:`; comparison ordinal-ignore-case on every target; arrays are numeric segments; keys are stored as
-first written and compared lower-invariant. `Config.section` is just a prefix, so `Config.section "Db" db` and a flat `"Db:Host"` are the same read.
-
-### 3.7 How hosts provide it
+### 3.9 Hosts
 
 | Host | Arguments | Environment | Files / other |
 |---|---|---|---|
-| .NET console (`App.run`) | `main argv` passed explicitly | `EnvironmentVariables.live` | `FileSystem.readAllText` then `ConfigSource.json` |
-| Generic Host / ASP.NET Core | already in `IConfiguration` (`CreateDefaultBuilder(args)`) | same | `MicrosoftConfiguration.source "host" builder.Configuration` |
-| Node | `NodeApp.arguments ()` | `NodeEnvironment.live` | Node file system |
-| Browser | `BrowserApp.queryParameters ()` (new: `?key=value` from `location.search`) | none | JSON text embedded by the build or fetched by the app |
+| .NET console (`App.run`) | `main argv` into `ConfigSource.commandLine` | `ConfigSource.environment` | `ConfigSource.jsonFile` |
+| Generic Host / ASP.NET Core | already in `IConfiguration` (`CreateDefaultBuilder(args)`) | same | `HostConfiguration.source "host" builder.Configuration` |
+| Node | `NodeApp.arguments ()` | `ConfigSource.environment` (`process.env`) | `ConfigSource.jsonFile` (Node file system) |
+| Browser | `BrowserApp.queryParameters ()` | none | JSON embedded by the build, or fetched, into `ConfigSource.json` |
 
-No host calls `Environment.GetCommandLineArgs()`; arguments arrive as an explicit value like Elm flags. A helper composes the common case:
+No host calls `Environment.GetCommandLineArgs()`; arguments arrive as a value. Hosts do not install configuration in the runtime
+context. Tests call `Config.parse settingsSchema (Config.ofData (data [ ... ]))` with no flow and build sources from strings and pairs
+(`json`, `environmentOf`, `commandLine`); `ConfigSource.environment` reads the process even under `runTest`.
 
-```fsharp
-let load argv : Flow<'env, ConfigError list, IConfig> when 'env :> IHasEnvironmentVariables =
-    flow {
-        let! env = ConfigSource.environment "MYAPP_"
-        let! args, _ = ConfigSource.commandLine argv |> Flow.fromResult
-        return Config.ofSources [ env; args ]
-    }
-// main: load argv |> Flow.bind (Config.decode settings >> Flow.fromResult) ... then build the env with the typed record.
-```
+## 4. Culture: an explicit value
 
-Hosts do not install configuration in the runtime context: it is a capability in `'env`, so it never appears implicitly.
-
-### 3.8 Testing
-
-Decoders are tested without a flow: `Config.decode settings (Config.ofPairs [ ... ])` and compare the `ConfigError list` exactly.
-Flows that use `Config.read` take an env whose `Config` is `Config.ofPairs`. Sources are tested from strings and dictionaries
-(`ConfigSource.json "t" text`, `ofEnvironment`). There is no live/fake divergence to test: the live config is the same type.
-
-## 4. Time zone and culture in `PlatformServices`
-
-### 4.1 Values, not interfaces
-
-Elm's `Time.Zone` is an opaque value obtained with `Time.here`. Axial does the same: a zone and a culture each have one correct "fake",
-which is just another value, so they are sealed types, not interfaces (decision C10).
+### 4.1 In the runtime's `PlatformServices`
 
 ```fsharp
 namespace Axial
 
-[<Sealed>] type TimeZone      // .NET: wraps TimeZoneInfo; Fable: an IANA id plus an Intl.DateTimeFormat for offsets
-[<Sealed>] type Culture       // a BCP 47 name ("" = invariant); .NET: wraps CultureInfo; Fable: the name, used with Intl
-
-module TimeZone =
-    val utc       : TimeZone
-    val fixedOffset : TimeSpan -> TimeZone                     // "UTC+10:00"
-    val ofId      : string -> Result<TimeZone, string>           // IANA ids on every target; Windows ids also on .NET
-    val id        : TimeZone -> string
-    val offsetAt  : TimeZone -> DateTimeOffset -> TimeSpan       // pure
-    val toLocal   : TimeZone -> DateTimeOffset -> DateTimeOffset // same instant, zone's offset; pure
-    val current   : Flow<'env, 'error, TimeZone>                 // reads the runtime context
-#if !FABLE_COMPILER
-    val ofTimeZoneInfo : TimeZoneInfo -> TimeZone
-    val toTimeZoneInfo : TimeZone -> TimeZoneInfo
-#endif
+[<Sealed>] type Culture   // .NET: a read-only CultureInfo; Fable: a BCP 47 name used with Intl. "" = invariant.
 
 module Culture =
     val invariant : Culture
-    val ofName    : string -> Result<Culture, string>
+    val ofName    : string -> Result<Culture, string>      // .NET: CultureInfo.GetCultureInfo (cached, read-only); Fable: Intl.getCanonicalLocales
     val name      : Culture -> string
-    val current   : Flow<'env, 'error, Culture>
+    val current   : Flow<'env, 'error, Culture>            // reads the runtime context
 #if !FABLE_COMPILER
-    val formatProvider : Culture -> IFormatProvider            // for String.Format / ToString(provider)
+    val formatProvider : Culture -> IFormatProvider        // for APIs that take a provider
+    val ambient   : Culture -> (unit -> 'a) -> 'a          // 4.4
 #endif
 
-module Clock =
-    val nowLocal  : Flow<'env, 'error, DateTimeOffset>           // Clock.now |> TimeZone.toLocal current zone
+module Flow =
+    val withCulture : Culture -> Flow<'env,'error,'value> -> Flow<'env,'error,'value>   // scope: the flow and everything it forks
 ```
 
-Local-to-UTC conversion (wall-clock time to instant, with skipped and repeated hours) is **not** in T32: it needs a typed
-`Ambiguous | Skipped` result and its own design (decision C11).
+Live default: `PlatformDefaults` captures the process's `CultureInfo.CurrentCulture` instance once, lazily. `runTest`: invariant
+(`TestPlatform.Culture`, settable). A culture is a value, not an interface: its only fake is another value.
 
-### 4.2 Runtime fields and copy cost
+### 4.2 Guardrails bans implicit-culture forms
+
+Banned everywhere except inside `Culture.ambient` (4.4) and listed boundary files. Verified by a probe on .NET 10 under `de-DE`/`tr-TR`.
+
+| Banned form | Example of the failure | Use instead | Rule |
+|---|---|---|---|
+| Untyped interpolation hole of a number/date: `$"{x}"`, `$"{x:N2}"` | `$"{1.5}"` is `"1,5"` under de-DE | typed hole `$"%f{x}"`, `string x` | F# rule `culture.interpolation-hole` |
+| `ToString()` / `ToString(format)` without provider on `IFormattable` | `(1.5).ToString()` is `"1,5"` | `string x`, `ToString(fmt, Culture.formatProvider c)` | CA1305 |
+| `String.Format`, `StringBuilder.AppendFormat`, `Console.Write(format, ..)` without provider | culture-formatted args | `sprintf`, provider overload | CA1305 |
+| `String.Concat(obj)` with an `IFormattable` argument | as `ToString()` | `string x` | F# rule `culture.object-format` (no provider overload, so CA1305 misses it) |
+| `%O` on a number or date | `sprintf "%O" 1.5` is `"1,5"` | `%f`, `%d`, `%s` with `string` | F# rule `culture.object-format` |
+| `Parse`/`TryParse`/`Convert.ToX(string)` without provider | `Double.Parse "1.5"` is `15` | `Double.Parse(s, CultureInfo.InvariantCulture)`, Reified schema | CA1305 |
+| `ToUpper()`/`ToLower()` without culture | `"i".ToUpper()` is `"İ"` under tr-TR | `ToUpperInvariant()`, `ToUpper(culture)` | CA1304, CA1311 |
+| `String.Compare`, `StartsWith`/`EndsWith`/`IndexOf(string)` without `StringComparison`; `CurrentCulture*` comparisons | culture-dependent order and matches | `StringComparison.Ordinal`/`OrdinalIgnoreCase` | CA1307, CA1309, CA1310 |
+| Reads or writes of `CultureInfo.CurrentCulture`/`CurrentUICulture`, `Thread.CurrentCulture`, `DefaultThreadCurrentCulture` | ambient global | `Culture.current`, `Flow.withCulture` | existing symbol rule `culture.current` |
+
+Allowed (already invariant or ordinal in F#): `string x`, `sprintf` `%f`/`%d`/`%s`, typed interpolation holes, `float`/`int`
+conversions of strings, F# `compare`, `List.sort`.
+
+Roslyn analyzers (the CA rules) do not run on F# projects: the F# compiler does not host them. Guardrails therefore implements each CA
+rule above as an FSharp.Analyzers typed-tree rule that carries the CA id in its code and message (the typed tree has the resolved
+overload, which the old design said was missing), and its `buildTransitive` props enable the real CA rules for C# projects in the same
+solution (C17, OPEN on this split).
+
+### 4.3 Interop boundary: the flow's culture reaches C# code
+
+Code Guardrails cannot see (C# libraries, other assemblies) reads `CultureInfo.CurrentCulture`. When a flow invokes a
+`ColdTask`/`Task`/`ValueTask`/`Async` factory, Axial makes the flow's culture the thread's for the duration of the factory call:
+
+1. Before invoking: if `CultureInfo.CurrentCulture` is not reference-equal to the flow culture's `CultureInfo`, set it (and
+   `CurrentUICulture` likewise), remembering the previous values.
+2. Invoke the factory. `CurrentCulture` is backed by an `AsyncLocal`, so the `ExecutionContext` the task captures at each `await`
+   carries the flow's culture into its continuations.
+3. Restore the previous values in a `finally` as soon as the factory returns.
+
+The default path costs one reference comparison per call: the live default is the captured process culture instance, so it is equal
+unless the flow used `withCulture` (or runs under `runTest` on a non-invariant machine). This lives in the same internal user-code
+invocation chokepoint as T30's exception wrapper: one call site per interop kind, one place to benchmark (benchmark 3). Only culture
+is synced; time zone cannot be (section 5). The ASP.NET adapter may adopt the request's RequestLocalization culture
+(`IRequestCultureFeature`) as the request flow's culture (C19, OPEN on default vs opt-in).
+
+### 4.4 `Culture.ambient` for direct synchronous C# calls
+
+```fsharp
+let! culture = Culture.current
+let text = Culture.ambient culture (fun () -> Legacy.Report.Render model)   // sets and restores CurrentCulture/CurrentUICulture
+```
+
+.NET only, synchronous only (a `Task` started inside escapes the restore; use the interop factories of 4.3 for those). It exists for
+direct C# calls outside task factories. Guardrails allows the banned forms of 4.2 only lexically inside its lambda.
+
+**Fable.** No ambient culture: formatting is invariant JS, the allowed forms agree with .NET (invariant test 7), and `Culture` is used
+explicitly with `Intl` (`Intl.NumberFormat(Culture.name c)`). `Culture.ambient` and the interop sync are .NET only.
+
+## 5. Time zone: an explicit value
+
+```fsharp
+[<Sealed>] type TimeZone   // .NET: TimeZoneInfo; Fable: IANA id plus Intl.DateTimeFormat for offsets
+
+module TimeZone =
+    val utc         : TimeZone
+    val fixedOffset : TimeSpan -> TimeZone
+    val ofId        : string -> Result<TimeZone, string>        // IANA ids on every target; Windows ids also on .NET
+    val id          : TimeZone -> string
+    val offsetAt    : TimeZone -> DateTimeOffset -> TimeSpan    // pure
+    val toLocal     : TimeZone -> DateTimeOffset -> DateTimeOffset
+    val current     : Flow<'env, 'error, TimeZone>
+#if !FABLE_COMPILER
+    val ofTimeZoneInfo : TimeZoneInfo -> TimeZone
+    val toTimeZoneInfo : TimeZone -> TimeZoneInfo               // to pass a zone to C# APIs explicitly
+#endif
+
+module Clock = val nowLocal : Flow<'env, 'error, DateTimeOffset>   // Clock.now |> TimeZone.toLocal current
+module Flow  = val withTimeZone : TimeZone -> Flow<'env,'error,'value> -> Flow<'env,'error,'value>
+```
+
+`TimeZoneInfo.Local` is process-wide, so a zone cannot be scoped ambiently per flow: there is no interop sync and no `ambient` block.
+C# code that reads `TimeZoneInfo.Local` sees the machine zone; pass `TimeZone.toTimeZoneInfo` explicitly. Live default:
+`TimeZoneInfo.Local` (.NET) or `Intl.DateTimeFormat().resolvedOptions().timeZone` (Fable), read lazily once. `runTest`: UTC.
+Fable offsets come from `formatToParts` with `hourCycle: "h23"`; an invalid id's `RangeError` becomes `Error`; Node without full ICU
+returns `Error` for non-UTC ids (documented, tested on the CI Node version).
+T32 ships UTC-to-local only; local-to-UTC (skipped and repeated hours) needs a typed `Ambiguous | Skipped` result and its own design.
+
+## 6. Runtime fields and `withClock`
 
 ```fsharp
 type internal PlatformServices =
@@ -287,129 +312,108 @@ type internal PlatformServices =
       Culture: Culture }
 ```
 
-`RuntimeContext` is unchanged: it holds `Platform` as one pointer, so fork/branch/disconnect copies stay the same size. The record grows
-from four to six fields, which costs only at `Flow.with*` install time. `withClock` today rebuilds with `PlatformServices.Create(clock,
-Random, Guid)`; it changes to `{ runtime.Platform with Clock = clock; Time = Platform.timeOfClock clock }` so it keeps the zone and culture
-(invariant test 12).
+`RuntimeContext` holds `Platform` as one pointer, so fork/branch/disconnect copies do not grow; the record grows from four to six
+fields, paid only at `Flow.with*` install. `withClock` today rebuilds with `PlatformServices.Create(clock, Random, Guid)`, which would
+drop the zone and culture. It changes to `{ runtime.Platform with Clock = clock; Time = Platform.timeOfClock clock }` (invariant test 7).
+`TestPlatform` gains `TimeZone` (UTC) and `Culture` (invariant); `trace` records `TimeZone.current` and `Culture.current` reads.
 
-```fsharp
-module Flow =
-    val withTimeZone : TimeZone -> Flow<'env,'error,'value> -> Flow<'env,'error,'value>
-    val withCulture  : Culture  -> Flow<'env,'error,'value> -> Flow<'env,'error,'value>
-```
-
-Same scope rule as `withClock`: the wrapped flow and everything it forks. `withCulture` does **not** set `CultureInfo.CurrentCulture`
-or `Thread.CurrentCulture`: Axial does not mutate ambient .NET state (decision C12).
-
-**Live defaults.** `PlatformDefaults` is the one place allowed to read the machine: `TimeZoneInfo.Local` / `CultureInfo.CurrentCulture`
-on .NET, `Intl.DateTimeFormat().resolvedOptions().timeZone` and `.locale` on Fable. Both are resolved lazily on first read, so a
-run that never asks pays nothing at startup (benchmark 2). They are read once per process, like `TimeZoneInfo.Local`'s own cache.
-
-**`runTest`.** `TestPlatform` gains `TimeZone` (default `TimeZone.utc`) and `Culture` (default `Culture.invariant`), settable like `Random`;
-`trace` records `TimeZone.current` and `Culture.current` reads.
-
-**Fable.** Offsets come from `Intl.DateTimeFormat("en-US", { timeZone, hourCycle: "h23", ... }).formatToParts(instant)`, difference from
-UTC. An invalid id throws `RangeError` inside `ofId`, which catches it into `Error`. `Culture.ofName` uses
-`Intl.getCanonicalLocales`. Node without full ICU: `ofId` returns `Error` for non-UTC ids; documented, tested on the CI Node version.
-
-### 4.3 Guardrails
-
-Rules in `EffectCatalog.fs`, all symbol matches like the existing clock rules:
+## 7. Guardrails rules beyond culture
 
 | Rule | Members | Suggestion |
 |---|---|---|
-| `clock.local-timezone` (exists; message changes) | `TimeZoneInfo.Local` | `TimeZone.current` (runtime), `Flow.withTimeZone` |
+| `clock.local-timezone` (exists; message changes) | `TimeZoneInfo.Local` | `TimeZone.current`, `Flow.withTimeZone` |
 | `clock.datetime` (exists; message adds) | `DateTime.Now`, `Today` | `Clock.nowLocal` |
-| `clock.to-local` (new) | `DateTime.ToLocalTime`, `DateTimeOffset.ToLocalTime`, `TimeZoneInfo.ConvertTimeFromUtc`/`ConvertTime` with `Local` | `TimeZone.toLocal` |
-| `culture.current` (new) | `CultureInfo.CurrentCulture`, `CurrentUICulture`, `DefaultThreadCurrentCulture`, `Thread.CurrentCulture` | `Culture.current`, `CultureInfo.InvariantCulture` for machine text |
-| `environment.state` (exists; adds) | `Environment.GetCommandLineArgs`, `Environment.CommandLine` | `main argv` + `ConfigSource.commandLine` |
+| `clock.to-local` (new) | `DateTime.ToLocalTime`, `DateTimeOffset.ToLocalTime`, `TimeZoneInfo.ConvertTime*` with `Local` | `TimeZone.toLocal` |
+| `environment.state` (exists; adds) | `Environment.GetCommandLineArgs`, `Environment.CommandLine`, `GetEnvironmentVariable(s)` | `ConfigSource.commandLine`/`environment` |
 
-Implicit-culture overloads (`Double.Parse(string)`, `ToString()` on numbers, `String.Format` without a provider) are not flagged in
-0.12: they need overload resolution analysis and CA1305 already covers them (decision C13). Axial's own `src` is held to the same rules
-by running Guardrails on the repo at deny (exceptions only in `PlatformDefaults`, with `axial-allow` reasons).
+The rules live under the guardrail of the package that provides the replacement: culture and time-zone rules under core `Axial`,
+environment and argument rules under `Axial.Configuration`. Axial's own `src` runs them at deny; the exceptions are `PlatformDefaults`,
+the interop chokepoint, `Culture.ambient` and `ConfigSource.environment`, each with an `axial-allow` reason.
 
-## 5. Migration from 0.11.3
+## 8. Migration from 0.11.3
 
 | 0.11.3 | 0.12 |
 |---|---|
-| `open Axial.PlatformService` for env vars | `open Axial.Configuration`; package `Axial.Configuration` |
-| `IEnvironmentVariables`, `IHasEnvironmentVariables`, `EnvironmentVariables.*` | unchanged, new namespace |
-| `EnvironmentVariable.get "X"` | `Config.read (Config.required "X" Parse.string)` over `ConfigSource.environment ""` |
-| `EnvironmentVariable.getInt` / `getDouble` / ... | `Config.required "X" Parse.int` / `Parse.float` (stricter: no thousands separators) |
-| `EnvironmentVariable.tryGet` | `Config.optional "X" Parse.string` |
-| `EnvironmentVariableError` (one, fail-fast) | `ConfigError list` (all errors); `ConfigErrors.describeAll` |
-| `Axial.Hosting.Configuration.environmentVariables cfg` / `.layer` | `MicrosoftConfiguration.source "host" cfg` into `Config.ofSources` |
+| package `Axial.PlatformService` | deleted; Clock/Random/Guid/Log/runTest in `Axial` (T31), configuration in `Axial.Configuration` |
+| `IEnvironmentVariables`, `EnvironmentVariables.*` (`tryGet`, `set`, `expand`, `live`, `fromPairs`, `layer`) | deleted; `ConfigSource.environment` / `environmentOf`; child-process variables are passed to `Axial.Process` explicitly |
+| `EnvironmentVariable.get "X"` / `tryGet` | `Config.required "X"` / `Config.optional "X"` |
+| `EnvironmentVariable.getInt` / `getDouble` / ... | a schema field; `Config.load` reports every error |
+| `EnvironmentVariableError` (one, fail-fast) | `ConfigError list`; `ConfigError.describe` |
+| `Axial.Hosting.Configuration.environmentVariables cfg` / `.layer` | `HostConfiguration.source "host" cfg` in the source list |
 | `NodeApp.arguments ()` | unchanged; feed it to `ConfigSource.commandLine` |
-| `TimeZoneInfo.Local`, `DateTime.Now`, `CultureInfo.CurrentCulture` in user code | `TimeZone.current`, `Clock.nowLocal`, `Culture.current` |
+| `TimeZoneInfo.Local`, `DateTime.Now`, `CultureInfo.CurrentCulture`, implicit-culture overloads | `TimeZone.current`, `Clock.nowLocal`, `Culture.current`, the replacements in 4.2 |
 
-`EnvironmentVariable`, `EnvironmentVariableError` and `EnvironmentVariableErrors` stay in 0.12 under `[<Obsolete>]` pointing at the row
-above, then go in 0.13; this is breaking (namespace move), so 0.12.0 per the minor-bump rule. Rows go in `dev-docs/releases/0.12.0.md`.
+The env-var typed reads are deleted in 0.12, not obsoleted (pre-1.0 rule). Rows go in `dev-docs/releases/0.12.0.md`.
 
-## 6. Invariant tests (written first; they must fail before implementation)
+## 9. Invariant tests (written first; each must fail before implementation)
 
-1. A decoder with three bad keys returns exactly three errors, sorted by path, from one `decode`.
-2. `withDefault` returns the default when absent and an error (not the default) when present but invalid.
-3. Precedence: the same key in env and args yields the args value with `Source = "args"`; reversing the list reverses the winner.
-4. `Missing` lists every source's spelling of the path (`--Db:Host`, `MYAPP_DB__HOST`, `Db.Host`).
-5. A secret's invalid value never appears in `describe`, `describeAll`, `ToString`, `sprintf "%O"`, or a log entry built from the error.
-6. Parser table: every row of 3.5 (and the rejected inputs: `"1,5"`, `"0x10"`, `"yes"`, offsetless dates) gives the same result on .NET and Fable.
-7. Parsers are culture-independent: the .NET suite runs the table under `de-DE` and `tr-TR` thread cultures with identical results.
-8. JSON flattening: nested objects, arrays, `null`, number lexemes, unicode escapes; malformed text gives `Malformed` with line:col; same on Fable.
-9. Command line: `--a=1 --b 2 --flag -- --c` gives `a`, `b`, `flag=true` and positional `--c`; `-x` gives `Malformed`.
-10. Keys are case-insensitive on Fable and .NET alike (`process.env` is case-sensitive; config lookup is not).
-11. The applicative builder rejects two sequential `let!` at compile time (a negative-compile test in the Guardrails/compile harness).
-12. `withClock` after `withTimeZone` keeps the zone; `withTimeZone`/`withCulture` apply to forks (including `race`/`zipPar` branches and
-    `disconnect`) and not outside, on .NET and on Fable after an `await`.
-13. `runTest` reports `TimeZone.utc` and `Culture.invariant` regardless of the machine (the suite runs under `TZ=Pacific/Auckland`).
-14. `TimeZone.offsetAt` for `Europe/Berlin`, `America/New_York`, `Australia/Lord_Howe` at a fixed table of instants around DST
-    transitions is identical on .NET (Linux, Windows) and Fable/Node.
-15. Guardrails: each new rule fires on its members and is silent on `CultureInfo.InvariantCulture` and `TimeZone.current`.
-16. An AOT probe (`examples/Axial.AotProbe`) decodes a settings record and formats with a culture with no IL2xxx/IL3xxx warnings.
+1. Three bad fields across two sources: one `Invalid` with exactly three issues. Two unreadable sources: two `SourceFailed`, no `Invalid`.
+2. Precedence: a key in env and args yields the args value; reversing the list reverses the winner; a later `Null` overrides.
+3. `describe` for an omitted path lists every source's spelling (`--Db:Host`, `MYAPP__Db__Host`, `appsettings.json Db.Host`).
+4. Keys: `Db.Port` (JSON), `MYAPP__DB__PORT` (env) and `--Db:Port=5` (args) merge into one field; two spellings in one source are
+   `SourceFailed`; positionals arrive under `_`.
+5. A secret's value never appears in `SchemaErrors`, `describe`, `ToString`, `%A`, `%O`, or a log entry built from the error.
+6. `"5432"`, `5432` and `"true"` decode the same from env, JSON and args; `"1,5"` is rejected; run under `de-DE` and `tr-TR` thread
+   cultures on .NET and as the same table on Fable.
+7. Culture: invariant under `runTest` on a `de-DE` machine; `withCulture` applies to forks (`race`, `zipPar`, `disconnect`) and not
+   outside; the allowed forms give identical text on .NET and Fable; `withClock` after `withCulture`/`withTimeZone` keeps both.
+8. Interop sync: a C# helper that awaits and then formats `1.5` returns `"1,5"` inside `withCulture de` via `ofTask`, `ofColdTask`,
+   `ofValueTask`, `ofAsync`; the thread's culture is restored afterwards; with the default culture the setter is never called (a
+   counting test hook); `Culture.ambient` restores after a throw.
+9. Time zone: `runTest` reports UTC under `TZ=Pacific/Auckland`; `withTimeZone` scopes like `withCulture`; `offsetAt` for
+   `Europe/Berlin`, `America/New_York`, `Australia/Lord_Howe` around DST transitions is identical on .NET (Linux, Windows) and Node.
+10. Guardrails: each row of 4.2 and 7 fires on a positive sample and is silent on its replacement and inside `Culture.ambient`.
+11. An AOT probe loads configuration through a schema and formats with a culture with no IL2xxx/IL3xxx warnings.
 
-## 7. Benchmarks (quiet machine only)
+## 10. Benchmarks (quiet machine only)
 
 | Benchmark | Question | Pass |
 |---|---|---|
-| FiberCost, Race, Pingpong/Threadring | does the larger `PlatformServices` change fork cost? | allocation identical (only the pointer is copied); time within noise |
-| process start to first `runSync` | do lazy zone/culture defaults cost at startup? | within noise of 0.11.3; `TimeZoneInfo.Local` not touched when unused |
-| `Flow.withClock` install | the bigger record copy at install | within noise |
-| `TimeZone.current` read in a loop | runtime read cost | same as `Clock.now` read |
-| `Config.decode` of a 30-key record, 4 sources | is decoding negligible at startup? | under 50 µs, no reflection in the profile |
+| FiberCost, Race, Pingpong/Threadring | does the six-field `PlatformServices` change fork cost? | allocation identical; time within noise |
+| process start to first `runSync` | do lazy zone/culture defaults cost at startup? | within noise of 0.11.3 |
+| `Flow.ofTask` / `ofValueTask` loop, default culture | cost of the interop reference check in the T30 chokepoint | within noise of the T30 baseline, no allocation |
+| same loop under `withCulture` | cost of set and restore | recorded; under 50 ns per call |
+| `Culture.current` / `TimeZone.current` read loop | runtime read cost | same as `Clock.now` |
+| `Config.load` of a 30-field schema, 4 sources | is loading negligible at startup? | under 200 µs, no reflection in the profile |
 
-## 8. Order of work after approval
+## 11. Order of work
 
-1. T31 lands (Clock/Random/Guid/Log in core; only env vars left in `Axial.PlatformService`).
-2. Invariant tests, failing (section 6); benchmark baselines recorded.
-3. `TimeZone`, `Culture`, `PlatformServices` fields, `Flow.withTimeZone`/`withCulture`, `TestPlatform` defaults, Fable Intl backend.
-4. `Axial.Configuration` project: move env-var code; `ConfigSource`, `Config`, `ConfigDecoder`, `Parse`, `Secret`, errors; JSON reader.
-5. Hosts: `MicrosoftConfiguration.source` (replacing `Configuration`), `BrowserApp.queryParameters`, examples for .NET/Node/Generic Host.
-6. Guardrails rules and messages; repo-wide Guardrails run at deny.
-7. Deprecations, `0.12.0.md` rows, decisions README update (Platform now Clock/Guid/Random/TimeZone/Culture), docs set for Configuration (T33).
+1. **Reified 0.12.0 release** (`Data.merge`, `mergeAll`, `ofEnvironment`; `Secret` if C7a is accepted; case option if C12 picks it).
+2. **T31**: Clock/Random/Guid/Log and the test platform move to core `Axial`; `Axial.PlatformService` deleted.
+3. **Culture and time zone in `PlatformServices`**: types, `withCulture`/`withTimeZone`, `withClock` fix, `TestPlatform` defaults, Fable
+   Intl backend, then the interop culture sync inside T30's chokepoint, with benchmarks 1-5 before and after.
+4. **`Axial.Configuration`**: sources, canonicalisation, `Config.load`/`loadData`/plain reads, errors; `HostConfiguration.source` in
+   `Axial.Hosting`; `BrowserApp.queryParameters`; examples for .NET, Node, Generic Host.
+5. **Guardrails rules** (4.2, 7) and the repo-wide run at deny.
+6. **Docs set** for Configuration and the culture/time-zone pages (T33), `0.12.0.md` rows, decisions README (Platform is
+   Clock/Guid/Random/TimeZone/Culture).
 
-## 9. Alternatives considered
+## 12. Decisions
 
-- **Reflection binding (`IConfiguration.Get<T>()` style).** Rejected: trimming/AOT warnings, no Fable, key names invisible, errors fail-fast.
-- **Source-generated binders.** No F# source generators; a Myriad step would add a build tool for what ten lines of decoder do.
-- **Configuration in the runtime context.** Rejected by the owner: authority stays in `'env`; it would be a hidden global.
-- **Monadic CE with `Bind`.** Short-circuits on the first error, which is problem 1 in section 1.
-- **`ITimeZone`/`ICulture` interfaces.** No behaviour to fake beyond choosing a value; interfaces invite stateful fakes.
-- **Setting `CultureInfo.CurrentCulture` in `withCulture`.** Mutates ambient .NET state per fiber, leaks across `await`s on non-Axial code.
+DECIDED means owner, 2026-10-31.
 
-## 10. Open decisions — FOR OWNER REVIEW
-
-Each has a recommendation; none is decided until the owner confirms.
-
-- **C1. Capability name.** Recommend `IConfig` / `IHasConfig` (member `Config`); alternatives `ISettings`, or `IConfiguration` (clashes with MEL).
-- **C2. Deprecate or delete `EnvironmentVariable` typed reads in 0.12.** Recommend `[<Obsolete>]` in 0.12, delete in 0.13.
-- **C3. Precedence direction.** Recommend later-wins list order, matching `ConfigurationBuilder`.
-- **C4. Decoder vs reflection.** Recommend the applicative decoder only (`config { let! .. and! .. }`, no `Bind`), plus `andThen` for dependent reads.
-- **C5. JSON parser.** Recommend one hand-written reader for .NET and Fable; no `System.Text.Json` dependency, no comments or trailing commas.
-- **C6. Boolean spellings.** Recommend `true`/`false` only (case-insensitive); `1/0/yes/no` via `Parse.oneOf` when wanted.
-- **C7. Secrets.** Recommend explicit `Config.secret` + `Secret<'v>`; no key-name heuristics; snapshots never render values.
-- **C8. File reading.** Recommend `Axial.Configuration` parses text only; the entry point reads the file through `Axial.FileSystem`.
-- **C9. Reload.** Recommend none in 0.12: a snapshot at start. Revisit with a `Config.watch` stream only if asked.
-- **C10. Zone and culture as sealed values, not interfaces.** Recommend values (Elm `Time.Zone`), wrapping `TimeZoneInfo`/`CultureInfo` on .NET and Intl on Fable.
-- **C11. Local-to-UTC conversion.** Recommend deferring to its own design (typed `Ambiguous | Skipped`); T32 ships UTC-to-local only.
-- **C12. `withCulture` and `CultureInfo.CurrentCulture`.** Recommend never setting the thread culture; `Culture.formatProvider` is explicit.
-- **C13. Implicit-culture overloads in Guardrails.** Recommend not in 0.12 (CA1305 covers them); flag only ambient reads (4.3).
-- **C14. Browser query string as a source.** Recommend yes, via `BrowserApp.queryParameters ()`; no other browser source.
+| # | Decision | Status |
+|---|---|---|
+| C1 | Typed model is a Reified `Schema`; Axial's own decoder (old C4) and parser table dropped | DECIDED |
+| C2 | Every source produces Reified `Data`; combined with `Data.mergeAll`, later wins | DECIDED |
+| C3 | JSON via `Json.tryParseData`, files via `Axial.FileSystem` (`ConfigSource.jsonFile`); own reader (old C5) dropped | DECIDED |
+| C4 | Plain string reads `Config.required` / `optional` / `tryFind` | DECIDED |
+| C5 | Loaded once at startup into a plain value, captured by consumers; no reload | DECIDED |
+| C6 | Capability `IConfig` / `IHasConfig` (member `Config`); fake `Config.ofData` | DECIDED |
+| C7 | Explicit `Secret<'v>`, no key-name heuristics, values never rendered | DECIDED |
+| C7a | Home of `Secret`: recommend `Reified.Refinements` (3.8); fallback `Axial.Configuration` | OPEN |
+| C8 | `Axial.Configuration` in the Axial repo references Reified; core `Axial` does not; Axial 0.12 requires Reified 0.12 | DECIDED |
+| C9 | `Axial.PlatformService` deleted in 0.12; env vars become a source; env-var typed reads deleted (old C2) | DECIDED |
+| C10 | Sources: env, command line on every host, JSON files, `IConfiguration` adapter, browser query string (old C14) | DECIDED |
+| C11 | Scalar parsing is Reified's (old C6 boolean spellings defer to `Schema.bool`) | DECIDED |
+| C12 | Key case: recommend canonicalising names against the schema before merge (3.3); alternative a Reified parse option | OPEN |
+| C13 | CLI nesting: recommend `commandLine` re-nests `:` names in 0.12, moving into a later `Data.ofCliArgsWith` | OPEN |
+| C14 | Culture is an explicit value in `PlatformServices`; `Culture.current`, `withCulture`, invariant under `runTest` | DECIDED |
+| C15 | Zone and culture are sealed values, not interfaces (old C10) | DECIDED |
+| C16 | Guardrails bans the implicit-culture forms of table 4.2 (supersedes old C13) | DECIDED |
+| C17 | CA rules on F#: recommend F# typed-tree rules carrying the CA ids, plus the real CA rules for C# projects | OPEN |
+| C18 | Interop culture sync in the T30 chokepoint; `Culture.ambient` for direct synchronous calls (supersedes old C12) | DECIDED |
+| C19 | ASP.NET request culture: recommend adopting `IRequestCultureFeature` when the app called `UseRequestLocalization` | OPEN |
+| C20 | Time zone is an explicit value in `PlatformServices`; `TimeZone.current`, `withTimeZone`, UTC under `runTest` | DECIDED |
+| C21 | Local-to-UTC deferred; T32 ships UTC-to-local only (old C11) | DECIDED |
+| C22 | `withClock` record update keeps zone and culture; invariant test 7 | DECIDED |
