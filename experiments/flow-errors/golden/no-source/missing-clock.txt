@@ -1,4 +1,0 @@
-
-
-<ROOT>/experiments/flow-errors/snippets/missing-clock.fsx(6,18): error FS0001: The type 'PricingEnv' is not compatible with the type 'IHasClock'
-
