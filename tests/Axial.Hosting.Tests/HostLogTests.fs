@@ -15,6 +15,25 @@ open Xunit
 
 module HostLogTests =
     [<Fact>]
+    let ``Microsoft sink skips empty scopes but maps annotations when present`` () =
+        let scopes = ResizeArray<IDictionary<string, obj>>()
+        let mutable writes = 0
+        let logger =
+            { new ILogger with
+                member _.IsEnabled _ = true
+                member _.Log(_, _, _, _, _) = writes <- writes + 1
+                member _.BeginScope state =
+                    scopes.Add(unbox<IDictionary<string, obj>> state)
+                    { new IDisposable with member _.Dispose() = () } }
+        let sink = MicrosoftLogging.sink logger
+        let bare: Flow<unit, Never, unit> = Log.info "bare"
+        bare |> Flow.withLogSink sink |> Flow.run () |> ignore
+        Assert.Empty(scopes)
+        bare |> Flow.annotate "trace_id" "trace-7" |> Flow.withLogSink sink |> Flow.run () |> ignore
+        Assert.Equal(2, writes)
+        Assert.Equal(box "trace-7", (Assert.Single scopes).["trace_id"])
+
+    [<Fact>]
     let ``Generic Host installs its category sink for logs and forked logs`` () =
         let provider = new HostLogProvider()
         use factory = LoggerFactory.Create(fun builder ->

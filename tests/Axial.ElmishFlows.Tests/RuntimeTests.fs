@@ -21,6 +21,17 @@ module RuntimeTests =
     type CacheEnvironment = { Cache: Cache<int, Never, string> }
 
     [<Fact>]
+    let ``startLayer installs its explicit clock during layer provisioning`` () =
+        let instant = DateTimeOffset(2001, 1, 1, 0, 0, 0, TimeSpan.Zero)
+        let clock = ManualClock instant
+        let configuration = { options (fun callback -> callback ()) (fun defect -> failwith defect.Rendered) with Clock = Some clock }
+        let layer: Layer<unit, string, DateTimeOffset> = Layer.fromFlow Axial.PlatformService.Clock.now
+        let provisioned = ElmishRuntime.startLayer configuration layer () |> Async.RunSynchronously
+        use runtime = match provisioned with Ok value -> value | Error error -> failwith error
+        Assert.Equal(instant, runtime.Environment)
+        Assert.True(runtime.StopAndWait(TimeSpan.FromSeconds 5.))
+
+    [<Fact>]
     let ``startLayer provisions a cache and release flow until stop`` () =
         let messages = ConcurrentQueue<string>()
         let released = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)

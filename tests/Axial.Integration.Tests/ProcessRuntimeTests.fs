@@ -17,6 +17,11 @@ type private RuntimeProcessEnv =
     interface IHasProcess with member this.Process = this.Process
 
 module ProcessRuntimeTests =
+    [<Fact>]
+    let ``process host records expose authority rather than disconnected clocks`` () =
+        Assert.DoesNotContain(typeof<ProcessHostEnvironment>.GetProperties(), fun property -> property.Name = "Clock")
+        Assert.DoesNotContain(typeof<TestProcessHostEnvironment>.GetProperties(), fun property -> property.Name = "Clock")
+
     let private signalling (clock: ManualClock) (registered: SemaphoreSlim) (delays: ConcurrentQueue<TimeSpan>) =
         { new IClock with
             member _.UtcNow() = (clock :> IClock).UtcNow()
