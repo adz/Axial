@@ -12,9 +12,20 @@ type AbortSignal = interface end
 /// <summary>Browser console logging with a minimum level.</summary>
 [<RequireQualifiedAccess>]
 module BrowserLogging =
-    // Keep percent directives in user messages literal when metadata follows them.
-    [<Emit("console[$0]('%s', $1, $2, $3, $4)")>]
-    let private write (_method: string) (_message: string) (_error: exn) (_annotations: (string * string) array) (_locals: (string * obj) array) : unit = jsNative
+    // Keep percent directives in user messages literal; trailing absent arguments are omitted so the console never prints null or [].
+    let private arguments (message: string) (entry: LogEntry) : obj array =
+        let error: obj = match entry.Error with Some error -> box error | None -> null
+        let annotations = Map.toArray entry.Annotations
+        let locals = List.toArray entry.Locals
+        let tail: obj array =
+            if locals.Length > 0 then [| error; box annotations; box locals |]
+            elif annotations.Length > 0 then [| error; box annotations |]
+            elif not (isNull error) then [| error |]
+            else [||]
+        Array.append [| box "%s"; box message |] tail
+
+    [<Emit("console[$0](...$1)")>]
+    let private write (_method: string) (_arguments: obj array) : unit = jsNative
 
     /// <summary>Writes enabled entries to console.debug/info/warn/error with exception and metadata snapshots.</summary>
     let sink (minimum: LogLevel) : ILogSink =
@@ -28,8 +39,7 @@ module BrowserLogging =
                         | LogLevel.Information -> "info"
                         | LogLevel.Warning -> "warn"
                         | LogLevel.Error | LogLevel.Critical -> "error"
-                    write methodName $"{entry.Level}: {entry.Message}" (Option.toObj entry.Error)
-                        (Map.toArray entry.Annotations) (List.toArray entry.Locals) }
+                    write methodName (arguments $"{entry.Level}: {entry.Message}" entry) }
 
 /// <summary>Root logging policy. None leaves the runtime default; LogSink.none silences the host.</summary>
 type BrowserAppOptions =

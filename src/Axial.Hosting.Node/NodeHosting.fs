@@ -49,9 +49,20 @@ module NodeEnvironment =
 /// <summary>Console-error logging for Node applications.</summary>
 [<RequireQualifiedAccess>]
 module NodeLogging =
-    // Keep percent directives in user messages literal when metadata follows them.
-    [<Emit("console.error('%s', $0, $1, $2, $3)")>]
-    let private write (_message: string) (_error: exn) (_annotations: (string * string) array) (_locals: (string * obj) array) : unit = jsNative
+    // Keep percent directives in user messages literal; trailing absent arguments are omitted so the console never prints null or [].
+    let private arguments (message: string) (entry: LogEntry) : obj array =
+        let error: obj = match entry.Error with Some error -> box error | None -> null
+        let annotations = Map.toArray entry.Annotations
+        let locals = List.toArray entry.Locals
+        let tail: obj array =
+            if locals.Length > 0 then [| error; box annotations; box locals |]
+            elif annotations.Length > 0 then [| error; box annotations |]
+            elif not (isNull error) then [| error |]
+            else [||]
+        Array.append [| box "%s"; box message |] tail
+
+    [<Emit("console.error(...$0)")>]
+    let private write (_arguments: obj array) : unit = jsNative
 
     /// <summary>Writes enabled entries to stderr with level, exception and metadata snapshots.</summary>
     let sink (minimum: LogLevel) : ILogSink =
@@ -59,8 +70,7 @@ module NodeLogging =
             member _.IsEnabled level = level >= minimum
             member _.Write entry =
                 if entry.Level >= minimum then
-                    write $"{entry.Level}: {entry.Message}" (Option.toObj entry.Error)
-                        (Map.toArray entry.Annotations) (List.toArray entry.Locals) }
+                    write (arguments $"{entry.Level}: {entry.Message}" entry) }
 
 /// <summary>Root logging policy. None leaves the runtime default; LogSink.none silences the host.</summary>
 type NodeAppOptions =
