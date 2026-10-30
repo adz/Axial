@@ -15,11 +15,22 @@ lists the queue. Work on main.
 - [ ] T24: Fiber dumps show the root, what each fiber waits on, and attach late
   - Design: `dev-docs/current-ideas/fiber-dump-root-waits-attach.md`. Benchmarks required (FiberCost, Race, Pingpong/Threadring,
     a tiny `runSync` loop); allocation identical, time within noise. The torture watchdog shows waits in its stall dump.
-- [ ] T25: Platform in the runtime (Clock, Guid, Random, Log) and remove `ISecureRandom`
-  - Spec: `~/projects/scratch/axial-coord/pi/capabilities-spec.md` (write `dev-docs/current-ideas/capabilities.md` first and
-    get the owner's review). Breaking: decide before cutting 0.12 or it waits for 0.13. Benchmark runtime-context reads
-    against env reads on sleep/timeout loops. Decide `platform-env-class.md` afterwards.
-
+- [ ] T25a: Platform in the runtime (Clock, Guid, Random), log sink slot, remove `ISecureRandom` (breaking)
+  - Spec: `~/projects/scratch/axial-coord/pi/capabilities-spec.md`, sections 1, 2, 9, 10. Write
+    `dev-docs/current-ideas/capabilities.md` (T25a part) first and stop for the owner's review before any code.
+  - Includes `Flow.runTest` and `withClock`/`withRandom`/`withGuid`, `withLogSink`/`withTelemetry` slots (Console default, Info,
+    stderr), explicit-stepping test clock replacing `runOnManualTime`, and the invariant tests (written first, failing).
+  - Breaking: decide before cutting 0.12 or it waits for 0.13. Benchmark runtime-context reads against env reads on
+    sleep/timeout loops. Decide `platform-env-class.md` afterwards.
+- [ ] T25b: Capability declarations (`ICapability`: Live/Fake/Replaces) and the build-time manifest
+  - Spec sections 3, 4, 10. After T25a ships. Manifest in `obj/axial-capabilities.json` and the nupkg, `axial capabilities`,
+    docs and `llms.txt`, agent skill; Guardrails effect rules built from merged manifests (28 built-in rules shrink).
+- [ ] T25c: Guardrails rules for capabilities (naming, no generic IHas chains, no generic ICapability calls, Replaces resolve and
+  are unique, Live only in host role)
+  - Spec section 5. After T25b.
+- [ ] T27: Research richer effects: algebraic-effects style in F# (algeff) and language-ext v5 `Eff<RT,A>` runtime traits
+  - Read both from source, write `dev-docs/current-ideas/richer-effects.md` comparing them with Platform/capabilities as
+    designed in T25. No implementation. Do after T25a so the comparison is against what actually shipped.
 - [ ] T26: Spike: absorb FIO's continuation runtime (MIT) behind `Flow`-as-data, torture it with T23
   - Needs T23 first. Copy only the interpreter and scheduler, with FIO's licence in THIRD-PARTY-NOTICES, a source header naming
     the upstream commit, and bugs sent upstream. Design: `dev-docs/current-ideas/flow-as-data.md`.
