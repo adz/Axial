@@ -32,11 +32,11 @@ type LogEntry =
 
 /// The level gate is checked before constructing a log entry. Sink exceptions are guarded.
 type ILogSink =
-    abstract IsEnabled: LogLevel -> bool
-    abstract Write: LogEntry -> unit
+    abstract IsEnabled: level: LogLevel -> bool
+    abstract Write: entry: LogEntry -> unit
 
 /// Write-only observation slots. Installing telemetry replaces both slots within its scope.
 type ITelemetry =
     abstract Annotate: name: string * value: string -> unit
-    abstract Attribute: Axial.Telemetry.Attribute -> unit
+    abstract Attribute: attribute: Axial.Telemetry.Attribute -> unit
 
