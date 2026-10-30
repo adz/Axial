@@ -176,15 +176,6 @@ module Flow =
         | Exit.Success _, Exit.Failure cause ->
             Exit.Failure cause
 
-    /// Reports every defect inside a runtime-discarded exit (for example, a timeout loser) as unobserved.
-    /// Such exits are dropped without a fiber handle, so nobody can ever observe them.
-    let private reportDiscardedExit (observer: FiberObserver) (exit: Exit<'value, 'error>) : unit =
-        match exit with
-        | Exit.Success _ -> ()
-        | Exit.Failure cause ->
-            for defect in Cause.defects cause do
-                FiberObserver.notifyUnobservedDefect observer None defect
-
     let internal reportUnobservedCause (cause: Cause<'error>) : unit =
         let observer = RuntimeState.current().Observer
         for defect in Cause.defects cause do
@@ -1201,18 +1192,39 @@ module Flow =
         let parent = RuntimeState.current()
         let struct (branchScope, operation) = branchIn parent cancellationToken flow environment
         let timedOut = ref false
+        let loserDefects = ref []
+
+        // As in race: a defect the interrupted flow or its cleanup (an onInterrupt or ensuring handler) settles with
+        // becomes the failure, or joins a failing fallback; the requested interruption and typed failures do not
+        // replace the fallback's result. An exception its task escaped with has no exit to join, so it is reported.
+        let onDiscarded (discarded: Result<Exit<'value, 'error>, exn>) =
+            match discarded with
+            | Ok(Exit.Failure cause) -> loserDefects.Value <- Cause.defects cause
+            | Ok(Exit.Success _) -> ()
+            | Error error -> FiberObserver.notifyUnobservedDefect parent.Observer None error
 
         Platform.timeoutExecution
             (RuntimePlatform.current().Platform.Time)
             after
             operation
             cancellationToken
-            (reportDiscardedExit parent.Observer)
+            onDiscarded
             (fun () ->
                 timedOut.Value <- true
 
-                closeScopes cancellationToken [ branchScope ] (Exit.Success())
-                |> Execution.bind onTimeout)
+                let fallback =
+                    closeScopes cancellationToken [ branchScope ] (Exit.Success())
+                    |> Execution.bind onTimeout
+
+                match loserDefects.Value with
+                | [] -> fallback
+                | defects ->
+                    let defectCause = defects |> List.map Cause.Die |> List.reduce Cause.both
+
+                    fallback
+                    |> Execution.fold
+                        (fun _ -> Execution.ofCause defectCause)
+                        (fun cause -> Execution.ofCause (Cause.both cause defectCause)))
         |> Execution.fold
             (fun value ->
                 if not timedOut.Value then
@@ -1226,7 +1238,7 @@ module Flow =
                     closeScopes cancellationToken [ branchScope ] (Exit.Failure cause))
 
     /// <summary>Fails with the supplied typed error when the flow does not complete before the timeout.</summary>
-    /// <remarks>The timed-out flow is interrupted. The timeout owns that interruption, so it may report it as a typed error. The flow runs in its own scope: its scoped resources move to the caller's scope when it succeeds in time, and are released when it fails or times out. <c>timeoutToOk</c> and <c>timeoutWith</c> treat scoped resources the same way.</remarks>
+    /// <remarks>The timed-out flow is interrupted. The timeout owns that interruption, so it may report it as a typed error. The flow runs in its own scope: its scoped resources move to the caller's scope when it succeeds in time, and are released when it fails or times out. <c>timeoutToOk</c> and <c>timeoutWith</c> treat scoped resources the same way. As in <c>race</c>, a defect the interrupted flow or its cleanup (an <c>onInterrupt</c> or <c>ensuring</c> handler) settles with is not dropped: it becomes the failure in place of the timeout value, or is combined with a failing timeout error or fallback; its typed failures and the requested interruption are not.</remarks>
     /// <param name="after">The timeout duration.</param>
     /// <param name="timeoutError">The typed error returned when the timeout wins.</param>
     /// <param name="flow">The source flow.</param>

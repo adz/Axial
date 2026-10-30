@@ -227,8 +227,16 @@ module FlowStream =
         let producer : Flow<'env, Never, unit> =
             Flow(fun env producerToken ->
                 Execution.loop (fun () -> op env producerToken) (fun next ->
-                    next ()
-                    |> Execution.fold
+                    // As in pump: an upstream step that throws, while pulled or after an await, ends the stream with
+                    // that failure; otherwise this fiber would die silently and the consumer would wait forever.
+                    let step =
+                        try
+                            next ()
+                        with error ->
+                            Execution.ofCause (Platform.causeOfThrown producerToken error)
+
+                    step
+                    |> Platform.foldObserved producerToken
                         (function
                             | Done ->
                                 ended None

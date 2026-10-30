@@ -1129,7 +1129,8 @@ let private branchSource (parent: CancellationToken) =
 #endif
 
 /// Runs <paramref name="operation" />, racing it against a timeout of <paramref name="after" />. Falls back to
-/// <paramref name="onTimeout" /> if the timeout wins. This is the shared implementation behind
+/// <paramref name="onTimeout" /> if the timeout wins, after handing the interrupted operation's outcome to
+/// <paramref name="onDiscarded" />: its exit, or the exception its task escaped with. This is the shared implementation behind
 /// <c>Flow.timeout</c>, <c>timeoutToOk</c>, <c>timeoutToError</c>, and <c>timeoutWith</c>, which differ
 /// only in what they do when the timeout fires.
 let timeoutExecution
@@ -1137,7 +1138,7 @@ let timeoutExecution
     (after: TimeSpan)
     (operation: CancellationToken -> Execution<'value, 'error>)
     (cancellationToken: CancellationToken)
-    (onDiscardedExit: Exit<'value, 'error> -> unit)
+    (onDiscarded: Result<Exit<'value, 'error>, exn> -> unit)
     (onTimeout: unit -> Execution<'value, 'error>)
     : Execution<'value, 'error> =
 #if FABLE_COMPILER
@@ -1166,7 +1167,7 @@ let timeoutExecution
                 // so hand it to the caller for unobserved-defect reporting before discarding it.
                 let! discarded = awaitBranch operation
                 unlink ()
-                onDiscardedExit discarded
+                onDiscarded (Ok discarded)
                 return! onTimeout ()
             | Exit.Failure _, None ->
                 let! exit = awaitBranch operation
@@ -1191,11 +1192,11 @@ let timeoutExecution
                 // so hand it to the caller for unobserved-defect reporting before discarding it.
                 try
                     let! discarded = running
-                    onDiscardedExit discarded
+                    onDiscarded (Ok discarded)
                 with
                 // Cancellation of the raw task is the timeout's requested interruption, not a defect.
                 | :? OperationCanceledException when running.IsCanceled -> ()
-                | error -> onDiscardedExit (Exit.Failure(Cause.Die error))
+                | error -> onDiscarded (Error error)
                 return! onTimeout ()
             else
                 return! running
@@ -1236,8 +1237,44 @@ let private startOperation
 let private faultedExecution (error: exn) : Execution<'value, 'error> =
     ValueTask<Exit<'value, 'error>>(Task.FromException<Exit<'value, 'error>> error)
 
+/// The exit of a zipPar branch awaited after the other one failed and cancelled the shared source. An exception it
+/// faults with is classified against that source, so the cancellation zipPar requested stays an interruption.
+let private settleAfterCancel (cts: CancellationTokenSource) (branch: Task<Exit<'value, 'error>>) : Task<Exit<'value, 'error>> =
+    task {
+        try
+            return! branch
+        with error ->
+            return Exit.Failure(causeOfThrown cts.Token error)
+    }
+
+/// The outcome of a zipPar whose first settled branch faulted with an exception instead of settling with an exit:
+/// the other branch was cancelled and has settled with <paramref name="other" />. The exception keeps its channel
+/// (as when a branch throws synchronously), so an enclosing try/with still sees it, unless the other branch failed
+/// for a reason of its own: then both are returned as causes, the exception as Die, so neither is lost.
+let private faultedAfterCancel
+    (leftFirst: bool)
+    (faulted: Task<Exit<'first, 'error>>)
+    (other: Exit<'other, 'error>)
+    : Exit<'value, 'error> =
+    match other with
+    | Exit.Success _
+    | Exit.Failure Cause.Interrupt ->
+        // The task has completed; this rethrows its fault with the original stack trace.
+        faulted.GetAwaiter().GetResult() |> ignore
+        Unchecked.defaultof<Exit<'value, 'error>>
+    | Exit.Failure otherCause ->
+        let error =
+            match faulted.Exception with
+            | null -> OperationCanceledException() :> exn
+            | aggregate when aggregate.InnerExceptions.Count = 1 -> aggregate.InnerExceptions[0]
+            | aggregate -> aggregate :> exn
+
+        let first = Cause.Die error
+        Exit.Failure(if leftFirst then Cause.Both(first, otherCause) else Cause.Both(otherCause, first))
+
 /// The asynchronous half of <c>zipParExecution</c>: waits for the first branch to settle, cancels the other on
-/// failure, and combines the exits.
+/// failure, and combines the exits. A branch that faults (user code threw after an await) counts as a failure too:
+/// the other branch is cancelled and awaited before the fault is passed on, so it is never left running.
 let private awaitBoth
     (cts: CancellationTokenSource)
     (leftRun: Execution<'left, 'error>)
@@ -1251,23 +1288,32 @@ let private awaitBoth
             let! completed = Task.WhenAny(leftFiberTask, rightFiberTask)
 
             if obj.ReferenceEquals(completed, leftFiberTask) then
-                match leftFiberTask.GetAwaiter().GetResult() with
-                | Exit.Failure cause ->
+                if not leftFiberTask.IsCompletedSuccessfully then
                     cts.Cancel()
-                    let! rightExit = rightFiberTask
-                    return failedAfterCancel true cause rightExit
-                | Exit.Success leftValue ->
-                    let! rightExit = rightFiberTask
+                    let! rightExit = settleAfterCancel cts rightFiberTask
+                    return faultedAfterCancel true leftFiberTask rightExit
+                else
+                    match leftFiberTask.Result with
+                    | Exit.Failure cause ->
+                        cts.Cancel()
+                        let! rightExit = settleAfterCancel cts rightFiberTask
+                        return failedAfterCancel true cause rightExit
+                    | Exit.Success leftValue ->
+                        let! rightExit = rightFiberTask
 
-                    return
-                        match rightExit with
-                        | Exit.Success rightValue -> Exit.Success(leftValue, rightValue)
-                        | Exit.Failure cause -> Exit.Failure cause
+                        return
+                            match rightExit with
+                            | Exit.Success rightValue -> Exit.Success(leftValue, rightValue)
+                            | Exit.Failure cause -> Exit.Failure cause
+            else if not rightFiberTask.IsCompletedSuccessfully then
+                cts.Cancel()
+                let! leftExit = settleAfterCancel cts leftFiberTask
+                return faultedAfterCancel false rightFiberTask leftExit
             else
-                match rightFiberTask.GetAwaiter().GetResult() with
+                match rightFiberTask.Result with
                 | Exit.Failure cause ->
                     cts.Cancel()
-                    let! leftExit = leftFiberTask
+                    let! leftExit = settleAfterCancel cts leftFiberTask
                     return failedAfterCancel false cause leftExit
                 | Exit.Success rightValue ->
                     let! leftExit = leftFiberTask

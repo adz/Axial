@@ -135,7 +135,7 @@ The hooks:
 
 - `OnStart`: a fiber was forked; receives the child's `FiberMetadata`.
 - `OnEnd`: a fiber settled; `FiberMetadata.Status` distinguishes `Succeeded`/`Failed`/`Interrupted`, and the defect exception (if the fiber died of one) is passed alongside. This fires for *every* fiber, observed or not, so use it for metrics.
-- `OnUnobservedDefect`: a defect became **unobservable**: a forked fiber died and nobody ever consumed its outcome, or the runtime itself discarded a `Flow.race` / timeout loser's exit (those never had a handle at all, so their metadata is `None`).
+- `OnUnobservedDefect`: a defect became **unobservable**: a forked fiber died and nobody ever consumed its outcome, or a `Flow.race` / timeout loser's task escaped with an exception instead of settling with an exit (those never had a handle at all, so their metadata is `None`). A defect a race or timeout loser *settles* with, its cleanup's included, is not reported here: it becomes part of the race's or timeout's own failure.
 
 All hooks default to no-ops, receive diagnostic data only, and cannot alter any fiber's outcome; exceptions they throw are swallowed.
 
@@ -143,7 +143,7 @@ All hooks default to no-ops, receive diagnostic data only, and cannot alter any 
 
 Whether a fiber will ever be joined is only knowable retroactively, so the runtime reports at three moments:
 
-1. **Immediately**, for race/timeout losers: the runtime knows at the discard site that no one can ever see that exit.
+1. **Immediately**, for a race/timeout loser whose task escaped with an exception: the runtime knows at the discard site that no one can ever see it.
 2. **When the forking scope closes**, for fibers that settled with a defect and were never observed. Scope close is a fixed point in the program, so the report arrives at a predictable time.
 3. **When a discarded handle is garbage-collected**, as a best-effort net for forks made inside long-lived scopes (the same mechanism family as `UnobservedTaskException`; timing depends on GC).
 
@@ -176,4 +176,4 @@ let observeWithLogging (logger: Microsoft.Extensions.Logging.ILogger) (workflow:
 
 ## Platform notes
 
-Supervision and the observer hooks are pure F# and behave identically under Fable. The detection mechanisms differ slightly by platform: the scope-close sweep and timeout-loser reporting work everywhere, and the GC net is .NET-only.
+Supervision and the observer hooks are pure F# and behave identically under Fable. The detection mechanisms differ slightly by platform: the scope-close sweep and race/timeout loser handling work everywhere, and the GC net is .NET-only.

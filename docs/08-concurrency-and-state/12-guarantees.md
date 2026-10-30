@@ -19,7 +19,7 @@ The sections below spell out what that means for each construct, and the few pla
 | Construct | What happens to the other work | When it returns |
 |---|---|---|
 | `Flow.race` | The loser is interrupted. | After the loser has settled and its scope has closed. |
-| `Flow.timeout` and variants | The timed flow is interrupted. | After that flow's cleanup; only then is the timeout error, value, or fallback produced. |
+| `Flow.timeout` and variants | The timed flow is interrupted. | After that flow's cleanup; only then is the timeout error, value, or fallback produced. A defect from that flow or its cleanup becomes the failure, as in `race`. |
 | `Flow.zipPar`, `sequencePar`, `traversePar` | On the first failure, running siblings are interrupted. | After every sibling has settled. |
 | `Flow.fork` | The child belongs to the forking scope. | `fork` returns at once; the scope's close interrupts and waits for the child. |
 | `Flow.forkReplacing`, `forkReplacingKey` | The previous fiber in the slot is interrupted. | The new flow starts only after the previous fiber has settled, so the two never overlap. |
