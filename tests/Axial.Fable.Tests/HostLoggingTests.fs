@@ -69,6 +69,23 @@ let tests =
                   | _ -> return [ equal "two entries, no disabled entry" 2 captured.Length ]
               finally restore state
           })
+          test ("host logging " + label kind + " omits absent exception and metadata arguments") (flow {
+              let state = capture ()
+              try
+                  let source = flow {
+                      do! Log.info "plain"
+                      do! Log.errorExn (InvalidOperationException "only-error") "with-error"
+                  }
+                  let running = start kind source
+                  let! _ = Flow.fromAsync running.Completion
+                  match calls state with
+                  | [| (_, plain); (_, withError) |] ->
+                      return [ equal "plain entry is format and message only" ["%s"; "Information: plain"] (plain |> Array.map string |> Array.toList)
+                               equal "exception without metadata has three arguments" 3 withError.Length
+                               equal "exception argument" "only-error" (unbox<exn> withError.[2]).Message ]
+                  | captured -> return [ equal "two entries" 2 captured.Length ]
+              finally restore state
+          })
           test ("host logging " + label kind + " minimum gate and inner override") (flow {
               let state = capture ()
               try
