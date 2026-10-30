@@ -25,7 +25,7 @@ type PlatformReadBenchmarks() =
     [<Benchmark>]
     member _.TimeoutX1000() =
         for _ in 1 .. 1000 do
-            completed |> Flow.timeout (TimeSpan.FromSeconds 1.) "timed out" |> Flow.withClock clock |> fun workflow -> workflow.RunSynchronously(environment) |> ignore
+            completed |> Flow.timeout (TimeSpan.FromSeconds 1.) "timed out" |> fun workflow -> workflow.RunSynchronously(environment) |> ignore
 
     [<Benchmark>]
     member _.ClockNowX1000() =
@@ -39,7 +39,7 @@ type PlatformReadBenchmarks() =
     [<Benchmark>]
     member _.RetrySuccessX1000() =
         for _ in 1 .. 1000 do
-            completed |> Flow.retry (Schedule.recurs 3) |> Flow.withClock clock |> fun workflow -> workflow.RunSynchronously(environment) |> ignore
+            completed |> Flow.retry (Schedule.recurs 3) |> fun workflow -> workflow.RunSynchronously(environment) |> ignore
 
 [<MemoryDiagnoser>]
 [<InProcess>]

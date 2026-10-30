@@ -150,7 +150,7 @@ module FlowStream =
     /// </example>
     let fromSchedule<'env, 'error, 'output> (schedule: Schedule<'env, unit, 'output>) : FlowStream<'env, 'error, 'output> =
         FlowStream(fun env cancellationToken ->
-            let time = Platform.timeOfClock (RuntimePlatform.current().Platform.Clock)
+            let time = RuntimePlatform.current().Platform.Time
             let started = time.Now()
             let runState = ScheduleContext.newRunState ()
 
@@ -644,7 +644,7 @@ module FlowStream =
         if timeout <= TimeSpan.Zero then
             Flow.invoke (Dequeue.poll queue) env ct
         else
-            takeUnless queue (Platform.cancelAfter (Platform.timeOfClock (RuntimePlatform.current().Platform.Clock)) timeout) ct
+            takeUnless queue (Platform.cancelAfter (RuntimePlatform.current().Platform.Time) timeout) ct
 
     let private finished () : Execution<StreamStep<'value, 'error>, 'error> = Execution.ofValue Done
 
@@ -662,7 +662,7 @@ module FlowStream =
         let (FlowStream op) = stream
 
         FlowStream(fun env ct ->
-            let time = Platform.timeOfClock (RuntimePlatform.current().Platform.Clock)
+            let time = RuntimePlatform.current().Platform.Time
 
             pump op env ct
             |> Execution.bind (fun queue ->
@@ -730,7 +730,7 @@ module FlowStream =
         let (FlowStream op) = stream
 
         FlowStream(fun env ct ->
-            let time = Platform.timeOfClock (RuntimePlatform.current().Platform.Clock)
+            let time = RuntimePlatform.current().Platform.Time
 
             pump op env ct
             |> Execution.bind (fun queue ->

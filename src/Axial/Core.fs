@@ -1140,7 +1140,12 @@ module LogSink =
             member _.IsEnabled level = enabled sink level
             member _.Write entry = write sink (mapper entry) }
 
-type internal PlatformServices = { Clock: IClock; Random: IRandom; Guid: IGuid }
+type internal PlatformServices =
+    { Clock: IClock; Random: IRandom; Guid: IGuid
+      /// The executor's view of <c>Clock</c>, built once per installed clock so timed primitives do not allocate on every read.
+      Time: Platform.ITimeSource }
+    static member Create(clock: IClock, random: IRandom, guid: IGuid) =
+        { Clock = clock; Random = random; Guid = guid; Time = Platform.timeOfClock clock }
 
 module internal PlatformDefaults =
     let clock : IClock =
@@ -1198,7 +1203,7 @@ module internal PlatformDefaults =
         { new IGuid with
             // axial-allow-AXG001: live runtime GUID implementation.
             member _.NewGuid() = System.Guid.NewGuid() }
-    let live = { Clock = clock; Random = random; Guid = guid }
+    let live = PlatformServices.Create(clock, random, guid)
     let logSink = LogSink.console LogLevel.Information
 
 type internal RuntimeContext =

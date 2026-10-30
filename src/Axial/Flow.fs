@@ -930,7 +930,7 @@ module Flow =
 
     /// Overrides the clock within this flow and its descendants.
     let withClock (clock: IClock) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
-        withRuntime (fun runtime -> { runtime with Platform = { runtime.Platform with Clock = clock } }) source
+        withRuntime (fun runtime -> { runtime with Platform = PlatformServices.Create(clock, runtime.Platform.Random, runtime.Platform.Guid) }) source
     /// Overrides random values within this flow and its descendants.
     let withRandom (random: IRandom) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
         withRuntime (fun runtime -> { runtime with Platform = { runtime.Platform with Random = random } }) source
@@ -1131,7 +1131,7 @@ module Flow =
     /// <param name="delay">The duration to sleep.</param>
     /// <returns>A flow that completes after the specified delay, or is interrupted if cancelled first.</returns>
     let sleep<'env, 'error> (delay: TimeSpan) : Flow<'env, 'error, unit> =
-        Flow(fun _ cancellationToken -> Platform.timeOfClock (RuntimePlatform.current().Platform.Clock) |> fun time -> time.Sleep(delay, cancellationToken))
+        Flow(fun _ cancellationToken -> RuntimePlatform.current().Platform.Time |> fun time -> time.Sleep(delay, cancellationToken))
 
     /// <summary>Reads the current runtime scope.</summary>
     /// <returns>A flow that succeeds with the scope owned by the current execution boundary.</returns>
@@ -1172,7 +1172,7 @@ module Flow =
         let timedOut = ref false
 
         Platform.timeoutExecution
-            (Platform.timeOfClock (RuntimePlatform.current().Platform.Clock))
+            (RuntimePlatform.current().Platform.Time)
             after
             operation
             cancellationToken
@@ -1327,7 +1327,7 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         // A loop rather than recursion, so retrying for the life of an application runs in constant memory.
         Flow(fun environment cancellationToken ->
-            let time = Platform.timeOfClock (RuntimePlatform.current().Platform.Clock)
+            let time = RuntimePlatform.current().Platform.Time
             let runState = ScheduleContext.newRunState ()
             let loopStarted = time.Now()
 
@@ -1378,7 +1378,7 @@ module Flow =
         // A loop rather than recursion, so a schedule that repeats for the life of an application (a control
         // scan, a heartbeat) runs in constant memory.
         Flow(fun environment cancellationToken ->
-            let time = Platform.timeOfClock (RuntimePlatform.current().Platform.Clock)
+            let time = RuntimePlatform.current().Platform.Time
             let runState = ScheduleContext.newRunState ()
             let loopStarted = time.Now()
             let firstScope, first = runAttempt flow environment cancellationToken
@@ -1431,7 +1431,7 @@ module Flow =
             | _ -> None
 
         Flow(fun environment cancellationToken ->
-            let time = Platform.timeOfClock (RuntimePlatform.current().Platform.Clock)
+            let time = RuntimePlatform.current().Platform.Time
             let runState = ScheduleContext.newRunState ()
             let loopStarted = time.Now()
 
@@ -1483,7 +1483,7 @@ module Flow =
             let parentRuntime = RuntimeState.current()
             let observer = parentRuntime.Observer
             let clock = RuntimePlatform.current().Platform.Clock
-            let time = Platform.timeOfClock clock
+            let time = RuntimePlatform.current().Platform.Time
 
             let metadata: FiberMetadata =
                 {
