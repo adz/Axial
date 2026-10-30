@@ -9,8 +9,8 @@ An application can combine services constrained by `IHasX` interfaces with its o
 
 ## The problem
 
-[`BaseRuntime`](platform-services/index.html) bundles the six platform services and already implements
-`IHasClock`, `IHasLog`, `IHasRandom`, `IHasSecureRandom`, `IHasGuid`, and `IHasEnvironmentVariables`. Embedding it as a field of your
+[`BaseRuntime`](platform-services/index.html) bundles the five platform services and already implements
+`IHasClock`, `IHasLog`, `IHasRandom`, `IHasGuid`, and `IHasEnvironmentVariables`. Embedding it as a field of your
 own record does not carry those interface implementations with it: F# has no mechanism for one type to forward
 another type's interfaces automatically. Your own environment record has to state, once per service, where that
 service lives:
@@ -125,7 +125,6 @@ let testEnv =
         { Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))
           Log = Log.fromSink (fun _ message -> lock gate (fun () -> logged <- message :: logged))
           Random = Random.fromValue 7
-          SecureRandom = SecureRandom.fromBytes [ 1uy ]
           Guid = Guid.fromValue (Guid.Parse "00000000-0000-0000-0000-000000000001")
           EnvironmentVariables = EnvironmentVariables.fromPairs [ "APP_MODE", "diagnostic" ] } }
 

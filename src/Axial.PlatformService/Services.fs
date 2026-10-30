@@ -19,14 +19,6 @@ type IRandom =
     abstract NextDouble: unit -> float
     abstract NextBytes: buffer: byte array -> unit
 
-/// <summary>Provides cryptographically secure random values for secrets, tokens, and nonces.</summary>
-/// <remarks><see cref="T:Axial.PlatformService.IRandom" /> is not suitable for security-sensitive values.</remarks>
-type ISecureRandom =
-    /// <summary>Fills a buffer with cryptographically secure random bytes.</summary>
-    abstract Fill: buffer: byte array -> unit
-    /// <summary>Returns a cryptographically secure integer in the requested half-open range.</summary>
-    abstract GetInt32: minInclusive: int -> maxExclusive: int -> int
-
 /// <summary>Provides synchronous GUID generation.</summary>
 type IGuid =
     abstract NewGuid: unit -> Guid
@@ -53,15 +45,6 @@ type IHasLog =
 type IHasRandom =
     /// The random-number service supplied by this environment. This service is not suitable for secrets, tokens, or nonces.
     abstract Random : IRandom
-
-/// <summary>Declares that an environment supplies cryptographically secure randomness for secrets, tokens, and nonces.</summary>
-/// <remarks><see cref="T:Axial.PlatformService.IRandom" /> is not suitable for security-sensitive values.</remarks>
-#if FABLE_COMPILER
-[<Fable.Core.Mangle>]
-#endif
-type IHasSecureRandom =
-    /// The cryptographically secure random service supplied by this environment.
-    abstract SecureRandom : ISecureRandom
 
 /// <summary>Declares that an environment supplies the GUID service.</summary>
 #if FABLE_COMPILER

@@ -17,7 +17,6 @@ open Axial.PlatformService
 | `IClock` | `DateTimeOffset.UtcNow` | `Clock` |
 | `ILog` | An ambient logger | `Log` |
 | `IRandom` | `System.Random` for non-security-sensitive randomness | `Random` |
-| `ISecureRandom` | `RandomNumberGenerator` for secrets, tokens, and nonces | `SecureRandom` |
 | `IGuid` | `Guid.NewGuid()` | `Guid` |
 | `IEnvironmentVariables` | `Environment.GetEnvironmentVariable` | `EnvironmentVariables`, `EnvironmentVariable` |
 
@@ -55,12 +54,11 @@ let fixedRuntime : BaseRuntime =
     { Clock = Clock.fromValue (DateTimeOffset.Parse "2026-01-01T00:00:00Z")
       Log = Log.live
       Random = Random.fromValue 7
-      SecureRandom = SecureRandom.fromBytes [ 1uy; 2uy; 3uy ]
       Guid = Guid.fromValue (System.Guid.Parse "00000000-0000-0000-0000-000000000001")
       EnvironmentVariables = EnvironmentVariables.fromPairs [ "AXIAL_ENV", "test" ] }
 ```
 
-`Clock.fromValue`, `Guid.fromValue`, `Random.fromValue`, `Random.fromFixed`, `SecureRandom.fromBytes`,
+`Clock.fromValue`, `Guid.fromValue`, `Random.fromValue`, `Random.fromFixed`,
 `EnvironmentVariables.fromPairs`, and `Log.fromSink` each pin one service to a known answer.
 
 ## In this section

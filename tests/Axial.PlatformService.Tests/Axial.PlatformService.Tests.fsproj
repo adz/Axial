@@ -10,7 +10,6 @@
 
   <ItemGroup>
     <Compile Include="TestSupport.fs" />
-    <Compile Include="SecureRandomTests.fs" />
     <Compile Include="CoreServiceTests.fs" />
     <Compile Include="RuntimeFoundationTests.fs" />
     <Compile Include="ServiceRuntimePatternTests.fs" />

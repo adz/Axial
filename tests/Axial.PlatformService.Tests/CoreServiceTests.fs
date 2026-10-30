@@ -11,7 +11,6 @@ module CoreServiceTests =
         { Clock = clock
           Log = Log.live
           Random = random
-          SecureRandom = SecureRandom.fromBytes [ 0uy ]
           Guid = guid
           EnvironmentVariables = envVars }
 
@@ -19,7 +18,6 @@ module CoreServiceTests =
     let ``operational service contracts belong to the optional platform-service package`` () =
         test <@ typeof<IClock>.Assembly.GetName().Name = "Axial" @>
         test <@ typeof<IRandom>.Assembly.GetName().Name = "Axial.PlatformService" @>
-        test <@ typeof<ISecureRandom>.Assembly.GetName().Name = "Axial.PlatformService" @>
         test <@ typeof<IEnvironmentVariables>.Assembly.GetName().Name = "Axial.PlatformService" @>
 
     [<Fact>]
