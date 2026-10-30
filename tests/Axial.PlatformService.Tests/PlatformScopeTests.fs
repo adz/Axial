@@ -270,6 +270,16 @@ module PlatformScopeTests =
         Assert.Equal(Exit.Success(TimeSpan.FromSeconds 7.), workflow |> Flow.runTestWith platform ())
 
     [<Fact>]
+    let ``recording log entries are snapshots`` () =
+        let log = TestLog()
+        log.Log(LogLevel.Information, "first")
+        let snapshot = log.Entries
+        log.Clear()
+        log.Log(LogLevel.Information, "second")
+        Assert.Single(snapshot) |> ignore
+        Assert.Equal("first", snapshot.[0].Message)
+
+    [<Fact>]
     let ``TestClock rejects a live clock with a clear defect`` () =
         match TestClock.advance (TimeSpan.FromSeconds 1.) |> Flow.runSync () with
         | Exit.Failure(Cause.Die error) -> Assert.Contains("TestClock requires a ManualClock", error.Message)
