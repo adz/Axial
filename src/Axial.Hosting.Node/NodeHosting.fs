@@ -46,6 +46,16 @@ module NodeEnvironment =
                 for name, value in entries () do values[name] <- value
                 values :> IReadOnlyDictionary<string, string> }
 
+/// <summary>Console-error logging for Node applications.</summary>
+[<RequireQualifiedAccess>]
+module NodeLogging =
+    let sink (_minimum: LogLevel) : ILogSink = LogSink.none
+
+/// <summary>Root logging policy. None leaves the runtime default; LogSink.none silences the host.</summary>
+type NodeAppOptions =
+    { LogSink: ILogSink option }
+    static member Default = { LogSink = Some(NodeLogging.sink LogLevel.Information) }
+
 /// <summary>Node.js signal, argument, and process-exit integration for root Flow applications.</summary>
 [<RequireQualifiedAccess>]
 module NodeApp =
@@ -79,7 +89,8 @@ module NodeApp =
     /// <summary>
     /// Starts a Node application, translating SIGINT and SIGTERM into coordinated stop and publishing its exit code.
     /// </summary>
-    let start
+    let startWithOptions
+        (_options: NodeAppOptions)
         (describeError: 'error -> string)
         (environment: 'env)
         (application: Flow<'env, 'error, 'value>)
@@ -127,6 +138,10 @@ module NodeApp =
         |> Async.StartImmediate
 
         running
+
+    /// <summary>Starts a Node application with the default console-error log sink.</summary>
+    let start describeError environment application =
+        startWithOptions NodeAppOptions.Default describeError environment application
 
     /// <summary>Starts a Node application and waits for its final exit.</summary>
     let run

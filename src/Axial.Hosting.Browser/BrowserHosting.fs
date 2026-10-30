@@ -9,6 +9,16 @@ open Fable.Core.JsInterop
 [<AllowNullLiteral>]
 type AbortSignal = interface end
 
+/// <summary>Browser console logging with a minimum level.</summary>
+[<RequireQualifiedAccess>]
+module BrowserLogging =
+    let sink (_minimum: LogLevel) : ILogSink = LogSink.none
+
+/// <summary>Root logging policy. None leaves the runtime default; LogSink.none silences the host.</summary>
+type BrowserAppOptions =
+    { LogSink: ILogSink option }
+    static member Default = { LogSink = Some(BrowserLogging.sink LogLevel.Information) }
+
 /// <summary>Browser ownership and AbortSignal integration for root Flow applications.</summary>
 [<RequireQualifiedAccess>]
 module BrowserApp =
@@ -28,7 +38,8 @@ module BrowserApp =
     [<Emit("$0.removeEventListener('abort', $1)")>]
     let private removeAbort (_signal: AbortSignal) (_handler: unit -> unit) : unit = jsNative
     /// <summary>Starts an application owned explicitly by the calling UI or browser module.</summary>
-    let mount
+    let mountWithOptions
+        (_options: BrowserAppOptions)
         (environment: 'env)
         (application: Flow<'env, 'error, 'value>)
         : AppHandle<'error, 'value> =
@@ -36,7 +47,8 @@ module BrowserApp =
         App.start environment application
 
     /// <summary>Starts an application and translates an AbortSignal into coordinated application stop.</summary>
-    let startWithSignal
+    let startWithSignalOptions
+        (_options: BrowserAppOptions)
         (signal: AbortSignal)
         (environment: 'env)
         (application: Flow<'env, 'error, 'value>)
@@ -62,3 +74,11 @@ module BrowserApp =
         |> Async.StartImmediate
 
         running
+
+    /// <summary>Mounts a browser application with the default browser-console log sink.</summary>
+    let mount environment application =
+        mountWithOptions BrowserAppOptions.Default environment application
+
+    /// <summary>Starts a browser application with the default sink and coordinated AbortSignal stop.</summary>
+    let startWithSignal signal environment application =
+        startWithSignalOptions BrowserAppOptions.Default signal environment application
