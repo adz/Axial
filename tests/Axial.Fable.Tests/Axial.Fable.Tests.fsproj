@@ -13,6 +13,7 @@
     <ProjectReference Include="..\..\src\Axial.Process\Axial.Process.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Hosting.Node\Axial.Hosting.Node.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Hosting.Browser\Axial.Hosting.Browser.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Telemetry.JavaScript\Axial.Telemetry.JavaScript.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Harness.fs" />
@@ -45,6 +46,7 @@
   <ItemGroup>
     <Compile Include="PlatformScopeTests.fs" />
     <Compile Include="HostLoggingTests.fs" />
+    <Compile Include="TelemetryHostTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 </Project>
