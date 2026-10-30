@@ -319,7 +319,7 @@ module HostingTests =
                 application,
                 TypedLogger<FlowHostedService<string, string>>(logger) :> ILogger<_>,
                 lifetime,
-                HostedAppOptions.Default)
+                { HostedAppOptions.Default with LogSink = None })
             :> IHostedService
 
         hosted.StartAsync(CancellationToken.None).GetAwaiter().GetResult()
@@ -351,7 +351,7 @@ module HostingTests =
                 application,
                 TypedLogger<FlowHostedService<unit, string>>(logger) :> ILogger<_>,
                 lifetime,
-                { StopHostOnCompletion = false })
+                { StopHostOnCompletion = false; LogSink = None })
             :> IHostedService
 
         hosted.StartAsync(CancellationToken.None).GetAwaiter().GetResult()
@@ -385,7 +385,7 @@ module HostingTests =
                 application,
                 TypedLogger<FlowHostedService<unit, string>>(logger) :> ILogger<_>,
                 lifetime,
-                { StopHostOnCompletion = false })
+                { StopHostOnCompletion = false; LogSink = None })
             :> IHostedService
 
         try

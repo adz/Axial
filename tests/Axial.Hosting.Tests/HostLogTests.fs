@@ -12,39 +12,10 @@ open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Xunit
 
-type HostLogRecord =
-    { Category: string
-      Level: Microsoft.Extensions.Logging.LogLevel
-      Message: string
-      Error: exn option
-      Scope: Map<string, obj> }
-
-type HostLogProvider() =
-    let entries = ConcurrentQueue<HostLogRecord>()
-    let mutable scopes: IExternalScopeProvider = LoggerExternalScopeProvider()
-    member _.Entries = entries.ToArray()
-    interface ISupportExternalScope with
-        member _.SetScopeProvider value = scopes <- value
-    interface ILoggerProvider with
-        member _.Dispose() = ()
-        member _.CreateLogger category =
-            { new ILogger with
-                member _.IsEnabled level = level >= Microsoft.Extensions.Logging.LogLevel.Information
-                member _.BeginScope state = scopes.Push state
-                member _.Log(level, _, state, error, formatter) =
-                    let values = Dictionary<string, obj>()
-                    scopes.ForEachScope(Action<obj, unit>(fun scope _ ->
-                        match scope with
-                        | :? IEnumerable<KeyValuePair<string, obj>> as pairs ->
-                            for pair in pairs do values[pair.Key] <- pair.Value
-                        | _ -> ()), ())
-                    entries.Enqueue { Category = category; Level = level; Message = formatter.Invoke(state, error)
-                                      Error = Option.ofObj error; Scope = values |> Seq.map (fun pair -> pair.Key, pair.Value) |> Map.ofSeq } }
-
 module HostLogTests =
     [<Fact>]
     let ``Generic Host installs its category sink for logs and forked logs`` () =
-        let provider = HostLogProvider()
+        let provider = new HostLogProvider()
         use factory = LoggerFactory.Create(fun builder ->
             builder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace).AddProvider(provider) |> ignore)
         use services = ServiceCollection().AddSingleton<ILoggerFactory>(factory).BuildServiceProvider()

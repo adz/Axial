@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <Compile Include="HostingTests.fs" />
+    <Compile Include="../Shared/HostLogCapture.fs" Link="HostLogCapture.fs" />
     <Compile Include="HostLogTests.fs" />
     <Compile Include="BridgeTests.fs" />
   </ItemGroup>
