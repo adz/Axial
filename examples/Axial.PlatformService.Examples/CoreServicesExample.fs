@@ -7,14 +7,8 @@ open Axial.PlatformService
 module CoreServicesExample =
     type private AppServices =
         {
-            Clock: IClock
-            Random: IRandom
-            Guid: IGuid
             EnvVars: IEnvironmentVariables
         }
-        interface IHasClock with member this.Clock = this.Clock
-        interface IHasRandom with member this.Random = this.Random
-        interface IHasGuid with member this.Guid = this.Guid
         interface IHasEnvironmentVariables with member this.EnvironmentVariables = this.EnvVars
 
     let private renderExit formatter result =
@@ -26,9 +20,6 @@ module CoreServicesExample =
     let run () =
         let services =
             {
-                Clock = Clock.fromValue (DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero))
-                Random = Random.fromValue 7
-                Guid = Guid.fromValue (System.Guid.Parse "11111111-1111-1111-1111-111111111111")
                 EnvVars =
                     EnvironmentVariables.fromPairs
                         [ "AXIAL_SERVICES_PORT", "8080"
@@ -37,7 +28,12 @@ module CoreServicesExample =
                           "AXIAL_SERVICES_PORT_TEXT", "abc" ]
             }
 
-        let run (flow: Flow<AppServices, 'error, 'value>) = flow.RunSynchronously(services)
+        let run (source: Flow<AppServices, 'error, 'value>) =
+            source
+            |> Flow.withClock (Clock.fromValue (DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero)))
+            |> Flow.withRandom (Random.fromValue 7)
+            |> Flow.withGuid (Guid.fromValue (System.Guid.Parse "11111111-1111-1111-1111-111111111111"))
+            |> fun workflow -> workflow.RunSynchronously(services)
 
         printfn "clock=%O" (run Clock.now)
         printfn "random=%d" (run (Random.nextInt 0 10) |> function Exit.Success v -> v | _ -> -1)

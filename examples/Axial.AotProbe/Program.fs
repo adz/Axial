@@ -115,9 +115,9 @@ let main _ =
         expect "FiberId" ((FiberId 5L).ToString()) "#5"
         let registry = FiberRegistry()
 
-        let workflow: Flow<ClockEnvironment, ProbeError, string> =
+        let workflow: Flow<unit, ProbeError, string> =
             flow {
-                let! clock = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock)
+                let! clock = Clock.service
 
                 let! fiber =
                     Flow.forkNamed "probe child" (Flow.sleep (TimeSpan.FromMilliseconds 200.0))
@@ -137,7 +137,7 @@ let main _ =
         // executable host boundary performs this effect.
 
         // axial-allow-AXG001: intentional blocking host or live-service boundary
-        match workflow.StartAsTask(ClockEnvironment(Clock.live)).GetAwaiter().GetResult() with
+        match workflow.StartAsTask(()).GetAwaiter().GetResult() with
         | Exit.Success text -> expectContains "FiberRegistry.DumpAt" text "\"probe child\" Running"
         | other -> expect "fiber diagnostics exit" (other.ToString()) "Success")
 

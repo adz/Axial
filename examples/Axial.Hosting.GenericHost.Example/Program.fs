@@ -15,9 +15,7 @@ type MessageSource() =
 
 type AppEnv =
     { Messages: IMessageSource
-      Logger: ILogger
-      Clock: IClock }
-    interface IHasClock with member this.Clock = this.Clock
+      Logger: ILogger }
 
 type AppError =
     | ApplicationFailure of string
@@ -44,8 +42,7 @@ let main arguments =
     |> Hosting.addApp
         (fun services ->
             { Messages = services.GetRequiredService<IMessageSource>()
-              Logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("Example.Application")
-              Clock = Clock.live })
+              Logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("Example.Application") })
         describeError
         application
     |> ignore

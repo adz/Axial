@@ -116,9 +116,9 @@ module WithFlow =
         }
 
     /// The process-output variant: `Process.streamStdoutLines` emits decoded lines from a live process, and
-    /// the same pipeline shape consumes them. Requires IHasProcess and IHasClock in the environment.
+    /// the same pipeline shape consumes them. Requires IHasProcess in the environment.
     // <snippet:compare-process-output>
-    let streamProcessOutput<'env when 'env :> IHasProcess and 'env :> IHasClock>
+    let streamProcessOutput<'env when 'env :> IHasProcess>
         (specification: ProcessSpec)
         (persist: string -> Result<unit, RecordError>)
         : Flow<'env, RecordError, int> =

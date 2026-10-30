@@ -3,8 +3,7 @@ open Axial
 open Axial.PlatformService
 
 type DesktopEnvironment =
-    { WindowName: string; Clock: IClock }
-    interface IHasClock with member this.Clock = this.Clock
+    { WindowName: string }
 
 let application : Flow<DesktopEnvironment, string, unit> =
     flow {
@@ -18,7 +17,7 @@ let application : Flow<DesktopEnvironment, string, unit> =
 [<EntryPoint>]
 let main _ =
     // A real desktop framework calls this after its application/window startup event.
-    let running = App.start { WindowName = "Main window"; Clock = Clock.live } application
+    let running = App.start { WindowName = "Main window" } application
 
     printfn "Press Enter to simulate the desktop framework's closing event."
     // executable host boundary performs this effect.

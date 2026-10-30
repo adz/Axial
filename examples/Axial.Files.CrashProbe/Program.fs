@@ -6,14 +6,11 @@ open Axial.Files
 open Axial.PlatformService
 
 type ProbeEnvironment =
-    { FileSystem: IFileSystem
-      Guid: IGuid }
+    { FileSystem: IFileSystem }
     interface IHasFileSystem with member this.FileSystem = this.FileSystem
-    interface IHasGuid with member this.Guid = this.Guid
 
 let env =
-    { FileSystem = FileSystem.live
-      Guid = Guid.live }
+    { FileSystem = FileSystem.live }
 let run operation =
     match Flow.run env operation with
     | Exit.Success value -> value

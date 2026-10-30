@@ -319,13 +319,13 @@ module WiringTests =
         let sourcePath = Path.GetTempFileName()
         File.WriteAllText(sourcePath, "42 widgets")
 
+        let clock = Clock.fromValue (DateTimeOffset(2026, 7, 17, 8, 0, 0, TimeSpan.Zero))
         let env: WithFlow.ReportEnv =
-            { Clock = Clock.fromValue (DateTimeOffset(2026, 7, 17, 8, 0, 0, TimeSpan.Zero))
-              FileSystem = FileSystem.live
+            { FileSystem = FileSystem.live
               Console = console
               Store = store }
 
-        let exit = Flow.runSync env (WithFlow.writeDailyReport sourcePath)
+        let exit = Flow.runSync env (WithFlow.writeDailyReport sourcePath |> Flow.withClock clock)
 
         test <@ exit = Exit.Success "daily-2026-07-17.txt" @>
         test <@ saved["daily-2026-07-17.txt"] = "42 widgets" @>
@@ -337,14 +337,14 @@ module WiringTests =
             { new IReportStore with
                 member _.Save(_, _) = Error "quota exceeded" }
 
+        let clock = Clock.fromValue DateTimeOffset.UnixEpoch
         let env: WithFlow.ReportEnv =
-            { Clock = Clock.fromValue DateTimeOffset.UnixEpoch
-              FileSystem = FileSystem.live
+            { FileSystem = FileSystem.live
               Console = CaptureConsole()
               Store = store }
 
         let sourcePath = Path.GetTempFileName()
-        let exit = Flow.runSync env (WithFlow.writeDailyReport sourcePath)
+        let exit = Flow.runSync env (WithFlow.writeDailyReport sourcePath |> Flow.withClock clock)
 
         test <@ exit = Exit.Failure(Cause.Fail(StoreRejected "quota exceeded")) @>
 

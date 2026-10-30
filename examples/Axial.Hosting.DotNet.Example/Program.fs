@@ -4,8 +4,7 @@ open Axial.PlatformService
 open Axial.Hosting
 
 type AppEnvironment =
-    { Arguments: string array; Clock: IClock }
-    interface IHasClock with member this.Clock = this.Clock
+    { Arguments: string array }
 
 type AppError =
     | InvalidDelay of string
@@ -41,7 +40,7 @@ let application : Flow<AppEnvironment, AppError, unit> =
 [<EntryPoint>]
 let main arguments =
     // DotNetApp translates Ctrl+C and the structured Exit; F# entry points still require a synchronous int.
-    DotNetApp.run describeError { Arguments = arguments; Clock = Clock.live } application
+    DotNetApp.run describeError { Arguments = arguments } application
     |> Async.AwaitTask
     // executable host boundary performs this effect.
     // axial-allow-AXG001: intentional blocking host or live-service boundary

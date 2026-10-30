@@ -53,10 +53,10 @@ type FilesTests() =
             let env =
                 { FileSystem = FileSystem.live
                   Guid = Axial.PlatformService.Guid.live }
-            Assert.Equal(Exit.Success (), Files.writeAllTextAtomic path "new" |> Flow.run env)
+            Assert.Equal(Exit.Success (), Files.writeAllTextAtomic path "new" |> Flow.withGuid env.Guid |> Flow.run env)
             Assert.Equal("new", File.ReadAllText path)
             Assert.Equal<string>([| "data" |], Directory.GetFiles(root) |> Array.map Path.GetFileName)
-            match Files.writeAtomic (Path.Combine(root, "missing", "data")) [| 1uy |] |> Flow.run env with
+            match Files.writeAtomic (Path.Combine(root, "missing", "data")) [| 1uy |] |> Flow.withGuid env.Guid |> Flow.run env with
             | Exit.Failure(Cause.Fail(FileSystemError.DirectoryNotFound _)) -> ()
             | other -> failwithf "%A" other
             Assert.Equal("new", File.ReadAllText path)
@@ -77,7 +77,7 @@ type FilesTests() =
                 { FileSystem = FileSystem.live
                   Guid = Axial.PlatformService.Guid.fromSequence [ first; second ] }
 
-            Assert.Equal(Exit.Success (), Files.writeAllTextAtomic path "new" |> Flow.run env)
+            Assert.Equal(Exit.Success (), Files.writeAllTextAtomic path "new" |> Flow.withGuid env.Guid |> Flow.run env)
             Assert.Equal("existing", File.ReadAllText predictableTemp)
             Assert.Equal("new", File.ReadAllText path)
         finally Directory.Delete(root, true)
@@ -93,13 +93,13 @@ type FilesTests() =
             File.WriteAllText(temporary, "untouched")
             let mutable calls = 0
             let guid =
-                { new Axial.PlatformService.IGuid with
+                { new Axial.IGuid with
                     member _.NewGuid() =
                         calls <- calls + 1
                         fixedGuid }
             let env = { FileSystem = FileSystem.live; Guid = guid }
 
-            match Files.writeAtomic path [| 1uy |] |> Flow.run env with
+            match Files.writeAtomic path [| 1uy |] |> Flow.withGuid env.Guid |> Flow.run env with
             | Exit.Failure(Cause.Fail(_: FileSystemError)) -> ()
             | other -> failwithf "Expected a typed file-system failure, got %A" other
             Assert.Equal(5, calls)
@@ -117,7 +117,7 @@ type FilesTests() =
                 { FileSystem = FileSystem.live
                   Guid = Axial.PlatformService.Guid.live }
             let payloads = [| for n in 0 .. 15 -> Array.create 65536 (byte n) |]
-            let jobs = payloads |> Array.map (fun bytes -> System.Threading.Tasks.Task.Run(fun () -> Files.writeAtomic path bytes |> Flow.run env))
+            let jobs = payloads |> Array.map (fun bytes -> System.Threading.Tasks.Task.Run(fun () -> Files.writeAtomic path bytes |> Flow.withGuid env.Guid |> Flow.run env))
             System.Threading.Tasks.Task.WaitAll(jobs |> Array.map (fun job -> job :> System.Threading.Tasks.Task))
             for job in jobs do Assert.Equal(Exit.Success (), job.Result)
             let result = File.ReadAllBytes path

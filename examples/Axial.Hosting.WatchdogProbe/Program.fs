@@ -5,10 +5,7 @@ open Axial
 open Axial.Hosting
 open Axial.PlatformService
 
-type ProbeEnv =
-    { Clock: IClock }
-    interface IHasClock with member this.Clock = this.Clock
-    interface IHasLog with member _.Log = Log.live
+type ProbeEnv = unit
 
 [<EntryPoint>]
 let main args =
@@ -41,6 +38,6 @@ let main args =
     Host.CreateDefaultBuilder(args)
         .UseSystemd()
         .ConfigureServices(fun services ->
-            services |> Hosting.addApp (fun _ -> { Clock = clock }) (fun (_: Never) -> "never") application |> ignore)
+            services |> Hosting.addApp (fun _ -> ()) (fun (_: Never) -> "never") application |> ignore)
         .Build().Run()
     0

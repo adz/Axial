@@ -28,8 +28,7 @@ let status = elementById "status"
 let stopButton = elementById "stop"
 
 type BrowserEnvironment =
-    { Status: obj; Clock: IClock }
-    interface IHasClock with member this.Clock = this.Clock
+    { Status: obj }
 
 let application : Flow<BrowserEnvironment, string, unit> =
     flow {
@@ -42,7 +41,7 @@ let application : Flow<BrowserEnvironment, string, unit> =
 
 let controller = createAbortController ()
 // The page owns this controller; abort is an ownership event, not an unload heuristic.
-let running = BrowserApp.startWithSignal (signal controller) { Status = status; Clock = Clock.live } application
+let running = BrowserApp.startWithSignal (signal controller) { Status = status } application
 
 onClick stopButton (fun () ->
     setText status "Stop requested; waiting for cleanup..."
