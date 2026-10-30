@@ -545,3 +545,54 @@ module WorkflowStreamTests =
         test <@ consumed.Value = 20 @>
         // Pulling stops while the consumer is busy: never more than the two in-flight mappings are ahead.
         test <@ lead.Value <= 2 @>
+
+    // T28b: the operators that pump upstream through a producer fiber must hand an upstream throw to the consumer as
+    // a defect. Before the fix the producer died without offering the failure and the consumer waited forever.
+    let private upstreamDefect = "upstream threw"
+
+    let private throwingUpstream (afterAwait: bool) : FlowStream<unit, string, int> =
+        FlowStream.fromSeq [ 1; 2; 3 ]
+        |> FlowStream.mapFlow (fun (_: int) ->
+            if afterAwait then
+                flow {
+                    do! Flow.fromTask (fun _ -> task { do! Task.Yield() })
+                    return raise (InvalidOperationException upstreamDefect)
+                }
+            else
+                Flow.delay (fun () -> raise (InvalidOperationException upstreamDefect)))
+
+    let private untilInterrupted () : Flow<unit, string, int> =
+        Flow.fromTask (fun ct -> task {
+            do! Task.Delay(Timeout.Infinite, ct)
+            return 0
+        })
+
+    let private pumpedOperator (name: string) (upstream: FlowStream<unit, string, int>) : Flow<unit, string, unit> =
+        match name with
+        | "debounce" -> upstream |> FlowStream.debounce (TimeSpan.FromMilliseconds 10.0) |> FlowStream.runDrain
+        | "throttle" -> upstream |> FlowStream.throttle (TimeSpan.FromMilliseconds 10.0) |> FlowStream.runDrain
+        | "groupedWithin" -> upstream |> FlowStream.groupedWithin 2 (TimeSpan.FromMilliseconds 10.0) |> FlowStream.runDrain
+        | "switchMapFlow" -> upstream |> FlowStream.switchMapFlow Flow.ok |> FlowStream.runDrain
+        | "reissueOnWake" ->
+            FlowStream.reissueOnWake (upstream |> FlowStream.map ignore) (untilInterrupted ()) |> Flow.map ignore
+        | other -> failwith $"unknown operator {other}"
+
+    [<Theory>]
+    [<InlineData("debounce", false)>]
+    [<InlineData("debounce", true)>]
+    [<InlineData("throttle", false)>]
+    [<InlineData("throttle", true)>]
+    [<InlineData("groupedWithin", false)>]
+    [<InlineData("groupedWithin", true)>]
+    [<InlineData("switchMapFlow", false)>]
+    [<InlineData("switchMapFlow", true)>]
+    [<InlineData("reissueOnWake", false)>]
+    [<InlineData("reissueOnWake", true)>]
+    let ``pumped operators fail with an upstream throw instead of hanging`` (operator: string, afterAwait: bool) =
+        let running = Task.Run(fun () -> pumpedOperator operator (throwingUpstream afterAwait) |> Flow.runSync ())
+        Assert.True(running.Wait(TimeSpan.FromSeconds 10.0), $"{operator} hung: the upstream defect was not published.")
+
+        match running.Result with
+        | Exit.Failure cause ->
+            test <@ Cause.defects cause |> List.map (fun error -> error.Message) = [ upstreamDefect ] @>
+        | other -> failwith $"Expected the upstream defect, got %A{other}"

@@ -254,3 +254,71 @@ module CacheTests =
 
         test <@ Flow.runSync () workflow = Exit.Success(Error "failed", 2, 2) @>
         test <@ runs.Value = 2 @>
+
+    // T28b: a shared computation that throws must settle its waiters with the defect, and the next caller must start
+    // a fresh attempt. Before the fix the publisher fiber died without resolving the signal, so every waiter hung.
+    let private completesWithin (run: unit -> 'result) : 'result =
+        let running = Task.Run(fun () -> run ())
+        Assert.True(running.Wait(TimeSpan.FromSeconds 10.0), "The shared computation's defect was not published; the waiter hung.")
+        running.Result
+
+    let private sharedDefect = "shared threw"
+
+    // Throws on the first run (synchronously while invoked, or after an await), succeeds with the run count after.
+    let private throwsOnce (afterAwait: bool) (runs: int ref) : Flow<unit, string, int> =
+        Flow.delay (fun () ->
+            runs.Value <- runs.Value + 1
+
+            match runs.Value, afterAwait with
+            | 1, false -> raise (InvalidOperationException sharedDefect)
+            | 1, true ->
+                flow {
+                    do! Flow.fromTask (fun _ -> task { do! Task.Yield() })
+                    return raise (InvalidOperationException sharedDefect)
+                }
+            | run, _ -> Flow.ok run)
+
+    let private outcomeOf (source: Flow<unit, string, int>) : Flow<unit, string, Result<int, string>> =
+        source
+        |> Flow.foldCause (Ok >> Flow.ok) (fun cause ->
+            match Cause.defects cause with
+            | [ error ] -> Flow.ok (Error error.Message)
+            | _ -> Flow.ok (Error $"unexpected cause %A{cause}"))
+
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
+    let ``memoize publishes a thrown defect to the waiter and retries on the next call`` (afterAwait: bool) =
+        let runs = ref 0
+
+        let workflow =
+            flow {
+                let! shared = Flow.memoize (throwsOnce afterAwait runs)
+                let! first = outcomeOf shared
+                let! second = outcomeOf shared
+                return first, second
+            }
+
+        let result = completesWithin (fun () -> Flow.runSync () workflow)
+
+        test <@ result = Exit.Success(Error sharedDefect, Ok 2) @>
+        test <@ runs.Value = 2 @>
+
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
+    let ``cache publishes a thrown lookup defect to the waiter and retries on the next get`` (afterAwait: bool) =
+        let runs = ref 0
+
+        let workflow =
+            flow {
+                let! cache = Cache.make (fun (_: int) -> throwsOnce afterAwait runs)
+                let! first = outcomeOf (cache |> Cache.get 1)
+                let! second = outcomeOf (cache |> Cache.get 1)
+                return first, second
+            }
+
+        let result = completesWithin (fun () -> Flow.runSync () workflow)
+
+        test <@ result = Exit.Success(Error sharedDefect, Ok 2) @>
+        test <@ runs.Value = 2 @>

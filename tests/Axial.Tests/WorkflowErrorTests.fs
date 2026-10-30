@@ -963,3 +963,64 @@ module WorkflowErrorTests =
         test <@ match Flow.runSync () dies with Exit.Failure(Cause.Die error) -> error.Message = "defect" | _ -> false @>
         test <@ Exit.Success 2 |> Exit.mapError Never.absurd = (Exit.Success 2 : Exit<int, string>) @>
 
+
+    // T28b: the runtime's own cancellation is not an exception a builder try/with can turn into a value. A catch-all
+    // handler must leave an interrupted body interrupted, whether the cancellation is thrown synchronously while the
+    // body is invoked or after an async hop, as Flow.catch does.
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
+    let ``flow try with does not turn the runtime's own cancellation into a value`` (afterHop: bool) =
+        use started = new SemaphoreSlim(0)
+        let hop () = Flow.fromTask (fun _ -> task { do! Task.Yield() })
+
+        let blockUntilInterrupted (ct: CancellationToken) =
+            started.Release() |> ignore
+            ct.WaitHandle.WaitOne() |> ignore
+            ct.ThrowIfCancellationRequested()
+
+        let guarded : Flow<unit, string, string> =
+            flow {
+                let! ct = Flow.cancellationToken
+                // Outside the try, so the synchronous variant's body throws while TryWith invokes it.
+                do! hop ()
+
+                try
+                    if afterHop then do! hop ()
+                    blockUntilInterrupted ct
+                    return "body"
+                with _ ->
+                    return "fallback"
+            }
+
+        let workflow : Flow<unit, string, Exit<string, string>> =
+            flow {
+                let! fiber = Flow.fork guarded
+                do! Flow.fromTask (fun _ -> task { do! started.WaitAsync() })
+                return! Fiber.interrupt fiber
+            }
+
+        let running = Task.Run(fun () -> Flow.runSync () workflow)
+        Assert.True(running.Wait(TimeSpan.FromSeconds 10.0), "The interrupted fiber did not settle.")
+        test <@ running.Result = Exit.Success(Exit.Failure Cause.Interrupt) @>
+
+    // T28b: a Flow.catch handler that throws is not called again with its own exception.
+    [<Fact>]
+    let ``Flow catch calls a throwing handler once`` () =
+        let defect = InvalidOperationException "defect"
+        let handlerError = InvalidOperationException "handler threw"
+        let mutable calls = 0
+
+        let handler (_: exn) : string =
+            calls <- calls + 1
+            raise handlerError
+
+        let fromCause : Exit<int, string> = Flow.die defect |> Flow.catch handler |> Flow.runSync ()
+        let callsFromCause = calls
+        calls <- 0
+        let fromThrow : Exit<int, string> = Flow.delay (fun () -> raise defect) |> Flow.catch handler |> Flow.runSync ()
+
+        test <@ callsFromCause = 1 @>
+        test <@ calls = 1 @>
+        test <@ fromCause = Exit.Failure(Cause.Die handlerError) @>
+        test <@ fromThrow = Exit.Failure(Cause.Die handlerError) @>
