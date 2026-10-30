@@ -29,20 +29,19 @@ module private ScopedLogging =
 [<RequireQualifiedAccess>]
 module MicrosoftLogging =
     let private write (logger: ILogger) (level: LogLevel) (error: exn option) (message: string) =
-        ScopedLogging.withScope logger (fun () ->
-            match level, error with
-            | LogLevel.Trace, None -> logger.LogTrace message
-            | LogLevel.Debug, None -> logger.LogDebug message
-            | LogLevel.Information, None -> logger.LogInformation message
-            | LogLevel.Warning, None -> logger.LogWarning message
-            | LogLevel.Error, None -> logger.LogError message
-            | LogLevel.Critical, None -> logger.LogCritical message
-            | LogLevel.Trace, Some error -> logger.LogTrace(error, message)
-            | LogLevel.Debug, Some error -> logger.LogDebug(error, message)
-            | LogLevel.Information, Some error -> logger.LogInformation(error, message)
-            | LogLevel.Warning, Some error -> logger.LogWarning(error, message)
-            | LogLevel.Error, Some error -> logger.LogError(error, message)
-            | LogLevel.Critical, Some error -> logger.LogCritical(error, message))
+        match level, error with
+        | LogLevel.Trace, None -> logger.LogTrace message
+        | LogLevel.Debug, None -> logger.LogDebug message
+        | LogLevel.Information, None -> logger.LogInformation message
+        | LogLevel.Warning, None -> logger.LogWarning message
+        | LogLevel.Error, None -> logger.LogError message
+        | LogLevel.Critical, None -> logger.LogCritical message
+        | LogLevel.Trace, Some error -> logger.LogTrace(error, message)
+        | LogLevel.Debug, Some error -> logger.LogDebug(error, message)
+        | LogLevel.Information, Some error -> logger.LogInformation(error, message)
+        | LogLevel.Warning, Some error -> logger.LogWarning(error, message)
+        | LogLevel.Error, Some error -> logger.LogError(error, message)
+        | LogLevel.Critical, Some error -> logger.LogCritical(error, message)
 
     /// <summary>Creates an Axial logger backed by a supplied Microsoft logger.</summary>
     let sink (logger: ILogger) : ILogSink =

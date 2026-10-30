@@ -261,6 +261,24 @@ module HostingTests =
             test <@ scope = Some expected @>
 
     [<Fact>]
+    let ``Microsoft logging sink uses entry snapshots rather than current locals`` () =
+        let provider = new ScopedProvider()
+        use factory = LoggerFactory.Create(fun builder -> builder.AddProvider(provider) |> ignore)
+        let sink = MicrosoftLogging.fromFactory "snapshots" factory
+        let jobId = FiberLocal.named "jobId" "unset"
+        let entry =
+            { Level = Axial.LogLevel.Information
+              Message = "captured"
+              Error = None
+              Annotations = Map.empty
+              Locals = [ "jobId", box "captured-job" ] }
+        let source : Flow<unit, Never, unit> =
+            Flow.delay (fun () -> sink.Write entry; Flow.ok ())
+            |> FiberLocal.locally "different-job" jobId
+        source |> App.run () |> Async.RunSynchronously |> ignore
+        Assert.Equal(Some "captured-job", (Assert.Single(provider.Entries) |> snd))
+
+    [<Fact>]
     let ``Microsoft logging adapter preserves levels and exceptions`` () =
         let logger = RecordingLogger()
         let log = MicrosoftLogging.sink logger
