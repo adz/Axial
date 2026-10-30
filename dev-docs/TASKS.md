@@ -23,16 +23,41 @@ lists the queue. Work on main.
   - Design approved in `capabilities.md` (decisions D1-D9). `ISecureRandom` is removed first, on its own, before 0.12. The rest is
     breaking: 0.12 only if it finishes with benchmarks, else 0.13. Benchmark runtime-context reads against env reads on
     sleep/timeout loops. Decide `platform-env-class.md` afterwards.
+  - Status: implementation is complete locally (phases A-F and the R3 review fixes) and awaits the final verify and push. The
+    0.12 breaking table is rebuilt against v0.11.3. The R3 follow-ups are tracked in T28 and T29.
 - [ ] T25b: Capability declarations (`ICapability`: Live/Fake/Replaces) and the build-time manifest
   - Spec sections 3, 4, 10. After T25a ships. Manifest in `obj/axial-capabilities.json` and the nupkg, `axial capabilities`,
     docs and `llms.txt`, agent skill; Guardrails effect rules built from merged manifests (28 built-in rules shrink).
 - [ ] T25c: Guardrails rules for capabilities (naming, no generic IHas chains, no generic ICapability calls, Replaces resolve and
   are unique, Live only in host role)
   - Spec section 5. After T25b.
+- [ ] T28: `Flow.foldCause` does not observe exceptions thrown inside a flow, so a stream over a throwing `IProcess` hangs
+  - Core bug, present at 2996c1575 (not a T25a regression). `Flow.foldCause` (`src/Axial/Flow.fs` ~2540) sees `Flow.die` but not
+    an exception thrown from the flow body (`flow { return invalidOp "boom" } |> Flow.foldCause ...` returns `Die`, the handler
+    never runs). `ProcessStream.runDrain`/`runCollect` over an `IProcess` whose `Execute` throws, including `Process.test ()` with no
+    `RunHandler`, hangs forever because the producer relies on `foldCause` to publish the outcome.
+  - Fix: wrap the body in `Platform.tryExecution` as `Flow.catch` does, so the failure handler receives `Cause.Die`. Check the other
+    internal `foldCause` users (`ProcessStream.terminal`, `mapEngineFailure`, Hosting) that settle something.
+  - Regression tests: core `foldCause` over a synchronous throw and over a throw after an async hop; `runDrain` over a throwing
+    `IProcess` and over `Process.test ()` without `RunHandler` expecting `Die` with the RunHandler message, under a timeout.
+    Benchmark `foldCause` and its callers (no slowdown on the non-throwing path). Should land before 0.12.
+- [ ] T29: T25a review nice-to-haves
+  - Elmish: add `ElmishRuntimeOptions.LogSink: ILogSink option`, installed where `Clock` is (`Pump()`, `startLayer`); today Fable's
+    default sink sends `Log.info` to `console.error` (red) and the pump is internal. Do it before 0.12 so it is one break.
+  - WebSocket `Connect` hook (`WebSocket.fs` ~230) runs as a fresh root and ignores the caller's `withClock`/`withLogSink`; capture
+    `RuntimePlatform.current ()` and invoke it under that runtime as Process callbacks do, or document the defaults.
+  - Duplicate live platform services (C1 #12): `PlatformDefaults` in `Core.fs` against `Clock.live`/`Random.live`/`Guid.live`/`Log.live`
+    in `Axial.PlatformService`; keep one implementation (the two Fable sleep copies already differ on a null token).
+  - Alias and naming cleanup before 0.12: `Log.none`/`Log.fromSink` against `LogSink.none`/`fromFunction`; `Clock.fixed`/`Clock.fromValue`;
+    `Guid.sequence`/`fromSequence`; `TestLog.Log`/`LogException` (bypass annotations and locals); `TestPlatform.trace` and the public mutable
+    `Reads` (use `Trace` and a snapshot).
+  - `withCallerServices` (`ProcessLive.fs` ~244) copies six fields when only `Platform` differs: use `{ current with Platform = caller.Platform }`.
+  - `LogSink.console` writes message and exception as two writes; write one string. Add a Fable test with two concurrent branches with
+    different overrides. Cache the per-request logger and sink in ASP.NET `flowEndpoint`.
 - [ ] T27: Research richer effects: algebraic-effects style in F# (algeff) and language-ext v5 `Eff<RT,A>` runtime traits
   - Read both from source, write `dev-docs/current-ideas/richer-effects.md` comparing them with Platform/capabilities as
-    designed in T25. No implementation. Preliminary draft written; after T25a ships, re-check its section 5 against what
-    actually shipped, then remove this task.
+    designed in T25. No implementation. Preliminary draft written; T25a is implemented locally, so re-check its section 5 against
+    what actually shipped (`capabilities.md` and the code), then remove this task.
 - [ ] T26: Spike: absorb FIO's continuation runtime (MIT) behind `Flow`-as-data, torture it with T23
   - Needs T23 first. Copy only the interpreter and scheduler, with FIO's licence in THIRD-PARTY-NOTICES, a source header naming
     the upstream commit, and bugs sent upstream. Design: `dev-docs/current-ideas/flow-as-data.md`.
