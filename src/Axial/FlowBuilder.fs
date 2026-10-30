@@ -17,6 +17,19 @@ module internal FlowBuilderRuntime =
         Unchecked.defaultof<'value>
 #endif
 
+    // The `with` branch of a builder try/with: the runtime's own cancellation stays an interruption, as in
+    // Flow.catch; any other exception goes to the user's handler.
+    let handleThrown
+        (environment: 'env)
+        (cancellationToken: System.Threading.CancellationToken)
+        (handler: exn -> Flow<'env, 'error, 'value>)
+        (error: exn)
+        : Execution<'value, 'error> =
+        if Platform.isOwnCancellation cancellationToken error then
+            Platform.ofExit (Exit.Failure Cause.Interrupt)
+        else
+            run environment cancellationToken (handler error)
+
     let fromResult<'env, 'error, 'value> (result: Result<'value, 'error>) : Flow<'env, 'error, 'value> =
         Flow(fun _ _ -> Execution.ofResult result)
 
@@ -122,7 +135,9 @@ type FlowBuilder() =
         ) : Flow<'env, 'error, 'value> =
         // The handler sees an exception the body throws while it is invoked and one its execution faults with
         // after an async hop, as `try/with` around `return!` in a task would. Typed failures and `Cause.Die`
-        // values are outcomes, not exceptions, and pass through. A completed body allocates nothing extra.
+        // values are outcomes, not exceptions, and pass through. The runtime's own cancellation is not handed to
+        // the handler: it stays an interruption, as in Flow.catch, so a catch-all handler cannot turn an interrupt
+        // into a success. A completed body allocates nothing extra.
         Flow(fun environment cancellationToken ->
             let mutable thrown: exn = null
 
@@ -134,19 +149,19 @@ type FlowBuilder() =
                     Unchecked.defaultof<Execution<'value, 'error>>
 
             if not (isNull thrown) then
-                FlowBuilderRuntime.run environment cancellationToken (handler thrown)
+                FlowBuilderRuntime.handleThrown environment cancellationToken handler thrown
             else
 #if FABLE_COMPILER
                 Platform.tryExecution
                     (fun () -> body)
-                    (fun error -> FlowBuilderRuntime.run environment cancellationToken (handler error))
+                    (FlowBuilderRuntime.handleThrown environment cancellationToken handler)
 #else
                 if body.IsCompletedSuccessfully then
                     body
                 else
                     Platform.tryExecution
                         (fun () -> body)
-                        (fun error -> FlowBuilderRuntime.run environment cancellationToken (handler error))
+                        (FlowBuilderRuntime.handleThrown environment cancellationToken handler)
 #endif
         )
 

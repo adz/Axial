@@ -600,8 +600,16 @@ module FlowStream =
         let producer : Flow<'env, Never, unit> =
             Flow(fun env pct ->
                 Execution.loop (fun () -> op env pct) (fun next ->
-                    next ()
-                    |> Execution.fold
+                    // An upstream step that throws, while pulled or after an await, is offered as a failure;
+                    // otherwise this fiber would die silently and the consumer would wait in take forever.
+                    let step =
+                        try
+                            next ()
+                        with error ->
+                            Execution.ofCause (Platform.causeOfThrown pct error)
+
+                    step
+                    |> Platform.foldObserved pct
                         (function
                             | Done -> offer Pumped.Ended pct |> Execution.map (fun _ -> Platform.Break())
                             | Next(value, tail) -> offer (Pumped.Item value) pct |> Execution.map (fun _ -> Platform.Continue tail))

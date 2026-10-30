@@ -1885,6 +1885,19 @@ module Flow =
 
             invoke (fork acquireForOwner) environment cancellationToken)
 
+    // Invokes a flow, turning an exception it throws while being invoked into its cause, as Flow.catch does. The
+    // combinators that hand the whole cause to a handler pair it with Platform.foldObserved or mapBothObserved, which
+    // also observe an exception the execution faults with later, so they see thrown defects as well as Flow.die.
+    let private invokeCatching
+        (flow: Flow<'env, 'error, 'value>)
+        (environment: 'env)
+        (cancellationToken: CancellationToken)
+        : Execution<'value, 'error> =
+        try
+            invoke flow environment cancellationToken
+        with error ->
+            Execution.ofCause (Platform.causeOfThrown cancellationToken error)
+
     // Starts a computation that several callers share. It runs once, as a detached fiber in `owner`'s scope and
     // with no caller's cancellation token, so a caller that is interrupted stops only its own wait; closing the
     // owner's scope interrupts the computation. `onSettled` runs before waiters are woken.
@@ -1903,8 +1916,12 @@ module Flow =
 
         let publisher : Flow<'env, Never, unit> =
             Flow(fun environment cancellationToken ->
-                invoke computation environment cancellationToken
-                |> Execution.fold (fun value -> settle (Exit.Success value)) (fun cause -> settle (Exit.Failure cause)))
+                // A computation that throws, while invoked or after an await, still settles the signal; otherwise
+                // every waiter would wait forever and the failed attempt would never be forgotten.
+                invokeCatching computation environment cancellationToken
+                |> Platform.foldObserved cancellationToken
+                    (fun value -> settle (Exit.Success value))
+                    (fun cause -> settle (Exit.Failure cause)))
 
         let start () =
             RuntimeState.withRuntime owner (fun () ->
@@ -2484,19 +2501,6 @@ module Flow =
     /// </example>
     let widenError (flow: Flow<'env, Never, 'value>) : Flow<'env, 'error, 'value> = mapError Never.absurd flow
 
-    // Invokes a flow, turning an exception it throws while being invoked into its cause, as Flow.catch does. The
-    // combinators that hand the whole cause to a handler pair it with Platform.foldObserved or mapBothObserved, which
-    // also observe an exception the execution faults with later, so they see thrown defects as well as Flow.die.
-    let private invokeCatching
-        (flow: Flow<'env, 'error, 'value>)
-        (environment: 'env)
-        (cancellationToken: CancellationToken)
-        : Execution<'value, 'error> =
-        try
-            invoke flow environment cancellationToken
-        with error ->
-            Execution.ofCause (Platform.causeOfThrown cancellationToken error)
-
     /// <summary>Attaches diagnostic trace text to any failure cause of the flow.</summary>
     /// <remarks>
     /// On failure the cause is wrapped in <c>Cause.Traced</c>, so retries, parallel composition, and
@@ -2688,21 +2692,17 @@ module Flow =
         (handler: exn -> 'error)
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
+        // A thrown exception becomes Cause.Die (or Cause.Interrupt when the runtime's own cancellation threw it)
+        // before the handler sees it, and the handler runs outside any try: a handler that throws is not called
+        // again with its own exception.
         Flow(fun environment cancellationToken ->
-            Platform.tryExecution
-                (fun () ->
-                    invoke flow environment cancellationToken
-                    |> Execution.fold
-                        (fun value -> Execution.ofValue value)
-                        (fun cause ->
-                            match Cause.untraced cause with
-                            | Cause.Die error -> Execution.ofCause (Cause.Fail(handler error))
-                            | _ -> Execution.ofCause cause))
-                (fun error ->
-                    if ForeignCancellation.isOurs cancellationToken error then
-                        Platform.ofExit (Exit.Failure Cause.Interrupt)
-                    else
-                        Platform.ofExit (Exit.Failure(Cause.Fail(handler error)))))
+            invokeCatching flow environment cancellationToken
+            |> Platform.foldObserved cancellationToken
+                Execution.ofValue
+                (fun cause ->
+                    match Cause.untraced cause with
+                    | Cause.Die error -> Execution.ofCause (Cause.Fail(handler error))
+                    | _ -> Execution.ofCause cause))
 
     /// <summary>Computes a fallback flow from the typed error when the source flow fails.</summary>
     /// <remarks>
