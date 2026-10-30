@@ -69,11 +69,16 @@ module TestClock =
     let advance (duration: TimeSpan) : Flow<'env, 'error, unit> =
         Flow.delay (fun () -> (current ()).AdvanceBy duration; Flow.ok ())
 
-    /// Drains registered deadlines. It does not wait for future registrations from asynchronously scheduled work.
+    /// Advances no later than the latest deadline registered at entry; periodic re-registration cannot extend this horizon.
     let advanceAll<'env, 'error> : Flow<'env, 'error, unit> =
         Flow.delay (fun () ->
             let clock = current ()
-            while clock.Sleepers > 0 do clock.AdvanceToNextDeadline() |> ignore
+            let horizon = clock.LastDeadline
+            let mutable draining = true
+            while draining do
+                match clock.NextDeadline, horizon with
+                | Some next, Some last when next <= last -> clock.AdvanceToNextDeadline() |> ignore
+                | _ -> draining <- false
             Flow.ok ())
 
     let sleepers<'env, 'error> : Flow<'env, 'error, int> =

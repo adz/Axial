@@ -1877,8 +1877,15 @@ type ManualTime() =
             else
                 Some(sleepers |> Seq.map (fun (deadline, _, _) -> deadline) |> Seq.min))
 
+    /// The last deadline currently registered; later registrations do not extend it.
+    member _.LastDeadline =
+        lock gate (fun () ->
+            if sleepers.Count = 0 then None
+            else Some(sleepers |> Seq.map (fun (deadline, _, _) -> deadline) |> Seq.max))
+
     /// Moves time forward and wakes every sleep whose deadline has been reached, earliest first.
     member _.Advance(by: TimeSpan) =
+        if by < TimeSpan.Zero then invalidArg (nameof by) "Clock cannot move backwards."
         let due =
             lock gate (fun () ->
                 now <- now + by
@@ -1898,12 +1905,25 @@ type ManualTime() =
             resolveSignal signal () |> ignore
 
     /// Moves time to the earliest waiting deadline. Returns <c>false</c> when nothing is waiting.
-    member this.AdvanceToNextDeadline() =
-        match this.NextDeadline with
-        | Some deadline ->
-            this.Advance(deadline - lock gate (fun () -> now))
-            true
+    member _.AdvanceToNextDeadline() =
+        let due =
+            lock gate (fun () ->
+                if sleepers.Count = 0 then None
+                else
+                    let deadline = sleepers |> Seq.map (fun (deadline, _, _) -> deadline) |> Seq.min
+                    now <- max now deadline
+                    let ready =
+                        sleepers
+                        |> Seq.filter (fun (deadline, _, _) -> deadline <= now)
+                        |> Seq.sortBy (fun (deadline, sequence, _) -> deadline, sequence)
+                        |> Seq.toArray
+                    for entry in ready do sleepers.Remove entry |> ignore
+                    Some ready)
+        match due with
         | None -> false
+        | Some ready ->
+            for _, _, signal in ready do resolveSignal signal () |> ignore
+            true
 
     interface ITimeSource with
         member _.Now() = lock gate (fun () -> now)

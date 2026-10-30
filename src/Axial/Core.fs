@@ -17,6 +17,9 @@ type ManualClock(initialUtc: DateTimeOffset) =
     /// <summary>The next monotonic deadline, when a delay is waiting.</summary>
     member _.NextDeadline = time.NextDeadline
 
+    /// <summary>The latest currently registered deadline, for bounded explicit draining.</summary>
+    member _.LastDeadline = time.LastDeadline
+
     /// <summary>Advances wall and monotonic time together, running continuations released by due delays before returning.</summary>
     member _.AdvanceBy(duration: TimeSpan) =
         if duration < TimeSpan.Zero then invalidArg (nameof duration) "Clock cannot move backwards."
@@ -1138,7 +1141,9 @@ module LogSink =
     let map (mapper: LogEntry -> LogEntry) (sink: ILogSink) : ILogSink =
         { new ILogSink with
             member _.IsEnabled level = enabled sink level
-            member _.Write entry = write sink (mapper entry) }
+            member _.Write entry =
+                let mapped = mapper entry
+                if enabled sink mapped.Level then write sink mapped }
 
 type internal PlatformServices =
     { Clock: IClock; Random: IRandom; Guid: IGuid

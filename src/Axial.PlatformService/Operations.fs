@@ -114,6 +114,13 @@ module Clock =
 #endif
             }
 
+#if !FABLE_COMPILER
+    /// <summary>Creates a manual clock starting at the supplied instant. Sleeps require explicit advancement.</summary>
+    let ``fixed`` (utcNow: DateTimeOffset) = ManualClock utcNow
+
+    /// <summary>Creates a manual clock starting at the supplied instant.</summary>
+    let fromValue (utcNow: DateTimeOffset) : IClock = ``fixed`` utcNow
+#else
     /// <summary>Creates a deterministic clock that always returns the supplied instant; measured durations are zero.</summary>
     let fromValue (utcNow: DateTimeOffset) : IClock =
         { new IClock with
@@ -121,6 +128,7 @@ module Clock =
             member _.Elapsed() = TimeSpan.Zero
             member _.Sleep(_, _) = raise (InvalidOperationException("A fixed clock cannot sleep; use a manual clock for timed flows."))
         }
+#endif
 
 #if !FABLE_COMPILER && !NETSTANDARD2_1
     /// <summary>Creates an Axial clock backed by a .NET <see cref="T:System.TimeProvider" />.</summary>
@@ -202,23 +210,23 @@ module Clock =
     let layer : Layer<unit, Never, IClock> =
         Layer.succeed live
 
-/// <summary>A test double for <see cref="T:Axial.PlatformService.ILog" /> that records entries for assertions.</summary>
+/// <summary>A thread-safe recording log sink. Entries are immutable snapshots.</summary>
 type TestLog() =
     let entries = ResizeArray<LogEntry>()
 
     /// <summary>Records a message at the supplied level.</summary>
     member _.Log(level: LogLevel, message: string) =
-        entries.Add { Level = level; Message = message; Error = None; Annotations = Map.empty; Locals = [] }
+        lock entries (fun () -> entries.Add { Level = level; Message = message; Error = None; Annotations = Map.empty; Locals = [] })
 
     /// <summary>Records a message carrying an exception at the supplied level.</summary>
     member _.LogException(level: LogLevel, error: exn, message: string) =
-        entries.Add { Level = level; Message = message; Error = Some error; Annotations = Map.empty; Locals = [] }
+        lock entries (fun () -> entries.Add { Level = level; Message = message; Error = Some error; Annotations = Map.empty; Locals = [] })
 
     /// <summary>The recorded entries, in the order they were written.</summary>
-    member _.Entries : IReadOnlyList<LogEntry> = entries
+    member _.Entries : IReadOnlyList<LogEntry> = lock entries (fun () -> entries.ToArray() :> IReadOnlyList<LogEntry>)
 
     /// <summary>Removes all recorded entries.</summary>
-    member _.Clear() = entries.Clear()
+    member _.Clear() = lock entries (fun () -> entries.Clear())
 
     interface ILogSink with
         member _.IsEnabled _ = true

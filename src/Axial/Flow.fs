@@ -1482,8 +1482,8 @@ module Flow =
         Flow(fun environment cancellationToken ->
             let parentRuntime = RuntimeState.current()
             let observer = parentRuntime.Observer
-            let clock = RuntimePlatform.current().Platform.Clock
-            let time = RuntimePlatform.current().Platform.Time
+            let clock = parentRuntime.Platform.Clock
+            let time = parentRuntime.Platform.Time
 
             let metadata: FiberMetadata =
                 {

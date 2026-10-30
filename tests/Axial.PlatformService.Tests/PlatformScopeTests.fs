@@ -270,6 +270,44 @@ module PlatformScopeTests =
         Assert.Equal(Exit.Success(TimeSpan.FromSeconds 7.), workflow |> Flow.runTestWith platform ())
 
     [<Fact>]
+    let ``advanceAll stops when a sleeper registers beyond its entry horizon`` () =
+        let platform = TestPlatform.create ()
+        use registered = new Threading.SemaphoreSlim(0)
+        let notifying = signallingClock platform.Clock registered
+        let workflow = flow {
+            let! child =
+                (flow {
+                    do! Flow.sleep (TimeSpan.FromSeconds 1.)
+                    do! Flow.sleep (TimeSpan.FromSeconds 1.)
+                }) |> Flow.fork |> Flow.withClock notifying
+            do! awaitRegistration registered
+            do! TestClock.advanceAll
+            let! elapsed = Clock.elapsed
+            do! Fiber.interrupt child |> Flow.ignore
+            return elapsed
+        }
+        Assert.Equal(Exit.Success(TimeSpan.FromSeconds 1.), workflow |> Flow.runTestWith platform ())
+
+    [<Fact>]
+    let ``fixed clock sleeps until explicitly advanced`` () =
+        let clock = Clock.``fixed`` DateTimeOffset.UnixEpoch
+        let pending = (clock :> IClock).Sleep(TimeSpan.FromSeconds 1., Threading.CancellationToken.None)
+        Assert.False(pending.IsCompleted)
+        clock.AdvanceBy(TimeSpan.FromSeconds 1.)
+        Assert.True(pending.IsCompletedSuccessfully)
+
+    [<Fact>]
+    let ``mapped log level is checked before writing`` () =
+        let log = TestLog()
+        let gated =
+            { new ILogSink with
+                member _.IsEnabled level = level >= LogLevel.Warning
+                member _.Write entry = (log :> ILogSink).Write entry }
+        let sink = gated |> LogSink.map (fun entry -> { entry with Level = LogLevel.Debug })
+        sink.Write { Level = LogLevel.Error; Message = "mapped"; Error = None; Annotations = Map.empty; Locals = [] }
+        Assert.Empty(log.Entries)
+
+    [<Fact>]
     let ``recording log entries are snapshots`` () =
         let log = TestLog()
         log.Log(LogLevel.Information, "first")
