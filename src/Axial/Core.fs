@@ -1441,28 +1441,6 @@ module internal FlowInternal =
         Flow operation
 
 /// <summary>
-/// Log levels used by runtime logging helpers and environment-provided logging functions.
-/// </summary>
-[<RequireQualifiedAccess>]
-type LogLevel =
-    | Trace
-    | Debug
-    | Information
-    | Warning
-    | Error
-    | Critical
-
-    /// <summary>The level name, rendered without reflection so it stays safe under NativeAOT.</summary>
-    override this.ToString() =
-        match this with
-        | Trace -> "Trace"
-        | Debug -> "Debug"
-        | Information -> "Information"
-        | Warning -> "Warning"
-        | Error -> "Error"
-        | Critical -> "Critical"
-
-/// <summary>
 /// Represents an error channel that cannot occur.
 /// </summary>
 type Never = private Never of unit

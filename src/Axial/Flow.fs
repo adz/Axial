@@ -928,6 +928,19 @@ module Flow =
 
             RuntimeState.withRuntime runtime (fun () -> invoke flow environment cancellationToken))
 
+    /// Overrides the clock within this flow and its descendants.
+    let withClock (clock: IClock) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> = failwith "T25a: not implemented"
+    /// Overrides random values within this flow and its descendants.
+    let withRandom (random: IRandom) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> = failwith "T25a: not implemented"
+    /// Overrides GUID generation within this flow and its descendants.
+    let withGuid (guid: IGuid) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> = failwith "T25a: not implemented"
+    /// Replaces the log destination within this flow and its descendants.
+    let withLogSink (sink: ILogSink) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> = failwith "T25a: not implemented"
+    /// Decorates the destination already installed in this scope.
+    let mapLogSink (mapper: ILogSink -> ILogSink) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> = failwith "T25a: not implemented"
+    /// Replaces both telemetry slots within this flow and its descendants.
+    let withTelemetry (telemetry: ITelemetry) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> = failwith "T25a: not implemented"
+
     /// <summary>Installs runtime fiber-lifecycle hooks for diagnostics and telemetry.</summary>
     /// <remarks>
     /// The observer is carried implicitly to every fiber forked inside <paramref name="flow" />, so installing

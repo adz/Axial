@@ -32,6 +32,7 @@
     <Compile Include="Services.fs" />
     <Compile Include="Platform.fs" />
     <Compile Include="Operations.fs" />
+    <Compile Include="TestPlatform.fs" />
   </ItemGroup>
 
 </Project>

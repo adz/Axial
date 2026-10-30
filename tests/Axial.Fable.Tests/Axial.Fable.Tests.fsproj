@@ -37,6 +37,7 @@
     <Compile Include="../../examples/Axial.TortureTest/Processes.fs" Link="TortureTest/Processes.fs" />
     <Compile Include="../../examples/Axial.TortureTest/Scenarios.fs" Link="TortureTest/Scenarios.fs" />
     <Compile Include="TortureTests.fs" />
+    <Compile Include="PlatformScopeTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 </Project>

@@ -11,18 +11,6 @@ type ILog =
     /// <summary>Writes a log message carrying an exception, preserving its stack trace for the host logger.</summary>
     abstract LogException: level: LogLevel -> error: exn -> message: string -> unit
 
-/// <summary>Provides synchronous random-number generation.</summary>
-type IRandom =
-    abstract Next: unit -> int
-    abstract NextMax: maxExclusive: int -> int
-    abstract NextInt: minInclusive: int -> maxExclusive: int -> int
-    abstract NextDouble: unit -> float
-    abstract NextBytes: buffer: byte array -> unit
-
-/// <summary>Provides synchronous GUID generation.</summary>
-type IGuid =
-    abstract NewGuid: unit -> Guid
-
 /// <summary>Provides environment-variable access supplied by the application host.</summary>
 type IEnvironmentVariables =
     abstract TryGet: name: string -> string option
