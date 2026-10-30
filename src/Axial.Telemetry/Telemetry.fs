@@ -129,7 +129,7 @@ module Activity =
                                 settle (Exit.Failure cause)
                                 Execution.ofCause cause))
                     (fun error ->
-                        settle (Exit.Failure(Execution.causeOfException error))
+                        settle (Exit.Failure(Platform.causeOfThrown cancellationToken error))
                         raise error))
 
     /// <summary>Wraps a flow in an application-owned activity source, rendering typed errors without reflection.</summary>

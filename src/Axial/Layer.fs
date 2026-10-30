@@ -228,7 +228,7 @@ module Layer =
             Platform.zipParAllExecution
                 (fun () -> invoke left input leftScope cancellationToken)
                 (fun () -> invoke right input rightScope cancellationToken)
-                Execution.causeOfException
+                (Platform.causeOfThrown cancellationToken)
                 chooseParallelExit
         )
 

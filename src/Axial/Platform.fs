@@ -1608,12 +1608,6 @@ let startFiber
         | Exit.Failure cause when isInterruptedCause cause -> FiberStatus.Interrupted
         | Exit.Failure _ -> FiberStatus.Failed
 
-    let causeOfException (error: exn) : Cause<'error> =
-        if error :? OperationCanceledException then
-            Cause.Interrupt
-        else
-            Cause.Die error
-
 #if FABLE_COMPILER
     // Fable has no cooperative CancellationTokenSource linking, so a forked fiber gets an independent source.
     // Fable does not support Async.RunSynchronously, so the fiber's completion is published through a
@@ -1639,7 +1633,7 @@ let startFiber
                 onSettled (statusFromExit exit) exit
                 settle exit
             with error ->
-                let exit = Exit.Failure(causeOfException error)
+                let exit = Exit.Failure(causeOfThrown cts.Token error)
                 onSettled (statusFromExit exit) exit
                 settle exit
         })
@@ -1679,7 +1673,7 @@ let startFiber
                     settle (statusFromExit exit) exit
                     return exit
                 with error ->
-                    let exit = Exit.Failure(causeOfException error)
+                    let exit = Exit.Failure(causeOfThrown cts.Token error)
                     settle (statusFromExit exit) exit
                     return exit
             })

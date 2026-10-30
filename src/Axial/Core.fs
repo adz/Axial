@@ -1521,8 +1521,9 @@ type Flow<'env, 'error, 'value> =
                     | :? AggregateException as aggregate when aggregate.InnerExceptions.Count > 0 ->
                         aggregate.InnerExceptions |> Seq.map causeOf |> Seq.reduce Cause.thenCause
 #endif
-                    | :? OperationCanceledException -> Cause.Interrupt
-                    | _ -> Cause.Die error
+                    // An OperationCanceledException is an interruption only when this run's token asked for it,
+                    // as everywhere else (Platform.causeOfThrown); a foreign one is a defect.
+                    | _ -> Platform.causeOfThrown cancellationToken error
 
                 let primary =
                     match executionError, exit with

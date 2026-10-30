@@ -44,6 +44,10 @@ lists the queue. Work on main.
   - `withCallerServices` (`ProcessLive.fs` ~244) copies six fields when only `Platform` differs: use `{ current with Platform = caller.Platform }`.
   - `LogSink.console` writes message and exception as two writes; write one string. Add a Fable test with two concurrent branches with
     different overrides. Cache the per-request logger and sink in ASP.NET `flowEndpoint`.
+  - T28 review nice-to-haves (`pi/t28.review.md` N1-N3, N6): a real completed fast path in `Platform.mapBoth`/`mapBothObserved`
+    (benchmark MapBothSuccessX1000); a sync fast path in builder `TryFinally` plus a `use`-in-loop row in FoldCauseBenchmarks; fold
+    the five "capture sync throw, then observe the fault" copies into one helper (`Platform.isCompletedSuccessfully` to drop
+    FlowBuilder's `#if`); `mapFlowParUsing` gives back its pooled resource when the mapper throws (use `foldObserved`).
 - [ ] T27: Research richer effects: algebraic-effects style in F# (algeff) and language-ext v5 `Eff<RT,A>` runtime traits
   - Read both from source, write `dev-docs/current-ideas/richer-effects.md` comparing them with Platform/capabilities as
     designed in T25. No implementation. Preliminary draft written; T25a is implemented locally, so re-check its section 5 against

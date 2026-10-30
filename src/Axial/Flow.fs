@@ -109,7 +109,19 @@ module Flow =
         : Execution<'value, 'error> =
         FlowInternal.invoke flow environment cancellationToken
 
-    let private combineCleanup
+    // The cause of an exception the flow itself threw at a run boundary: as cleanupCause, except that an
+    // OperationCanceledException is an interruption only when the run's own token asked for it.
+    let rec private executionCause (cancellationToken: CancellationToken) (error: exn) : Cause<'error> =
+        match error with
+        | :? ReleaseCauseException
+#if !FABLE_COMPILER
+        | :? AggregateException
+#endif
+            -> cleanupCause error
+        | _ -> Platform.causeOfThrown cancellationToken error
+
+    let private combineOutcome
+        (causeOfExecutionError: exn -> Cause<'error>)
         (cleanupError: exn option)
         (executionError: exn option)
         (exit: Exit<'value, 'error> option)
@@ -117,7 +129,7 @@ module Flow =
         : Exit<'value, 'error> =
         let primary =
             match executionError, exit with
-            | Some error, _ -> Exit.Failure (cleanupCause error)
+            | Some error, _ -> Exit.Failure (causeOfExecutionError error)
             | None, Some result -> result
             | None, None -> Exit.Failure (Cause.Die (InvalidOperationException missingOutcomeMessage))
 
@@ -128,6 +140,14 @@ module Flow =
             Exit.Failure (cleanupCause error)
         | None, result ->
             result
+
+    // Folds a cleanup failure into an outcome that has no exception of its own to classify.
+    let private combineCleanup cleanupError executionError exit missingOutcomeMessage =
+        combineOutcome cleanupCause cleanupError executionError exit missingOutcomeMessage
+
+    // Folds a run boundary's outcome: the flow's own exception is classified against the run's token.
+    let private combineRun (cancellationToken: CancellationToken) cleanupError executionError exit missingOutcomeMessage =
+        combineOutcome (executionCause cancellationToken) cleanupError executionError exit missingOutcomeMessage
 
     let private chooseParallelExit
         (leftExit: Exit<'left, 'error>)
@@ -170,7 +190,7 @@ module Flow =
             cancellationToken
             (fun () -> RuntimeState.withRuntime runtime (fun () -> invoke flow environment cancellationToken))
             (fun cleanupError executionError exit ->
-                combineCleanup cleanupError executionError exit "Flow execution produced no outcome.")
+                combineRun cancellationToken cleanupError executionError exit "Flow execution produced no outcome.")
 
     // Closes scopes in order and waits for their cleanup, folding a cleanup failure into the exit as a defect.
     let private closeScopes
@@ -466,7 +486,7 @@ module Flow =
                 cancellationToken
                 (fun () -> RuntimeState.withRuntime childRuntime (fun () -> invoke flow environment cancellationToken))
                 (fun cleanupError executionError exit ->
-                    combineCleanup cleanupError executionError exit "Scoped flow execution produced no outcome."))
+                    combineRun cancellationToken cleanupError executionError exit "Scoped flow execution produced no outcome."))
 
     // Parallel combinators run their flows in a branch scope, a child of the caller's scope, then decide whether the
     // caller receives the branch's value: zipPar and sequencePar share one branch among all their flows, race gives
@@ -1257,7 +1277,7 @@ module Flow =
         let execution =
             Platform.tryExecution
                 (fun () -> RuntimeState.withRuntime attemptRuntime (fun () -> invoke flow environment cancellationToken))
-                (fun error -> Execution.ofCause (Execution.causeOfException error))
+                (fun error -> Execution.ofCause (Platform.causeOfThrown cancellationToken error))
 
         attemptScope, execution
 
@@ -1585,7 +1605,7 @@ module Flow =
                             childToken
                             (fun () -> RuntimeState.withRuntime childRuntime (fun () -> invoke flow environment childToken))
                             (fun cleanupError executionError exit ->
-                                combineCleanup cleanupError executionError exit "Forked flow execution produced no outcome."))
+                                combineRun childToken cleanupError executionError exit "Forked flow execution produced no outcome."))
 
             // A fiber belongs to the scope that forked it. Closing that scope interrupts the fiber, or first asks a
             // graceful fiber to stop and waits up to its grace period, then waits for its cleanup and reports an
@@ -2962,7 +2982,7 @@ module Flow =
                         |> Execution.bind (fun innerEnvironment ->
                             invoke flow innerEnvironment cancellationToken)))
                 (fun cleanupError executionError exit ->
-                    combineCleanup cleanupError executionError exit "Layer provisioning produced no outcome."))
+                    combineRun cancellationToken cleanupError executionError exit "Layer provisioning produced no outcome."))
 
     /// <summary>Defers flow construction until execution time.</summary>
     /// <param name="factory">A function that returns the flow to execute.</param>

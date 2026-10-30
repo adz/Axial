@@ -497,7 +497,11 @@ module WorkflowErrorTests =
         | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, defect) @>
         | other -> failwithf "Expected defect cause, got %A" other
 
-        test <@ flowCanceled = Exit.Failure Cause.Interrupt @>
+        // T28b: an OperationCanceledException the runtime's token did not ask for is a defect here too, as for the
+        // async and task boundaries below.
+        match flowCanceled with
+        | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, canceled) @>
+        | other -> failwithf "Expected a cancellation defect, got %A" other
 
         match asyncDefect with
         | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, defect) @>
