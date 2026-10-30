@@ -118,13 +118,14 @@ lists the queue. Work on main.
   - Hedging as a documented recipe over `Flow.race`; a "Coming from Polly" page mapping every Polly strategy.
   - Adaptive concurrency stays a `dev-docs/current-ideas/` sketch until an application needs it.
 
+- [ ] T34: `Axial.Sql`: provider-agnostic ADO.NET access (after 0.12)
+  - Connection as a layer, transaction as a scope (commit on success, roll back on failure or interruption), transient-error retry.
+- [ ] T35: Browser storage capability for Fable apps (after 0.12)
+  - `localStorage`/`sessionStorage`/IndexedDB behind a capability with a fake.
+
 ## Acceptance
 
 - `Axial.slnx` builds and tests without Reified.
 - Core `Axial` and operational packages contain no Reified references.
 - Only the isolated HTTP adapters cross the product boundary here; the reference app lives in [axial-examples](https://github.com/adz/axial-examples).
 - Package, AOT, Fable, documentation, and site checks pass at release boundaries.
-- [ ] T34: `Axial.Sql`: provider-agnostic ADO.NET access (after 0.12)
-  - Connection as a layer, transaction as a scope (commit on success, roll back on failure or interruption), transient-error retry.
-- [ ] T35: Browser storage capability for Fable apps (after 0.12)
-  - `localStorage`/`sessionStorage`/IndexedDB behind a capability with a fake.

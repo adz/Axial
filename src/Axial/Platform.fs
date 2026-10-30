@@ -370,6 +370,50 @@ let isOwnCancellation (cancellationToken: CancellationToken) (error: exn) : bool
 let causeOfThrown (cancellationToken: CancellationToken) (error: exn) : Cause<'error> =
     if isOwnCancellation cancellationToken error then Cause.Interrupt else Cause.Die error
 
+// The value of a mapper applied by the runtime: a throw becomes the exit causeOfThrown gives it. Kept out of line
+// so callers' fast paths carry no exception region.
+[<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
+let private mapExitObserved
+    (cancellationToken: CancellationToken)
+    (mapper: 'value -> 'next)
+    (value: 'value)
+    : Exit<'next, 'error> =
+    try
+        Exit.Success(mapper value)
+    with error ->
+        Exit.Failure(causeOfThrown cancellationToken error)
+
+/// Maps the success value with user code: a mapper that throws ends the execution with the cause
+/// <c>causeOfThrown</c> gives it, instead of throwing (synchronously) or faulting (after an await).
+let mapObserved
+    (cancellationToken: CancellationToken)
+    (mapper: 'value -> 'next)
+    (effect: Execution<'value, 'error>)
+    : Execution<'next, 'error> =
+#if FABLE_COMPILER
+    async {
+        let! exit = effect
+
+        match exit with
+        | Exit.Success value -> return mapExitObserved cancellationToken mapper value
+        | Exit.Failure cause -> return Exit.Failure cause
+    }
+#else
+    if effect.IsCompletedSuccessfully then
+        match effect.Result with
+        | Exit.Success value -> ofExit (mapExitObserved cancellationToken mapper value)
+        | Exit.Failure cause -> ofExit (Exit.Failure cause)
+    else
+        execution {
+            let! exit = effect
+
+            match exit with
+            | Exit.Success value -> return mapExitObserved cancellationToken mapper value
+            | Exit.Failure cause -> return Exit.Failure cause
+        }
+        |> ofAwaitable
+#endif
+
 /// Like <c>fold</c>, but an exception the execution faults with reaches <paramref name="onFailure" /> as the cause
 /// <c>causeOfThrown</c> gives it, as <c>tryExecution</c> would. Exceptions from the continuations are not caught.
 /// A completed execution continues directly; a pending one is awaited by a single state machine.
