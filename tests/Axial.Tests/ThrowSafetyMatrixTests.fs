@@ -1048,38 +1048,15 @@ module ThrowSafetyMatrix =
     /// "throw-specific" gaps hold when the user flow returns Flow.die instead of throwing, so converting throws at the
     /// user-code call site (the planned leaf wrapper, T30) fixes them; "combinator" gaps fail with Flow.die too.
     let knownGaps () : Map<string, string> =
-        let parallelLeak =
-            "throw-specific: a user flow faulting after an await ends the combinator with Die but the running sibling "
-            + "is never interrupted (leaked fiber)"
-
-        let bufferHang = "throw-specific: the buffer producer never offers the failure for a thrown/faulted upstream; the consumer hangs"
-        let mergeHang = "throw-specific: mergePar never delivers the failure of a stream whose pull throws; the run hangs"
-
         let layerZipParHang =
             "combinator: Layer.zipPar waits for both branches (zipParAllExecution) and never interrupts the other one, "
-            + "so a failing branch beside a long-running one hangs, with Flow.die as well"
-
-        let timeoutSwallow =
-            "combinator: the onInterrupt handler runs (compensation 1) but timeoutToOk returns its value and drops the "
-            + "handler's defect, with Flow.die as well"
+            + "so a failing branch beside a long-running branch hangs, with Flow.die as well (awaiting an owner decision)"
 
         Map
-            [ "Flow.forEachPar/flow [AfterAwait]", parallelLeak
-              "Flow.sequencePar/item [AfterAwait]", parallelLeak
-              "Flow.sequenceParWith/item [AfterAwait]", parallelLeak
-              "Flow.traversePar/flow [AfterAwait]", parallelLeak
-              "Flow.zipPar/left [AfterAwait]", parallelLeak
-              "Flow.zipPar/right [AfterAwait]", parallelLeak
-              "FlowStream.buffer/upstream [Sync]", bufferHang
-              "FlowStream.buffer/upstream [AfterAwait]", bufferHang
-              "FlowStream.mergePar/stream [Sync]", mergeHang
-              "FlowStream.mergePar/stream [AfterAwait]", mergeHang
-              "Layer.zipPar/left [Sync]", layerZipParHang
+            [ "Layer.zipPar/left [Sync]", layerZipParHang
               "Layer.zipPar/left [AfterAwait]", layerZipParHang
               "Layer.zipPar/right [Sync]", layerZipParHang
-              "Layer.zipPar/right [AfterAwait]", layerZipParHang
-              "Flow.onInterrupt/handler [Sync]", timeoutSwallow
-              "Flow.onInterrupt/handler [AfterAwait]", timeoutSwallow ]
+              "Layer.zipPar/right [AfterAwait]", layerZipParHang ]
 
     /// Members of the checked modules that have no cells of their own, and why.
     let exemptions () : Map<string, Exemption> =

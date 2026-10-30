@@ -672,3 +672,34 @@ module WorkflowConcurrencyTests =
         test <@ Cause.failures (match outcome with Exit.Failure cause -> cause | _ -> Cause.Interrupt) = [ "boom" ] @>
         // Delivered with the failure when it settled first, otherwise reported; never lost, never twice.
         test <@ (if defectSeen then 1 else 0) + (reported |> Seq.filter (fun error -> obj.ReferenceEquals(error, defect)) |> Seq.length) = 1 @>
+
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
+    let ``zipPar: a branch that throws after an await interrupts and joins its sibling, and keeps its exception`` (onLeft: bool) =
+        let boom = InvalidOperationException "boom"
+        let released = ref 0
+
+        let throwing : Flow<unit, string, int> =
+            Flow.fromTask (fun _ -> task { do! Task.Yield() }) |> Flow.bind (fun () -> raise boom)
+
+        let waiting : Flow<unit, string, int> =
+            flow {
+                try
+                    return! Flow.never
+                finally
+                    Interlocked.Increment released |> ignore
+            }
+
+        let caught : Flow<unit, string, int * int> =
+            flow {
+                try
+                    return! (if onLeft then Flow.zipPar throwing waiting else Flow.zipPar waiting throwing)
+                with error ->
+                    // The sibling was interrupted and its cleanup ran before zipPar handed back the exception.
+                    return (if obj.ReferenceEquals(error, boom) then released.Value else -1), 0
+            }
+
+        let running = caught.StartAsTask(())
+        test <@ running.Wait(TimeSpan.FromSeconds 10.0) @>
+        test <@ running.Result = Exit.Success(1, 0) @>

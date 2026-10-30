@@ -315,16 +315,13 @@ let private cells () : Cell list =
 /// Cells that fail on JavaScript at the current HEAD. A cell in this list passes while it still fails and fails once
 /// it holds, so fixing a gap forces removing it here; a cell not in it must hold the invariant.
 let private knownGaps () : Map<string, string> =
-    let feedHang = "throw-specific: FlowStream's feed producer settles with a plain Execution.fold, so a throwing pull never ends the stream"
-    let layerZipPar = "combinator: Layer.zipPar waits for both branches and never interrupts the other one (hangs with Flow.die too)"
-    let timeoutSwallow = "combinator: timeoutToOk drops the defect of the timed-out flow's onInterrupt handler"
+    let layerZipPar =
+        "combinator: Layer.zipPar waits for both branches and never interrupts the other one (hangs with Flow.die too; "
+        + "awaiting an owner decision)"
 
     Map
         [ for mode in [ "Sync"; "AfterAwait" ] do
-              $"throw-safety FlowStream.buffer/upstream [{mode}]", feedHang
-              $"throw-safety FlowStream.mergePar/stream [{mode}]", feedHang
-              $"throw-safety Layer.zipPar/left [{mode}]", layerZipPar
-              $"throw-safety Flow.onInterrupt/handler [{mode}]", timeoutSwallow ]
+              $"throw-safety Layer.zipPar/left [{mode}]", layerZipPar ]
 
 [<Literal>]
 let private boundMilliseconds = 5000

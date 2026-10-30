@@ -290,32 +290,38 @@ module FiberObserverTests =
             operation
             |> Flow.withFiberObserver recording.Observer
             |> Flow.runSync ()
-        if race then
-            match result with
-            | Exit.Failure(Cause.Die reported) -> test <@ obj.ReferenceEquals(reported, defect) @>
-            | other -> failwithf "Expected the consumed loser defect, got %A" other
-            test <@ recording.Unobserved = [] @>
-        else
-            test <@ result = Exit.Failure(Cause.Fail "timed out") @>
-            match recording.Unobserved with
-            | [ None, reported ] -> test <@ obj.ReferenceEquals(reported, defect) @>
-            | other -> failwithf "Expected exactly one interop defect, got %A" other
+        // As in race, the loser's defect is consumed: it becomes the failure, beside the timeout's own error.
+        match race, result with
+        | true, Exit.Failure(Cause.Die reported) -> test <@ obj.ReferenceEquals(reported, defect) @>
+        | false, Exit.Failure(Cause.Both(Cause.Fail "timed out", Cause.Die reported)) ->
+            test <@ obj.ReferenceEquals(reported, defect) @>
+        | _, other -> failwithf "Expected the consumed loser defect, got %A" other
+
+        test <@ recording.Unobserved = [] @>
 
     [<Fact>]
-    let ``Timeout loser defect is reported without fiber metadata`` () =
+    let ``Timeout loser defect is returned and not observer-reported`` () =
         let recording = Recording()
 
-        let result =
+        let timedOut =
             dieOnCancel "timeout loser"
             |> Flow.timeout (TimeSpan.FromMilliseconds 20.0) "timed out"
             |> Flow.withFiberObserver recording.Observer
             |> Flow.runSync ()
 
-        test <@ result = Exit.Failure(Cause.Fail "timed out") @>
+        let fallback =
+            dieOnCancel "timeout loser"
+            |> Flow.map (fun () -> 1)
+            |> Flow.timeoutToOk (TimeSpan.FromMilliseconds 20.0) 0
+            |> Flow.withFiberObserver recording.Observer
+            |> Flow.runSync ()
 
-        match recording.Unobserved with
-        | [ None, defect ] -> test <@ defect.Message = "timeout loser" @>
-        | other -> failwithf "Expected one unobserved defect without metadata, got %A" other
+        match timedOut, fallback with
+        | Exit.Failure(Cause.Both(Cause.Fail "timed out", Cause.Die first)), Exit.Failure(Cause.Die second) ->
+            test <@ first.Message = "timeout loser" && second.Message = "timeout loser" @>
+        | other -> failwithf "Expected the loser defect in both results, got %A" other
+
+        test <@ recording.Unobserved = [] @>
 
     [<Fact>]
     let ``Race loser defect is returned and not observer-reported`` () =
