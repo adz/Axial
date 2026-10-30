@@ -212,6 +212,7 @@ module FlowEndpoint =
     /// <c>OperationCanceledException</c>, and compound typed-only causes are rejected rather than reduced to an arbitrary
     /// failure. GenHTTP does not supply a request cancellation token through this adapter.
     /// </remarks>
+    /// <param name="options">Optional log sink; None leaves the runtime default unchanged.</param>
     /// <param name="getAppEnvironment">Constructs or resolves the explicit application environment for the current request.</param>
     /// <param name="mapApplicationError">Maps one expected application failure to a GenHTTP response plan.</param>
     /// <param name="workflow">The complete endpoint Flow to execute.</param>
@@ -223,7 +224,7 @@ module FlowEndpoint =
     /// </code>
     /// </example>
     let flowEndpointWithOptions
-        (_options: EndpointOptions)
+        (options: EndpointOptions)
         (getAppEnvironment: IRequest -> 'app)
         (mapApplicationError: 'error -> HttpResponse)
         (workflow: Flow<HttpEndpointEnv<'app>, EndpointError<'error>, HttpResponse>)
@@ -235,7 +236,11 @@ module FlowEndpoint =
                         { App = getAppEnvironment request
                           Request = request }
 
-                    let! exit = workflow.StartAsValueTask(environment).AsTask()
+                    let hosted =
+                        match options.LogSink with
+                        | Some sink -> workflow |> Flow.withLogSink sink
+                        | None -> workflow
+                    let! exit = hosted.StartAsValueTask(environment).AsTask()
 
                     match exit with
                     | Exit.Success (HttpResponse respond) -> return respond request

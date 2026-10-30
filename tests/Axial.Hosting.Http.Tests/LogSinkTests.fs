@@ -16,6 +16,8 @@ let ``ASP endpoint installs a per request logger inherited by forks`` () = task 
     use services = ServiceCollection().AddSingleton<ILoggerFactory>(factory).BuildServiceProvider()
     let context = DefaultHttpContext()
     context.RequestServices <- services
+    use requestScope = factory.CreateLogger("request").BeginScope(dict ["asp.scope", box "ambient"])
+    let mutable disabledEnabled = true
     let local = FiberLocal.named "job" "unset"
     let error = InvalidOperationException("endpoint-error")
     let source: Flow<Axial.Hosting.AspNetCore.HttpEndpointEnv<unit>, Axial.Hosting.AspNetCore.EndpointError<string>, IResult> =
@@ -26,10 +28,12 @@ let ``ASP endpoint installs a per request logger inherited by forks`` () = task 
             do! Fiber.join child
             return Results.NoContent()
         }) |> Flow.annotate "request" "req-2" |> FiberLocal.locally "job-2" local
+           |> Flow.mapLogSink (fun sink -> disabledEnabled <- sink.IsEnabled Axial.LogLevel.Debug; sink)
     let endpoint = Axial.Hosting.AspNetCore.FlowEndpoint.flowEndpoint (fun _ -> ()) Results.BadRequest source
     let! _ = endpoint.Invoke context
     let entries = provider.Entries
     Assert.Equal(2, entries.Length)
+    Assert.False(disabledEnabled)
     Assert.Equal("Axial.Endpoint", entries.[0].Category)
     Assert.Equal(Microsoft.Extensions.Logging.LogLevel.Information, entries.[0].Level)
     Assert.Equal("request-message", entries.[0].Message)
@@ -38,6 +42,7 @@ let ``ASP endpoint installs a per request logger inherited by forks`` () = task 
     for entry in entries do
         Assert.Equal(box "req-2", entry.Scope.["request"])
         Assert.Equal(box "job-2", entry.Scope.["job"])
+        Assert.Equal(box "ambient", entry.Scope.["asp.scope"])
 }
 
 [<Fact>]
@@ -62,6 +67,7 @@ let ``GenHTTP endpoint installs its optional sink and forks inherit it`` () = ta
     Assert.Same(stop, thrown)
     let entries = log.Entries
     Assert.Equal(2, entries.Count)
+    Assert.False(sink.IsEnabled Axial.LogLevel.Debug)
     Assert.Equal(Axial.LogLevel.Information, entries.[0].Level)
     Assert.Equal("request-message", entries.[0].Message)
     Assert.Equal(Axial.LogLevel.Error, entries.[1].Level)
@@ -70,5 +76,67 @@ let ``GenHTTP endpoint installs its optional sink and forks inherit it`` () = ta
     for entry in entries do
         Assert.Equal("req-3", entry.Annotations.["request"])
         Assert.Contains(("job", box "job-3"), entry.Locals)
+}
+
+[<Theory>]
+[<InlineData(false)>]
+[<InlineData(true)>]
+let ``ASP endpoint option replaces or silences and scoped overrides win`` silent = task {
+    use factory = LoggerFactory.Create(fun _ -> ())
+    use services = ServiceCollection().AddSingleton<ILoggerFactory>(factory).BuildServiceProvider()
+    let context = DefaultHttpContext()
+    context.RequestServices <- services
+    let outer = Log.memory ()
+    let inner = Log.memory ()
+    let sink = if silent then LogSink.none else LogSink.minLevel Axial.LogLevel.Information outer
+    let source: Flow<Axial.Hosting.AspNetCore.HttpEndpointEnv<unit>, Axial.Hosting.AspNetCore.EndpointError<string>, IResult> = flow {
+        do! Log.debug "disabled"
+        do! Log.info "outer"
+        let! child = Log.info "inner" |> Flow.withLogSink inner |> Flow.fork
+        do! Fiber.join child
+        return Results.NoContent()
+    }
+    let endpoint = Axial.Hosting.AspNetCore.FlowEndpoint.flowEndpointWithOptions
+                       { LogSink = Some(fun supplied -> Assert.Same(factory, supplied); sink) }
+                       (fun _ -> ()) Results.BadRequest source
+    let! _ = endpoint.Invoke context
+    Assert.Equal((if silent then 0 else 1), outer.Entries.Count)
+    Assert.Equal("inner", Assert.Single(inner.Entries).Message)
+}
+
+[<Fact>]
+let ``ASP endpoint no installation option needs no logger factory`` () = task {
+    let memory = Log.memory ()
+    let source: Flow<Axial.Hosting.AspNetCore.HttpEndpointEnv<unit>, Axial.Hosting.AspNetCore.EndpointError<string>, IResult> =
+        (flow {
+            do! Log.info "manual"
+            return Results.NoContent()
+        }) |> Flow.withLogSink memory
+    let endpoint = Axial.Hosting.AspNetCore.FlowEndpoint.flowEndpointWithOptions
+                       { LogSink = None } (fun _ -> ()) Results.BadRequest source
+    let! _ = endpoint.Invoke(DefaultHttpContext())
+    Assert.Equal("manual", Assert.Single(memory.Entries).Message)
+}
+
+[<Theory>]
+[<InlineData(false)>]
+[<InlineData(true)>]
+let ``GenHTTP scoped sink survives default and disabled endpoint policies`` disabled = task {
+    let inner = Log.memory ()
+    let stop = InvalidOperationException("stop-before-response")
+    let source: Flow<Axial.Hosting.GenHttp.HttpEndpointEnv<unit>, Axial.Hosting.GenHttp.EndpointError<string>, Axial.Hosting.GenHttp.HttpResponse> =
+        (flow {
+            do! Log.info "manual"
+            return! Flow.die stop
+        }) |> Flow.withLogSink inner
+    Assert.True(Option.isNone Axial.Hosting.GenHttp.EndpointOptions.Default.LogSink)
+    let mapError = Axial.Hosting.GenHttp.Response.text GenHTTP.Api.Protocol.ResponseStatus.BadRequest
+    let endpoint =
+        if disabled then Axial.Hosting.GenHttp.FlowEndpoint.flowEndpointWithOptions
+                             { LogSink = Some LogSink.none } (fun _ -> ()) mapError source
+        else Axial.Hosting.GenHttp.FlowEndpoint.flowEndpoint (fun _ -> ()) mapError source
+    let! thrown = Assert.ThrowsAsync<InvalidOperationException>(Func<Task>(fun () -> endpoint.Invoke(Unchecked.defaultof<_>).AsTask() :> Task))
+    Assert.Same(stop, thrown)
+    Assert.Equal("manual", Assert.Single(inner.Entries).Message)
 }
 

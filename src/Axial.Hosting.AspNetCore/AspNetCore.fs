@@ -6,6 +6,9 @@ open System
 open System.Text.Json
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
+open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Logging
+open Axial.Hosting
 open Reified.Schema.Http
 open Axial
 
@@ -221,6 +224,11 @@ module Response =
     /// <example><code>return Response.native (Results.Redirect "/login")</code></example>
     let native (result: IResult) : IResult = result
 
+/// <summary>Per-request logging policy. None leaves the runtime default; LogSink.none disables logging.</summary>
+type EndpointOptions =
+    { LogSink: (ILoggerFactory -> ILogSink) option }
+    static member Default = { LogSink = Some(MicrosoftLogging.fromFactory "Axial.Endpoint") }
+
 [<AutoOpen>]
 module FlowEndpoint =
     let private trySingleFailure (cause: Cause<'error>) : 'error option =
@@ -239,6 +247,7 @@ module FlowEndpoint =
     /// <c>OperationCanceledException</c> with <c>HttpContext.RequestAborted</c>, and compound typed-only causes are rejected
     /// rather than reduced to an arbitrary failure.
     /// </remarks>
+    /// <param name="options">Per-request log-sink policy. Default uses the Axial.Endpoint Microsoft logging category.</param>
     /// <param name="getAppEnvironment">Constructs or resolves the explicit application environment for the current request.</param>
     /// <param name="mapApplicationError">Maps one expected application failure to an ASP.NET result.</param>
     /// <param name="workflow">The complete endpoint Flow to execute.</param>
@@ -249,7 +258,8 @@ module FlowEndpoint =
     /// app.MapPost("/signups", endpoint signupEndpoint)
     /// </code>
     /// </example>
-    let flowEndpoint
+    let flowEndpointWithOptions
+        (options: EndpointOptions)
         (getAppEnvironment: HttpContext -> 'app)
         (mapApplicationError: 'error -> IResult)
         (workflow: Flow<HttpEndpointEnv<'app>, EndpointError<'error>, IResult>)
@@ -260,7 +270,13 @@ module FlowEndpoint =
                     { App = getAppEnvironment context
                       Request = context.Request }
 
-                let! exit = workflow.StartAsTask(environment, cancellationToken = context.RequestAborted)
+                let hosted =
+                    match options.LogSink with
+                    | Some createSink ->
+                        let factory = context.RequestServices.GetRequiredService<ILoggerFactory>()
+                        workflow |> Flow.withLogSink (createSink factory)
+                    | None -> workflow
+                let! exit = hosted.StartAsTask(environment, cancellationToken = context.RequestAborted)
 
                 match exit with
                 | Exit.Success response -> return response
@@ -282,3 +298,7 @@ module FlowEndpoint =
                             let rendered = cause.ToString()
                             return raise (InvalidOperationException($"Endpoint Flow failed with an unsupported composite cause: {rendered}"))
             })
+
+    /// <summary>Runs a request with Microsoft logging in category Axial.Endpoint. Inner scoped sinks override it.</summary>
+    let flowEndpoint getAppEnvironment mapApplicationError workflow =
+        flowEndpointWithOptions EndpointOptions.Default getAppEnvironment mapApplicationError workflow
