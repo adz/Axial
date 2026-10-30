@@ -49,7 +49,8 @@ module NodeEnvironment =
 /// <summary>Console-error logging for Node applications.</summary>
 [<RequireQualifiedAccess>]
 module NodeLogging =
-    [<Emit("console.error($0, $1, $2, $3)")>]
+    // Keep percent directives in user messages literal when metadata follows them.
+    [<Emit("console.error('%s', $0, $1, $2, $3)")>]
     let private write (_message: string) (_error: exn) (_annotations: (string * string) array) (_locals: (string * obj) array) : unit = jsNative
 
     /// <summary>Writes enabled entries to stderr with level, exception and metadata snapshots.</summary>

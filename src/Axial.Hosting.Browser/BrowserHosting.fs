@@ -12,7 +12,8 @@ type AbortSignal = interface end
 /// <summary>Browser console logging with a minimum level.</summary>
 [<RequireQualifiedAccess>]
 module BrowserLogging =
-    [<Emit("console[$0]($1, $2, $3, $4)")>]
+    // Keep percent directives in user messages literal when metadata follows them.
+    [<Emit("console[$0]('%s', $1, $2, $3, $4)")>]
     let private write (_method: string) (_message: string) (_error: exn) (_annotations: (string * string) array) (_locals: (string * obj) array) : unit = jsNative
 
     /// <summary>Writes enabled entries to console.debug/info/warn/error with exception and metadata snapshots.</summary>
