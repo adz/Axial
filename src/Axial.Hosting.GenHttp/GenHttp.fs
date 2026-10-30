@@ -181,6 +181,11 @@ module Response =
     let native (respond: IRequest -> IResponse) : HttpResponse =
         HttpResponse respond
 
+/// <summary>Optional request log sink. None leaves the runtime default; LogSink.none disables logging.</summary>
+type EndpointOptions =
+    { LogSink: ILogSink option }
+    static member Default = { LogSink = None }
+
 [<AutoOpen>]
 module FlowEndpoint =
     let private trySingleFailure (cause: Cause<'error>) : 'error option =
@@ -217,7 +222,8 @@ module FlowEndpoint =
     /// Inline.Create().Post("/signups", endpoint signupEndpoint)
     /// </code>
     /// </example>
-    let flowEndpoint
+    let flowEndpointWithOptions
+        (_options: EndpointOptions)
         (getAppEnvironment: IRequest -> 'app)
         (mapApplicationError: 'error -> HttpResponse)
         (workflow: Flow<HttpEndpointEnv<'app>, EndpointError<'error>, HttpResponse>)
@@ -254,3 +260,7 @@ module FlowEndpoint =
                                     | EndpointError.ApplicationError _ -> "application error") cause
                                 return raise (InvalidOperationException($"Endpoint Flow failed with an unsupported composite cause: {rendered}"))
                 }))
+
+    /// <summary>Runs a request with the runtime default log sink unless the flow installs its own.</summary>
+    let flowEndpoint getAppEnvironment mapApplicationError workflow =
+        flowEndpointWithOptions EndpointOptions.Default getAppEnvironment mapApplicationError workflow
