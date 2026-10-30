@@ -5,13 +5,12 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <GenerateProgramFile>false</GenerateProgramFile>
     <IsPackable>false</IsPackable>
-    <DefineConstants Condition="'$(AxialCoreOnly)' == 'true'">$(DefineConstants);AXIAL_CORE_ONLY</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Fable.Core" Version="4.3.0" />
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
     <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Process\Axial.Process.fsproj" Condition="'$(AxialCoreOnly)' != 'true'" />
+    <ProjectReference Include="..\..\src\Axial.Process\Axial.Process.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Harness.fs" />
@@ -20,8 +19,7 @@
     <Compile Include="QueueTests.fs" />
     <Compile Include="RunOnTests.fs" />
   </ItemGroup>
-  <!-- Core-only validation leaves the Process-dependent torture graph to the full verification. -->
-  <ItemGroup Condition="'$(AxialCoreOnly)' != 'true'">
+  <ItemGroup>
     <!-- The torture scenarios from examples/Axial.TortureTest, run at a reduced size on Node. -->
     <Compile Include="../../examples/Axial.TortureTest/Scenario.fs" Link="TortureTest/Scenario.fs" />
     <Compile Include="../../examples/Axial.TortureTest/Pipeline.fs" Link="TortureTest/Pipeline.fs" />

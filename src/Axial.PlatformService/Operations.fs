@@ -114,21 +114,11 @@ module Clock =
 #endif
             }
 
-#if !FABLE_COMPILER
     /// <summary>Creates a manual clock starting at the supplied instant. Sleeps require explicit advancement.</summary>
     let ``fixed`` (utcNow: DateTimeOffset) = ManualClock utcNow
 
     /// <summary>Creates a manual clock starting at the supplied instant.</summary>
     let fromValue (utcNow: DateTimeOffset) : IClock = ``fixed`` utcNow
-#else
-    /// <summary>Creates a deterministic clock that always returns the supplied instant; measured durations are zero.</summary>
-    let fromValue (utcNow: DateTimeOffset) : IClock =
-        { new IClock with
-            member _.UtcNow() = utcNow
-            member _.Elapsed() = TimeSpan.Zero
-            member _.Sleep(_, _) = raise (InvalidOperationException("A fixed clock cannot sleep; use a manual clock for timed flows."))
-        }
-#endif
 
 #if !FABLE_COMPILER && !NETSTANDARD2_1
     /// <summary>Creates an Axial clock backed by a .NET <see cref="T:System.TimeProvider" />.</summary>

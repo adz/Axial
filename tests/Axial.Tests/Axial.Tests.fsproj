@@ -38,8 +38,8 @@
     <Compile Include="WorkflowQueueTests.fs" />
     <Compile Include="WorkflowHubTests.fs" />
     <Compile Include="WorkflowSubscriptionRefTests.fs" />
-    <Compile Include="TortureTests.fs" Condition="'$(AxialCoreOnly)' != 'true'" />
-    <Compile Include="TortureCoverageTests.fs" Condition="'$(AxialCoreOnly)' != 'true'" />
+    <Compile Include="TortureTests.fs" />
+    <Compile Include="TortureCoverageTests.fs" />
     <Compile Include="MemoryRetentionTests.fs" />
     <Compile Include="WorkflowStreamTests.fs" />
     <Compile Include="ReissueTests.fs" />
@@ -61,7 +61,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
     <!-- The phased core migration can validate without the Process-dependent torture graph. -->
-    <ProjectReference Include="..\..\examples\Axial.TortureTest\Axial.TortureTest.fsproj" Condition="'$(AxialCoreOnly)' != 'true'" />
+    <ProjectReference Include="..\..\examples\Axial.TortureTest\Axial.TortureTest.fsproj" />
     <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
   </ItemGroup>
 

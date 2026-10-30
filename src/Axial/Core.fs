@@ -39,6 +39,58 @@ type ManualClock(initialUtc: DateTimeOffset) =
                 | Exit.Failure Cause.Interrupt -> raise (OperationCanceledException(cancellationToken))
                 | Exit.Failure cause -> failwith (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Manual clock sleep failed: {0}", cause))
             } :> Task
+#else
+/// A single-threaded JavaScript manual clock; sleeps move only on explicit advancement.
+type ManualClock(initialUtc: DateTimeOffset) =
+    let mutable now = TimeSpan.Zero
+    let mutable sequence = 0L
+    let sleepers = System.Collections.Generic.Dictionary<int64, TimeSpan * (unit -> unit)>()
+    let advanceTo target =
+        now <- max now target
+        let ready =
+            sleepers
+            |> Seq.filter (fun entry -> fst entry.Value <= now)
+            |> Seq.sortBy (fun entry -> fst entry.Value, entry.Key)
+            |> Seq.toArray
+        for entry in ready do sleepers.Remove entry.Key |> ignore
+        for entry in ready do snd entry.Value ()
+    member _.Sleepers = sleepers.Count
+    member _.NextDeadline =
+        if sleepers.Count = 0 then None else Some(sleepers.Values |> Seq.map fst |> Seq.min)
+    member _.LastDeadline =
+        if sleepers.Count = 0 then None else Some(sleepers.Values |> Seq.map fst |> Seq.max)
+    member _.AdvanceBy(duration: TimeSpan) =
+        if duration < TimeSpan.Zero then invalidArg (nameof duration) "Clock cannot move backwards."
+        advanceTo (now + duration)
+    member this.AdvanceToNextDeadline() =
+        match this.NextDeadline with
+        | Some deadline -> advanceTo deadline; true
+        | None -> false
+    interface IClock with
+        member _.UtcNow() = initialUtc + now
+        member _.Elapsed() = now
+        member _.Sleep(delay, token) =
+            let pending =
+                Fable.Core.JS.Constructors.Promise.Create<unit>(fun resolve reject ->
+                    if token.IsCancellationRequested then reject (box (OperationCanceledException()))
+                    elif delay <= TimeSpan.Zero then resolve (box ())
+                    else
+                        let id = sequence
+                        sequence <- sequence + 1L
+                        let mutable registration: IDisposable option = None
+                        let mutable settled = false
+                        let finish canceled =
+                            if not settled then
+                                settled <- true
+                                sleepers.Remove id |> ignore
+                                registration |> Option.iter _.Dispose()
+                                if canceled then reject (box (OperationCanceledException())) else resolve (box ())
+                        sleepers.Add(id, (now + delay, fun () -> finish false))
+                        if not (isNull (box token)) then
+                            let registered = unbox<IDisposable> (box (token.Register(fun () -> finish true)))
+                            registration <- Some registered
+                            if settled then registered.Dispose())
+            unbox<Task> pending
 #endif
 
 [<RequireQualifiedAccess>]
