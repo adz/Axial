@@ -95,5 +95,5 @@ let runAxialValue environment (workflow: Flow<'env, exn, 'value>) =
     }
 
 let runAxial (workflow: Flow<unit, exn, unit>) = runAxialValue () workflow
-let runAxialClock (workflow: Flow<ClockEnvironment, exn, unit>) =
-    runAxialValue Axial.Comparative.Axial.Common.clockEnvironment workflow
+let runAxialClock (workflow: Flow<unit, exn, unit>) =
+    workflow |> Flow.withClock Axial.Comparative.Axial.Common.clock |> Flow.withLogSink LogSink.none |> runAxialValue ()

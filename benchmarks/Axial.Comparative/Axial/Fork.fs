@@ -3,15 +3,15 @@ namespace Axial.Comparative.Axial
 open Axial
 [<RequireQualifiedAccess>]
 module internal Fork =
-    let effect count : Flow<ClockEnvironment, exn, unit> =
+    let effect count : Flow<unit, exn, unit> =
         Flow.delay (fun () ->
             flow {
                 let items = seq { 1 .. count } |> Seq.toArray
                 let mutable fibers = []
                 for _ in items do
-                    // Fork needs IHasClock for lifecycle timestamps and its scheduler time source.
-                    let child: Flow<ClockEnvironment, exn, unit> = Flow.succeed ()
-                    let start: Flow<ClockEnvironment, exn, Fiber<exn, unit>> = Flow.fork child
+                    // The benchmark runner installs its clock around the whole workflow.
+                    let child: Flow<unit, exn, unit> = Flow.succeed ()
+                    let start: Flow<unit, exn, Fiber<exn, unit>> = Flow.fork child
                     let! fiber = start
                     fibers <- fiber :: fibers
                 for fiber in List.rev fibers do

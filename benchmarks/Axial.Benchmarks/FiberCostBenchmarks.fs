@@ -23,12 +23,12 @@ type FiberCostCase =
 [<IterationCount(8)>]
 [<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
 type FiberCostBenchmarks() =
-    let environment = ClockEnvironment(ManualClock(DateTimeOffset.UnixEpoch))
-    let trivial value : Flow<ClockEnvironment, string, int> = Flow.ok value
+    let clock = ManualClock(DateTimeOffset.UnixEpoch)
+    let trivial value : Flow<unit, string, int> = Flow.ok value
     let values8 = [ 1..8 ]
     let values64 = [ 1..64 ]
 
-    let resource : Resource<ClockEnvironment, string, int> =
+    let resource : Resource<unit, string, int> =
         Resource.create (trivial 1) (fun _ -> Flow.succeed ())
 
     let forkJoin =
@@ -56,8 +56,9 @@ type FiberCostBenchmarks() =
 
     let runOnThreadPool = trivial 1 |> Flow.runOn RunOn.ThreadPool
 
-    let run (source: Flow<ClockEnvironment, string, int>) =
-        source.RunSynchronously(environment) |> Shared.consumeExit
+    let run (source: Flow<unit, string, int>) =
+        source |> Flow.withClock clock |> Flow.withLogSink LogSink.none
+        |> fun current -> current.RunSynchronously(()) |> Shared.consumeExit
 
     [<ParamsAllValues>]
     member val Case = FiberCostCase.ForkJoin with get, set

@@ -15,7 +15,7 @@ open System
 type FibonacciBenchmark() =
     let mutable runtime = Unchecked.defaultof<_>
     let mutable effect = Unchecked.defaultof<_>
-    let mutable axialEffect: Flow<ClockEnvironment, exn, unit> = Unchecked.defaultof<_>
+    let mutable axialEffect: Flow<unit, exn, unit> = Unchecked.defaultof<_>
 
     member _.Ns =
         RuntimeParam.intParams "FIO_BENCH_FIBONACCI_N" [| 25; 30 |]

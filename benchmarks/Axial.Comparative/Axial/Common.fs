@@ -14,7 +14,7 @@ type private BenchmarkClock() =
 
 [<RequireQualifiedAccess>]
 module internal Common =
-    let clockEnvironment = ClockEnvironment(BenchmarkClock())
+    let clock: IClock = BenchmarkClock()
     let put value queue = Queue.offer value queue |> Flow.ignore
     let all (flows: Flow<unit, exn, unit> list) = Flow.sequencePar flows |> Flow.ignore
     let par values action =

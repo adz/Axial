@@ -4,8 +4,8 @@ open System
 open Axial
 [<RequireQualifiedAccess>]
 module internal Trapezoidal =
-    let value workers points : Flow<ClockEnvironment, exn, float> =
-        let inner: Flow<ClockEnvironment, exn, float> = flow {
+    let value workers points : Flow<unit, exn, float> =
+        let inner: Flow<unit, exn, float> = flow {
             let h = 1.0 / float points
             let chunk = points / workers
             let partial worker =
@@ -21,8 +21,8 @@ module internal Trapezoidal =
 
             let mutable fibers = []
             for worker in 0 .. workers - 1 do
-                // Fork needs IHasClock for lifecycle timestamps and its scheduler time source.
-                let start: Flow<ClockEnvironment, exn, Fiber<exn, float>> = Flow.fork (partial worker)
+                // The benchmark runner installs its clock around the whole workflow.
+                let start: Flow<unit, exn, Fiber<exn, float>> = Flow.fork (partial worker)
                 let! fiber = start
                 fibers <- fiber :: fibers
 

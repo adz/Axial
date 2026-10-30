@@ -346,9 +346,9 @@ type RunOnCpuBenchmarks() =
             value <- (value + index) % 1_000_003
         value
 
-    let environment = ClockEnvironment(ManualClock(DateTimeOffset.UnixEpoch))
+    let environment = ()
 
-    let branches () : Flow<ClockEnvironment, string, int> list =
+    let branches () : Flow<unit, string, int> list =
         [ for seed in 1..sliceCount -> Flow.delay (fun () -> Flow.ok (work seed)) ]
 
     let run source = source |> Flow.map List.sum |> fun current -> current.RunSynchronously(environment) |> Shared.consumeExit
@@ -448,13 +448,13 @@ type BoundedTraversalBenchmarks() =
 [<IterationCount(5)>]
 [<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
 type RunOnOverheadBenchmarks() =
-    let environment = ClockEnvironment(ManualClock(DateTimeOffset.UnixEpoch))
-    let trivial : Flow<ClockEnvironment, string, int> = Flow.ok 1
+    let environment = ()
+    let trivial : Flow<unit, string, int> = Flow.ok 1
     let onPool = trivial |> Flow.runOn RunOn.ThreadPool
     let adaptiveInline =
         trivial
         |> Flow.runOn (RunOn.adaptiveWith { Threshold = TimeSpan.MaxValue; Samples = 1 })
-    let forkJoin : Flow<ClockEnvironment, string, int> =
+    let forkJoin : Flow<unit, string, int> =
         flow {
             let! fiber = Flow.fork trivial
             return! Fiber.join fiber
@@ -682,9 +682,7 @@ type InteropCompletionBenchmarks() =
 type ProcessExecutionBenchmarks() =
     let environment =
         { new IHasProcess with
-            member _.Process = Process.live Clock.live FileSystem.live Console.live
-          interface IHasClock with
-            member _.Clock = Clock.live }
+            member _.Process = Process.live Clock.live FileSystem.live Console.live }
 
     let start workflow = Flow.startTask environment workflow
 
