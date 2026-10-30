@@ -358,6 +358,68 @@ module WorkflowErrorTests =
         test <@ result = Exit.Failure(Cause.Fail "mapped") @>
 
     [<Fact>]
+    let ``flow try finally runs the compensation when the body throws`` () =
+        let defect = InvalidOperationException "body threw"
+        let mutable synchronousRuns = 0
+        let mutable asyncRuns = 0
+
+        let synchronous : Exit<int, string> =
+            flow {
+                try
+                    return raise defect
+                finally
+                    synchronousRuns <- synchronousRuns + 1
+            }
+            |> Flow.runSync ()
+
+        let afterHop : Exit<int, string> =
+            flow {
+                try
+                    do! Flow.fromTask (fun _ -> task { do! Task.Yield() })
+                    return raise defect
+                finally
+                    asyncRuns <- asyncRuns + 1
+            }
+            |> Flow.runSync ()
+
+        test <@ synchronous = Exit.Failure(Cause.Die defect) @>
+        test <@ afterHop = Exit.Failure(Cause.Die defect) @>
+        test <@ synchronousRuns = 1 @>
+        test <@ asyncRuns = 1 @>
+
+    [<Fact>]
+    let ``flow use disposes the resource when the body throws`` () =
+        let defect = InvalidOperationException "body threw"
+        let mutable disposed = 0
+        let resource () = { new IDisposable with member _.Dispose() = disposed <- disposed + 1 }
+
+        let result : Exit<int, string> =
+            flow {
+                use _ = resource ()
+                return raise defect
+            }
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure(Cause.Die defect) @>
+        test <@ disposed = 1 @>
+
+    [<Fact>]
+    let ``flow try with catches an exception thrown after an async hop`` () =
+        let defect = InvalidOperationException "after hop"
+
+        let result : Exit<string, string> =
+            flow {
+                try
+                    do! Flow.fromTask (fun _ -> task { do! Task.Yield() })
+                    return raise defect
+                with error ->
+                    return $"caught {error.Message}"
+            }
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Success "caught after hop" @>
+
+    [<Fact>]
     let ``Flow catch converts simple defects and preserves typed failures and interruptions`` () =
         let defect = InvalidOperationException "boom"
         let mapper (ex: exn) = $"caught:{ex.Message}"
