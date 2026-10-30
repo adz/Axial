@@ -49,7 +49,17 @@ module NodeEnvironment =
 /// <summary>Console-error logging for Node applications.</summary>
 [<RequireQualifiedAccess>]
 module NodeLogging =
-    let sink (_minimum: LogLevel) : ILogSink = LogSink.none
+    [<Emit("console.error($0, $1, $2, $3)")>]
+    let private write (_message: string) (_error: exn) (_annotations: (string * string) array) (_locals: (string * obj) array) : unit = jsNative
+
+    /// <summary>Writes enabled entries to stderr with level, exception and metadata snapshots.</summary>
+    let sink (minimum: LogLevel) : ILogSink =
+        { new ILogSink with
+            member _.IsEnabled level = level >= minimum
+            member _.Write entry =
+                if entry.Level >= minimum then
+                    write $"{entry.Level}: {entry.Message}" (Option.toObj entry.Error)
+                        (Map.toArray entry.Annotations) (List.toArray entry.Locals) }
 
 /// <summary>Root logging policy. None leaves the runtime default; LogSink.none silences the host.</summary>
 type NodeAppOptions =
@@ -90,13 +100,14 @@ module NodeApp =
     /// Starts a Node application, translating SIGINT and SIGTERM into coordinated stop and publishing its exit code.
     /// </summary>
     let startWithOptions
-        (_options: NodeAppOptions)
+        (options: NodeAppOptions)
         (describeError: 'error -> string)
         (environment: 'env)
         (application: Flow<'env, 'error, 'value>)
         : AppHandle<'error, 'value> =
         NodeEnvironment.ensureNode ()
-        let running = App.start environment application
+        let hosted = match options.LogSink with Some sink -> Flow.withLogSink sink application | None -> application
+        let running = App.start environment hosted
         let mutable signalExitCode: int option = None
 
         let requestStop () =
@@ -143,10 +154,15 @@ module NodeApp =
     let start describeError environment application =
         startWithOptions NodeAppOptions.Default describeError environment application
 
-    /// <summary>Starts a Node application and waits for its final exit.</summary>
-    let run
+    /// <summary>Starts a Node application with explicit logging policy and waits for its final exit.</summary>
+    let runWithOptions
+        (options: NodeAppOptions)
         (describeError: 'error -> string)
         (environment: 'env)
         (application: Flow<'env, 'error, 'value>)
         : Async<Exit<'value, 'error>> =
-        (start describeError environment application).Completion
+        (startWithOptions options describeError environment application).Completion
+
+    /// <summary>Starts a Node application with the default console-error sink and waits for its final exit.</summary>
+    let run describeError environment application =
+        runWithOptions NodeAppOptions.Default describeError environment application

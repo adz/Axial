@@ -12,7 +12,23 @@ type AbortSignal = interface end
 /// <summary>Browser console logging with a minimum level.</summary>
 [<RequireQualifiedAccess>]
 module BrowserLogging =
-    let sink (_minimum: LogLevel) : ILogSink = LogSink.none
+    [<Emit("console[$0]($1, $2, $3, $4)")>]
+    let private write (_method: string) (_message: string) (_error: exn) (_annotations: (string * string) array) (_locals: (string * obj) array) : unit = jsNative
+
+    /// <summary>Writes enabled entries to console.debug/info/warn/error with exception and metadata snapshots.</summary>
+    let sink (minimum: LogLevel) : ILogSink =
+        { new ILogSink with
+            member _.IsEnabled level = level >= minimum
+            member _.Write entry =
+                if entry.Level >= minimum then
+                    let methodName =
+                        match entry.Level with
+                        | LogLevel.Trace | LogLevel.Debug -> "debug"
+                        | LogLevel.Information -> "info"
+                        | LogLevel.Warning -> "warn"
+                        | LogLevel.Error | LogLevel.Critical -> "error"
+                    write methodName $"{entry.Level}: {entry.Message}" (Option.toObj entry.Error)
+                        (Map.toArray entry.Annotations) (List.toArray entry.Locals) }
 
 /// <summary>Root logging policy. None leaves the runtime default; LogSink.none silences the host.</summary>
 type BrowserAppOptions =
@@ -39,16 +55,17 @@ module BrowserApp =
     let private removeAbort (_signal: AbortSignal) (_handler: unit -> unit) : unit = jsNative
     /// <summary>Starts an application owned explicitly by the calling UI or browser module.</summary>
     let mountWithOptions
-        (_options: BrowserAppOptions)
+        (options: BrowserAppOptions)
         (environment: 'env)
         (application: Flow<'env, 'error, 'value>)
         : AppHandle<'error, 'value> =
         ensureBrowser ()
-        App.start environment application
+        let hosted = match options.LogSink with Some sink -> Flow.withLogSink sink application | None -> application
+        App.start environment hosted
 
     /// <summary>Starts an application and translates an AbortSignal into coordinated application stop.</summary>
     let startWithSignalOptions
-        (_options: BrowserAppOptions)
+        (options: BrowserAppOptions)
         (signal: AbortSignal)
         (environment: 'env)
         (application: Flow<'env, 'error, 'value>)
@@ -56,7 +73,8 @@ module BrowserApp =
         ensureBrowser ()
         if isNull signal then nullArg (nameof signal)
 
-        let running = App.start environment application
+        let hosted = match options.LogSink with Some sink -> Flow.withLogSink sink application | None -> application
+        let running = App.start environment hosted
 
         let requestStop () =
             async {

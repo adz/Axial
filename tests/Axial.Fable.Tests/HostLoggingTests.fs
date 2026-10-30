@@ -85,4 +85,31 @@ let tests =
                            equal "no console entry built for disabled levels" 0 (calls state).Length
                            equal "inner scoped sink wins" ["inner"] (memory.Entries |> Seq.map _.Message |> Seq.toList) ]
               finally restore state
+          })
+          test ("host logging " + label kind + " routes every level") (flow {
+              let state = capture ()
+              try
+                  let sink = if kind = 0 then NodeLogging.sink LogLevel.Trace else BrowserLogging.sink LogLevel.Trace
+                  let source = [ Log.trace "trace"; Log.debug "debug"; Log.info "info"; Log.warning "warning"; Log.error "error"; Log.critical "critical" ] |> Flow.sequence |> Flow.ignore
+                  let completion =
+                      if kind = 0 then NodeApp.runWithOptions { LogSink = Some sink } Never.absurd () source
+                      else (startWithSink kind sink source).Completion
+                  let! _ = Flow.fromAsync completion
+                  let expected = if kind = 0 then List.replicate 6 "error" else ["debug"; "debug"; "info"; "warn"; "error"; "error"]
+                  return [ equal "console methods" expected (calls state |> Array.map fst |> Array.toList) ]
+              finally restore state
+          })
+          test ("host logging " + label kind + " can be silenced without hiding an inner sink") (flow {
+              let state = capture ()
+              try
+                  let memory = Log.memory ()
+                  let source = flow {
+                      do! Log.error "silenced"
+                      do! Log.info "inner" |> Flow.withLogSink memory
+                  }
+                  let running = startWithSink kind LogSink.none source
+                  let! _ = Flow.fromAsync running.Completion
+                  return [ equal "no console write" 0 (calls state).Length
+                           equal "inner sink wins" ["inner"] (memory.Entries |> Seq.map _.Message |> Seq.toList) ]
+              finally restore state
           }) ]
