@@ -30,7 +30,8 @@ lists the queue. Work on main.
   - Spec section 5. After T25b.
 - [ ] T27: Research richer effects: algebraic-effects style in F# (algeff) and language-ext v5 `Eff<RT,A>` runtime traits
   - Read both from source, write `dev-docs/current-ideas/richer-effects.md` comparing them with Platform/capabilities as
-    designed in T25. No implementation. Do after T25a so the comparison is against what actually shipped.
+    designed in T25. No implementation. Preliminary draft written; after T25a ships, re-check its section 5 against what
+    actually shipped, then remove this task.
 - [ ] T26: Spike: absorb FIO's continuation runtime (MIT) behind `Flow`-as-data, torture it with T23
   - Needs T23 first. Copy only the interpreter and scheduler, with FIO's licence in THIRD-PARTY-NOTICES, a source header naming
     the upstream commit, and bugs sent upstream. Design: `dev-docs/current-ideas/flow-as-data.md`.
