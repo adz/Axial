@@ -19,12 +19,8 @@ let run (round: Round) : Flow<unit, Never, Check list> =
     let mutable runs = 0
     let service =
         {new IProcess with
-            member _.Execute(specification,observe) = flow {
+            member _.Execute(_,observe) = flow {
                 runs <- runs+1
-                match specification.OnStarted with
-                | Some handler ->
-                    do! handler.Invoke(0, 1, "scripted", result.StartedAt, (fun _ -> async { return Ok () })) |> Flow.scoped |> Flow.widenError
-                | None -> ()
                 for item in input do
                     do! observe {Stage=0;ObservedChannel=OutputChannel.StdOut;OriginalChannel=OutputChannel.StdOut
                                  Text=string item;Timestamp=DateTimeOffset(1970,1,1,0,0,0,TimeSpan.Zero)}
@@ -46,7 +42,9 @@ let run (round: Round) : Flow<unit, Never, Check list> =
         let! converted = source() |> ProcessStream.toFlowStream |> FlowStream.runCollect |> observe
         let beforeZero = runs
         let! zero = source() |> ProcessStream.take 0 |> ProcessStream.runDrain |> observe
+#if !FABLE_COMPILER
         let callbackTime = DateTimeOffset(2001, 1, 1, 0, 0, 0, TimeSpan.Zero)
+        let callbackEnvironment = { Process = Process.test() :> IProcess }
         let callbackLog = Axial.PlatformService.Log.memory ()
         let observedTime = ref None
         let! callbackResult =
@@ -57,12 +55,15 @@ let run (round: Round) : Flow<unit, Never, Check list> =
                 do! Axial.PlatformService.Log.info "process-callback"
             })
             |> Process.toFlow
-            |> Flow.localEnv (fun () -> env)
+            |> Flow.localEnv (fun () -> callbackEnvironment)
             |> Flow.withClock (Axial.PlatformService.Clock.``fixed`` callbackTime)
             |> Flow.withLogSink callbackLog
             |> exitOf
+#endif
         return [
+#if !FABLE_COMPILER
             check "process callbacks inherit runtime clock and log sink without a new root" (match callbackResult with Exit.Success _ -> observedTime.Value = Some callbackTime && callbackLog.Entries.Count = 1 | _ -> false)
+#endif
             check "transforms preserve completion" (match collected with Exit.Success(values,ProcessCompletion.Completed _) -> values=List.filter(fun item -> item%2=0) input | _ -> false)
             check "pure fold agrees with input" (match folded with Exit.Success(sum,ProcessCompletion.Completed _) -> sum=List.sum input | _ -> false)
             check "drain completes" (match drained with Exit.Success(ProcessCompletion.Completed _) -> true | _ -> false)
