@@ -38,6 +38,7 @@ let ``ASP endpoint installs a per request logger inherited by forks`` () = task 
     Assert.Equal(Microsoft.Extensions.Logging.LogLevel.Information, entries.[0].Level)
     Assert.Equal("request-message", entries.[0].Message)
     Assert.Equal("child-message", entries.[1].Message)
+    Assert.Equal(Microsoft.Extensions.Logging.LogLevel.Error, entries.[1].Level)
     Assert.Same(error, entries.[1].Error.Value)
     for entry in entries do
         Assert.Equal(box "req-2", entry.Scope.["request"])
