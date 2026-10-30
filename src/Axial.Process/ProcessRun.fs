@@ -160,10 +160,9 @@ module internal ProcessRun =
         (specification: ProcessSpec)
         (observe: ProcessOutput -> Async<unit>)
         : Flow<unit, ProcessError, ProcessResult> =
-        let clockEnvironment = ()
         let observesOutput = not (obj.ReferenceEquals(observe, ProcessObserver.ignore))
 
-        let run : Flow<unit, ProcessError, ProcessResult> =
+        let run (caller: RuntimeContext) : Flow<unit, ProcessError, ProcessResult> =
             flow {
                 let commands = specification.Commands |> List.toArray
                 let stdoutLimit, stderrLimit = specification.MaxOutputBytes
@@ -532,7 +531,10 @@ module internal ProcessRun =
                         }
                         |> Flow.foldCause Flow.succeed (fun _ -> Flow.succeed (Ok ()))
 
-                    let! exit = Flow.toAsync clockEnvironment (requestFlow |> Flow.withClock clock)
+                    let! token = Async.CancellationToken
+                    let! exit =
+                        FlowInternal.invoke (NativeProcess.withCallerServices caller requestFlow) () token
+                        |> Platform.executionToAsync
                     return
                         match exit with
                         | Exit.Success result -> result
@@ -542,7 +544,7 @@ module internal ProcessRun =
                 match specification.OnStarted with
                 | Some handler ->
                     for stage, command in commands |> Array.indexed do
-                        let! handlerExit =
+                        do!
                             handler.Invoke(
                                 stage,
                                 processes[stage].Id,
@@ -550,9 +552,10 @@ module internal ProcessRun =
                                 starts[stage],
                                 closeCallback stage
                             )
-                            |> Flow.fromAsync
+                            |> Flow.scoped
+                            |> NativeProcess.withCallerServices caller
                             |> Flow.onInterrupt (requestStop Interrupted |> Flow.ignore)
-                        do! Flow.ofExit handlerExit |> Flow.widenError
+                            |> Flow.widenError
                 | None -> ()
 
                 let monitor stage =
@@ -625,7 +628,7 @@ module internal ProcessRun =
                                     let bytes =
                                         if count = buffer.Length then buffer
                                         else buffer[.. count - 1]
-                                    do! NativeProcess.writeCapturedTarget console files token gate observed target capture bytes
+                                    do! NativeProcess.writeCapturedTarget caller console files token gate observed target capture bytes
                                     if observesOutput || specification.Framing = OutputFraming.Lines then
                                         do! decode count false
                         finally
@@ -787,9 +790,8 @@ module internal ProcessRun =
                         | InputSource.Stream source ->
                             let work =
                                 source
-                                |> FlowStream.runForEachFlow (writeInput stage >> Flow.localEnv (fun () -> clockEnvironment))
+                                |> FlowStream.runForEachFlow (writeInput stage)
                                 |> mapInputFailure
-                                |> Flow.localEnv (fun (_: unit) -> ())
 
                             work
 
@@ -894,10 +896,10 @@ module internal ProcessRun =
                     |> Flow.bind (fun _ ->
                         flow {
                             for target in stdoutTargets do
-                                do! Flow.fromTask (fun token -> NativeProcess.finishTarget token target)
+                                do! Flow.fromTask (fun token -> NativeProcess.finishTarget caller token target)
                             for stage in 0 .. stderrTargets.Length - 1 do
                                 if not (specification.MergeStdErr && stage = final) then
-                                    do! Flow.fromTask (fun token -> NativeProcess.finishTarget token stderrTargets[stage])
+                                    do! Flow.fromTask (fun token -> NativeProcess.finishTarget caller token stderrTargets[stage])
                         }
                         |> stopIo)
 
@@ -1035,5 +1037,7 @@ module internal ProcessRun =
             |> mapEngineFailure
             |> Flow.scoped
 
-        run |> Flow.withClock clock
+        Flow(fun environment token ->
+            let caller = RuntimePlatform.current ()
+            FlowInternal.invoke (run caller |> Flow.withClock clock) environment token)
 #endif

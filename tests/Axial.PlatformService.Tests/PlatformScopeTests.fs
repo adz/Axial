@@ -371,7 +371,7 @@ module PlatformScopeTests =
         Assert.Equal("first", snapshot.[0].Message)
 
     [<Fact>]
-    let ``watchdog stall dump names a sleeper when nobody advances time`` () =
+    let ``stall dump names an unadvanced sleeper`` () =
         let platform = TestPlatform.create ()
         let registry = FiberRegistry()
         use registered = new Threading.SemaphoreSlim(0)
@@ -379,8 +379,6 @@ module PlatformScopeTests =
         let workflow = flow {
             let! child = Flow.sleep (TimeSpan.FromSeconds 5.) |> Flow.forkNamed "unadvanced-sleeper" |> Flow.withClock notifying
             do! awaitRegistration registered
-            // A real-time watchdog observes the stalled manual-time fiber without joining it.
-            do! Flow.sleep (TimeSpan.FromMilliseconds 20.) |> Flow.withClock Clock.live
             let dump = registry.DumpAt(platform.Clock)
             let stalled = platform.Clock.Sleepers = 1 && registry.LiveFiberCount > 0
             do! Fiber.interrupt child |> Flow.ignore
@@ -388,7 +386,7 @@ module PlatformScopeTests =
         }
         match workflow |> Flow.withFiberRegistry registry |> Flow.runTestWith platform () with
         | Exit.Success(true, dump) -> Assert.Contains("unadvanced-sleeper", dump)
-        | other -> failwithf "Expected watchdog stall, got %A" other
+        | other -> failwithf "Expected unadvanced sleeper, got %A" other
 
     [<Fact>]
     let ``TestClock rejects a live clock with a clear defect`` () =

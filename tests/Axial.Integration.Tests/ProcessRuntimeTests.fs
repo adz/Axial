@@ -53,11 +53,16 @@ module ProcessRuntimeTests =
                     seen.Enqueue(label, now, random, guid)
                     do! Log.info ("callback-" + label)
                 }) |> Flow.annotate "callback" label
+            let startedReleased = ref false
             let env = { Process = Process.live engine FileSystem.live Console.live }
             let result =
                 shText "printf payload"
-                |> stdoutTo (OutputTarget.Sink((fun _ -> probe "output"), (fun () -> probe "finish")))
-                |> onStarted (fun _ -> probe "started")
+                |> stdoutTo (OutputTarget.Sink((fun _ ->
+                    Flow.delay (fun () -> Assert.True(startedReleased.Value, "onStarted scope must close before output"); probe "output")), (fun () -> probe "finish")))
+                |> onStarted (fun _ -> flow {
+                    do! Flow.scopeFinalizer (Flow.delay (fun () -> startedReleased.Value <- true; Flow.ok ()))
+                    do! probe "started"
+                })
                 |> toFlow
                 |> Flow.withClock caller
                 |> Flow.withRandom (Random.fromValue 17)

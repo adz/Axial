@@ -122,7 +122,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
             })
             |> Flow.withClock (Axial.PlatformService.Clock.fromValue outerTime)
             |> Flow.withLogSink outerLog
-        let platformScopesHeld = scoped && outerLog.Entries.Count = 1 && innerLog.Entries.Count >= round.Size 30
+        let platformScopesHeld = scoped && outerLog.Entries.Count = 1 && innerLog.Entries.Count = round.Size 30 + (round.Size 30 + 1) / 2
 
         return
             [ check "clock and log overrides reach forks under race and zipPar and restore their outer scope" platformScopesHeld

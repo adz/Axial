@@ -7,7 +7,9 @@ open System.Threading.Tasks
 
 #if !FABLE_COMPILER
 /// <summary>A clock that advances only when a test or simulator asks it to.</summary>
-/// <remarks>Both UTC timestamps and timed workflow operations use the same advance.</remarks>
+/// <remarks>Both UTC timestamps and timed workflow operations use the same advance. On .NET, due synchronous
+/// continuations run during advancement. On Fable, promise continuations run on a later microtask; await the
+/// released fiber or a registration signal before advancing again.</remarks>
 type ManualClock(initialUtc: DateTimeOffset) =
     let time = Platform.ManualTime()
 
@@ -41,6 +43,7 @@ type ManualClock(initialUtc: DateTimeOffset) =
             } :> Task
 #else
 /// A single-threaded JavaScript manual clock; sleeps move only on explicit advancement.
+/// Released promise continuations run on a later microtask; await their fiber or a signal before advancing again.
 type ManualClock(initialUtc: DateTimeOffset) =
     let mutable now = TimeSpan.Zero
     let mutable sequence = 0L

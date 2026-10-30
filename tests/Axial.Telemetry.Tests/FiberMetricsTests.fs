@@ -10,7 +10,6 @@ open Swensen.Unquote
 open Xunit
 
 module FiberMetricsTests =
-    let private clockEnv () = ()
     /// Collects measurements from the Axial meter for the duration of a test.
     type private MetricCapture() =
         let gate = obj()
@@ -75,7 +74,7 @@ module FiberMetricsTests =
                 return ()
             }
             |> FiberMetrics.observe
-            |> Flow.runSync (clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success() @>
         waitUntil (fun () -> capture.Total "axial.flow.fibers.settled" = 3L)

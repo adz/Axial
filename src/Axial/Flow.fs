@@ -1480,7 +1480,7 @@ module Flow =
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'none, Fiber<'error, 'value>> =
         Flow(fun environment cancellationToken ->
-            let parentRuntime = RuntimeState.current()
+            let parentRuntime = RuntimePlatform.current ()
             let observer = parentRuntime.Observer
             let clock = parentRuntime.Platform.Clock
             let time = parentRuntime.Platform.Time

@@ -240,9 +240,23 @@ module internal NativeProcess =
                 token.ThrowIfCancellationRequested()
                 raise (ObserverDefectException(Exception(cause.ToString())))
 
-    let private runUserFlow token input (work: Flow<unit, string, unit>) =
+    // Preserve engine ownership/tokens, but callbacks observe the caller's installed services.
+    let internal withCallerServices (caller: RuntimeContext) (source: Flow<'env, 'error, 'value>) =
+        Flow(fun environment token ->
+            let current = RuntimePlatform.current ()
+            let runtime =
+                { current with
+                    Platform = caller.Platform
+                    LogSink = caller.LogSink
+                    AnnotationSink = caller.AnnotationSink
+                    TelemetrySink = caller.TelemetrySink
+                    Tracer = caller.Tracer
+                    Observer = caller.Observer }
+            RuntimeState.withRuntime runtime (fun () -> FlowInternal.invoke source environment token))
+
+    let private runUserFlow caller token input (work: Flow<unit, string, unit>) =
         task {
-            let! result = Async.StartAsTask(Flow.toAsync () work, cancellationToken = token)
+            let! result = (FlowInternal.invoke (work |> Flow.scoped |> withCallerServices caller) () token).AsTask()
 
             match result with
             | Exit.Success() -> ()
@@ -250,6 +264,7 @@ module internal NativeProcess =
         }
 
     let rec private writeTarget
+        (caller: RuntimeContext)
         (console: IConsole)
         (files: Dictionary<string * bool, FileStream>)
         (token: CancellationToken)
@@ -270,14 +285,15 @@ module internal NativeProcess =
             | OutputTarget.File path -> do! files[path, false].WriteAsync(bytes, 0, bytes.Length, token)
             | OutputTarget.AppendFile path -> do! files[path, true].WriteAsync(bytes, 0, bytes.Length, token)
             | OutputTarget.Callback callback
-            | OutputTarget.Sink(callback, _) -> do! runUserFlow token false (callback bytes)
+            | OutputTarget.Sink(callback, _) -> do! runUserFlow caller token false (callback bytes)
             | OutputTarget.Tee targets ->
                 for item in targets do
-                    do! writeTarget console files token channel item bytes
+                    do! writeTarget caller console files token channel item bytes
             | _ -> ()
         })
 
     let internal writeCapturedTarget
+        (caller: RuntimeContext)
         (console: IConsole)
         (files: Dictionary<string * bool, FileStream>)
         (token: CancellationToken)
@@ -292,7 +308,7 @@ module internal NativeProcess =
 
             try
                 capture.Append bytes
-                do! writeTarget console files token channel target bytes
+                do! writeTarget caller console files token channel target bytes
             finally
                 gate.Release() |> ignore
         }
@@ -325,13 +341,13 @@ module internal NativeProcess =
                 observerGate.Release() |> ignore
         }
 
-    let rec internal finishTarget (token: CancellationToken) target =
+    let rec internal finishTarget caller (token: CancellationToken) target =
         (task {
             match target with
-            | OutputTarget.Sink(_, finish) -> do! runUserFlow token false (finish ())
+            | OutputTarget.Sink(_, finish) -> do! runUserFlow caller token false (finish ())
             | OutputTarget.Tee targets ->
                 for item in targets do
-                    do! finishTarget token item
+                    do! finishTarget caller token item
             | _ -> ()
         })
 

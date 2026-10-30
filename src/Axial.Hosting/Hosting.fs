@@ -25,7 +25,7 @@ module private ScopedLogging =
             use _scope = logger.BeginScope(scope)
             action ()
 
-/// <summary>Adapts Microsoft.Extensions.Logging loggers to Axial's explicit logging service.</summary>
+/// <summary>Adapts Microsoft.Extensions.Logging loggers to runtime log sinks.</summary>
 [<RequireQualifiedAccess>]
 module MicrosoftLogging =
     let private write (logger: ILogger) (level: LogLevel) (error: exn option) (message: string) =
@@ -43,7 +43,7 @@ module MicrosoftLogging =
         | LogLevel.Error, Some error -> logger.LogError(error, message)
         | LogLevel.Critical, Some error -> logger.LogCritical(error, message)
 
-    /// <summary>Creates an Axial logger backed by a supplied Microsoft logger.</summary>
+    /// <summary>Creates a log sink backed by a supplied Microsoft logger.</summary>
     let sink (logger: ILogger) : ILogSink =
         if isNull logger then nullArg (nameof logger)
         { new ILogSink with
@@ -57,13 +57,16 @@ module MicrosoftLogging =
                     | LogLevel.Error -> Microsoft.Extensions.Logging.LogLevel.Error
                     | LogLevel.Critical -> Microsoft.Extensions.Logging.LogLevel.Critical)
             member _.Write entry =
-                let scope = Dictionary<string, obj>()
-                for name, value in entry.Locals do scope[name] <- value
-                for KeyValue(name, value) in entry.Annotations do scope[name] <- box value
-                use _scope = logger.BeginScope(scope)
-                write logger entry.Level entry.Error entry.Message }
+                if entry.Locals.IsEmpty && entry.Annotations.IsEmpty then
+                    write logger entry.Level entry.Error entry.Message
+                else
+                    let scope = Dictionary<string, obj>()
+                    for name, value in entry.Locals do scope[name] <- value
+                    for KeyValue(name, value) in entry.Annotations do scope[name] <- box value
+                    use _scope = logger.BeginScope(scope)
+                    write logger entry.Level entry.Error entry.Message }
 
-    /// <summary>Creates an Axial logger with an explicit Microsoft logging category.</summary>
+    /// <summary>Creates a log sink with an explicit Microsoft logging category.</summary>
     let fromFactory (categoryName: string) (loggerFactory: ILoggerFactory) : ILogSink =
         if String.IsNullOrWhiteSpace categoryName then invalidArg (nameof categoryName) "A logging category is required."
         if isNull loggerFactory then nullArg (nameof loggerFactory)

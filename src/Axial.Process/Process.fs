@@ -18,7 +18,6 @@ open Axial.FileSystem
 type ProcessHostEnvironment = {
     Process: IProcess
     Console: IConsole
-    Clock: IClock
 } with
 
     interface IHasProcess with
@@ -31,7 +30,6 @@ type TestProcessHostEnvironment = {
     Environment: ProcessHostEnvironment
     Process: TestProcess
     Console: TestConsole
-    Clock: ManualClock
 }
 #endif
 
@@ -467,7 +465,7 @@ module Process =
     /// Invokes the handler once for every stage, immediately after it starts and before output is observed.
     let inline onStarted (handler: ProcessStarted -> Flow<unit, Never, unit>) source =
         let callback stage processId command startedAt close =
-            async {
+            Flow.delay (fun () ->
                 let closeFlow request =
                     Flow.fromAsync (close request)
                     |> Flow.bind (function
@@ -484,8 +482,7 @@ module Process =
                     Close = closeFlow
                 }
 
-                return! Flow.toAsync () (handler started)
-            }
+                handler started)
 
         let observer =
             { new IProcessStartedObserver with
@@ -990,7 +987,6 @@ module Process =
     let createHost (console: IConsole) : ProcessHostEnvironment = {
         Process = live Clock.live FileSystem.live console
         Console = console
-        Clock = Clock.live
     }
 
     [<EditorBrowsable(EditorBrowsableState.Never)>]
@@ -1061,21 +1057,17 @@ module ProcessHostEnvironment =
     let live = Process.liveHost.Value
     let liveWithConsole console = Process.createHost console
 
-    let ofParts processes console clock : ProcessHostEnvironment = {
+    let ofParts processes console : ProcessHostEnvironment = {
         Process = processes
         Console = console
-        Clock = clock
     }
 
     let test () =
         let processes = Process.test ()
         let console = Console.test ()
-        let clock = ManualClock(DateTimeOffset.UnixEpoch)
-
         {
-            Environment = ofParts processes console clock
+            Environment = ofParts processes console
             Process = processes
             Console = console
-            Clock = clock
         }
 #endif

@@ -118,7 +118,7 @@ module Clock =
     let ``fixed`` (utcNow: DateTimeOffset) = ManualClock utcNow
 
     /// <summary>Creates a manual clock starting at the supplied instant.</summary>
-    let fromValue (utcNow: DateTimeOffset) : IClock = ``fixed`` utcNow
+    let fromValue (utcNow: DateTimeOffset) : ManualClock = ``fixed`` utcNow
 
 #if !FABLE_COMPILER && !NETSTANDARD2_1
     /// <summary>Creates an Axial clock backed by a .NET <see cref="T:System.TimeProvider" />.</summary>

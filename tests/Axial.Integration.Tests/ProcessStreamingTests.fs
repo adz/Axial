@@ -708,7 +708,7 @@ module ProcessStreamingTests =
                 Process.live clock Axial.FileSystem.FileSystem.live Axial.Console.Console.live
 
             let host =
-                ProcessHostEnvironment.ofParts processService Axial.Console.Console.live clock
+                ProcessHostEnvironment.ofParts processService Axial.Console.Console.live
 
             let running =
                 (cmd $"sleep 30" |> timeout (TimeSpan.FromSeconds 5.)) => cmd $"cat"

@@ -217,7 +217,7 @@ type TestProcess() =
                         match specification.OnStarted with
                         | Some handler ->
                             for stage, command in specification.Commands |> List.indexed do
-                                let! handlerExit =
+                                do!
                                     handler.Invoke(
                                         stage,
                                         processId + stage,
@@ -227,9 +227,7 @@ type TestProcess() =
                                             closeRequests.Add(stage, request)
                                             return Ok ()
                                         })
-                                    )
-
-                                do! Flow.ofExit handlerExit |> Flow.widenError
+                                    ) |> Flow.scoped |> Flow.widenError
                         | None -> ()
 
                         for output in outputs do

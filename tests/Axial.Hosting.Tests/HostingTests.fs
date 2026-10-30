@@ -112,7 +112,7 @@ module HostingTests =
         let mutable count = 0
         let notifier = { new ISystemdNotifier with member _.Notify _ = count <- count + 1 }
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
-        let result = runWatchdog clock Log.live (Hosting.watchdog variables 1 notifier) |> Async.RunSynchronously
+        let result = runWatchdog clock LogSink.none (Hosting.watchdog variables 1 notifier) |> Async.RunSynchronously
         test <@ result = Exit.Success () @>
         test <@ count = 0 @>
 
@@ -120,7 +120,7 @@ module HostingTests =
     let ``missing watchdog interval stays idle for ten virtual seconds`` () =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
         let notifier, messages = recordingNotifier ()
-        let running = startWatchdog clock Log.live (Hosting.watchdog (variables []) 42 notifier)
+        let running = startWatchdog clock LogSink.none (Hosting.watchdog (variables []) 42 notifier)
         clock.AdvanceBy(TimeSpan.FromSeconds 10.0)
         Assert.Equal(Exit.Success (), running.Completion |> Async.RunSynchronously)
         Assert.Empty(messages)
@@ -129,7 +129,7 @@ module HostingTests =
     let ``healthy watchdog pings once per second`` () =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
         let notifier, messages = recordingNotifier ()
-        let running = startWatchdog clock Log.live (Hosting.watchdog (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier)
+        let running = startWatchdog clock LogSink.none (Hosting.watchdog (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier)
         try
             for step in 1 .. 5 do advance clock 2 messages step
             Assert.Equal<string>(Array.create 5 "WATCHDOG=1", messages.ToArray())
@@ -143,7 +143,7 @@ module HostingTests =
         let mutable checks = 0
         let health : Flow<unit, Never, bool> =
             Flow.delay (fun () -> checks <- checks + 1; Flow.succeed (checks <= 2))
-        let running = startWatchdog clock Log.live (Hosting.watchdogWith (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier health)
+        let running = startWatchdog clock LogSink.none (Hosting.watchdogWith (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier health)
         try
             for step in 1 .. 2 do advance clock 2 messages step
             for _ in 3 .. 5 do
@@ -163,7 +163,7 @@ module HostingTests =
         let notifier, messages = recordingNotifier ()
         let gate = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let heartbeat : Flow<unit, Never, unit> = Flow.fromTask (fun token -> gate.Task.WaitAsync token)
-        let running = startWatchdog clock Log.live (Hosting.watchdogWithHeartbeat heartbeat (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier (Flow.succeed true))
+        let running = startWatchdog clock LogSink.none (Hosting.watchdogWithHeartbeat heartbeat (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier (Flow.succeed true))
         try
             Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers >= 2), 5000))
             clock.AdvanceBy(TimeSpan.FromMilliseconds 500.0)
@@ -181,7 +181,7 @@ module HostingTests =
     let ``watchdog for another PID never pings`` () =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
         let notifier, messages = recordingNotifier ()
-        let running = startWatchdog clock Log.live (Hosting.watchdog (variables ["WATCHDOG_USEC", "2000000"; "WATCHDOG_PID", "99"]) 42 notifier)
+        let running = startWatchdog clock LogSink.none (Hosting.watchdog (variables ["WATCHDOG_USEC", "2000000"; "WATCHDOG_PID", "99"]) 42 notifier)
         clock.AdvanceBy(TimeSpan.FromSeconds 10.0)
         Assert.Equal(Exit.Success (), running.Completion |> Async.RunSynchronously)
         Assert.Empty(messages)

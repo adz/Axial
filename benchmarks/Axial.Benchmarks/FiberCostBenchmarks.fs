@@ -23,7 +23,6 @@ type FiberCostCase =
 [<IterationCount(8)>]
 [<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
 type FiberCostBenchmarks() =
-    let clock = ManualClock(DateTimeOffset.UnixEpoch)
     let trivial value : Flow<unit, string, int> = Flow.ok value
     let values8 = [ 1..8 ]
     let values64 = [ 1..64 ]
@@ -57,8 +56,8 @@ type FiberCostBenchmarks() =
     let runOnThreadPool = trivial 1 |> Flow.runOn RunOn.ThreadPool
 
     let run (source: Flow<unit, string, int>) =
-        source |> Flow.withClock clock |> Flow.withLogSink LogSink.none
-        |> fun current -> current.RunSynchronously(()) |> Shared.consumeExit
+        // These cases neither sleep nor log; measure the root/fiber path, not scope installation.
+        source.RunSynchronously(()) |> Shared.consumeExit
 
     [<ParamsAllValues>]
     member val Case = FiberCostCase.ForkJoin with get, set

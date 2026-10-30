@@ -7,7 +7,7 @@ open Axial.Process
 open Axial.TortureTest.Scenario
 
 type private Environment =
-    { Process: IProcess; Clock: IClock }
+    { Process: IProcess }
     interface IHasProcess with member this.Process = this.Process
 
 let run (round: Round) : Flow<unit, Never, Check list> =
@@ -19,14 +19,18 @@ let run (round: Round) : Flow<unit, Never, Check list> =
     let mutable runs = 0
     let service =
         {new IProcess with
-            member _.Execute(_,observe) = flow {
+            member _.Execute(specification,observe) = flow {
                 runs <- runs+1
+                match specification.OnStarted with
+                | Some handler ->
+                    do! handler.Invoke(0, 1, "scripted", result.StartedAt, (fun _ -> async { return Ok () })) |> Flow.scoped |> Flow.widenError
+                | None -> ()
                 for item in input do
                     do! observe {Stage=0;ObservedChannel=OutputChannel.StdOut;OriginalChannel=OutputChannel.StdOut
                                  Text=string item;Timestamp=DateTimeOffset(1970,1,1,0,0,0,TimeSpan.Zero)}
                 return result
             }}
-    let env = {Process=service;Clock=Axial.PlatformService.Clock.live}
+    let env = {Process=service}
     let source () = Process.command $"scripted" |> Process.streamStdout
     let observe workflow = workflow |> Flow.localEnv(fun (_: unit) -> env) |> Flow.foldCause (Exit.Success >> Flow.succeed) (Exit.Failure >> Flow.succeed)
     flow {
@@ -42,7 +46,23 @@ let run (round: Round) : Flow<unit, Never, Check list> =
         let! converted = source() |> ProcessStream.toFlowStream |> FlowStream.runCollect |> observe
         let beforeZero = runs
         let! zero = source() |> ProcessStream.take 0 |> ProcessStream.runDrain |> observe
+        let callbackTime = DateTimeOffset(2001, 1, 1, 0, 0, 0, TimeSpan.Zero)
+        let callbackLog = Axial.PlatformService.Log.memory ()
+        let observedTime = ref None
+        let! callbackResult =
+            Process.command $"scripted"
+            |> Process.onStarted (fun _ -> flow {
+                let! now = Axial.PlatformService.Clock.now
+                observedTime.Value <- Some now
+                do! Axial.PlatformService.Log.info "process-callback"
+            })
+            |> Process.toFlow
+            |> Flow.localEnv (fun () -> env)
+            |> Flow.withClock (Axial.PlatformService.Clock.``fixed`` callbackTime)
+            |> Flow.withLogSink callbackLog
+            |> exitOf
         return [
+            check "process callbacks inherit runtime clock and log sink without a new root" (match callbackResult with Exit.Success _ -> observedTime.Value = Some callbackTime && callbackLog.Entries.Count = 1 | _ -> false)
             check "transforms preserve completion" (match collected with Exit.Success(values,ProcessCompletion.Completed _) -> values=List.filter(fun item -> item%2=0) input | _ -> false)
             check "pure fold agrees with input" (match folded with Exit.Success(sum,ProcessCompletion.Completed _) -> sum=List.sum input | _ -> false)
             check "drain completes" (match drained with Exit.Success(ProcessCompletion.Completed _) -> true | _ -> false)

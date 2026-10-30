@@ -124,7 +124,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
 #endif
                 )
             | 4 -> Flow.scopeAcquireRelease (acquired id) (fun _ -> finalizer release) |> Flow.ignore
-            // A release that reads the environment it was acquired with.
+            // A release that reads a runtime service before recording its completion.
             | 5 ->
                 Flow.scopeAcquireRelease (acquired id) (fun _ ->
                     Axial.PlatformService.Clock.service |> Flow.bind (fun _ -> finalizer release))

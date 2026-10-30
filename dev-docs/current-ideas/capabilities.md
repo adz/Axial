@@ -182,8 +182,9 @@ let! exit = Fiber.awaitExit fiber
 
 **There is no automatic advance and no idle detection.** A test that waits on time nobody advances hangs; the fiber watchdog dump (T24) names
 the sleepers it is blocked on. `runOnManualTime` is deleted. Its callers (WorkflowSchedulingTests, WorkflowStreamTests, TestSupport) move to explicit
-stepping. Where a test is fully deterministic and only needs "all sleeps skipped", a documented helper `TestClock.advanceAll` (loop
-`AdvanceToNextDeadline` while `Sleepers > 0`, called by the test, never by the runtime) covers it. `TestRuntime.Settle` in ElmishFlows stays: its own queue is a fact.
+stepping. Where a test is fully deterministic and only needs "all sleeps skipped", a documented helper `TestClock.advanceAll` captures the latest registered deadline at entry and advances only
+through that horizon. Periodic re-registration cannot extend the horizon; a later sequential sleep needs a new
+explicit advance. The test calls this helper; the runtime never infers idleness or advances automatically. `TestRuntime.Settle` in ElmishFlows stays: its own queue is a fact.
 
 ### 3.7 Log and telemetry
 
@@ -279,7 +280,7 @@ tool) gets the console default, never silence and never a hidden global. The onl
 
 Callers outside a Flow's dynamic extent (decision D6) need an explicit clock: `Axial.ElmishFlows` (`ElmishRuntime<'env when 'env :> IHasClock>`), `Axial.Process`
 (clock in its own env type), `Axial.Hosting` watchdogs (`IHasClock`/`IHasLog`), `Cache` (reads the clock when created, inside a flow, so it can capture the
-runtime one). Recommendation: `ElmishRuntimeOptions` gets a `Clock: IClock` defaulting to live, and `Elmish.test` takes a `ManualClock`; Hosting and Process
+runtime one). `ElmishRuntimeOptions.Clock` is `IClock option`: `Some clock` installs it, `None` leaves the live runtime default, and `Elmish.test` takes a `ManualClock`; Hosting and Process
 read the runtime context from inside their flows.
 
 ## 5. Visibility tradeoff
