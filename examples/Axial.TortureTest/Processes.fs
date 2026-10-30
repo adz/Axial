@@ -44,7 +44,9 @@ let run (round: Round) : Flow<unit, Never, Check list> =
         let! zero = source() |> ProcessStream.take 0 |> ProcessStream.runDrain |> observe
 #if !FABLE_COMPILER
         let callbackTime = DateTimeOffset(2001, 1, 1, 0, 0, 0, TimeSpan.Zero)
-        let callbackEnvironment = { Process = Process.test() :> IProcess }
+        let callbackProcess = Process.test()
+        callbackProcess.RunHandler <- fun _ -> TestProcess.Result(0, "")
+        let callbackEnvironment = { Process = callbackProcess :> IProcess }
         let callbackLog = Axial.PlatformService.Log.memory ()
         let observedTime = ref None
         let! callbackResult =
