@@ -17,6 +17,34 @@ open Axial.Process.DSL
 [<WarmupCount(3)>]
 [<IterationCount(3)>]
 [<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
+type PlatformReadBenchmarks() =
+    let environment = ClockEnvironment(ManualClock(DateTimeOffset.UnixEpoch))
+    let completed : Flow<ClockEnvironment, string, int> = Flow.ok 1
+
+    [<Benchmark>]
+    member _.TimeoutX1000() =
+        for _ in 1 .. 1000 do
+            completed |> Flow.timeout (TimeSpan.FromSeconds 1.) "timed out" |> fun workflow -> workflow.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.ClockNowX1000() =
+        let workflow = flow {
+            for _ in 1 .. 1000 do
+                let! _ = Clock.now
+                ()
+        }
+        workflow.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.RetrySuccessX1000() =
+        for _ in 1 .. 1000 do
+            completed |> Flow.retry (Schedule.recurs 3) |> fun workflow -> workflow.RunSynchronously(environment) |> ignore
+
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(3)>]
+[<IterationCount(3)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
 type ReaderOverheadBenchmarks() =
     let flowLocalEnv = Shared.buildFlowLocalEnvChain ()
     let manualLocalEnv = Shared.buildManualTaskLocalEnvChain ()
