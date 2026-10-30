@@ -2380,7 +2380,7 @@ module Flow =
         : Flow<'env, 'error, 'next> =
         Flow(fun environment cancellationToken ->
             invoke flow environment cancellationToken
-            |> Platform.mapObserved cancellationToken mapper)
+            |> Execution.map mapper)
 
     /// <summary>Maps the successful value of a synchronous flow to <c>unit</c>.</summary>
     /// <param name="flow">The source flow.</param>

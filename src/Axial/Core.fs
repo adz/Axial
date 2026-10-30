@@ -1458,20 +1458,8 @@ type Flow<'env, 'error, 'value> =
 
         struct (finished, terminal, pending)
 
-    // The user-code boundary of the trampoline: a Flow.delay factory, a bind continuation or a primitive that throws
-    // while being advanced ends this flow with the cause Platform.causeOfThrown gives it.
-    member private this.AdvanceObserved(environment: 'env, cancellationToken: CancellationToken) =
-        try
-            this.Advance(environment, cancellationToken)
-        with error ->
-            struct (
-                true,
-                ValueTask<Exit<'value, 'error>>(Exit.Failure(Platform.causeOfThrown cancellationToken error)),
-                Unchecked.defaultof<IFlowAwaiter<'env, 'error, 'value>>
-            )
-
     member private this.RunTrampoline(environment: 'env, cancellationToken: CancellationToken) : Execution<'value, 'error> =
-        let struct (finished, terminal, pending) = this.AdvanceObserved(environment, cancellationToken)
+        let struct (finished, terminal, pending) = this.Advance(environment, cancellationToken)
 
         if finished then terminal
         else
@@ -1483,15 +1471,9 @@ type Flow<'env, 'error, 'value> =
 
                     while running do
                         do! next.Pending
-                        let step =
-                            try
-                                next.Resume()
-                            with error ->
-                                FlowStep.Failed(Platform.causeOfThrown cancellationToken error)
-
                         let struct (finished, terminal, pending) =
-                            match step with
-                            | FlowStep.Next successor -> successor.AdvanceObserved(environment, cancellationToken)
+                            match next.Resume() with
+                            | FlowStep.Next successor -> successor.Advance(environment, cancellationToken)
                             | FlowStep.Failed cause ->
                                 struct (true, ValueTask<Exit<'value, 'error>>(Exit.Failure cause), Unchecked.defaultof<_>)
                             | FlowStep.Await awaiter -> struct (false, Unchecked.defaultof<_>, awaiter)
