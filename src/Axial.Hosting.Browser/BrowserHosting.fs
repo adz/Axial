@@ -39,7 +39,7 @@ module BrowserLogging =
                         | LogLevel.Information -> "info"
                         | LogLevel.Warning -> "warn"
                         | LogLevel.Error | LogLevel.Critical -> "error"
-                    write methodName (arguments $"{entry.Level}: {entry.Message}" entry) }
+                    write methodName (arguments (string entry.Level + ": " + entry.Message) entry) }
 
 /// <summary>Root logging policy. None leaves the runtime default; LogSink.none silences the host.</summary>
 type BrowserAppOptions =

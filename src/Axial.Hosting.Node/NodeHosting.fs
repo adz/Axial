@@ -70,7 +70,7 @@ module NodeLogging =
             member _.IsEnabled level = level >= minimum
             member _.Write entry =
                 if entry.Level >= minimum then
-                    write (arguments $"{entry.Level}: {entry.Message}" entry) }
+                    write (arguments (string entry.Level + ": " + entry.Message) entry) }
 
 /// <summary>Root logging policy. None leaves the runtime default; LogSink.none silences the host.</summary>
 type NodeAppOptions =

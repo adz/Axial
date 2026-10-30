@@ -948,10 +948,8 @@ module Flow =
         withRuntime (fun runtime ->
             { runtime with
                 AnnotationSink = fun name value ->
-                    // axial-note AXG010: telemetry is an observation and cannot change the workflow outcome.
                     try telemetry.Annotate(name, value) with _ -> ()
                 TelemetrySink = fun attribute ->
-                    // axial-note AXG010: telemetry is an observation and cannot change the workflow outcome.
                     try telemetry.Attribute attribute with _ -> () }) source
 
     /// <summary>Installs runtime fiber-lifecycle hooks for diagnostics and telemetry.</summary>
