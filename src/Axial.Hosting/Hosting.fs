@@ -99,10 +99,14 @@ module FiberLogging =
 /// <summary>Controls how a root Flow application participates in Generic Host lifetime.</summary>
 type HostedAppOptions =
     { /// Request host shutdown when the root application completes for any reason.
-      StopHostOnCompletion: bool }
+      StopHostOnCompletion: bool
+      /// None leaves the runtime default; Some can supply a replacement or LogSink.none.
+      LogSink: (ILoggerFactory -> ILogSink) option }
 
-    /// <summary>Options for a root application that owns the host lifetime.</summary>
-    static member Default = { StopHostOnCompletion = true }
+    /// <summary>Owns the host lifetime and routes workflow logs to the Axial Microsoft logging category.</summary>
+    static member Default =
+        { StopHostOnCompletion = true
+          LogSink = Some(MicrosoftLogging.fromFactory "Axial") }
 
 /// <summary>Runs one root Flow application as a Microsoft Generic Host hosted service.</summary>
 type FlowHostedService<'env, 'error>
@@ -138,7 +142,13 @@ type FlowHostedService<'env, 'error>
         member _.StartAsync(cancellationToken: CancellationToken) =
             try
                 let environment = environmentFactory services
-                let handle = App.startWithCancellation lifetime.ApplicationStopping environment application
+                let hosted =
+                    match options.LogSink with
+                    | Some createSink ->
+                        let factory = services.GetRequiredService<ILoggerFactory>()
+                        application |> Flow.withLogSink (createSink factory)
+                    | None -> application
+                let handle = App.startWithCancellation lifetime.ApplicationStopping environment hosted
                 running <- Some handle
 
                 monitor <-
@@ -219,7 +229,7 @@ module SystemdNotify =
 /// <summary>Microsoft Generic Host registration helpers for root Flow applications.</summary>
 [<RequireQualifiedAccess>]
 module Hosting =
-    /// <summary>Runs a scheduler heartbeat gated by an optional application health flow. Requires a clock and logger in the environment.</summary>
+    /// <summary>Runs a scheduler heartbeat gated by an optional application health flow, using the installed runtime clock and log sink.</summary>
     let watchdogWithHeartbeat<'env>
         (heartbeatGate: Flow<'env, Never, unit>)
         (variables: IEnvironmentVariables)
