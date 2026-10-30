@@ -13,10 +13,11 @@ dotnet add package Axial.ElmishFlows
 ```
 
 `Axial.ElmishFlows` brings Elmish 5 with it. Reference Elmish directly when your program uses `Program.mkProgram` and
-`dispatch`. Open `Axial.ElmishFlows` for the Axial API, and `Axial.PlatformService` when your environment needs
-`Clock.live`.
+`dispatch`. Open `Axial.ElmishFlows` for the Axial API, and `Axial.PlatformService` when you override the runtime clock.
 
-A minimal runtime supplies an environment, a `Post` function, a defect handler, and a history capacity:
+A minimal runtime supplies an environment, a `Post` function, a defect handler, a history capacity, and an optional
+clock (`Clock = None` keeps the runtime's live default; `Some clock` installs that clock for commands, subscriptions
+and layer provisioning):
 
 ```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.ElmishFlows.Tests"
 open Axial
@@ -29,8 +30,9 @@ let runtime =
     ElmishRuntime.start
         { Post = (fun callback -> callback ())
           OnDefect = (fun defect -> failwith defect.Rendered)
-          HistoryCapacity = 32 }
-        (ClockEnvironment Clock.live)
+          HistoryCapacity = 32
+          Clock = None }
+        ()
 ```
 
 When `Post` is not already on the dispatch thread it must post to it (for example `Application.Post` in WPF or
@@ -38,7 +40,8 @@ dispatching back to a UI loop); never call Elmish's dispatch directly from a wor
 
 ## First-use lifecycle
 
-`ElmishRuntime` requires an environment implementing `IHasClock`. Keep the runtime's clock environment stable, and
+`ElmishRuntime` takes any environment, with no clock interface required: time comes from the runtime, and
+`ElmishRuntimeOptions.Clock` overrides it. Keep the runtime's environment stable, and
 supply a command's current dependencies with `Flow.localEnv`. For example, a git client can open another repository
 without recreating its Elmish runtime:
 
@@ -47,17 +50,16 @@ open Axial
 open Axial.ElmishFlows
 open Axial.PlatformService
 
-type RepositoryEnvironment = { Clock: IClock; Repository: string } with
-    interface IHasClock with
-        member this.Clock = this.Clock
+type RepositoryEnvironment = { Repository: string }
 
 let runtime =
     ElmishRuntime.start
         { Post = (fun callback -> callback ())
           OnDefect = (fun defect -> failwith defect.Rendered)
-          HistoryCapacity = 32 }
-        (ClockEnvironment Clock.live)
-let currentEnv = { Clock = Clock.live; Repository = "/repos/new" }
+          HistoryCapacity = 32
+          Clock = None }
+        ()
+let currentEnv = { Repository = "/repos/new" }
 let repositoryName : Flow<RepositoryEnvironment, string, string> =
     Flow.envWith (fun env -> env.Repository)
 
@@ -83,16 +85,13 @@ open Axial
 open Axial.ElmishFlows
 open Axial.PlatformService
 
-type CacheEnvironment = { Clock: IClock; Cache: Cache<int, Never, string> } with
-    interface IHasClock with
-        member this.Clock = this.Clock
+type CacheEnvironment = { Cache: Cache<int, Never, string> }
 
-let layer : Layer<ClockEnvironment, string, CacheEnvironment> =
+let layer : Layer<unit, string, CacheEnvironment> =
     Layer.fromFlow (flow {
         let! cache =
-            Cache.make (fun key -> Flow.succeed $"value-{key}" : Flow<ClockEnvironment, Never, string>)
-        let! clock = Flow.envWith (fun env -> env.Clock)
-        return { Clock = clock; Cache = cache }
+            Cache.make (fun key -> Flow.succeed $"value-{key}" : Flow<unit, Never, string>)
+        return { Cache = cache }
     })
 
 let runtime =
@@ -100,9 +99,10 @@ let runtime =
         ElmishRuntime.startLayer
             { Post = (fun callback -> callback ())
               OnDefect = (fun defect -> failwith defect.Rendered)
-              HistoryCapacity = 32 }
+              HistoryCapacity = 32
+              Clock = None }
             layer
-            (ClockEnvironment Clock.live)
+            ()
         |> Async.RunSynchronously
     with
     | Ok runtime -> runtime
@@ -123,9 +123,9 @@ open Axial.ElmishFlows
 open Axial.PlatformService
 
 // A search pipeline backed by an inbox: post queries, subscribe to results for the program's lifetime.
-let searchPipeline (runtime: ElmishRuntime<ClockEnvironment>) =
+let searchPipeline (runtime: ElmishRuntime<unit>) =
     let inbox = Inbox.create 8 runtime
-    let queries : FlowStream<ClockEnvironment, string, string> =
+    let queries : FlowStream<unit, string, string> =
         Inbox.stream inbox |> FlowStream.map (fun query -> $"result:{query}")
     inbox, Sub.OfFlowStream.subscribe [ "search" ] runtime queries (fun error -> $"search-error:{error}")
 ```
@@ -147,20 +147,14 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-type SearchEnvironment =
-    { Clock: IClock
-      Log: ILog }
-    interface IHasClock with member this.Clock = this.Clock
-    interface IHasLog with member this.Log = this.Log
-
-let indexDocument (query: string) : Flow<SearchEnvironment, string, unit> =
+let indexDocument (query: string) : Flow<unit, string, unit> =
     flow {
         if String.IsNullOrWhiteSpace query then
             return! Flow.fail "empty query"
     }
 
 // Handle the typed failure before Cmd.OfFlow.start, which accepts only Flow<'env, Never, unit>.
-let indexSafely (query: string) : Flow<SearchEnvironment, Never, unit> =
+let indexSafely (query: string) : Flow<unit, Never, unit> =
     indexDocument query
     |> Flow.recover (fun error ->
         flow {
@@ -169,12 +163,11 @@ let indexSafely (query: string) : Flow<SearchEnvironment, Never, unit> =
 ```
 
 ```fsharp run
-let log = Log.capturing ()
-let env = { Clock = ManualClock(DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)); Log = log }
+let log = Log.memory ()
 
-indexSafely "" |> Flow.run env |> shouldEqual (Exit.Success ())
+indexSafely "" |> Flow.withLogSink log |> Flow.run () |> shouldEqual (Exit.Success ())
 
-log.Entries |> Seq.toList |> List.map _.Message |> shouldEqual [ "indexing skipped: empty query" ]
+log.Entries |> Seq.map _.Message |> Seq.toList |> shouldEqual [ "indexing skipped: empty query" ]
 ```
 
 ```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.ElmishFlows.Tests"

@@ -50,7 +50,7 @@ let site =
           "/blog", "links: /"
           "/docs/flow", "links:" ]
 
-let fetchHtml (url: string) : Flow<ClockEnvironment, Never, string> =
+let fetchHtml (url: string) : Flow<unit, Never, string> =
     Flow.sleep (TimeSpan.FromMilliseconds 1.0) |> Flow.map (fun () -> Map.find url site)
 
 let extractLinks (html: string) : string list =
@@ -62,7 +62,7 @@ site lists only pages that exist, so every discovered link resolves; a real craw
 fetch error or an explicit missing-page policy instead of an exception from `Map.find`.
 
 ```fsharp
-let fetchKnownPages (urls: string list) : FlowStream<ClockEnvironment, Never, HtmlPage> =
+let fetchKnownPages (urls: string list) : FlowStream<unit, Never, HtmlPage> =
     urls
     |> FlowStream.fromSeq
     |> FlowStream.mapFlowPar
@@ -81,7 +81,7 @@ fetchKnownPages [ "/"; "/docs"; "/blog" ]
 |> FlowStream.map _.Url
 |> FlowStream.runCollect
 |> Flow.map List.sort
-|> Flow.run (ClockEnvironment Clock.live)
+|> Flow.run ()
 |> shouldEqual (Exit.Success [ "/"; "/blog"; "/docs" ])
 ```
 
@@ -98,7 +98,7 @@ type CrawlState =
     { Pending: string list
       Seen: Set<string> }
 
-let fetchPagesAndDiscoverLinks (seen: Set<string>) (urls: string list) : Flow<ClockEnvironment, Never, HtmlPage list * string list> =
+let fetchPagesAndDiscoverLinks (seen: Set<string>) (urls: string list) : Flow<unit, Never, HtmlPage list * string list> =
     urls
     |> List.map (fun url ->
         fetchHtml url
@@ -114,7 +114,7 @@ let fetchPagesAndDiscoverLinks (seen: Set<string>) (urls: string list) : Flow<Cl
 
         pages, discovered)
 
-let crawl (seeds: string list) : FlowStream<ClockEnvironment, Never, HtmlPage> =
+let crawl (seeds: string list) : FlowStream<unit, Never, HtmlPage> =
     { Pending = seeds
       Seen = Set.empty }
     |> FlowStream.unfoldFlow (fun state ->
@@ -146,7 +146,7 @@ let crawl (seeds: string list) : FlowStream<ClockEnvironment, Never, HtmlPage> =
 Starting from the home page, the crawl finds every page once, a frontier batch at a time:
 
 ```fsharp run
-crawl [ "/" ] |> FlowStream.map _.Url |> FlowStream.runCollect |> Flow.run (ClockEnvironment Clock.live)
+crawl [ "/" ] |> FlowStream.map _.Url |> FlowStream.runCollect |> Flow.run ()
 |> shouldEqual (Exit.Success [ "/"; "/docs"; "/blog"; "/docs/flow" ])
 ```
 

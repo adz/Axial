@@ -45,9 +45,7 @@ type AppError =
 type IOrderRepository =
     abstract ProcessPending: unit -> Result<unit, AppError>
 
-type AppEnv =
-    { Orders: IOrderRepository
-      Log: ILog }
+type AppEnv = { Orders: IOrderRepository }
 
 type StartupInputs = { PendingOrders: int }
 
@@ -62,8 +60,7 @@ let appLayer : Layer<StartupInputs, AppError, AppEnv> =
         { Orders =
             { new IOrderRepository with
                 member _.ProcessPending() =
-                    if inputs.PendingOrders >= 0 then Ok() else Error(OrderError "negative backlog") }
-          Log = Log.live })
+                    if inputs.PendingOrders >= 0 then Ok() else Error(OrderError "negative backlog") } })
 
 let root : Flow<StartupInputs, AppError, unit> =
     program

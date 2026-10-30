@@ -6,7 +6,7 @@ description: Register a root Flow with the Microsoft Generic Host, notify system
 
 # Running as a service
 
-`Axial.Hosting` integrates a root Flow with the Generic Host. Register it with `Hosting.addApp`; supply an environment containing `IHasClock` for the watchdog.
+`Axial.Hosting` integrates a root Flow with the Generic Host. Register it with `Hosting.addApp`; the watchdog reads the runtime clock and log sink, so the environment needs no clock or log member.
 
 ## Register with the Generic Host
 
@@ -54,7 +54,7 @@ open Axial.Hosting
 open Axial.PlatformService
 
 // The host supplies these services at composition time.
-let progressWatchdog<'env when 'env :> IHasClock and 'env :> IHasLog>
+let progressWatchdog<'env>
     (clock: IClock) (variables: IEnvironmentVariables) (processId: int) (notifier: ISystemdNotifier) =
     let mutable lastCompletedTicks: int64 = clock.Elapsed().Ticks
     // Call after each completed unit of work in the job loop.
@@ -86,7 +86,7 @@ let jobLoop (recordCompletion: unit -> unit) : Flow<'env, Never, unit> =
     }
     loop ()
 
-let application<'env when 'env :> IHasClock and 'env :> IHasLog>
+let application<'env>
     (clock: IClock) (variables: IEnvironmentVariables) (processId: int) (notifier: ISystemdNotifier)
     : Flow<'env, Never, unit> =
     let recordCompletion, watchdog = progressWatchdog<'env> clock variables processId notifier
@@ -96,9 +96,6 @@ let application<'env when 'env :> IHasClock and 'env :> IHasLog>
 
 ```fsharp run
 // The host can compose the watchdog without opening a systemd socket.
-type ProbeEnv(clock: IClock, log: ILog) =
-    interface IHasClock with member _.Clock = clock
-    interface IHasLog with member _.Log = log
 let variables =
     { new IEnvironmentVariables with
         member _.TryGet _ = None
@@ -106,17 +103,13 @@ let variables =
         member _.Expand text = text
         member _.GetAll() = System.Collections.Generic.Dictionary<string, string>() }
 let notifier = { new ISystemdNotifier with member _.Notify _ = () }
-let recordCompletion, watchdog = progressWatchdog<ProbeEnv> Clock.live variables 1 notifier
+let recordCompletion, watchdog = progressWatchdog<unit> Clock.live variables 1 notifier
 recordCompletion ()
-let log =
-    { new ILog with
-        member _.Log _ _ = ()
-        member _.LogException _ _ _ = () }
-(watchdog |> Flow.run (ProbeEnv(Clock.live, log))) |> shouldEqual (Exit.Success ())
+(watchdog |> Flow.withLogSink LogSink.none |> Flow.run ()) |> shouldEqual (Exit.Success ())
 ```
 
 
-The watchdog reads `WATCHDOG_USEC` and optional `WATCHDOG_PID`; it sends `WATCHDOG=1` at half the configured interval only when its runtime heartbeat advances and the health flow returns true. Invalid or unrepresentable intervals disable the watchdog and log a warning through the environment's `IHasLog`. For application work that must gate the heartbeat itself, use `Hosting.watchdogWithHeartbeat`. All watchdog environments supply `IHasClock` and `IHasLog`.
+The watchdog reads `WATCHDOG_USEC` and optional `WATCHDOG_PID`; it sends `WATCHDOG=1` at half the configured interval only when its runtime heartbeat advances and the health flow returns true. Invalid or unrepresentable intervals disable the watchdog and log a warning through the runtime log sink. For application work that must gate the heartbeat itself, use `Hosting.watchdogWithHeartbeat`. The watchdog uses the runtime's clock and log sink (`Flow.withClock`, `Flow.withLogSink`); the Generic Host installs the host's sink at the root.
 
 ```ini
 [Unit]

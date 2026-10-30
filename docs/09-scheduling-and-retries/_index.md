@@ -45,21 +45,21 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-let runsUntilStopped (schedule: Schedule<ClockEnvironment, string, 'output>) : int =
+let runsUntilStopped (schedule: Schedule<unit, string, 'output>) : int =
     let runs = ref 0
 
     (Flow.delay (fun () ->
         runs.Value <- runs.Value + 1
         Flow.fail "always")
-     : Flow<ClockEnvironment, string, unit>)
+     : Flow<unit, string, unit>)
     |> Flow.retry schedule
-    |> Flow.run (ClockEnvironment Clock.live)
+    |> Flow.run ()
     |> ignore
 
     runs.Value
 
-let firstOutputs (count: int) (schedule: Schedule<ClockEnvironment, unit, 'output>) : 'output list =
-    match schedule |> FlowStream.fromSchedule |> FlowStream.take count |> FlowStream.runCollect |> Flow.run (ClockEnvironment Clock.live) with
+let firstOutputs (count: int) (schedule: Schedule<unit, unit, 'output>) : 'output list =
+    match schedule |> FlowStream.fromSchedule |> FlowStream.take count |> FlowStream.runCollect |> Flow.run () with
     | Exit.Success outputs -> outputs
     | Exit.Failure _ -> []
 
@@ -89,7 +89,7 @@ Use `Schedule.spaced` to keep running with the same delay between runs.
 
 ```fsharp
 // Wait 1 second between runs.
-let everySecond : Schedule<ClockEnvironment, string, _> = Schedule.spaced (TimeSpan.FromSeconds 1.0)
+let everySecond : Schedule<unit, string, _> = Schedule.spaced (TimeSpan.FromSeconds 1.0)
 ```
 
 The output counts the runs so far:
@@ -106,7 +106,7 @@ Use `Schedule.exponential` when repeated attempts should wait progressively long
 
 ```fsharp
 // Wait 100 ms, 200 ms, 400 ms, 800 ms, and so on.
-let backoff : Schedule<ClockEnvironment, string, _> = Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
+let backoff : Schedule<unit, string, _> = Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
 ```
 
 Its output is the delay it chose:
@@ -122,29 +122,28 @@ If many clients retry at the same time, they can place another burst of load on 
 `Schedule.jitteredWith` multiplies each delay by a sampled factor from 0.5 to 1.5. You provide the sample function — a
 `unit -> float` — which keeps randomness explicit and replaceable in tests.
 
-That function is `IRandom.NextDouble` from `Axial.PlatformService`, so the schedule never constructs `System.Random()`
-itself. Take the `IRandom` from your environment and pass its `NextDouble` method:
+That function can be `IRandom.NextDouble`, so the schedule never constructs System.Random itself.
+Capture the runtime's `Random.service` inside the workflow and pass its `NextDouble` method:
 
 ```fsharp
-let policy (random: IRandom) : Schedule<ClockEnvironment, string, _> =
+let policy (random: IRandom) : Schedule<unit, string, _> =
     Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
     |> Schedule.jitteredWith random.NextDouble
 ```
 
-In application code, the `IRandom` comes from the [base runtime](/services/platform-services/random-and-guid.html) or
-a field of your own environment record. In tests, pass a deterministic `IRandom` such as
+In application code, `IRandom` comes from the [runtime random service](/services/platform-services/random-and-guid.html). In tests, pass a deterministic `IRandom` such as
 `Random.fromFixed 0 0.25 0uy`, whose `NextDouble` always returns `0.25`, so every delay is multiplied by `0.75`:
 
 ```fsharp
-let testPolicy : Schedule<ClockEnvironment, string, _> =
+let testPolicy : Schedule<unit, string, _> =
     policy (Random.fromFixed 0 0.25 0uy)
 ```
 
-To build the jittered schedule from the environment rather than an ambient random source, read `IRandom` inside the
+To build the jittered schedule from the scoped runtime generator, read `IRandom` inside the
 workflow and apply its `NextDouble` as the `unit -> float` sample:
 
 ```fsharp
-let jitteredFetch (fetch: Flow<BaseRuntime, string, string>) : Flow<BaseRuntime, string, string> =
+let jitteredFetch (fetch: Flow<unit, string, string>) : Flow<unit, string, string> =
     flow {
         let! random = Random.service
         let schedule =
@@ -157,18 +156,16 @@ let jitteredFetch (fetch: Flow<BaseRuntime, string, string>) : Flow<BaseRuntime,
 ```fsharp run
 let attempts = ref 0
 
-let transientFetch : Flow<BaseRuntime, string, string> =
+let transientFetch : Flow<unit, string, string> =
     flow {
         attempts.Value <- attempts.Value + 1
         if attempts.Value < 2 then return! Flow.fail "transient" else return "payload"
     }
 
-let runtime = { BaseRuntime.liveValue with Random = Random.fromFixed 0 0.25 0uy }
-
-jitteredFetch transientFetch |> Flow.run runtime |> shouldEqual (Exit.Success "payload")
+jitteredFetch transientFetch |> Flow.withRandom (Random.fromFixed 0 0.25 0uy) |> Flow.run () |> shouldEqual (Exit.Success "payload")
 ```
 
-`Random.service` is the type-directed accessor for the `IHasRandom` contract; the fixed random makes the retried
+`Random.service` reads the installed runtime `IRandom`; the fixed random makes the retried
 attempt succeed deterministically.
 
 ### Run at a fixed rate
@@ -179,7 +176,7 @@ each takes.
 
 ```fsharp
 // Start a control scan every 50 ms without drifting.
-let scanOnce : Flow<ClockEnvironment, Never, unit> = Flow.ok ()
+let scanOnce : Flow<unit, Never, unit> = Flow.ok ()
 
 let scanLoop =
     scanOnce
@@ -204,7 +201,7 @@ Use `Flow.retry` to rerun a flow after an expected domain failure (`Cause.Fail`)
 ```fsharp
 let callsMade = ref 0
 
-let unstableCall : Flow<ClockEnvironment, string, unit> =
+let unstableCall : Flow<unit, string, unit> =
     flow {
         callsMade.Value <- callsMade.Value + 1
         return! Flow.fail "temporary-error"
@@ -217,7 +214,7 @@ let resilientCall =
 ```
 
 ```fsharp run
-resilientCall |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Failure(Cause.Fail "temporary-error"))
+resilientCall |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail "temporary-error"))
 callsMade.Value |> shouldEqual 4
 ```
 
@@ -239,7 +236,7 @@ type FetchError =
     | NotFound
 
 /// A fetch that fails with each error in turn, then succeeds.
-let fetchFailing (errors: FetchError list) : Flow<ClockEnvironment, FetchError, string> =
+let fetchFailing (errors: FetchError list) : Flow<unit, FetchError, string> =
     let remaining = ref errors
 
     Flow.delay (fun () ->
@@ -255,7 +252,7 @@ let isTransient error =
     | RateLimited -> true
     | NotFound -> false
 
-let resilientFetch (fetch: Flow<ClockEnvironment, FetchError, string>) =
+let resilientFetch (fetch: Flow<unit, FetchError, string>) =
     fetch
     |> Flow.retry (
         Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
@@ -264,8 +261,8 @@ let resilientFetch (fetch: Flow<ClockEnvironment, FetchError, string>) =
 ```
 
 ```fsharp run
-fetchFailing [ Unavailable; RateLimited ] |> resilientFetch |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success "payload")
-fetchFailing [ Unavailable; NotFound ] |> resilientFetch |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Failure(Cause.Fail NotFound))
+fetchFailing [ Unavailable; RateLimited ] |> resilientFetch |> Flow.run () |> shouldEqual (Exit.Success "payload")
+fetchFailing [ Unavailable; NotFound ] |> resilientFetch |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail NotFound))
 ```
 
 `Schedule.untilInput` is the negation: it stops on the first input that satisfies the predicate.
@@ -277,13 +274,13 @@ from `Retry.defaults` (3 retries, exponential backoff from 100 ms capped at 10 s
 the fields you need:
 
 ```fsharp
-let resilientFetchWithRecord (fetch: Flow<ClockEnvironment, FetchError, string>) =
+let resilientFetchWithRecord (fetch: Flow<unit, FetchError, string>) =
     fetch
     |> Flow.retry (Retry.schedule { Retry.defaults with Retries = 5; When = isTransient; Backoff = Backoff.NoDelay })
 ```
 
 ```fsharp run
-fetchFailing [ RateLimited; RateLimited; Unavailable ] |> resilientFetchWithRecord |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success "payload")
+fetchFailing [ RateLimited; RateLimited; Unavailable ] |> resilientFetchWithRecord |> Flow.run () |> shouldEqual (Exit.Success "payload")
 ```
 
 `Retries` counts retries after the first attempt, the same as `Schedule.recurs`. `Backoff` is `Backoff.NoDelay`,
@@ -295,7 +292,7 @@ fixed-rate timing, or elapsed-time limits.
 Use `Flow.repeat` to run a successful flow again. The schedule's input is the successful value.
 
 ```fsharp
-let pollStatus : Flow<ClockEnvironment, Never, string> =
+let pollStatus : Flow<unit, Never, string> =
     flow {
         return "Still working"
     }
@@ -321,7 +318,7 @@ The schedule receives each successful value as its input, so `whileInput` can st
 ```fsharp
 let repeatCount = ref 0
 
-let ticking : Flow<ClockEnvironment, Never, int> =
+let ticking : Flow<unit, Never, int> =
     flow {
         repeatCount.Value <- repeatCount.Value + 1
         return repeatCount.Value
@@ -334,7 +331,7 @@ let repeatUntilThree =
 
 ```fsharp run
 repeatCount.Value <- 0
-repeatUntilThree |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success 3)
+repeatUntilThree |> Flow.run () |> shouldEqual (Exit.Success 3)
 repeatCount.Value |> shouldEqual 3
 ```
 
@@ -343,7 +340,7 @@ A failure ends the loop immediately, without consulting the schedule again:
 ```fsharp
 let failingRepeatCount = ref 0
 
-let failingTick : Flow<ClockEnvironment, string, int> =
+let failingTick : Flow<unit, string, int> =
     flow {
         failingRepeatCount.Value <- failingRepeatCount.Value + 1
         if failingRepeatCount.Value = 2 then return! Flow.fail "stopped" else return failingRepeatCount.Value
@@ -354,7 +351,7 @@ let failingRepeat = failingTick |> Flow.repeat (Schedule.spaced TimeSpan.Zero)
 
 ```fsharp run
 failingRepeatCount.Value <- 0
-failingRepeat |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Failure(Cause.Fail "stopped"))
+failingRepeat |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail "stopped"))
 failingRepeatCount.Value |> shouldEqual 2
 ```
 
@@ -370,8 +367,8 @@ when the consumer is slow: ticks the consumer was too busy to take are skipped, 
 -  |> FlowStream.fromSchedule
 -  |> FlowStream.take 3
 -  |> FlowStream.runCollect
--  : Flow<ClockEnvironment, Never, int list>)
-- |> Flow.run (ClockEnvironment Clock.live);;
+-  : Flow<unit, Never, int list>)
+- |> Flow.run ();;
 val it: Exit<int list,Never> = Success [0; 1; 2]
 ```
 

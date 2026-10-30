@@ -47,8 +47,8 @@ let shouldEqual expected actual =
 -     let! latest = Dequeue.takeAll display
 -     let! pending = Dequeue.takeAll alarms
 -     return [ history; latest; pending ]
-- } : Flow<ClockEnvironment, Never, int list list>)
-- |> Flow.run (ClockEnvironment Clock.live);;
+- } : Flow<unit, Never, int list list>)
+- |> Flow.run ();;
 val it: Exit<int list list,Never> = Success [[1; 2; 3; 4; 5]; [5]; [1]]
 ```
 
@@ -143,16 +143,16 @@ never leaves a subscription behind. `FlowStream.runIntoHub hub` publishes every 
 
 ```fsharp
 let shown = ResizeArray<float>()
-let render (reading: float) : Flow<ClockEnvironment, Never, unit> = Flow.delay (fun () -> shown.Add reading; Flow.ok ())
+let render (reading: float) : Flow<unit, Never, unit> = Flow.delay (fun () -> shown.Add reading; Flow.ok ())
 
 // A display that follows the latest reading for as long as it runs.
-let display (readings: Hub<float>) : Flow<ClockEnvironment, Never, unit> =
+let display (readings: Hub<float>) : Flow<unit, Never, unit> =
     readings
     |> FlowStream.fromHub (QueueStrategy.Sliding 1)
     |> FlowStream.runForEachFlow render
 
 // A sensor stream feeding the hub.
-let feed (readings: Hub<float>) : Flow<ClockEnvironment, Never, unit> =
+let feed (readings: Hub<float>) : Flow<unit, Never, unit> =
     FlowStream.fromSeq [ 20.5; 20.7; 21.0 ] |> FlowStream.runIntoHub readings
 ```
 
@@ -163,7 +163,7 @@ flow {
 
     // Wait until the display has subscribed, or until the fork settles or the deadline passes.
     let deadline = TimeSpan.FromSeconds 1.0
-    let! startedAt = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock.Elapsed())
+    let! startedAt = Clock.elapsed
 
     let mutable subscribers = 0
     let mutable endedEarly = false
@@ -177,7 +177,7 @@ flow {
             subscribers <- count
 
             if subscribers = 0 then
-                let! now = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock.Elapsed())
+                let! now = Clock.elapsed
                 timedOut <- now - startedAt >= deadline
 
                 if not timedOut then
@@ -195,7 +195,7 @@ flow {
     do! Hub.shutdown readings
     do! Fiber.join displaying
 }
-|> Flow.run (ClockEnvironment Clock.live)
+|> Flow.run ()
 |> shouldEqual (Exit.Success())
 
 shown |> Seq.last |> shouldEqual 21.0

@@ -32,10 +32,7 @@ type Receipt = { OrderId: int; Total: decimal; Reference: string }
 
 type CheckoutEnv =
     { FindTotal: int -> ColdTask<Result<decimal, CheckoutError>>
-      Charge: decimal -> ColdTask<Result<string, CheckoutError>>
-      Clock: IClock }
-    interface IHasClock with
-        member this.Clock = this.Clock
+      Charge: decimal -> ColdTask<Result<string, CheckoutError>> }
 
 let checkout orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
     flow {
@@ -49,9 +46,8 @@ let checkout orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
 
 The application supplies live functions. A test supplies a record of fakes. The workflow does not change.
 
-Adding a timeout and a retry policy leaves the `Flow<CheckoutEnv, CheckoutError, Receipt>` signature unchanged — these
-combinators only require the environment to provide a clock (`IHasClock`) — because the runtime that starts the
-workflow owns cancellation, retries, and cleanup:
+Adding a timeout and a retry policy leaves the `Flow<CheckoutEnv, CheckoutError, Receipt>` signature unchanged.
+The runtime supplies its clock and owns cancellation, retries, and cleanup:
 
 ```fsharp
 open System
@@ -63,6 +59,14 @@ let checkoutOrder orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
 ```
 
 Flow also carries concurrency, scheduling, streams, and structured child fibers through the same runtime.
+Clock, random and GUID values are scoped runtime services; application authority stays in `'env`. Use
+`Flow.withClock`, `Flow.withRandom` and `Flow.withGuid` to override values for a flow and its descendants.
+`Log.info` writes to the current `ILogSink` (Information+ on stderr by default); install or decorate destinations
+with `Flow.withLogSink` / `Flow.mapLogSink`, and observation callbacks with `Flow.withTelemetry`.
+
+With `Axial.PlatformService`, `Flow.runTest env` creates a fresh epoch manual clock, seeded random, sequential
+GUIDs and a recording log. Timed tests explicitly advance `TestClock` after observing sleeper registration;
+time never advances automatically. See [runtime services](docs/06-services/01-platform-services/_index.md).
 
 ## Install
 

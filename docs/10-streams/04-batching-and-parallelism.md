@@ -16,11 +16,11 @@ Use `FlowStream.chunkBySize` with `Flow.sequencePar` when each complete batch mu
 -     Flow.sleep (System.TimeSpan.FromMilliseconds(float milliseconds)) |> Flow.map (fun () -> label)
 - in
 - (FlowStream.fromSeq [ ("A", 80); ("B", 10); ("C", 80); ("D", 10) ]
--  : FlowStream<ClockEnvironment, Never, string * int>)
+-  : FlowStream<unit, Never, string * int>)
 - |> FlowStream.chunkBySize 2
 - |> FlowStream.mapFlow (List.map completeAfter >> Flow.sequencePar)
 - |> FlowStream.runCollect
-- |> Flow.run (ClockEnvironment Clock.live);;
+- |> Flow.run ();;
 val it: Exit<string list list,Never> = Success [["A"; "B"]; ["C"; "D"]]
 ```
 
@@ -47,10 +47,10 @@ Use `FlowStream.mapFlowPar` when a completed mapping should immediately open cap
 -     Flow.sleep (System.TimeSpan.FromMilliseconds(float milliseconds)) |> Flow.map (fun () -> label)
 - in
 - (FlowStream.fromSeq [ ("A", 150); ("B", 10); ("C", 10) ]
--  : FlowStream<ClockEnvironment, Never, string * int>)
+-  : FlowStream<unit, Never, string * int>)
 - |> FlowStream.mapFlowPar (Parallelism.bounded 2) completeAfter
 - |> FlowStream.runCollect
-- |> Flow.run (ClockEnvironment Clock.live);;
+- |> Flow.run ();;
 val it: Exit<string list,Never> = Success ["B"; "C"; "A"]
 ```
 

@@ -1,147 +1,120 @@
 ---
 title: Clock
-description: Read the current instant through an explicit service.
+description: Runtime time reads and explicit manual stepping in tests.
 ---
 
-`IClock` provides `UtcNow()` for timestamps, `Elapsed()` for monotonic durations, and `Sleep()` for cancellable delays. Timed flows require `IHasClock` in their environment, so a host or test supplies one source for all three operations.
+`IClock` supplies `UtcNow()`, monotonic `Elapsed()` and cancellable `Sleep()`. `Clock.now` and timed Flow operations
+read the clock installed in the current runtime scope. An application environment does not need a clock field or
+interface. `Clock.live` is the default; `Flow.withClock clock` overrides it for a flow and its descendants.
 
 ```fsharp prepare
-// Setup for the checked examples on this page.
 open System
-open System.IO
-open System.Threading
-open System.Threading.Tasks
 open Axial
-open Axial.Console
-open Axial.FileSystem
-open Axial.Hosting
-open Axial.Hosting.Browser
-open Axial.Hosting.Node
 open Axial.PlatformService
-open Axial.State
-open Axial.Telemetry
-open Axial.Telemetry.JavaScript
-
-/// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =
     if actual <> expected then failwithf "Expected %A but got %A" expected actual
 ```
 
 ```fsharp
-open System
-open Axial
-open Axial.PlatformService
-```
-
-```fsharp
-let expiresWithin (window: TimeSpan) (expiry: DateTimeOffset) : Flow<#IHasClock, Never, bool> =
+let expiresWithin (window: TimeSpan) (expiry: DateTimeOffset) : Flow<'env, Never, bool> =
     Clock.now |> Flow.map (fun now -> expiry - now <= window)
 ```
 
-`Clock.now` returns a `DateTimeOffset`. The other readers derive from it. Here they run against the base runtime
-with its clock fixed at noon UTC on 1 January 2026:
+## Read a chosen instant
+
+The `fixed` name needs double-backtick escaping in F# because it is a keyword:
 
 ```fsharp transcript
 > open System;;
+> open Axial;;
 > open Axial.PlatformService;;
-> let runtime () = { BaseRuntime.liveValue with Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero)) };;
-> (Clock.now : Flow<BaseRuntime, Never, DateTimeOffset>) |> Flow.map _.Hour |> Flow.run (runtime ());;
+> let atNoon () = Clock.``fixed`` (DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero));;
+> (Clock.now : Flow<unit, Never, DateTimeOffset>) |> Flow.map _.Hour |> Flow.withClock (atNoon ()) |> Flow.run ();;
 val it: Exit<int,Never> = Success 12
 
-> (Clock.utcDateTime : Flow<BaseRuntime, Never, DateTime>) |> Flow.map _.Kind |> Flow.run (runtime ());;
+> (Clock.utcDateTime : Flow<unit, Never, DateTime>) |> Flow.map _.Kind |> Flow.withClock (atNoon ()) |> Flow.run ();;
 val it: Exit<DateTimeKind,Never> = Success Utc
 
-> (Clock.unixTimeSeconds : Flow<BaseRuntime, Never, int64>) |> Flow.run (runtime ());;
+> (Clock.unixTimeSeconds : Flow<unit, Never, int64>) |> Flow.withClock (atNoon ()) |> Flow.run ();;
 val it: Exit<int64,Never> = Success 1767268800L
 
-> (Clock.unixTimeMilliseconds : Flow<BaseRuntime, Never, int64>) |> Flow.run (runtime ());;
+> (Clock.unixTimeMilliseconds : Flow<unit, Never, int64>) |> Flow.withClock (atNoon ()) |> Flow.run ();;
 val it: Exit<int64,Never> = Success 1767268800000L
 ```
 
-None of them produce a typed failure, so the error channel stays free for the workflow's own errors.
+These readers do not introduce a typed error. `Clock.service` returns the installed `IClock` when an interop
+boundary needs the service itself.
 
-## Measuring durations
+## Measure durations
 
-Wall-clock time can jump when the system clock is adjusted, so do not use it to measure durations. `IClock.Elapsed` is a monotonic reading for that job, and `Clock.timed` wraps a flow with it:
+Use `Clock.elapsed` differences or `Clock.timed`, not wall-clock subtraction: UTC can jump when adjusted.
 
 ```fsharp
-let buildReport : Flow<BaseRuntime, Never, string> = Flow.ok "report"
-
-let timedReport : Flow<BaseRuntime, Never, string> =
+let timedReport : Flow<unit, Never, string> =
     flow {
-        let! report, took = buildReport |> Clock.timed
+        let! report, took = Flow.ok "report" |> Clock.timed
         do! Log.info $"report built in {took.TotalMilliseconds:F0} ms"
         return report
     }
 ```
 
-`Clock.elapsed` reads the timer directly; only the difference between two readings is meaningful. Measuring through
-the clock instead of `Stopwatch` keeps durations deterministic in tests: under `Clock.fromValue` every duration is
-zero:
+```fsharp run
+let log = Log.memory ()
+timedReport
+|> Flow.withClock (Clock.``fixed`` DateTimeOffset.UnixEpoch)
+|> Flow.withLogSink log
+|> Flow.run ()
+|> shouldEqual (Exit.Success "report")
+log.Entries |> Seq.map _.Message |> Seq.toList |> shouldEqual ["report built in 0 ms"]
+```
+
+A manual clock reports zero elapsed duration only while nobody advances it. `Clock.``fixed`` instant` and
+`Clock.fromValue instant` both return `ManualClock`, on .NET and Fable. Sleep does not throw under either: it waits
+until the test advances far enough. An unadvanced timed test can therefore remain suspended indefinitely.
+
+## Step time explicitly
+
+`Flow.runTest` installs an epoch manual clock, recording log, seeded random and sequential GUIDs. Use
+`Flow.runTestWith` when the test needs those instances. Await facts such as sleeper registration before advancing,
+not a wall-clock pause or a guess that the scheduler is idle:
 
 ```fsharp run
-let gate = obj()
-let mutable logged = []
-
-let testRuntime =
-    { BaseRuntime.liveValue with
-        Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero))
-        Log = Log.fromSink (fun _ message -> lock gate (fun () -> logged <- message :: logged)) }
-
-timedReport |> Flow.run testRuntime |> shouldEqual (Exit.Success "report")
-lock gate (fun () -> List.rev logged) |> shouldEqual [ "report built in 0 ms" ]
+let platform = TestPlatform.create ()
+let registered = Deferred.make<unit, Never, unit> () |> Flow.run () |> Exit.toResult |> Result.defaultWith Never.absurd
+let clock = platform.Clock :> IClock
+let notifying =
+    { new IClock with
+        member _.UtcNow() = clock.UtcNow()
+        member _.Elapsed() = clock.Elapsed()
+        member _.Sleep(delay, token) =
+            let pending = clock.Sleep(delay, token)
+            Deferred.succeedNow () registered |> ignore
+            pending }
+let stepped: Flow<unit, Never, int> = flow {
+    let! child = Flow.sleep (TimeSpan.FromSeconds 5.) |> Flow.withClock notifying |> Flow.fork
+    do! Deferred.await registered
+    do! TestClock.advance (TimeSpan.FromSeconds 4.)
+    let! waiting = TestClock.sleepers
+    do! TestClock.advance (TimeSpan.FromSeconds 1.)
+    do! Fiber.join child
+    return waiting
+}
+stepped |> Flow.runTestWith platform () |> shouldEqual (Exit.Success 1)
 ```
 
-## Supplying the service
+`TestClock.advance` and `sleepers` require the installed clock to be a manual clock; using them with a live clock
+produces a defect with a diagnostic message. `TestClock.advanceAll` captures the latest registered deadline when
+called and drains only through that horizon. A periodic sleeper cannot extend it; a subsequent sequential sleep
+may need another explicit advance. No test runner infers deadlines or advances automatically.
 
-`Clock.live` reads `DateTimeOffset.UtcNow` and a monotonic process timer. `Clock.layer` is the same value as a `Layer<unit, Never, IClock>`. Most
-applications get the clock as part of [the base runtime](index.html) rather than wiring it alone.
+On .NET, due waits are released during `AdvanceBy`, but a continuation can still hop asynchronously. On Fable,
+promise continuations always resume on a later microtask. On both platforms, await the released fiber or its next
+signal before making another dependent advance. The `TestClock` helpers and `runTest` runners are .NET-only;
+Fable tests call `ManualClock.AdvanceBy` directly and then await the fiber.
 
-## Testing
+A missing advance can be diagnosed through a named fiber's registry dump. Name long-lived workers with
+`Flow.forkNamed` so the dump identifies the sleeper rather than silently waiting.
 
-`Clock.fromValue` pins the instant for read-only tests. It deliberately rejects `Sleep`; use `ManualClock` for a workflow that sleeps, times out, retries, or forks fibers. Advance it after the expected sleeper has registered:
-
-```fsharp
-let clock = ManualClock(DateTimeOffset.Parse "2026-01-01T00:00:00Z")
-let env = ClockEnvironment(clock :> IClock)
-let sleeping : Flow<ClockEnvironment, Never, unit> = Flow.sleep (TimeSpan.FromSeconds 5.0)
-let pending = sleeping |> Flow.toAsync env |> Async.StartAsTask
-// The workflow registers its sleep asynchronously, so wait for it before advancing.
-while clock.Sleepers = 0 do
-    System.Threading.Thread.SpinWait 20
-clock.AdvanceBy(TimeSpan.FromSeconds 5.0)
-pending.Wait()
-```
-
-`ManualClock` is currently available on .NET. `Clock.live` supports .NET and Fable. A fixed clock is enough for a time-read assertion:
-
-On Fable, an F# record may use a field named `Clock` and implement `IHasClock.Clock`. Axial marks the interface for
-Fable name mangling so the generated JavaScript does not confuse the record field with the interface getter. If
-handwritten JavaScript supplies an environment, construct an Axial environment in F# (or use the generated
-`ClockEnvironment` constructor) rather than passing a plain `{ Clock: clock }` object. The latter lacks the interface
-method the compiled Flow calls. This rule also applies to the other `IHas*` service interfaces.
-
-```fsharp
-type ClockEnv =
-    { Clock: IClock }
-    interface IHasClock with
-        member this.Clock = this.Clock
-
-let atNoon = { Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero)) }
-```
-
-```fsharp run
-expiresWithin (TimeSpan.FromHours 1.0) (DateTimeOffset(2026, 1, 1, 12, 30, 0, TimeSpan.Zero))
-|> Flow.run atNoon
-|> shouldEqual (Exit.Success true)
-
-expiresWithin (TimeSpan.FromHours 1.0) (DateTimeOffset(2026, 1, 1, 15, 0, 0, TimeSpan.Zero))
-|> Flow.run atNoon
-|> shouldEqual (Exit.Success false)
-```
-
-A fixed clock does not advance. When a test needs time to move, use `ManualClock` and advance it explicitly, so the
-test controls how time moves instead of depending on wall-clock timing.
-
-`IClock` reports the time; it does not schedule. Delays, timeouts, and retry policies are Flow runtime
-concerns; see [scheduling and retries](/scheduling-and-retries/index.html).
+`Clock.fromTimeProvider` and `toTimeProvider` bridge .NET `TimeProvider` on supported targets. Process live adapters
+and Elmish hosts accept explicit clocks because some of their work begins outside a Flow. See
+[scheduling and retries](/scheduling-and-retries/index.html) for the operations that consume runtime time.

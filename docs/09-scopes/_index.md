@@ -291,16 +291,16 @@ combinator returns:
 
 ```fsharp
 /// Opens a connection, recording the open and the close in `log`.
-let connectionTo (log: Ref<string list>) (name: string) : Resource<ClockEnvironment, string, string> =
+let connectionTo (log: Ref<string list>) (name: string) : Resource<unit, string, string> =
     Resource.create
         (log |> Ref.update (fun entries -> entries @ [ $"open {name}" ]) |> Flow.map (fun () -> name))
         (fun _ -> log |> Ref.update (fun entries -> entries @ [ $"close {name}" ]))
 
-let closedIn (log: Ref<string list>) : Flow<ClockEnvironment, string, int> =
+let closedIn (log: Ref<string list>) : Flow<unit, string, int> =
     log |> Ref.get |> Flow.map (List.filter (fun (entry: string) -> entry.StartsWith "close") >> List.length)
 
 /// Opens two connections in parallel and counts the closed ones while they are in use and after their scope closes.
-let openBoth : Flow<ClockEnvironment, string, int * int> =
+let openBoth : Flow<unit, string, int * int> =
     flow {
         let! log = Ref.make []
 
@@ -319,7 +319,7 @@ let openBoth : Flow<ClockEnvironment, string, int * int> =
 ```
 
 ```fsharp run
-openBoth |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success(0, 2))
+openBoth |> Flow.run () |> shouldEqual (Exit.Success(0, 2))
 ```
 
 Both connections remain open while `openBoth` uses them and close with its scope.
@@ -332,7 +332,7 @@ runs in a fiber, but the release belongs to the caller's scope, so `Fiber.join` 
 
 ```fsharp
 /// A plain fork: the fiber owns the connection and releases it when it settles, before join returns it.
-let forkedConnectionClosedOnJoin : Flow<ClockEnvironment, string, bool> =
+let forkedConnectionClosedOnJoin : Flow<unit, string, bool> =
     flow {
         let! log = Ref.make []
         let! fiber = Flow.scopeResource (connectionTo log "audit") |> Flow.fork
@@ -343,7 +343,7 @@ let forkedConnectionClosedOnJoin : Flow<ClockEnvironment, string, bool> =
     |> Flow.scoped
 
 /// forkResource: the caller's scope owns the connection, so it is still open after join.
-let keptConnection : Flow<ClockEnvironment, string, bool * string list> =
+let keptConnection : Flow<unit, string, bool * string list> =
     flow {
         let! log = Ref.make []
 
@@ -362,8 +362,8 @@ let keptConnection : Flow<ClockEnvironment, string, bool * string list> =
 ```
 
 ```fsharp run
-forkedConnectionClosedOnJoin |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success true)
-keptConnection |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success(false, [ "open audit"; "close audit" ]))
+forkedConnectionClosedOnJoin |> Flow.run () |> shouldEqual (Exit.Success true)
+keptConnection |> Flow.run () |> shouldEqual (Exit.Success(false, [ "open audit"; "close audit" ]))
 ```
 
 If the caller's scope closes before the acquisition finishes, the fiber is interrupted, and a resource acquired anyway

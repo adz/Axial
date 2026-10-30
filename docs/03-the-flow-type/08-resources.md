@@ -81,17 +81,17 @@ cause first.
 > open Axial.PlatformService;;
 > (flow {
 -     let log = ResizeArray<string>()
--     let note text : Flow<ClockEnvironment, Never, unit> = Flow.delay (fun () -> log.Add text; Flow.ok ())
+-     let note text : Flow<unit, Never, unit> = Flow.delay (fun () -> log.Add text; Flow.ok ())
 -     let! worker =
--         Flow.never<ClockEnvironment, Never, unit>
+-         Flow.never<unit, Never, unit>
 -         |> Flow.onInterrupt (note "interrupted")
 -         |> Flow.ensuring (note "closed")
 -         |> Flow.fork
 -     let! _ = Fiber.interrupt worker
 -     let! _ = Flow.ok 1 |> Flow.onInterrupt (note "not logged") |> Flow.ensuring (note "closed")
 -     return List.ofSeq log
-- } : Flow<ClockEnvironment, Never, string list>)
-- |> Flow.run (ClockEnvironment Clock.live);;
+- } : Flow<unit, Never, string list>)
+- |> Flow.run ();;
 val it: Exit<string list,Never> = Success ["interrupted"; "closed"; "closed"]
 ```
 

@@ -10,7 +10,7 @@ project: src/Axial.Hosting/Axial.Hosting.fsproj
 # .NET Hosting
 
 `Axial.Hosting` connects root Flow applications to .NET process and Generic Host lifecycle. It also adapts
-`Microsoft.Extensions.Logging` to the explicit `ILog` service and provides fiber-defect logging.
+`Microsoft.Extensions.Logging` to Axial's runtime log sink and provides fiber-defect logging.
 
 ```sh
 dotnet add package Axial.Hosting
@@ -108,9 +108,7 @@ type SqlOrderRepository() =
     interface IOrderRepository with
         member _.ProcessPending() = Ok()
 
-type AppEnv =
-    { Orders: IOrderRepository
-      Log: ILog }
+type AppEnv = { Orders: IOrderRepository }
 
 let program : Flow<AppEnv, AppError, unit> =
     flow {
@@ -126,8 +124,7 @@ builder.Services.AddSingleton<IOrderRepository, SqlOrderRepository>()
 // The layer turns the container into the explicit AppEnv the domain flow needs.
 let appLayer : Layer<IServiceProvider, AppError, AppEnv> =
     Layer.envWith (fun services ->
-        { Orders = services.GetRequiredService<IOrderRepository>()
-          Log = services.GetRequiredService<ILoggerFactory>() |> MicrosoftLogging.fromFactory "App" })
+        { Orders = services.GetRequiredService<IOrderRepository>() })
 
 let application : Flow<IServiceProvider, AppError, unit> =
     program
@@ -149,30 +146,33 @@ The registered `FlowHostedService`:
 5. Requests host shutdown when the finite root application completes.
 6. Waits for root cleanup from `StopAsync`.
 
-Use `Hosting.addAppWith { StopHostOnCompletion = false }` when the root Flow is one hosted participant and another
+Use `Hosting.addAppWith { HostedAppOptions.Default with StopHostOnCompletion = false }` when the root Flow is one hosted participant and another
 hosted service owns process completion.
 
 `IServiceProvider` stays at the application edge. Prefer constructing an explicit record or providing a `Layer` before
 domain workflows run. See [Providing the environment](/dependencies/providing-the-environment.html).
 
-## Microsoft Logging as `ILog`
+## Microsoft Logging as a log sink
 
-Create the explicit Axial logging service from an existing logger:
-
-```fsharp
-let axialLogFor (logger: Microsoft.Extensions.Logging.ILogger) : ILog =
-    MicrosoftLogging.create logger
-```
-
-Or choose a category through a factory:
+`Hosting.addApp` installs a Microsoft-backed `ILogSink` at the root of the hosted application (category `Axial`), so
+`Log.info` and friends reach the host's logging pipeline with no environment member. Build one yourself from an
+existing logger, or choose a category through a factory:
 
 ```fsharp
-let axialLogFrom (loggerFactory: Microsoft.Extensions.Logging.ILoggerFactory) : ILog =
+let axialSinkFor (logger: Microsoft.Extensions.Logging.ILogger) : ILogSink =
+    MicrosoftLogging.sink logger
+
+let axialSinkFrom (loggerFactory: Microsoft.Extensions.Logging.ILoggerFactory) : ILogSink =
     MicrosoftLogging.fromFactory "MyApp" loggerFactory
+
+let withHostLogging (logger: Microsoft.Extensions.Logging.ILogger) (application: Flow<unit, string, unit>) =
+    application |> Flow.withLogSink (MicrosoftLogging.sink logger)
 ```
 
-`MicrosoftLogging.layer "MyApp"` provisions `ILog` from an `ILoggerFactory` layer input. All Axial log levels and
-exception objects are preserved. The adapter never silently substitutes a no-op logger.
+All Axial log levels and exception objects are preserved. Locals, annotations (for example `trace_id`) and named
+FiberLocals become a Microsoft logging scope; an entry with none of them opens no scope. Set
+`HostedAppOptions.LogSink` to `None` to leave the runtime default, or to `Some(fun _ -> LogSink.none)` to silence
+Axial logs. An inner `Flow.withLogSink` always wins. See [platform services](platform-services.html#host-logging-defaults).
 
 ## Fiber Defect Logging
 

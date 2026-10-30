@@ -101,7 +101,7 @@
 - `Process.tryRun`/`Process.tryRunWith` return `Exit` for commands, specs, or Flows; `Process.run`/`Process.runWith`
   return the successful value and raise `ProcessRunException` on failure. These boundary helpers are not DSL aliases.
   Direct commands retain batch output; existing Flows keep their policies. `toFlow` needs `IHasProcess`;
-  streaming additionally needs `IHasClock`.
+  streaming reads the runtime clock and needs no clock member.
 - `mergeStdout` fans in producer lines; `captureParallel` captures independent commands with bounded workflow
   concurrency and ordered results. Use `flow { }` for sequencing and `Flow.orElseWith` for typed recovery.
 - Guides: `/process/index.html`, `/process/scripts.html`, `/process/streaming.html`, and `/process/dsl-recipes.html`.

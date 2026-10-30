@@ -38,11 +38,11 @@ let shouldEqual expected actual =
 ```fsharp
 // A simulated config load: increments a counter instead of touching the filesystem, so the example
 // demonstrates memoization without real I/O.
-let simulateConfigLoad (reads: Ref<int>) : Flow<ClockEnvironment, string, string> =
+let simulateConfigLoad (reads: Ref<int>) : Flow<unit, string, string> =
     reads |> Ref.updateAndGet ((+) 1) |> Flow.map (fun count -> $"config read {count} time(s)")
 
 /// Loads the config twice through one memoized flow, and returns whether both loads agree and how often it was read.
-let sameConfig : Flow<ClockEnvironment, string, bool * int> =
+let sameConfig : Flow<unit, string, bool * int> =
     flow {
         let! reads = Ref.make 0
         let! loadConfig = Flow.memoize (simulateConfigLoad reads)
@@ -54,18 +54,18 @@ let sameConfig : Flow<ClockEnvironment, string, bool * int> =
 ```
 
 ```fsharp run
-sameConfig |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success(true, 1))
+sameConfig |> Flow.run () |> shouldEqual (Exit.Success(true, 1))
 ```
 
 ## Cache by key
 
-`Cache.make` requires `'env :> IHasClock`: the runtime uses the supplied clock to schedule detached lookup fibers. `Cache.makeBounded capacity` evicts the least recently read key when full; `Cache.makeBoundedWithExpiry capacity timeToLive` also refreshes successful entries after the monotonic clock's elapsed duration. Eviction does not cancel existing waiters. `Cache.makeRec` passes the cache to its lookup for nested reads. Do not look up the same key recursively, directly or through a cycle: single-flight waits for the running lookup and deadlocks.
+`Cache.make` reads the runtime clock when the cache is created and uses it to schedule detached lookup fibers; no environment member is needed. `Cache.makeBounded capacity` evicts the least recently read key when full; `Cache.makeBoundedWithExpiry capacity timeToLive` also refreshes successful entries after the monotonic clock's elapsed duration. Eviction does not cancel existing waiters. `Cache.makeRec` passes the cache to its lookup for nested reads. Do not look up the same key recursively, directly or through a cycle: single-flight waits for the running lookup and deadlocks.
 
 `Cache.make` takes a lookup function and returns a cache. `Cache.get` returns the value for a key, running the lookup
 only when no success is cached and no lookup for that key is already running:
 
 ```fsharp
-let loadUser (lookups: Ref<int>) (id: int) : Flow<ClockEnvironment, string, string> =
+let loadUser (lookups: Ref<int>) (id: int) : Flow<unit, string, string> =
     flow {
         do! Flow.sleep (TimeSpan.FromMilliseconds 5.0)
         do! lookups |> Ref.update ((+) 1)
@@ -73,7 +73,7 @@ let loadUser (lookups: Ref<int>) (id: int) : Flow<ClockEnvironment, string, stri
     }
 
 /// Loads a page per user id through one cache, and returns the pages and how many lookups ran.
-let loadPages (userIds: int list) : Flow<ClockEnvironment, string, string list * int> =
+let loadPages (userIds: int list) : Flow<unit, string, string list * int> =
     flow {
         let! lookups = Ref.make 0
         let! users = Cache.make (loadUser lookups)
@@ -85,7 +85,7 @@ let loadPages (userIds: int list) : Flow<ClockEnvironment, string, string list *
 
 ```fsharp run
 loadPages [ 1; 2; 1; 1; 2 ]
-|> Flow.run (ClockEnvironment Clock.live)
+|> Flow.run ()
 |> shouldEqual (Exit.Success([ "user 1"; "user 2"; "user 1"; "user 1"; "user 2" ], 2))
 ```
 
@@ -97,16 +97,16 @@ Five concurrent requests for two users ran the lookup twice.
 ## Expiry, eviction, and in-flight loads
 
 `Cache.makeBoundedWithExpiry` expires a successful entry after the monotonic clock's time-to-live. The cache reads
-the environment's clock, so a manual clock makes expiry deterministic:
+the runtime clock, so a `ManualClock` installed with `Flow.withClock` makes expiry deterministic:
 
 ```fsharp
 let manualClock = ManualClock(DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))
 
-let expiryLoads : Flow<ClockEnvironment, string, string list * int> =
+let expiryLoads : Flow<unit, string, string list * int> =
     flow {
         let! lookups = Ref.make 0
 
-        let loadUser (id: int) : Flow<ClockEnvironment, string, string> =
+        let loadUser (id: int) : Flow<unit, string, string> =
             flow {
                 do! lookups |> Ref.update ((+) 1)
                 return $"user {id}"
@@ -123,7 +123,7 @@ let expiryLoads : Flow<ClockEnvironment, string, string list * int> =
 ```
 
 ```fsharp run
-expiryLoads |> Flow.run (ClockEnvironment manualClock) |> shouldEqual (Exit.Success([ "user 1"; "user 1"; "user 1" ], 2))
+expiryLoads |> Flow.withClock manualClock |> Flow.run () |> shouldEqual (Exit.Success([ "user 1"; "user 1"; "user 1" ], 2))
 ```
 
 The first two reads shared one lookup; after the clock passed the time-to-live, the third read started a second
@@ -133,13 +133,13 @@ Invalidation and eviction never cancel an in-flight lookup or its existing waite
 result, but the key is no longer cached, so the next `get` starts a fresh lookup:
 
 ```fsharp
-let invalidateInFlight : Flow<ClockEnvironment, string, string * string * int> =
+let invalidateInFlight : Flow<unit, string, string * string * int> =
     flow {
         let! lookups = Ref.make 0
-        let! loadStarted = Deferred.make<ClockEnvironment, string, unit> ()
-        let! finishLoad = Deferred.make<ClockEnvironment, string, unit> ()
+        let! loadStarted = Deferred.make<unit, string, unit> ()
+        let! finishLoad = Deferred.make<unit, string, unit> ()
 
-        let load (id: int) : Flow<ClockEnvironment, string, string> =
+        let load (id: int) : Flow<unit, string, string> =
             flow {
                 do! lookups |> Ref.update ((+) 1)
                 do! Deferred.succeed () loadStarted |> Flow.ignore
@@ -160,7 +160,7 @@ let invalidateInFlight : Flow<ClockEnvironment, string, string * string * int> =
 ```
 
 ```fsharp run
-invalidateInFlight |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success("user 1", "user 1", 2))
+invalidateInFlight |> Flow.run () |> shouldEqual (Exit.Success("user 1", "user 1", 2))
 ```
 
 ## Rules

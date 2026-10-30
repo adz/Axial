@@ -38,9 +38,9 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-let handoff : Flow<ClockEnvironment, string, int> =
+let handoff : Flow<unit, string, int> =
     flow {
-        let! deferred = Deferred.make<ClockEnvironment, string, int> ()
+        let! deferred = Deferred.make<unit, string, int> ()
 
         let! waiter =
             Deferred.await deferred
@@ -77,7 +77,7 @@ Awaiting respects runtime cancellation. If the waiting workflow is interrupted b
 /// How many requests are running now, and the most that ever ran at once.
 type Load = { Active: int; Busiest: int }
 
-let runRequest (load: Ref<Load>) (request: int) : Flow<ClockEnvironment, string, int> =
+let runRequest (load: Ref<Load>) (request: int) : Flow<unit, string, int> =
     flow {
         do! load |> Ref.update (fun l -> { Active = l.Active + 1; Busiest = max l.Busiest (l.Active + 1) })
         do! Flow.sleep (TimeSpan.FromMilliseconds 5.0)
@@ -85,7 +85,7 @@ let runRequest (load: Ref<Load>) (request: int) : Flow<ClockEnvironment, string,
         return request * 10
     }
 
-let limitedFetch (semaphore: FlowSemaphore) (load: Ref<Load>) (request: int) : Flow<ClockEnvironment, string, int> =
+let limitedFetch (semaphore: FlowSemaphore) (load: Ref<Load>) (request: int) : Flow<unit, string, int> =
     Semaphore.withPermit semaphore (
         flow {
             // Only one workflow per permit can run this section.
@@ -98,7 +98,7 @@ let limitedFetch (semaphore: FlowSemaphore) (load: Ref<Load>) (request: int) : F
 Create semaphores with a positive permit count:
 
 ```fsharp
-let program : Flow<ClockEnvironment, string, int list * int> =
+let program : Flow<unit, string, int list * int> =
     flow {
         let! semaphore = Semaphore.make 2
         let! load = Ref.make { Active = 0; Busiest = 0 }
@@ -109,7 +109,7 @@ let program : Flow<ClockEnvironment, string, int list * int> =
 ```
 
 ```fsharp run
-match program |> Flow.run (ClockEnvironment Clock.live) with
+match program |> Flow.run () with
 | Exit.Success(results, busiest) ->
     results |> shouldEqual [ 10; 20; 30; 40; 50; 60; 70; 80 ]
     busiest <= 2 |> shouldEqual true

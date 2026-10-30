@@ -37,44 +37,33 @@ let shouldEqual expected actual =
 type IUserStore =
     abstract Count: unit -> int
 
-type AppEnv = { Users: IUserStore; Clock: IClock }
+type AppEnv = { Users: IUserStore }
 
 let summary : Flow<AppEnv, Never, string> =
     flow {
         let! users = Flow.envWith _.Users
-        let! clock = Flow.envWith _.Clock
-        let today = clock.UtcNow().ToString "yyyy-MM-dd"
+        let! now = Clock.now
+        let today = now.ToString "yyyy-MM-dd"
         return $"{users.Count()} users on {today}"
     }
 ```
 
-Production builds the record from the live services; `SqlUserStore` is a placeholder for your own store implementation, not a type Axial ships. For example: `{ Users = SqlUserStore(connectionString); Clock = Clock.live }`. A test builds it from fixed ones:
+Production builds the record from the live services; `SqlUserStore` is a placeholder for your own store implementation, not a type Axial ships. For example: `{ Users = SqlUserStore(connectionString) }`. A test builds it from fixed ones:
 
 ```fsharp run
 let fixedEnv =
-    { Users = { new IUserStore with member _.Count() = 3 }
-      Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)) }
+    { Users = { new IUserStore with member _.Count() = 3 } }
 
-summary |> Flow.run fixedEnv |> shouldEqual (Exit.Success "3 users on 2026-01-01")
+summary |> Flow.withClock (Clock.``fixed`` (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))) |> Flow.run fixedEnv |> shouldEqual (Exit.Success "3 users on 2026-01-01")
 ```
 
 The record literal shows where each service comes from.
 
-For the operational services, `Axial.PlatformService` ships a ready-made bundle so you do not have to name all six:
-
-```fsharp transcript
-> open System;;
-> open Axial.PlatformService;;
-> let runtime () = { BaseRuntime.liveValue with Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)) };;
-> (Clock.now : Flow<BaseRuntime, Never, DateTimeOffset>) |> Flow.map _.Year |> Flow.run (runtime ());;
-val it: Exit<int,Never> = Success 2026
-```
-
-`BaseRuntime` groups `IClock`, `ILog`, `IRandom`, `IGuid`, and `IEnvironmentVariables`, and implements one contract
-per service, so helpers like `Clock.now` and `EnvironmentVariable.get` work against it directly. Embedding it
-alongside your own services takes one interface member per service, delegating to wherever `BaseRuntime` ends up
-living in your record; see [Tutorial: Composing Built-in Services](/services/existing-services.html) for the full
-pattern.
+Clock, random and GUID values are runtime services, not authority in this record. Install test values with
+`Flow.withClock`, `Flow.withRandom` and `Flow.withGuid`. Log and telemetry destinations use `Flow.withLogSink`
+and `Flow.withTelemetry`. These scoped overrides inherit through forks and restore the outer values on exit.
+Environment-variable reads still require an explicit `IHasEnvironmentVariables` dependency; see
+[Tutorial: Composing Built-in Services](/services/existing-services.html).
 
 ## 2. Take it from a host container
 
@@ -156,23 +145,29 @@ A layer acquires its resources inside the scope `Layer.provide` creates, so they
 finishes, fails, or is interrupted. The [layers guide](/layers/layers.html#cleanup) opens and closes a repository
 around the workflow, and the [resources guide](/the-flow-type/resources.html) covers scope-based cleanup directly.
 
-The signal is in the type. `Layer<IServiceProvider, BaseRuntimeError, BaseRuntime>` says: consumes a provider, may
-fail with a typed startup error, produces a runtime. `Axial.PlatformService` ships exactly that as
-`BaseRuntime.fromServiceProvider`, which turns dynamic registrations into an explicit `BaseRuntime` and reports
-anything missing as `BaseRuntimeError.MissingService` **before** the first workflow runs.
+Choose an explicit typed startup error when a missing registration is part of provisioning's contract:
 
 ```fsharp
-let currentYear : Flow<BaseRuntime, BaseRuntimeError, int> = Clock.now |> Flow.map _.Year
+let orderLayer : Layer<IServiceProvider, string, OrderEnv> =
+    Layer.fromFlow (
+        Flow.envWith (fun (provider: IServiceProvider) ->
+            match provider.GetService typeof<IOrderQueue> with
+            | :? IOrderQueue as queue -> Ok { Orders = queue }
+            | _ -> Error "Order queue was not registered")
+        |> Flow.bind Flow.fromResult)
 
-let fromHost : Flow<IServiceProvider, BaseRuntimeError, int> =
-    currentYear |> Layer.provide BaseRuntime.fromServiceProvider
+let fromHost : Flow<IServiceProvider, string, int> =
+    Flow.envWith (fun (env: OrderEnv) -> env.Orders.Flush()) |> Layer.provide orderLayer
 ```
 
-An empty provider fails before `currentYear` runs, with the first service it could not find:
+An empty provider fails before the application runs:
 
 ```fsharp run
-fromHost |> Flow.run (provider []) |> shouldEqual (Exit.Failure(Cause.Fail(BaseRuntimeError.MissingService "IClock")))
+fromHost |> Flow.run (provider []) |> shouldEqual (Exit.Failure(Cause.Fail "Order queue was not registered"))
 ```
+
+The layer consumes the provider and produces only the application's authority record. Runtime values need no
+container bundle; hosts install their clock/log overrides separately at the execution boundary.
 
 ## Choosing
 

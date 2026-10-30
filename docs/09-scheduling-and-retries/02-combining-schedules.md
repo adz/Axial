@@ -31,21 +31,21 @@ open Axial.Telemetry.JavaScript
 let shouldEqual expected actual =
     if actual <> expected then failwithf "Expected %A but got %A" expected actual
 
-let runsUntilStopped (schedule: Schedule<ClockEnvironment, string, 'output>) : int =
+let runsUntilStopped (schedule: Schedule<unit, string, 'output>) : int =
     let runs = ref 0
 
     (Flow.delay (fun () ->
         runs.Value <- runs.Value + 1
         Flow.fail "always")
-     : Flow<ClockEnvironment, string, unit>)
+     : Flow<unit, string, unit>)
     |> Flow.retry schedule
-    |> Flow.run (ClockEnvironment Clock.live)
+    |> Flow.run ()
     |> ignore
 
     runs.Value
 
-let firstOutputs (count: int) (schedule: Schedule<ClockEnvironment, unit, 'output>) : 'output list =
-    match schedule |> FlowStream.fromSchedule |> FlowStream.take count |> FlowStream.runCollect |> Flow.run (ClockEnvironment Clock.live) with
+let firstOutputs (count: int) (schedule: Schedule<unit, unit, 'output>) : 'output list =
+    match schedule |> FlowStream.fromSchedule |> FlowStream.take count |> FlowStream.runCollect |> Flow.run () with
     | Exit.Success outputs -> outputs
     | Exit.Failure _ -> []
 
@@ -59,7 +59,7 @@ backoff with a spaced schedule caps the backoff:
 
 ```fsharp
 // Exponential back-off capped at 30 s, retrying forever
-let reconnect : Schedule<ClockEnvironment, string, _> =
+let reconnect : Schedule<unit, string, _> =
     Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
     |> Schedule.union (Schedule.spaced (TimeSpan.FromSeconds 30.0))
 ```
@@ -76,7 +76,7 @@ recurrence limit with backoff bounds the number of attempts:
 
 ```fsharp
 // At most 10 retries, with exponential back-off
-let limitedBackoff : Schedule<ClockEnvironment, string, _> =
+let limitedBackoff : Schedule<unit, string, _> =
     Schedule.recurs 10
     |> Schedule.intersect (Schedule.exponential (TimeSpan.FromMilliseconds 200.0))
 ```
@@ -94,7 +94,7 @@ when it takes over, so its delays start from the beginning:
 
 ```fsharp
 // Three quick retries, then up to five slower ones with backoff
-let patient : Schedule<ClockEnvironment, string, _> =
+let patient : Schedule<unit, string, _> =
     Schedule.spaced (TimeSpan.FromMilliseconds 100.0)
     |> Schedule.recursAtMost 3
     |> Schedule.andThen (Schedule.exponential (TimeSpan.FromSeconds 1.0) |> Schedule.recursAtMost 5)
@@ -118,7 +118,7 @@ while less than the budget has passed; it never cuts a run short. To cap the num
 
 ```fsharp
 // Retry with backoff, but give up after two minutes in total
-let bounded : Schedule<ClockEnvironment, string, _> =
+let bounded : Schedule<unit, string, _> =
     Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
     |> Schedule.upTo (TimeSpan.FromMinutes 2.0)
 ```
@@ -134,7 +134,7 @@ let budgeted = runsUntilStopped (Schedule.exponential (ms 1.0) |> Schedule.upTo 
 at the error or value being retried. For example, stop once exponential backoff reaches 30 seconds:
 
 ```fsharp
-let untilSlow : Schedule<ClockEnvironment, string, _> =
+let untilSlow : Schedule<unit, string, _> =
     Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
     |> Schedule.whileOutput (fun delay -> delay < TimeSpan.FromSeconds 30.0)
 ```
@@ -155,7 +155,7 @@ how long the worker ran before it crashed. When the threshold is met, the wrappe
 
 ```fsharp
 // Five restarts for a crash loop, but a crash after ten minutes of good work gets the full budget back.
-let worker : Flow<ClockEnvironment, Never, unit> =
+let worker : Flow<unit, Never, unit> =
     flow {
         do! Flow.sleep (TimeSpan.FromMinutes 10.0)
         return! Flow.die (InvalidOperationException "crash")

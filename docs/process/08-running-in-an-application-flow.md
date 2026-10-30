@@ -76,7 +76,7 @@ match Flow.run appEnvironment readRevision with
 ```
 
 `Process.toFlow` preserves routing and capture policies. Batch execution captures all stdout and a separate
-64 KiB stderr tail by default. Streaming constructors require `IHasClock` in the application environment as well.
+64 KiB stderr tail by default. Streaming constructors take their timers from the runtime clock, so the application environment needs no clock member; `Process.live clock` supplies the engine's own clock.
 
 ## Put a fake in the record for a unit test
 

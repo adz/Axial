@@ -4,7 +4,8 @@ description: Typed configuration reads with a failure channel instead of nulls.
 ---
 
 A missing environment variable can surface as `null`, and a malformed value can throw a parse exception later. `Axial.PlatformService`
-splits this into two modules: one for raw access, and one for typed reads with a failure channel.
+splits this into two modules: one for raw access, and one for typed reads with a failure channel. Unlike runtime
+clock/random/GUID values, environment-variable authority stays explicit through `IHasEnvironmentVariables` in `'env`.
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -49,12 +50,13 @@ open Axial.PlatformService
 `EnvironmentVariables.fromPairs` builds an in-memory set for tests:
 
 ```fsharp transcript
+> open Axial;;
 > open Axial.PlatformService;;
-> let runtime () = { BaseRuntime.liveValue with EnvironmentVariables = EnvironmentVariables.fromPairs [ "REGION", "eu" ] };;
-> (EnvironmentVariables.tryGet "REGION" : Flow<BaseRuntime, Never, string option>) |> Flow.run (runtime ());;
+> let runtime () = let variables = EnvironmentVariables.fromPairs [ "REGION", "eu" ] in { new IHasEnvironmentVariables with member _.EnvironmentVariables = variables };;
+> (EnvironmentVariables.tryGet "REGION" : Flow<IHasEnvironmentVariables, Never, string option>) |> Flow.run (runtime ());;
 val it: Exit<string option,Never> = Success (Some "eu")
 
-> (EnvironmentVariables.tryGet "MISSING" : Flow<BaseRuntime, Never, string option>) |> Flow.run (runtime ());;
+> (EnvironmentVariables.tryGet "MISSING" : Flow<IHasEnvironmentVariables, Never, string option>) |> Flow.run (runtime ());;
 val it: Exit<string option,Never> = Success None
 ```
 
@@ -65,7 +67,11 @@ These never fail; an absent variable is `None`.
 `EnvironmentVariable` reads a variable, requires it, and parses it, failing with `EnvironmentVariableError`:
 
 ```fsharp
-let readPort : Flow<BaseRuntime, EnvironmentVariableError, int> =
+type ConfigurationEnv =
+    { Variables: IEnvironmentVariables }
+    interface IHasEnvironmentVariables with member this.EnvironmentVariables = this.Variables
+
+let readPort : Flow<ConfigurationEnv, EnvironmentVariableError, int> =
     EnvironmentVariable.getInt "PORT"
 ```
 
@@ -113,7 +119,7 @@ Typed reads compose into a workflow that produces settings or fails with `Enviro
 ```fsharp
 type Settings = { Port: int; Endpoint: Uri; Timeout: TimeSpan }
 
-let readSettings : Flow<BaseRuntime, EnvironmentVariableError, Settings> =
+let readSettings : Flow<ConfigurationEnv, EnvironmentVariableError, Settings> =
     flow {
         let! port = EnvironmentVariable.getInt "PORT"
         let! endpoint = EnvironmentVariable.getUri "API_ENDPOINT"
@@ -122,7 +128,7 @@ let readSettings : Flow<BaseRuntime, EnvironmentVariableError, Settings> =
     }
 
 let withVariables pairs =
-    { BaseRuntime.liveValue with EnvironmentVariables = EnvironmentVariables.fromPairs pairs }
+    { Variables = EnvironmentVariables.fromPairs pairs }
 ```
 
 ```fsharp run

@@ -1,69 +1,63 @@
 ---
 title: Platform Services
-description: Clock, logging, random, secure-random, GUID, and environment-variable services that make ambient state explicit.
+description: Runtime clock, random and GUID values, observation sinks, and explicit environment-variable authority.
 ---
 
-`Axial.PlatformService` exposes six capabilities as dependencies instead of ambient state:
-`DateTimeOffset.UtcNow`, a logger, ordinary and cryptographically secure randomness, `Guid.NewGuid()`, and `Environment.GetEnvironmentVariable`. Tests can then pin the time or generated identifier.
+Clock, random numbers and GUIDs come from the runtime, not the application environment. The runtime starts with
+live implementations; a scoped override applies to its flow and forked descendants, then restores the outer value.
+Application authority such as files, HTTP, process execution and environment variables stays explicit in `'env`.
 
 ```fsharp
 open System
 open Axial
 open Axial.PlatformService
-```
 
-| Service | Replaces | Module |
-| --- | --- | --- |
-| `IClock` | `DateTimeOffset.UtcNow` | `Clock` |
-| `ILog` | An ambient logger | `Log` |
-| `IRandom` | `System.Random` for non-security-sensitive randomness | `Random` |
-| `IGuid` | `Guid.NewGuid()` | `Guid` |
-| `IEnvironmentVariables` | `Environment.GetEnvironmentVariable` | `EnvironmentVariables`, `EnvironmentVariable` |
-
-A function that declares `IHasClock` can be tested at a chosen instant:
-
-```fsharp
-let isExpired (expiry: DateTimeOffset) : Flow<#IHasClock, Never, bool> =
+let isExpired (expiry: DateTimeOffset) : Flow<'env, Never, bool> =
     Clock.now |> Flow.map (fun now -> now >= expiry)
 ```
 
-## The base runtime
+| Runtime value | Reader | Scoped override |
+| --- | --- | --- |
+| `IClock` | `Clock.now`, `Clock.elapsed`, timed Flow operations | `Flow.withClock` |
+| `IRandom` | `Random.next`, `nextInt`, `nextDouble`, `bytes` | `Flow.withRandom` |
+| `IGuid` | `Guid.newGuid` | `Flow.withGuid` |
 
-Applications usually need all six. `BaseRuntime` bundles them, and it
-implements one contract per service, so a workflow requiring any combination is satisfied by the single value:
+`IClock`, `IRandom` and `IGuid` are defined in `Axial`; their reader modules and implementations live in
+`Axial.PlatformService`. There is no general runtime service registry. An environment remains an ordinary
+application record, and `Flow.envWith` selects its fields.
 
-```fsharp
-let liveRuntime : BaseRuntime = BaseRuntime.liveValue
+## Observation slots
+
+`Log.info` and the other logging helpers write to the current `ILogSink`. The default writes Information and above
+to stderr, leaving stdout available for application output. `Flow.withLogSink` replaces the sink for a subtree;
+`Flow.mapLogSink` decorates the sink already in force. `Flow.withTelemetry` similarly installs the two write-only
+`ITelemetry` callbacks for annotations and typed attributes. These slots inherit through forks too.
+
+## Deterministic runs
+
+```fsharp transcript
+> open System;;
+> open Axial;;
+> open Axial.PlatformService;;
+> (Clock.now : Flow<unit, Never, DateTimeOffset>) |> Flow.map _.Year |> Flow.runTest ();;
+val it: Exit<int,Never> = Success 1970
+
+> (Random.nextInt 1 10 : Flow<unit, Never, int>) |> Flow.withRandom (Random.fromValue 7) |> Flow.runTest ();;
+val it: Exit<int,Never> = Success 7
 ```
 
-`BaseRuntime.live : Layer<unit, Never, BaseRuntime>` provides the same bundle to a layer-composed runtime, and
-`BaseRuntime.fromServiceProvider : Layer<IServiceProvider, BaseRuntimeError, BaseRuntime>` builds it from a host
-container, turning missing registrations into typed startup errors.
+`Flow.runTest env` creates a fresh `TestPlatform`: an epoch `ManualClock`, seeded random, sequential GUIDs and a
+recording log. `Flow.runTestWith platform env` exposes those fakes for assertions. Neither runner advances time
+automatically. Timed tests fork, await a registration signal, explicitly advance, then join; see [clock](clock.html).
+The test runners are .NET APIs; Fable supports `ManualClock` and the same scoped per-service overrides.
 
-Most applications extend `BaseRuntime` rather than replacing it; see
-[Tutorial: Composing Built-in Services](/services/existing-services.html) for the composition, and
-[platform services getting started](/platforms-and-hosting/platform-services.html) for the shortest path to a
-running host.
-
-## Deterministic implementations
-
-Every module ships test doubles beside its `live` value, so a test rarely needs to write an object expression:
-
-```fsharp
-let fixedRuntime : BaseRuntime =
-    { Clock = Clock.fromValue (DateTimeOffset.Parse "2026-01-01T00:00:00Z")
-      Log = Log.live
-      Random = Random.fromValue 7
-      Guid = Guid.fromValue (System.Guid.Parse "00000000-0000-0000-0000-000000000001")
-      EnvironmentVariables = EnvironmentVariables.fromPairs [ "AXIAL_ENV", "test" ] }
-```
-
-`Clock.fromValue`, `Guid.fromValue`, `Random.fromValue`, `Random.fromFixed`,
-`EnvironmentVariables.fromPairs`, and `Log.fromSink` each pin one service to a known answer.
+Environment variables are different: they read or change external state. Supply `IHasEnvironmentVariables` in the
+application environment and use `EnvironmentVariables.fromPairs` in tests. Cryptographic randomness belongs inside
+an explicit capability using `System.Security.Cryptography`, not the runtime's ordinary random generator.
 
 ## In this section
 
-1. [Clock](clock.html): the current instant, and why it belongs in the environment.
-2. [Logging](logging.html): `ILog` levels, sinks, and its relationship to telemetry.
-3. [Randomness and GUIDs](random-and-guid.html): non-determinism you can pin in a test.
-4. [Environment variables](environment-variables.html): typed reads with `EnvironmentVariableError`.
+1. [Clock](clock.html): timestamps, durations and explicit manual stepping.
+2. [Logging](logging.html): level gates, metadata, sink composition and host adapters.
+3. [Randomness and GUIDs](random-and-guid.html): fixed, seeded and scripted values.
+4. [Environment variables](environment-variables.html): explicit authority and typed configuration errors.

@@ -7,11 +7,11 @@ delivers callbacks on the host's dispatch thread.
 ## Construction
 
 `ElmishRuntime.start options environment` builds a runtime from `ElmishRuntimeOptions` (`Post`, `OnDefect`,
-`HistoryCapacity`). When already on the dispatch thread, `Post` should run inline; otherwise it should post to it. Do
+`HistoryCapacity`, `Clock`). `Clock = None` keeps the live runtime default; `Some clock` installs it for commands, subscriptions and layer provisioning. When already on the dispatch thread, `Post` should run inline; otherwise it should post to it. Do
 not call Elmish's dispatch directly from workers. Connect `OnDefect` to the host's crash reporting path; typed
 failures are messages, but defects are not.
 
-The runtime requires an environment implementing `IHasClock`. Keep that clock environment stable, and supply a
+The runtime accepts any environment and needs no clock member. Keep the environment stable, and supply a
 command's current dependencies with `Flow.localEnv`.
 
 ## Shutdown

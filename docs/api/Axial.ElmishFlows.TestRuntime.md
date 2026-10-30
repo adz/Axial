@@ -1,7 +1,7 @@
 # TestRuntime
 
-`ElmishRuntime.test env` creates a test runtime with queued delivery. A manual clock in `env` controls workflow time
-independently of the wall-clock settle timeout.
+`ElmishRuntime.test clock env` creates a test runtime with queued delivery. The `ManualClock` it takes controls workflow
+time independently of the wall-clock settle timeout.
 
 ## Operations
 

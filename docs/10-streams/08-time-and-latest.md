@@ -38,7 +38,7 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-let batchSizes (events: FlowStream<ClockEnvironment, Never, int>) : Flow<ClockEnvironment, Never, int list> =
+let batchSizes (events: FlowStream<unit, Never, int>) : Flow<unit, Never, int list> =
     events
     |> FlowStream.groupedWithin 100 (TimeSpan.FromSeconds 1.0)
     |> FlowStream.map List.length
@@ -49,7 +49,7 @@ A burst of 250 events arrives well within a second, so the batches fill by size 
 stream ends:
 
 ```fsharp run
-batchSizes (FlowStream.fromSeq [ 1..250 ]) |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success [ 100; 100; 50 ])
+batchSizes (FlowStream.fromSeq [ 1..250 ]) |> Flow.run () |> shouldEqual (Exit.Success [ 100; 100; 50 ])
 ```
 
 No empty list is emitted, and the partial list is emitted when upstream ends or before a failure is propagated.
@@ -60,7 +60,7 @@ No empty list is emitted, and the partial list is emitted when upstream ends or 
 arriving faster replace each other, and the latest is emitted when the interval ends:
 
 ```fsharp
-let rendered (progress: FlowStream<ClockEnvironment, Never, int>) : Flow<ClockEnvironment, Never, int list> =
+let rendered (progress: FlowStream<unit, Never, int>) : Flow<unit, Never, int list> =
     progress
     |> FlowStream.throttle (TimeSpan.FromMilliseconds 100.0)
     |> FlowStream.runCollect
@@ -69,7 +69,7 @@ let rendered (progress: FlowStream<ClockEnvironment, Never, int>) : Flow<ClockEn
 A hundred progress updates in a burst render as the first and the last:
 
 ```fsharp run
-rendered (FlowStream.fromSeq [ 1..100 ]) |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success [ 1; 100 ])
+rendered (FlowStream.fromSeq [ 1..100 ]) |> Flow.run () |> shouldEqual (Exit.Success [ 1; 100 ])
 ```
 
 ## Wait for input to settle
@@ -84,11 +84,11 @@ arrives. Results for stale input are never emitted, and the superseded request's
 one starts:
 
 ```fsharp
-let search (query: string) : Flow<ClockEnvironment, Never, string> =
+let search (query: string) : Flow<unit, Never, string> =
     // A slow request so a later keystroke can arrive while this one is still running.
     Flow.sleep (TimeSpan.FromMilliseconds 100.0) |> Flow.map (fun () -> $"results for {query}")
 
-let shownResults (keystrokes: FlowStream<ClockEnvironment, Never, string>) : Flow<ClockEnvironment, Never, string list> =
+let shownResults (keystrokes: FlowStream<unit, Never, string>) : Flow<unit, Never, string list> =
     keystrokes
     |> FlowStream.debounce (TimeSpan.FromMilliseconds 200.0)
     |> FlowStream.switchMapFlow search
@@ -98,7 +98,7 @@ let shownResults (keystrokes: FlowStream<ClockEnvironment, Never, string>) : Flo
 Typing "a", "ax", "axi" quickly searches only once, for the settled input:
 
 ```fsharp run
-shownResults (FlowStream.fromSeq [ "a"; "ax"; "axi" ]) |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success [ "results for axi" ])
+shownResults (FlowStream.fromSeq [ "a"; "ax"; "axi" ]) |> Flow.run () |> shouldEqual (Exit.Success [ "results for axi" ])
 ```
 
 The debounce means `switchMapFlow` only ever sees the settled input, so it never interrupts anything there. To see
@@ -107,14 +107,14 @@ keystroke arrives while the previous search is still sleeping, so the earlier se
 is never emitted:
 
 ```fsharp
-let latestResult (keystrokes: FlowStream<ClockEnvironment, Never, string>) : Flow<ClockEnvironment, Never, string list> =
+let latestResult (keystrokes: FlowStream<unit, Never, string>) : Flow<unit, Never, string list> =
     keystrokes
     |> FlowStream.switchMapFlow search
     |> FlowStream.runCollect
 ```
 
 ```fsharp run
-latestResult (FlowStream.fromSeq [ "a"; "ax"; "axi" ]) |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success [ "results for axi" ])
+latestResult (FlowStream.fromSeq [ "a"; "ax"; "axi" ]) |> Flow.run () |> shouldEqual (Exit.Success [ "results for axi" ])
 ```
 
 When upstream ends, the running flow is allowed to finish. The first failure stops the stream.

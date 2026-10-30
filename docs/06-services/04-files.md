@@ -15,7 +15,7 @@ dotnet add package Axial.Files
 
 `Files.walk descend root` lists descendants breadth-first; `descend` receives each directory path and decides whether to list its children. `Files.lines path` reads text in batches of 2048 lines, detects UTF-8 and UTF-16 BOMs, and returns an empty stream for files with NUL bytes in the first 8192 bytes (unless they have a UTF-16 BOM). Stopping a line stream early closes its reader. Both operations work with `FileSystem.test`.
 
-`Files.writeAtomic path bytes` requires an environment with `IHasFileSystem` and `IHasGuid`. It writes the full contents to a sibling temporary file in the same directory, flushes it
+`Files.writeAtomic path bytes` requires an environment with `IHasFileSystem`; its temporary-file names come from the runtime GUID generator, which a test controls with `Flow.withGuid`. It writes the full contents to a sibling temporary file in the same directory, flushes it
 to disk, then renames it over the destination with `MoveFile(overwrite = true)`. Because the temporary file lives in
 the same directory as the destination, the rename stays on one filesystem and is atomic: readers see either the
 previous contents — or no file, when the destination did not exist yet — or the complete new contents, never a
@@ -52,14 +52,10 @@ open Axial.Files
 open Axial.PlatformService
 
 type FileEnvironment =
-    { FileSystem: IFileSystem
-      Guid: IGuid }
+    { FileSystem: IFileSystem }
     interface IHasFileSystem with member this.FileSystem = this.FileSystem
-    interface IHasGuid with member this.Guid = this.Guid
 
-let fileSystemEnv =
-    { FileSystem = FileSystem.live
-      Guid = Guid.live }
+let fileSystemEnv = { FileSystem = FileSystem.live }
 
 let appendAndReplay (path: string) : Flow<IHasFileSystem, FileSystemError, byte array list> =
     flow {

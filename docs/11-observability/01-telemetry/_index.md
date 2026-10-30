@@ -451,14 +451,14 @@ let observedApplication =
 Name long-lived work so the dump is readable:
 
 ```fsharp
-let pollOutbox : Flow<ClockEnvironment, CheckoutError, unit> = Flow.sleep (TimeSpan.FromSeconds 5.0)
+let pollOutbox : Flow<unit, CheckoutError, unit> = Flow.sleep (TimeSpan.FromSeconds 5.0)
 
-let startPoller : Flow<ClockEnvironment, CheckoutError, Fiber<CheckoutError, unit>> = Flow.forkNamed "outbox-poller" pollOutbox
+let startPoller : Flow<unit, CheckoutError, Fiber<CheckoutError, unit>> = Flow.forkNamed "outbox-poller" pollOutbox
 ```
 
 `registry.DumpAt` and `FiberDumpTelemetry.record` both take an `IClock` to timestamp the snapshot. Inside a workflow,
-read the environment's injected clock (`Flow.envWith (fun (env: ClockEnvironment) -> env.Clock)`) so tests and
-repeated runs get a deterministic timestamp. At the edge there is no environment to read: call
+read the runtime clock (`Clock.service`) so tests and
+repeated runs get a deterministic timestamp. At the edge there is no running flow to read from: call
 `registry.DumpAt(Clock.live)` from a protected diagnostics endpoint, write it during a stuck shutdown, or attach it
 to the current trace, all with the live clock:
 
@@ -502,7 +502,7 @@ Run the application and open the dashboard:
 - Use **telemetry context attributes** for values intentionally exported to tracing backends and queried across spans.
 - Use `Flow.annotate` for Axial runtime diagnostics. Telemetry exports these under
   `axial.flow.annotation.*`, preserving their separate namespace.
-- Use `ILog` for messages and exceptions that belong in the host logging pipeline.
+- Use `Log.info`/`Log.error` (the runtime log sink) for messages and exceptions that belong in the host logging pipeline.
 
 The mechanisms share ambient scoping, but they are different operational contracts.
 

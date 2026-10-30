@@ -116,7 +116,7 @@ let waitForFunds =
         return! Fiber.join withdrawer
     }
 
-(waitForFunds |> Flow.run (ClockEnvironment Clock.live) : Exit<decimal, unit>) |> shouldEqual (Exit.Success 0m)
+(waitForFunds |> Flow.run () : Exit<decimal, unit>) |> shouldEqual (Exit.Success 0m)
 ```
 
 ```fsharp run

@@ -30,19 +30,19 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-type RegionEnv = { Clock: IClock; Region: string }
+type RegionEnv = { Region: string }
 
 let describeRegion : Flow<RegionEnv, Never, string> =
     flow {
-        let! clock = Flow.envWith _.Clock
+        let! now = Clock.now
         let! region = Flow.envWith _.Region
-        return $"{region} at {clock.UtcNow().Year}"
+        return $"{region} at {now.Year}"
     }
 ```
 
 ```fsharp run
-let env = { Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)); Region = "eu" }
-describeRegion |> Flow.run env |> shouldEqual (Exit.Success "eu at 2026")
+let env = { Region = "eu" }
+describeRegion |> Flow.withClock (Clock.``fixed`` (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))) |> Flow.run env |> shouldEqual (Exit.Success "eu at 2026")
 ```
 
 Direct construction needs no layer. See [dependencies](/dependencies/index.html).
@@ -59,7 +59,7 @@ type Connection(name: string, closed: ResizeArray<string>) =
     member _.Name = name
     member _.Close() = closed.Add name
 
-type AppEnv = { Clock: IClock; Connection: Connection }
+type AppEnv = { Region: string; Connection: Connection }
 type AppError = QueryFailed of string
 
 let connectionLayer (closed: ResizeArray<string>) : Layer<unit, Never, Connection> =
@@ -71,8 +71,8 @@ let connectionLayer (closed: ResizeArray<string>) : Layer<unit, Never, Connectio
                 Flow.ok ()))
 
 let runtime (closed: ResizeArray<string>) : Layer<unit, Never, AppEnv> =
-    Layer.merge Clock.layer (connectionLayer closed)
-    |> Layer.map (fun (clock, connection) -> { Clock = clock; Connection = connection })
+    Layer.merge (Layer.succeed "eu") (connectionLayer closed)
+    |> Layer.map (fun (region, connection) -> { Region = region; Connection = connection })
 
 let query : Flow<AppEnv, AppError, string> =
     Flow.envWith (fun env -> env.Connection.Name)
@@ -94,47 +94,31 @@ List.ofSeq closed |> shouldEqual [ "orders-db" ]
 flow with the result, and closes the scope afterwards whether the flow succeeds, fails, or is
 interrupted.
 
-## Two real examples
+## Two provisioning shapes
 
-Axial packages use layers for typed provisioning errors and service construction from other services.
+**Typed startup failure.** A layer can validate configuration before constructing application services:
 
-**Provisioning that can fail with a typed error.** `Axial.PlatformService` builds the five standard services from a
-host container:
-
-```fsharp no-check reason="Excerpted from the Axial.PlatformService source"
-let servicesFromServiceProvider
-    : Layer<IServiceProvider, BaseRuntimeError, IClock * ILog * IRandom * IGuid * IEnvironmentVariables> =
-    Layer.fromFlow (
-        Flow.envWith (fun provider ->
-            match tryService<IClock> provider, tryService<ILog> provider, tryService<IRandom> provider,
-                  tryService<IGuid> provider, tryService<IEnvironmentVariables> provider with
-            | Ok clock, Ok log, Ok random, Ok guid, Ok environmentVariables ->
-                Ok(clock, log, random, guid, environmentVariables)
-            | Error name, _, _, _, _ | _, Error name, _, _, _ | _, _, Error name, _, _
-            | _, _, _, Error name, _ | _, _, _, _, Error name ->
-                Error(BaseRuntimeError.MissingService name))
-        |> Flow.bind Flow.fromResult
-    )
+```fsharp
+let connectionString : Layer<IHasEnvironmentVariables, EnvironmentVariableError, string> =
+    Layer.fromFlow (EnvironmentVariable.get "CONNECTION_STRING")
 ```
 
-The error channel is `BaseRuntimeError`, not `Never`. Construction can fail with a typed error naming the missing
-service. A factory returning `Result<'env, BaseRuntimeError>` could model that typed failure in a record, but a layer
-keeps the failure inside the provisioning step: `Layer.provide` runs the workflow only after every step succeeds,
-releases resources acquired by earlier steps when one fails, and lets independent steps build in parallel with
-`merge`. A missing service surfaces as a typed startup failure before any workflow runs.
+The error channel is `EnvironmentVariableError`, not `Never`. `Layer.provide` runs the downstream workflow only
+after provisioning succeeds, releases resources acquired by earlier steps when a later step fails, and lets
+independent steps build in parallel with `merge`. A direct factory returning `Result` can model the error too;
+the layer additionally owns acquisition and release.
 
-**A service built from another service.** `Axial.Hosting` turns what the host container has into what workflows
-need:
+**A service built from another service.** An HTTP adapter needs an application-owned client and an explicit clock
+at its live boundary:
 
-```fsharp no-check reason="Excerpted from the Axial.Hosting source"
-let layer (categoryName: string) : Layer<ILoggerFactory, Never, ILog> =
-    Layer.envWith (fromFactory categoryName)
+```fsharp
+let httpLayer : Layer<System.Net.Http.HttpClient, Never, Axial.HttpClient.IHttp> =
+    Layer.envWith (Axial.HttpClient.Http.live Clock.live)
 ```
 
-The layer consumes the host's `ILoggerFactory` and produces an `ILog` named by the category. The factory arrives only
-after the host starts, so `Layer.envWith (fromFactory categoryName)` adapts it at the `provide` boundary. This
-demonstrates adapting one dependency into another — not a limitation of records, since a record built after startup
-could hold the factory or the resulting logger directly.
+The layer consumes the client and constructs an explicit HTTP capability. It does not install a runtime clock or
+log sink. Runtime overrides belong around the flow (`Flow.withClock`, `Flow.withLogSink`), not in an environment
+layer. The same adaptation can be performed directly when a host constructs its record.
 
 An already-built value that cannot fail needs no provisioning. `Layer.succeed` wraps it:
 

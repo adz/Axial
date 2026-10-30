@@ -116,13 +116,13 @@ let dashboardTask (user: int) (token: CancellationToken) : Task<Profile * Order 
 A flow takes no token. The runtime passes cancellation to all the work it starts:
 
 ```fsharp
-let loadProfile (user: int) : Flow<ClockEnvironment, DashboardError, Profile> =
+let loadProfile (user: int) : Flow<unit, DashboardError, Profile> =
     Flow.sleep (TimeSpan.FromMilliseconds 10.0) |> Flow.map (fun () -> { Name = "Ada" })
 
-let loadOrders (user: int) : Flow<ClockEnvironment, DashboardError, Order list> =
+let loadOrders (user: int) : Flow<unit, DashboardError, Order list> =
     Flow.sleep (TimeSpan.FromMilliseconds 10.0) |> Flow.map (fun () -> [ { Number = 1 } ])
 
-let dashboard (user: int) : Flow<ClockEnvironment, DashboardError, Profile * Order list> =
+let dashboard (user: int) : Flow<unit, DashboardError, Profile * Order list> =
     Flow.zipPar (loadProfile user) (loadOrders user)
     |> Flow.timeout (TimeSpan.FromSeconds 2.0) DashboardTimedOut
 ```
@@ -171,13 +171,14 @@ let placeOrder (cart: Cart) : Flow<Shop, OrderError, Receipt> =
 Code that reads `DateTimeOffset.UtcNow` or calls `Guid.NewGuid()` gives a different result on every run, and nothing in
 its signature says so. Testing it means waiting, or replacing a static.
 
-In a flow, the clock and the GUID generator are services like any other. Reading them adds their requirement to the
-flow's type:
+In a flow, the clock and the GUID generator are runtime services. Reading them does not widen the flow's environment:
+the runtime carries a clock, random source, GUID generator and log sink, and a live default is installed unless a caller
+overrides it.
 
 ```fsharp
 type PlacedOrder = { Id: Guid; PlacedAt: DateTimeOffset }
 
-let stamp<'env when 'env :> IHasClock and 'env :> IHasGuid> : Flow<'env, Never, PlacedOrder> =
+let stamp : Flow<'env, Never, PlacedOrder> =
     flow {
         let! placedAt = Clock.now
         let! id = Guid.newGuid
@@ -185,27 +186,20 @@ let stamp<'env when 'env :> IHasClock and 'env :> IHasGuid> : Flow<'env, Never, 
     }
 ```
 
-`Clock.now` requires an environment that has a clock, and the requirement carries up to every flow that calls
-`stamp`, whether or not their types are written out. The application supplies the live services; a test supplies fixed
-ones and gets the same result every time:
+`stamp` works in any environment. The application runs it with the live defaults; a test installs fixed ones with
+`Flow.withClock` and `Flow.withGuid`, and gets the same result every time:
 
 ```fsharp
-type Fixed =
-    { Clock: IClock
-      Guid: IGuid }
-    interface IHasClock with
-        member this.Clock = this.Clock
-    interface IHasGuid with
-        member this.Guid = this.Guid
+let fixedClock = Clock.``fixed`` (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))
 
-let fixedServices =
-    { Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))
-      Guid = Guid.fromValue Guid.Empty }
-
-let placed = stamp |> Flow.run fixedServices
+let placed =
+    stamp
+    |> Flow.withClock fixedClock
+    |> Flow.withGuid (Guid.fromValue Guid.Empty)
+    |> Flow.run ()
 ```
 
-With the fixed clock and GUID implementations above, repeated runs produce the same stamp. A live service can read changing external state or hold mutable state, so reusing an environment alone does not guarantee identical results. With [Axial.Guardrails](../notes/guardrails.html) installed, the build
+With the fixed clock and GUID implementations above, repeated runs produce the same stamp. A live service can read changing external state or hold mutable state, so reusing an installation alone does not guarantee identical results. With [Axial.Guardrails](../notes/guardrails.html) installed, the build
 also warns when code reads the clock, randomness, or environment variables directly instead of through a service.
 
 ## 5. Resources belong to the flow that acquired them
@@ -247,10 +241,10 @@ so a pipeline with parallel workers stops all of them, and releases what they ac
 enough:
 
 ```fsharp
-let fetchPage (id: int) : Flow<ClockEnvironment, Never, string> =
+let fetchPage (id: int) : Flow<unit, Never, string> =
     Flow.sleep (TimeSpan.FromMilliseconds 5.0) |> Flow.map (fun () -> $"page {id}")
 
-let firstTen : Flow<ClockEnvironment, Never, string list> =
+let firstTen : Flow<unit, Never, string list> =
     FlowStream.fromSeq [ 1..1000 ]
     |> FlowStream.mapFlowPar (Parallelism.bounded 4) fetchPage
     |> FlowStream.take 10
@@ -270,9 +264,9 @@ annotations travel to every fiber the flow starts:
 ```fsharp
 let registry = FiberRegistry(100)
 
-let pollerSnapshot : Flow<ClockEnvironment, Never, string> =
+let pollerSnapshot : Flow<unit, Never, string> =
     flow {
-        let! clock = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock)
+        let! clock = Clock.service
         let! _ = Flow.sleep (TimeSpan.FromMinutes 1.0) |> Flow.forkNamed "outbox-poller"
         return registry.DumpAt(clock)
     }

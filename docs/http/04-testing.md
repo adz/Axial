@@ -125,8 +125,8 @@ set, or the lookup must use an absolute URL. Without a base address, `Http.live`
 
 Reuse one `HttpClient` per application: connection pooling, DNS rotation handlers,
 and proxy settings remain `HttpClient` concerns. Axial adds the typed request/response boundary on top
-without hiding the client or the clock used for transcript timestamps and durations. Tests can pass `Clock.fromValue`
-or another `IClock` fake for deterministic time.
+without hiding the client or the clock used for transcript timestamps and durations. Tests can pass a `ManualClock`
+(`Clock.fromValue`) or another `IClock` fake for deterministic time.
 
 Base addresses configured on the client work as usual: relative request URLs resolve against
 `client.BaseAddress`:
@@ -143,9 +143,9 @@ Service records compose the same way as the other platform packages:
 ```fsharp
 type WorkerEnv =
     { Http: IHttp
-      Clock: IClock }
+      Variables: IEnvironmentVariables }
     interface IHasHttp with member this.Http = this.Http
-    interface IHasClock with member this.Clock = this.Clock
+    interface IHasEnvironmentVariables with member this.EnvironmentVariables = this.Variables
 ```
 
 The same pattern adds `IHasProcess` for `Axial.Process`, or any other package's contract.

@@ -216,7 +216,7 @@ A forked fiber owns the [scoped resources](/scopes/index.html#scoped-resources) 
 settles. `Fiber.join` returns the fiber's value after that, so a resource the fiber returns is already released:
 
 ```fsharp
-let connection : Resource<ClockEnvironment, Never, MemoryStream> =
+let connection : Resource<unit, Never, MemoryStream> =
     Resource.create
         (Flow.ok (new MemoryStream()))
         (fun stream -> Flow.delay (fun () -> stream.Dispose(); Flow.ok ()))

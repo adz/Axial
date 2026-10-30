@@ -46,7 +46,7 @@ match completion with
 ```
 
 `lines` is a `ProcessStream<'env, string>`: the value parameter is one decoded line, and `'env` supplies
-process and clock services when it runs. `runCollect` produces
+the process service when it runs; timers use the runtime clock. `runCollect` produces
 `Flow<'env, ProcessError, string list * ProcessCompletion>`; `Process.run` returns
 the values and completion directly. `Completed result` includes the final `ProcessResult`;
 `StoppedEarly` reports successful prefix stopping after cleanup.

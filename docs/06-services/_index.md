@@ -33,7 +33,7 @@ let greet name : Flow<#IHasConsole, Never, unit> =
 ```
 
 The host supplies the live implementation at the edge, `Console.live`. Tests supply a recording or in-memory
-implementation of the same contract; the [console page](console.html#testing) builds one. Composite operations declare every capability they use: for example, `Files.writeAtomic` requires both `IHasFileSystem` and `IHasGuid`, so tests can control its temporary-file name.
+implementation of the same contract; the [console page](console.html#testing) builds one. Composite operations declare every environment capability they use: `Files.writeAtomic` requires `IHasFileSystem`, and its temporary-file name comes from the runtime GUID generator, so tests control it with `Flow.withGuid`.
 
 ## In this section
 
@@ -41,7 +41,7 @@ implementation of the same contract; the [console page](console.html#testing) bu
 2. [Console](console.html): standard streams, redirection, and terminal control.
 3. [File system](filesystem.html): files, directories, paths, and typed failures.
 4. [Files](files.html): streaming traversal, atomic writes, and the append log.
-5. [Using existing services](existing-services.html): compose `BaseRuntime` with application dependencies.
+5. [Using existing services](existing-services.html): compose application dependencies with runtime clock, random, GUID and log services.
 6. [WebSocket](websocket.html): typed WebSocket client sessions.
 
 [Telemetry](/observability/telemetry/index.html) instruments the runtime rather than defining a workflow dependency. [Hosting](/platforms-and-hosting/index.html) supplies environments and application lifecycle integration.

@@ -1,65 +1,32 @@
 ---
 title: "Tutorial: Composing Built-in Services"
-description: Embed BaseRuntime and your own dependencies in one application environment.
+description: Combine explicit application authority with scoped runtime values and observation sinks.
 ---
 
 # Tutorial: Composing Built-in Services
 
-An application can combine services constrained by `IHasX` interfaces with its own dependencies in one environment.
-
-## The problem
-
-[`BaseRuntime`](platform-services/index.html) bundles the five platform services and already implements
-`IHasClock`, `IHasLog`, `IHasRandom`, `IHasGuid`, and `IHasEnvironmentVariables`. Embedding it as a field of your
-own record does not carry those interface implementations with it: F# has no mechanism for one type to forward
-another type's interfaces automatically. Your own environment record has to state, once per service, where that
-service lives:
+An application environment holds dependencies with authority: configuration, repositories, HTTP clients, files
+and process execution. Clock, ordinary random values and GUIDs come from the runtime. Logging and telemetry are
+write-only observation slots. None of those runtime slots needs forwarding interfaces on your record.
 
 ```fsharp prepare
-// Setup for the checked examples on this page.
 open System
-open System.IO
-open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Console
-open Axial.FileSystem
-open Axial.Hosting
-open Axial.Hosting.Browser
-open Axial.Hosting.Node
 open Axial.PlatformService
-open Axial.State
-open Axial.Telemetry
-open Axial.Telemetry.JavaScript
-
-/// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =
     if actual <> expected then failwithf "Expected %A but got %A" expected actual
 ```
 
-```fsharp
-open Axial.PlatformService
+## Declare application authority
 
+Environment variables remain explicit because they read or change external state:
+
+```fsharp
 type AppEnv =
-    { Runtime: BaseRuntime }
+    { Variables: IEnvironmentVariables }
+    interface IHasEnvironmentVariables with member this.EnvironmentVariables = this.Variables
 
-    interface IHasClock with
-        member this.Clock = this.Runtime.Clock
-
-    interface IHasLog with
-        member this.Log = this.Runtime.Log
-
-    interface IHasEnvironmentVariables with
-        member this.EnvironmentVariables = this.Runtime.EnvironmentVariables
-```
-
-`member this.Clock = this.Runtime.Clock` delegates the contract to the `Runtime` field. Declare interface members for the services the application uses, once on the environment record.
-
-## Use the services
-
-The workflow uses the same service APIs whether `Runtime` holds them or they are top-level fields:
-
-```fsharp
 let loadMode : Flow<AppEnv, EnvironmentVariableError, string> =
     flow {
         let! now = Clock.utcDateTime
@@ -69,67 +36,55 @@ let loadMode : Flow<AppEnv, EnvironmentVariableError, string> =
     }
 ```
 
-`loadMode` does not know that `Clock`, `Log`, and `EnvironmentVariable` all come from the same `Runtime` field; it
-only knows the three interfaces. Swap `AppEnv` for any other type that implements them and the
-workflow is unchanged.
+Only the configuration read constrains the application environment. The clock and log destination can be
+controlled without changing `AppEnv` or the workflow.
 
-## Add your own dependencies alongside it
+## Add application dependencies
 
-`AppEnv` is an ordinary record, so extending it with an application-specific dependency is the same pattern as
-[the app record tutorial](/dependencies/tutorials/app-record.html): add a field, add an interface if other
-helpers should depend on the contract rather than the field name directly:
+An ordinary projection needs no service interface:
 
 ```fsharp
 type IOrderRepository =
     abstract Count: unit -> int
 
 type ShopEnv =
-    { Runtime: BaseRuntime
+    { Variables: IEnvironmentVariables
       Orders: IOrderRepository }
+    interface IHasEnvironmentVariables with member this.EnvironmentVariables = this.Variables
 
-    interface IHasClock with
-        member this.Clock = this.Runtime.Clock
-
-    interface IHasLog with
-        member this.Log = this.Runtime.Log
-
-    interface IHasEnvironmentVariables with
-        member this.EnvironmentVariables = this.Runtime.EnvironmentVariables
+let countOrders : Flow<ShopEnv, Never, int> = Flow.envWith (fun env -> env.Orders.Count())
 ```
 
-A workflow that reads `Orders` directly (`Flow.envWith _.Orders`) is coupled to this record's field name. If you
-want `Orders` reusable behind a named contract instead, the way `Clock` and `Log` are, see
-[Tutorial: Creating Reusable Services](/advanced/custom-services.html).
+Use `Flow.envWith _.Orders` when the workflow belongs to this record. Add a named authority contract only when
+helpers should work across environment shapes; see [custom services](/advanced/custom-services.html).
 
-## Run it
-
-In production the environment holds the live services:
+## Run at the edge
 
 ```fsharp
 let runLive () : Task<Exit<string, EnvironmentVariableError>> =
-    loadMode |> Flow.startTask { Runtime = BaseRuntime.liveValue }
+    loadMode |> Flow.startTask { Variables = EnvironmentVariables.live }
 ```
 
-## Test it
+The runtime supplies live clock/random/GUID values and an Information+ stderr log sink. Generic Host and HTTP
+host adapters can install their own sinks; an inner scoped override still wins.
 
-Tests can substitute services through `BaseRuntime`'s fields. `BaseRuntime`'s fields each accept the fixed value shown in
-[deterministic implementations](platform-services/index.html#deterministic-implementations), so a test builds the
-whole environment as one value literal, with no interface to reimplement:
+## Test without global state
 
 ```fsharp run
-let gate = obj()
-let mutable logged = []
-
-let testEnv =
-    { Runtime =
-        { Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))
-          Log = Log.fromSink (fun _ message -> lock gate (fun () -> logged <- message :: logged))
-          Random = Random.fromValue 7
-          Guid = Guid.fromValue (Guid.Parse "00000000-0000-0000-0000-000000000001")
-          EnvironmentVariables = EnvironmentVariables.fromPairs [ "APP_MODE", "diagnostic" ] } }
-
-loadMode |> Flow.run testEnv |> shouldEqual (Exit.Success "diagnostic")
-lock gate (fun () -> List.rev logged) |> shouldEqual [ "[2026-01-01T00:00:00.0000000Z] starting in mode diagnostic" ]
+let log = Log.memory ()
+let testEnv = { Variables = EnvironmentVariables.fromPairs ["APP_MODE", "diagnostic"] }
+loadMode
+|> Flow.withClock (Clock.``fixed`` (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)))
+|> Flow.withLogSink log
+|> Flow.run testEnv
+|> shouldEqual (Exit.Success "diagnostic")
+log.Entries |> Seq.map _.Message |> Seq.toList
+|> shouldEqual ["[2026-01-01T00:00:00.0000000Z] starting in mode diagnostic"]
 ```
 
-See [Tutorial: Creating Reusable Services](/advanced/custom-services.html) for an application-specific service contract, or [Layers](/layers/tutorial.html) when building the environment itself becomes effectful.
+`Flow.withRandom` and `Flow.withGuid` follow the same scope rule as `withClock` and `withLogSink`; descendants
+inherit them and outer values are restored afterwards. `Flow.runTest env` installs a fresh deterministic
+`TestPlatform`, including a recording log, without moving authority out of the environment.
+
+Use [layers](/layers/index.html) when constructing the application environment acquires resources or can fail.
+Use runtime overrides for values and observation slots, not as a general-purpose dependency registry.

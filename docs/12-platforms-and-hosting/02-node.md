@@ -79,7 +79,7 @@ async {
 
 ## Logging and Telemetry
 
-Supply Node logging as an explicit `ILog` implementation in the application environment. For tracing, install
+`Node` installs `NodeLogging.sink LogLevel.Information` (stderr via `console.error`) as the runtime log sink at the root; pass `NodeAppOptions.LogSink` to replace it or `LogSink.none` to silence it, and an inner `Flow.withLogSink` still wins. For tracing, install
 `Axial.Telemetry.JavaScript` with the host's `@opentelemetry/api` object before starting the application. Hosting
 does not choose an SDK, exporter, or context manager.
 

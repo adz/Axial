@@ -1,79 +1,84 @@
 ---
 title: Supplying Platform Services
 linkTitle: Supplying Platform Services
-description: Get live clock, logger, random, secure-random, GUID, and environment-variable services into a host.
+description: Install runtime values and observation sinks at an application boundary.
 ---
 
 # Supplying Platform Services
 
-A host needs the standard operational services before it can run application workflows: a clock, a logger,
-ordinary and cryptographically secure randomness, GUIDs, and environment variables. `Axial.PlatformService` bundles all six as `BaseRuntime`.
+A root Flow starts with live clock/random/GUID implementations and an Information+ stderr log sink. No platform
+bundle is required in `'env`. Keep authority such as environment variables, HTTP, files and process execution in
+an application record; override runtime values around the flow itself.
 
 ```fsharp prepare
-// Setup for the checked example on this page.
 open System
 open Axial
 open Axial.PlatformService
-
-/// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =
     if actual <> expected then failwithf "Expected %A but got %A" expected actual
 ```
 
-Use the live bundle:
-
 ```fsharp
-open Axial
-open Axial.PlatformService
-```
+type StartupEnv =
+    { Variables: IEnvironmentVariables }
+    interface IHasEnvironmentVariables with member this.EnvironmentVariables = this.Variables
 
-```fsharp
-let runtime : BaseRuntime = BaseRuntime.liveValue
-```
-
-`BaseRuntime` implements one contract per service, so any workflow requiring some combination of them
-runs against this single value:
-
-```fsharp
-let startup : Flow<BaseRuntime, EnvironmentVariableError, int> =
+let startup : Flow<StartupEnv, EnvironmentVariableError, int> =
     flow {
         let! port = EnvironmentVariable.getInt "PORT"
-        do! Log.info $"Listening on {port}"
+        let! now = Clock.now
+        do! Log.info $"Starting port {port} in {now.Year}"
         return port
     }
 ```
 
-The block does not name the service types. `IHasEnvironmentVariables` and `IHasLog` are distinct contracts, so their constraints merge.
-
-Use `BaseRuntime.live` when the environment is composed from layers, and `BaseRuntime.fromServiceProvider` when the
-host already has an `IServiceProvider`; that variant reports missing registrations as typed `BaseRuntimeError`
-startup failures rather than resolution exceptions.
-
-`BaseRuntime.live` is a `Layer<unit, Never, BaseRuntime>`, so provision it over a workflow whose environment it
-satisfies. The checked run below overrides the clock with a fixed value so the year is deterministic; the layer
-shape and the `Layer.provide` call are the same as the real `BaseRuntime.live`:
-
-```fsharp
-let currentYear : Flow<BaseRuntime, Never, int> =
-    Clock.now |> Flow.map _.Year
-```
-
 ```fsharp run
-let fixedRuntime =
-    { BaseRuntime.liveValue with Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)) }
-
-currentYear |> Layer.provide (Layer.succeed fixedRuntime) |> Flow.run () |> function
-| Exit.Success year -> shouldEqual 2026 year
-| other -> failwithf "Expected a year, got %A" other
+let log = Log.memory ()
+startup
+|> Flow.withClock (Clock.``fixed`` (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)))
+|> Flow.withRandom (Random.seeded 42)
+|> Flow.withGuid (Guid.fromValue System.Guid.Empty)
+|> Flow.withLogSink log
+|> Flow.run { Variables = EnvironmentVariables.fromPairs ["PORT", "8080"] }
+|> shouldEqual (Exit.Success 8080)
+log.Entries |> Seq.map _.Message |> Seq.toList |> shouldEqual ["Starting port 8080 in 2026"]
 ```
 
-`BaseRuntime.fromServiceProvider` consumes an `IServiceProvider` and reports a missing registration as
-`BaseRuntimeError.MissingService` before the workflow runs; the checked composition and failure are in
-[Providing the environment](/dependencies/providing-the-environment.html#take-it-from-a-host-container).
+Overrides apply to a subtree and its forks; the outer values are restored afterwards. `Flow.mapLogSink` decorates
+an installed sink instead of replacing it. `Flow.withTelemetry` installs annotation and typed-attribute callbacks;
+Activity and JavaScript OpenTelemetry adapters compose through them rather than replacing them.
 
-Applications normally extend the bundle with their own services rather than using it bare; see
-[building a base runtime](/dependencies/providing-the-environment.html).
+## Host logging defaults
 
-## Service details
+| Host | Installed destination |
+| --- | --- |
+| Generic Host | Microsoft logging, category `Axial` |
+| ASP.NET Core flowEndpoint | RequestServices' Microsoft logging factory, category `Axial.Endpoint` |
+| GenHTTP | Runtime default unless `EndpointOptions.LogSink` is supplied |
+| Node | `NodeLogging.sink LogLevel.Information`, through console.error on stderr |
+| Browser | `BrowserLogging.sink LogLevel.Information`, mapped to console.debug/info/warn/error |
 
-[Platform services](/services/platform-services/index.html) documents each service's operations, deterministic test doubles, and typed environment-variable error model.
+`HostedAppOptions.LogSink` and ASP.NET `EndpointOptions.LogSink` accept an optional factory callback from
+`ILoggerFactory` to `ILogSink`. GenHTTP, Node and Browser options accept an optional sink directly. `None` leaves
+the runtime default in force; a supplied `LogSink.none` silences logs. An inner `Flow.withLogSink` always wins.
+Microsoft logging scopes include annotations and named FiberLocals; empty entries add no empty scope.
+`FiberLogging.observe` remains opt-in and separate from message logging.
+
+The default `flowEndpoint` functions retain their existing argument order. Use `flowEndpointWithOptions` for an
+explicit endpoint policy. Node offers `startWithOptions` / `runWithOptions`; Browser offers `mountWithOptions` /
+`startWithSignalOptions`. See [.NET hosting](dotnet.html), [Node](node.html) and [application lifecycle](application-lifecycle.html).
+
+## Tests and authority
+
+`Flow.runTest env` creates a fresh deterministic `TestPlatform`. `Flow.runTestWith platform env` exposes its
+manual clock, recording log, random and GUID implementations. Neither advances time automatically: fork a timed
+flow, await its sleeper-registration signal, call `TestClock.advance`, then join. `advanceAll` stops at the latest
+deadline registered at entry rather than following a repeating timer forever.
+
+These runners are .NET-only. Fable uses the same `ManualClock` and scoped overrides; after advancing, await the
+released promise/fiber before a dependent advance.
+
+A container should resolve application authority once and construct the environment. It is not a runtime-service
+registry. See [providing the environment](/dependencies/providing-the-environment.html) and
+[service details](/services/platform-services/index.html). Cryptographic randomness belongs in explicit capability
+code using System.Security.Cryptography, not the runtime random generator.

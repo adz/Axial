@@ -45,7 +45,7 @@ type IExchangeRates =
 ```
 
 Make it as narrow as the built-in ones. `IExchangeRates` exposes one conversion, not a general-purpose pricing
-client; a workflow that needs more asks for more, the same way `IHasClock` does not also expose scheduling.
+client; a workflow that needs more asks for more, the same way `IHasConsole` does not also expose the file system.
 
 ## Write a reusable helper
 
@@ -128,17 +128,17 @@ priceInAudOrFail 10m |> Flow.run { Rates = unavailable; Region = "au" } |> shoul
 
 ## Combine it with the built-in services
 
-A custom service and `BaseRuntime` can share an environment: each contract gets its own interface member,
-delegating to the stored value. See
-[Tutorial: Composing Built-in Services](/services/existing-services.html) for the `BaseRuntime` half of this:
+A custom service and the built-in services with authority share an environment: each contract gets its own interface
+member, delegating to the stored value. Clock, random, GUID and log come from the runtime, so they need no member. See
+[Tutorial: Composing Built-in Services](/services/existing-services.html) for the built-in half of this:
 
 ```fsharp
 type FullAppEnv =
-    { Runtime: BaseRuntime
+    { Variables: IEnvironmentVariables
       Rates: IExchangeRates }
 
-    interface IHasClock with
-        member this.Clock = this.Runtime.Clock
+    interface IHasEnvironmentVariables with
+        member this.EnvironmentVariables = this.Variables
 
     interface IHasExchangeRates with
         member this.ExchangeRates = this.Rates

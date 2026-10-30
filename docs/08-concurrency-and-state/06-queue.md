@@ -68,8 +68,8 @@ ends normally once the queue is shut down and drained.
 -     do! readings |> Queue.offerAll [ 1..5 ] |> Flow.ignore
 -     do! Dequeue.shutdown readings
 -     return! Fiber.join consumer
-- } : Flow<ClockEnvironment, Never, int list list>)
-- |> Flow.run (ClockEnvironment Clock.live);;
+- } : Flow<unit, Never, int list list>)
+- |> Flow.run ();;
 val it: Exit<int list list,Never> = Success [[1; 2]; [3; 4]; [5]]
 ```
 
@@ -93,8 +93,8 @@ emits their values as they arrive, which fits device readers feeding one control
 -     do! Dequeue.shutdown inputs
 -     let! received = Fiber.join loop
 -     return List.sort received
-- } : Flow<ClockEnvironment, Never, int list>)
-- |> Flow.run (ClockEnvironment Clock.live);;
+- } : Flow<unit, Never, int list>)
+- |> Flow.run ();;
 val it: Exit<int list,Never> = Success [1; 2; 3; 10; 20]
 ```
 

@@ -64,7 +64,7 @@ provisions both sides and returns their outputs, so build the final environment 
 
 Layer error types must match the flow error type. When provisioning steps use different errors, map them into one
 startup error type with `Layer.mapError` before calling `Layer.provide`. A layer that cannot fail, such as
-`BaseRuntime.live` or `Clock.layer`, has error type `Never`; `Layer.widenError` gives it any error type.
+`EnvironmentVariables.layer`, has error type `Never`; `Layer.widenError` gives it any error type.
 
 Parallel composition uses parent-owned child scopes, so when one parallel branch fails after another acquired
 resources, the acquired resources are still released. If both parallel branches fail, Axial preserves both failures

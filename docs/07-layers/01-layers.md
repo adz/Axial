@@ -145,7 +145,7 @@ inventory — `succeed`, `envWith`, `fromFlow`, `acquireRelease`, `addFinalizer`
 
 Layer error types must match the flow error type. When provisioning steps use different errors, map them into one
 startup error type with `Layer.mapError` before calling `Layer.provide`. A layer that cannot fail, such as
-`BaseRuntime.live` or `Clock.layer`, has error type `Never`; `Layer.widenError` gives it any error type.
+`EnvironmentVariables.layer`, has error type `Never`; `Layer.widenError` gives it any error type.
 
 ```fsharp
 type OrdersError = MissingOrders of string

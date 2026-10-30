@@ -142,7 +142,7 @@ flow {
     let! id = Guid.newGuid
     return { Id = id; PlacedAt = placedAt }
 }
-// needs: 'env :> IHasClock and IHasGuid
+// reads the runtime clock and GUID generator; no environment requirement
 ```
 
 </div>

@@ -48,7 +48,7 @@ let loadBoth left right =
 ```
 
 ```fsharp run
-loadBoth (Flow.ok 1 : Flow<ClockEnvironment, string, int>) (Flow.ok "two") |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success(1, "two"))
+loadBoth (Flow.ok 1 : Flow<unit, string, int>) (Flow.ok "two") |> Flow.run () |> shouldEqual (Exit.Success(1, "two"))
 ```
 
 The example starts `left` in the background, runs `right` in the current workflow, then joins the child fiber before returning.
@@ -83,14 +83,14 @@ returns has already been released:
 
 ```fsharp
 /// Wrong: the fiber releases the connection when it settles, before join returns it.
-let joinForkedConnection (connection: Resource<ClockEnvironment, string, string>) =
+let joinForkedConnection (connection: Resource<unit, string, string>) =
     flow {
         let! fiber = Flow.scopeResource connection |> Flow.fork
         return! Fiber.join fiber // already released
     }
 
 /// Right: only the acquisition runs in the fiber, and the caller's scope owns the connection.
-let joinKeptConnection (connection: Resource<ClockEnvironment, string, string>) =
+let joinKeptConnection (connection: Resource<unit, string, string>) =
     flow {
         let! connecting = Flow.forkResource connection
         return! Fiber.join connecting // still open
@@ -161,17 +161,17 @@ immediately reuse an exclusive resource. `Flow.zipPar (Flow.scopeResource a) (Fl
 in parallel and both stay open until the caller's scope closes.
 
 ```fsharp
-let fetchPage (url: string) : Flow<ClockEnvironment, string, int> =
+let fetchPage (url: string) : Flow<unit, string, int> =
     Flow.sleep (TimeSpan.FromMilliseconds 1.0) |> Flow.map (fun () -> url.Length)
 
-let pageSizes (urls: string list) : Flow<ClockEnvironment, string, int list> =
+let pageSizes (urls: string list) : Flow<unit, string, int list> =
     urls |> Flow.traversePar (Parallelism.bounded 8) fetchPage
 
-let indexFile (indexed: Ref<string list>) (file: string) : Flow<ClockEnvironment, string, unit> =
+let indexFile (indexed: Ref<string list>) (file: string) : Flow<unit, string, unit> =
     indexed |> Ref.update (fun files -> file :: files)
 
 /// Indexes every file in parallel and returns the indexed files, sorted.
-let indexAll (files: string list) : Flow<ClockEnvironment, string, string list> =
+let indexAll (files: string list) : Flow<unit, string, string list> =
     flow {
         let! indexed = Ref.make []
         do! files |> Flow.forEachPar (Parallelism.ofProcessors id) (indexFile indexed)
@@ -181,9 +181,9 @@ let indexAll (files: string list) : Flow<ClockEnvironment, string, string list> 
 ```
 
 ```fsharp run
-pageSizes [ "a"; "bb"; "ccc" ] |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success [ 1; 2; 3 ])
+pageSizes [ "a"; "bb"; "ccc" ] |> Flow.run () |> shouldEqual (Exit.Success [ 1; 2; 3 ])
 
-indexAll [ "b.fs"; "a.fs"; "c.fs" ] |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success [ "a.fs"; "b.fs"; "c.fs" ])
+indexAll [ "b.fs"; "a.fs"; "c.fs" ] |> Flow.run () |> shouldEqual (Exit.Success [ "a.fs"; "b.fs"; "c.fs" ])
 ```
 
 `traversePar` returns results in input order, whatever order the work finishes in.
@@ -194,7 +194,7 @@ mapping must opt into the thread pool so that the first worker does not finish e
 start:
 
 ```fsharp
-let calculate (value: int) : Flow<ClockEnvironment, string, int> =
+let calculate (value: int) : Flow<unit, string, int> =
     Flow.delay (fun () -> Flow.ok (value * value))
 
 let calculatePar values =
@@ -205,7 +205,7 @@ let calculatePar values =
 
 ```fsharp run
 calculatePar [ 1; 2; 3 ]
-|> Flow.run (ClockEnvironment Clock.live)
+|> Flow.run ()
 |> shouldEqual (Exit.Success [ 1; 4; 9 ])
 ```
 
@@ -222,15 +222,15 @@ when it finishes or the traversal fails, so at most `parallelism` resources exis
 /// Counts readers opened and closed.
 type ReaderCounts = { Opened: int; Closed: int }
 
-let openReader (counts: Ref<ReaderCounts>) : Resource<ClockEnvironment, string, int> =
+let openReader (counts: Ref<ReaderCounts>) : Resource<unit, string, int> =
     Resource.create
         (counts |> Ref.updateAndGet (fun c -> { c with Opened = c.Opened + 1 }) |> Flow.map _.Opened)
         (fun _ -> counts |> Ref.update (fun c -> { c with Closed = c.Closed + 1 }))
 
-let searchCommit (reader: int) (commit: int) : Flow<ClockEnvironment, string, bool> = Flow.ok (commit % 2 = 0)
+let searchCommit (reader: int) (commit: int) : Flow<unit, string, bool> = Flow.ok (commit % 2 = 0)
 
 /// Searches the commits with at most two readers, and returns the results with the reader counts.
-let evenCommits (commits: int list) : Flow<ClockEnvironment, string, bool list * ReaderCounts> =
+let evenCommits (commits: int list) : Flow<unit, string, bool list * ReaderCounts> =
     flow {
         let! counts = Ref.make { Opened = 0; Closed = 0 }
         let! results = commits |> Flow.traverseParUsing (Parallelism.bounded 2) (openReader counts) searchCommit
@@ -240,7 +240,7 @@ let evenCommits (commits: int list) : Flow<ClockEnvironment, string, bool list *
 ```
 
 ```fsharp run
-match evenCommits [ 1..6 ] |> Flow.run (ClockEnvironment Clock.live) with
+match evenCommits [ 1..6 ] |> Flow.run () with
 | Exit.Success(results, counts) ->
     results |> shouldEqual [ false; true; false; true; false; true ]
     counts.Opened <= 2 |> shouldEqual true
@@ -261,11 +261,11 @@ soon as that fiber has finished its cleanup, so the two never overlap. A request
 starts never runs:
 
 ```fsharp
-let search (query: string) : Flow<ClockEnvironment, string, string> =
+let search (query: string) : Flow<unit, string, string> =
     Flow.sleep (TimeSpan.FromMilliseconds 50.0) |> Flow.map (fun () -> $"results for {query}")
 
 /// Forks a search per keystroke into one slot, and reports the last result and whether each earlier search stopped.
-let typeAhead (queries: string list) : Flow<ClockEnvironment, string, string * bool list> =
+let typeAhead (queries: string list) : Flow<unit, string, string * bool list> =
     flow {
         let! slot = FiberSlot.make ()
         let! searches = queries |> Flow.traverse (fun query -> search query |> Flow.forkReplacing slot)
@@ -276,7 +276,7 @@ let typeAhead (queries: string list) : Flow<ClockEnvironment, string, string * b
 ```
 
 ```fsharp run
-typeAhead [ "a"; "ax"; "axi" ] |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success("results for axi", [ true; true ]))
+typeAhead [ "a"; "ax"; "axi" ] |> Flow.run () |> shouldEqual (Exit.Success("results for axi", [ true; true ]))
 ```
 
 `Flow.forkReplacingKey key slots` does the same per key, with a slot from `FiberSlot.makeKeyed`, so a new preview for
@@ -309,8 +309,8 @@ ends normally once it has drained the queue.
 -         }
 -         |> Flow.scoped
 -     return List.ofSeq written
-- } : Flow<ClockEnvironment, Never, int list>)
-- |> Flow.run (ClockEnvironment Clock.live);;
+- } : Flow<unit, Never, int list>)
+- |> Flow.run ();;
 val it: Exit<int list,Never> = Success [1; 2; 3; 4; 5]
 ```
 
