@@ -289,6 +289,59 @@ module PlatformScopeTests =
         Assert.Equal(Exit.Success(TimeSpan.FromSeconds 1.), workflow |> Flow.runTestWith platform ())
 
     [<Fact>]
+    let ``advanceAll bounds a periodic repeat at its entry horizon`` () =
+        let platform = TestPlatform.create ()
+        use registered = new Threading.SemaphoreSlim(0)
+        let notifying = signallingClock platform.Clock registered
+        let workflow = flow {
+            let! child = Flow.ok () |> Flow.repeat (Schedule.spaced (TimeSpan.FromSeconds 1.)) |> Flow.fork |> Flow.withClock notifying
+            do! awaitRegistration registered
+            do! TestClock.advanceAll
+            let! elapsed = Clock.elapsed
+            do! Fiber.interrupt child |> Flow.ignore
+            return elapsed
+        }
+        Assert.Equal(Exit.Success(TimeSpan.FromSeconds 1.), workflow |> Flow.runTestWith platform ())
+
+    [<Fact>]
+    let ``recording log snapshots remain stable while writers and clear run concurrently`` () =
+        let log = TestLog()
+        log.Log(LogLevel.Information, "retained")
+        let retained = log.Entries
+        let writer () =
+            for i in 1 .. 2000 do
+                log.Log(LogLevel.Information, string i)
+                log.LogException(LogLevel.Error, InvalidOperationException("test"), string i)
+                (log :> ILogSink).Write { Level = LogLevel.Debug; Message = string i; Error = None; Annotations = Map.empty; Locals = [] }
+        let reader () =
+            for _ in 1 .. 2000 do
+                let snapshot = log.Entries
+                let count = snapshot.Count
+                log.Clear()
+                Assert.Equal(count, snapshot |> Seq.length)
+                for entry in snapshot do Assert.NotNull(entry.Message)
+        Threading.Tasks.Task.WhenAll([| Threading.Tasks.Task.Run(Action writer); Threading.Tasks.Task.Run(Action writer); Threading.Tasks.Task.Run(Action reader) |]).GetAwaiter().GetResult()
+        Assert.Equal("retained", Assert.Single(retained).Message)
+
+    [<Fact>]
+    let ``concurrent manual clock drivers never observe time moving backwards`` () =
+        let clock = ManualClock(DateTimeOffset.UnixEpoch)
+        let service = clock :> IClock
+        let pending = [| for i in 1 .. 2000 -> service.Sleep(TimeSpan.FromTicks(int64 i), Threading.CancellationToken.None) |]
+        use step = new Threading.Barrier(2)
+        let driver next =
+            let mutable previous = service.Elapsed()
+            for _ in 1 .. 4000 do
+                if not (step.SignalAndWait(TimeSpan.FromSeconds 10.)) then failwith "Clock driver stalled"
+                if next then clock.AdvanceToNextDeadline() |> ignore
+                else clock.AdvanceBy(TimeSpan.FromTicks 3L)
+                let current = service.Elapsed()
+                Assert.True(current >= previous, "Manual time moved backwards")
+                previous <- current
+        Threading.Tasks.Task.WhenAll([| Threading.Tasks.Task.Run(Action(fun () -> driver true)); Threading.Tasks.Task.Run(Action(fun () -> driver false)) |]).GetAwaiter().GetResult()
+        Assert.All(pending, fun item -> Assert.True(item.IsCompletedSuccessfully))
+
+    [<Fact>]
     let ``fixed clock sleeps until explicitly advanced`` () =
         let clock = Clock.``fixed`` DateTimeOffset.UnixEpoch
         let pending = (clock :> IClock).Sleep(TimeSpan.FromSeconds 1., Threading.CancellationToken.None)

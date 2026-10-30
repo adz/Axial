@@ -41,9 +41,22 @@ let tests =
                    equal "outer restored after await" (outerInstant, 7, outerId) restored ]
       })
       test "fixed clock sleep is explicitly advanced" (flow {
-          let clock = Clock.``fixed`` DateTimeOffset.UnixEpoch
-          let! child = Flow.sleep (TimeSpan.FromSeconds 1.) |> Flow.fork |> Flow.withClock clock
+          let instant = DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero)
+          let clock = Clock.fromValue instant :?> ManualClock
+          let fixedClock = Clock.``fixed`` instant
+          let! registered = Deferred.make ()
+          let notifying =
+              { new IClock with
+                  member _.UtcNow() = (clock :> IClock).UtcNow()
+                  member _.Elapsed() = (clock :> IClock).Elapsed()
+                  member _.Sleep(delay, token) =
+                      let pending = (clock :> IClock).Sleep(delay, token)
+                      Deferred.succeedNow () registered |> ignore
+                      pending }
+          let! child = Flow.sleep (TimeSpan.FromSeconds 1.) |> Flow.fork |> Flow.withClock notifying
+          do! Deferred.await registered
           clock.AdvanceBy(TimeSpan.FromSeconds 1.)
           do! Fiber.join child
-          return [ equal "manual time" (TimeSpan.FromSeconds 1.) ((clock :> IClock).Elapsed()) ]
+          return [ equal "manual time" (TimeSpan.FromSeconds 1.) ((clock :> IClock).Elapsed())
+                   equal "fixed starts at the supplied instant" instant ((fixedClock :> IClock).UtcNow()) ]
       }) ]
