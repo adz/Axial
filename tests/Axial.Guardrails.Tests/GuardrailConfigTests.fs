@@ -139,7 +139,7 @@ module GuardrailConfigTests =
             let rule = builtInRules |> List.find (fun rule -> rule.Id = "random.cryptographic")
             test <@ rule.Guardrail = "Axial.PlatformService" @>
             test <@ rule.Category = "secure-random" @>
-            test <@ rule.Replacement.Contains("ISecureRandom") && rule.Replacement.Contains("SecureRandom.live") @>
+            test <@ rule.Replacement = "use System.Security.Cryptography inside capability code" @>
         }
 
     [<Fact>]
