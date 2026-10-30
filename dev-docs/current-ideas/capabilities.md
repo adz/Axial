@@ -93,6 +93,18 @@ Each applies to the flow it wraps and everything that flow forks, and not outsid
 `withFiberObserver`). A user never builds a `PlatformServices` record. The `with*` functions compose: telemetry and log sinks replace, they do not
 tee, except that `Axial.Telemetry` composes through the existing `withComposed*` helpers.
 
+### 3.3a Why the runtime context, and why it is an `AsyncLocal`
+
+Platform has to be readable by `Flow.sleep` and friends without appearing in `'env`, and inherited by every forked fiber. A `Flow` is
+`'env -> CancellationToken -> Execution`: it has no third parameter to carry per-run state, so the only existing carrier is `RuntimeState`
+(an `AsyncLocal` on .NET, a plain cell plus `captureAmbient`/`restoreAmbient` on Fable). Scope, observer, annotations and tracer already travel
+that way, which is why forks inherit them for free.
+
+This is a property of the current executor, not a requirement of the design. The alternatives are a runtime parameter on every `Flow`
+function (a rewrite of the hot path, and a visible change to every combinator) or per-run state owned by an interpreter, which is what
+Flow-as-data (T26) provides. To keep that door open, **all reads go through one internal accessor** (`Platform.current ()`), so moving the state out of
+`AsyncLocal` later changes one function. The benchmark in section 7 is what decides whether the `AsyncLocal` read is acceptable now.
+
 ### 3.4 Flows that read the services
 
 No `IHasClock`:
@@ -141,8 +153,8 @@ module Flow =
 per-service overrides are the same `with*` functions, so a test can swap one service without a `TestPlatform`:
 `flow |> Flow.withRandom (Random.seeded 42) |> Flow.runTest env`.
 
-`Clock.fixed t` is a `ManualClock` that is never advanced. Its `Sleep` waits until someone advances it, so a flow that sleeps under a fixed clock
-and nobody advances it hangs, deliberately (see 3.6).
+`Clock.fixed t` is a `ManualClock` starting at `t` that nothing advances automatically; it is not a different type. Tests still move it
+explicitly (`TestClock.advance`, or `ManualClock.AdvanceBy` on `TestPlatform.Clock`). A flow that sleeps under it and is never advanced hangs, deliberately (see 3.6).
 
 ### 3.6 Test clock: explicit stepping
 
@@ -182,7 +194,7 @@ module Log =
 ```
 
 `Log.info` always works because a default is installed. The sink is read once per call from the runtime context; the entry is built only when the
-sink's level gate passes (see open question Q3).
+sink's level gate passes (decision D3).
 
 Telemetry stays an observation slot. Today the slots are internal (`Telemetry.withSink` is hidden); `ITelemetry` makes them public and
 `Flow.withTelemetry` composes them. The `Activity`/`ActivitySource` bridge lives in **`Axial.Telemetry`** (the only package that already boxes the
@@ -197,7 +209,7 @@ bridge from `ILogSink` to `Microsoft.Extensions.Logging` goes in `Axial.Hosting`
 | `ClockEnvironment` | Not needed: `Flow.runTest ()` or any env |
 | `ISecureRandom`, `IHasSecureRandom`, `SecureRandom` module | Nothing. Use `System.Security.Cryptography` inside a capability |
 | `ILog`, `IHasLog`, `Log.service` | `ILogSink`, `Flow.withLogSink`, `Log.info` |
-| `BaseRuntime.Clock/Log/Random/SecureRandom/Guid`, `servicesFromServiceProvider` for those | `IEnvironmentVariables` remains an env service (it reads external state with authority); see Q5 |
+| `BaseRuntime` and `servicesFromServiceProvider` | `IEnvironmentVariables` is a capability, not Platform (it reads external state): `IHasEnvironmentVariables` stays on the env; T25b declares it |
 | `TestRuntime` env members | `TestPlatform` |
 | `runOnManualTime` | Explicit stepping |
 | `platform-env-class.md` sketch | Withdrawn (section 8) |
@@ -206,7 +218,7 @@ bridge from `ILogSink` to `Microsoft.Extensions.Logging` goes in `Axial.Hosting`
 `System.Security.Cryptography` inside capability code. Files touched: `Services.fs`, `Operations.fs`, `Platform.fs`, `EffectCatalog.fs`,
 `SecureRandomTests` in PlatformService and Fable tests, `RuntimeFoundationTests`, `GuardrailConfigTests`, docs `03-random-and-guid.md`, 0.12 notes.
 
-Callers outside a Flow's dynamic extent need an explicit clock: `Axial.ElmishFlows` (`ElmishRuntime<'env when 'env :> IHasClock>`), `Axial.Process`
+Callers outside a Flow's dynamic extent (decision D6) need an explicit clock: `Axial.ElmishFlows` (`ElmishRuntime<'env when 'env :> IHasClock>`), `Axial.Process`
 (clock in its own env type), `Axial.Hosting` watchdogs (`IHasClock`/`IHasLog`), `Cache` (reads the clock when created, inside a flow, so it can capture the
 runtime one). Recommendation: `ElmishRuntimeOptions` gets a `Clock: IClock` defaulting to live, and `Elmish.test` takes a `ManualClock`; Hosting and Process
 read the runtime context from inside their flows.
@@ -275,21 +287,36 @@ edge with `Flow.withClock`; `App.start` gains matching options. 0.12 release not
 ## 11. Order of work after approval
 
 1. Invariant tests, failing (section 6), plus the benchmark harness for section 7 (baseline numbers recorded first).
-2. Remove `ISecureRandom` (independent, unreleased; see Q1).
+2. Remove `ISecureRandom` (independent, unreleased; decision D1).
 3. Move `IRandom`/`IGuid` into `Axial`; add `PlatformServices` and `LogSink` to the runtime context; `with*`; `Flow.sleep` and the combinators lose `IHasClock`.
 4. `ILogSink`, console default, `Log.*`; `ITelemetry` over existing slots; `Axial.Telemetry` bridge.
 5. `TestPlatform`, `Flow.runTestWith`, `TestClock`; delete `runOnManualTime` and port its callers.
 6. Hosting, Process, Elmish clock plumbing; Fable suite.
 7. Docs, release notes, migration guide, benchmarks recorded in `dev-docs/benchmarks/`.
 
-## 12. Open questions for the owner
+## 12. Decisions that closed the open questions (owner, 2026-10-30)
 
-- **Q1. Does 0.12 wait for T25a?** The change is breaking (0.12 is the next minor; a later cut is 0.13). `ISecureRandom` is unreleased and the 0.12 notes
-  already advertise it, so removing it before the release costs nothing and avoids a breaking removal later. Recommendation: remove `ISecureRandom` into 0.12 now
-  (step 2 stands alone); cut T25a's Platform move in the same minor only if it finishes with benchmarks; otherwise it is 0.13 and 0.12 ships without it.
-- **Q2. Where do `ILogSink` and the Telemetry bridge live?** Recommendation as above: `ILogSink`/`ITelemetry` in `Axial`, `Activity` bridge in `Axial.Telemetry`, MEL bridge in `Axial.Hosting`.
-- **Q3. `Log` level API shape.** Options: (a) one function per level as today; (b) plus a minimum-level gate on the sink (`ILogSink.IsEnabled: LogLevel -> bool`) so a disabled call allocates nothing. Recommendation: (a) with the gate; structured properties deferred.
-- **Q4. `Clock.fixed` vs `ManualClock`.** Recommendation: they are the same type; `runTest` installs a `ManualClock` at the epoch and `Clock.fixed` is a name for "never advanced". Confirm.
-- **Q5. `BaseRuntime` and `IEnvironmentVariables`.** After this, `BaseRuntime` has one field. Keep it as the standard live env or delete it and keep `IHasEnvironmentVariables` alone? Is environment-variable access a capability (T25b) rather than a Platform service? Recommendation: treat it as a capability and drop `BaseRuntime`.
-- **Q6. Elmish and Process outside a flow.** Recommendation in section 4 (explicit `Clock` option, default live). Alternative: capture the runtime context at `start`, which requires starting inside a flow.
-- **Q7. Optional trace mode** (section 5.3): in 0.12/T25a, or deferred to T25b with `axial capabilities`? Recommendation: ship the recording hook in T25a (small), document it in T25b.
+- **D1. `ISecureRandom` is removed now**, ahead of the rest, and 0.12 ships without it (step 2 of section 11 stands alone). The rest of T25a is breaking and lands
+  in whichever minor it finishes in with benchmarks (0.12 if ready, else 0.13).
+- **D2. Where things live.** `ILogSink`, `ITelemetry`, `IRandom`, `IGuid` in `Axial`; the `Activity`/`ActivitySource` bridge in `Axial.Telemetry`;
+  the `Microsoft.Extensions.Logging` bridge in `Axial.Hosting`.
+- **D3. Log API.** One function per level, as today, plus a level gate on the sink (`ILogSink.IsEnabled: LogLevel -> bool`) so a disabled call allocates
+  nothing. Structured properties are deferred.
+- **D4. `Clock.fixed` and `ManualClock` are one type**, and time can always be advanced explicitly (`TestClock.advance`).
+- **D5. `BaseRuntime` is dropped.** Environment variables are a capability (T25b), not Platform. `servicesFromServiceProvider` goes with it.
+- **D6. Elmish and Process outside a flow** take an explicit `Clock` (default live; `Elmish.test` takes a `ManualClock`); Hosting and Cache read the runtime
+  context from inside their flows.
+- **D7. Trace mode.** The recording hook for Clock/Random/Guid reads ships in T25a (`TestPlatform.trace`); T25b documents it and surfaces it in `axial capabilities`.
+- **D8. `platform-env-class.md` is withdrawn** (section 8).
+- **D9. Carrier.** The runtime context stays in `RuntimeState` (`AsyncLocal` on .NET) behind one accessor; section 3.3a and the section 7 benchmark decide whether that is acceptable.
+
+Smaller points settled here so they do not stay open:
+
+- `ITelemetry` is exactly the two members in 3.1; the ambient tracer stays an opaque slot only `Axial.Telemetry` touches.
+- `LogEntry.Annotations` is a snapshot of the fiber's annotations at the call, so a sink sees `trace_id` without the caller passing it.
+- A throwing sink is guarded like a fiber observer: it cannot alter a flow's outcome (invariant test 8).
+- `Schedule<'env,'input,'output>` keeps its `'env`; only the clock requirement leaves it.
+- `App.start` gets `Clock`, `LogSink` and `Telemetry` options that install at the root; nothing else in `App` changes.
+- Fable: the override and `captureAmbient` behaviour is proven by invariant test 9 before any Fable-facing change merges.
+
+Nothing remains open for T25a. What follows from it is the generation of envs from specs, which is its own design (T25b territory).

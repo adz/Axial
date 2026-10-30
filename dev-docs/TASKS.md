@@ -20,7 +20,8 @@ lists the queue. Work on main.
     `dev-docs/current-ideas/capabilities.md` (T25a part) first and stop for the owner's review before any code.
   - Includes `Flow.runTest` and `withClock`/`withRandom`/`withGuid`, `withLogSink`/`withTelemetry` slots (Console default, Info,
     stderr), explicit-stepping test clock replacing `runOnManualTime`, and the invariant tests (written first, failing).
-  - Breaking: decide before cutting 0.12 or it waits for 0.13. Benchmark runtime-context reads against env reads on
+  - Design approved in `capabilities.md` (decisions D1-D9). `ISecureRandom` is removed first, on its own, before 0.12. The rest is
+    breaking: 0.12 only if it finishes with benchmarks, else 0.13. Benchmark runtime-context reads against env reads on
     sleep/timeout loops. Decide `platform-env-class.md` afterwards.
 - [ ] T25b: Capability declarations (`ICapability`: Live/Fake/Replaces) and the build-time manifest
   - Spec sections 3, 4, 10. After T25a ships. Manifest in `obj/axial-capabilities.json` and the nupkg, `axial capabilities`,

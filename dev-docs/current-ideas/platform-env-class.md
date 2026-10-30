@@ -1,6 +1,6 @@
 # A base environment class for platform services
 
-Status: sketch, not accepted. Prompted by `ISecureRandom` (0.12.0): each platform service adds an `IHas*`
+Status: WITHDRAWN 2026-10-30. With Clock, Guid, Random and Log moved into the runtime (`capabilities.md`, T25a), the repeated platform lines it targeted are gone. Kept for the record. Original status: sketch, not accepted. Prompted by `ISecureRandom` (0.12.0): each platform service adds an `IHas*`
 interface that every application environment must implement by hand.
 
 ## Problem
