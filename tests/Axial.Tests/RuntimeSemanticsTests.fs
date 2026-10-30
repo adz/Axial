@@ -418,3 +418,46 @@ module RuntimeSemanticsTests =
                     test <@ exit = expected @>
                     test <@ closed = 1 @>
         }
+
+    // T28b: an OperationCanceledException the runtime did not ask for is a defect at every boundary, not an
+    // interruption nobody requested; foldCause already classifies it so, and the root, fork, retry and Layer.zipPar
+    // boundaries now agree. Each case throws it synchronously and after an await.
+    let private foreignCancellation () = OperationCanceledException "foreign"
+
+    let private throwsForeign (afterAwait: bool) (error: exn) : Flow<unit, string, int> =
+        if afterAwait then
+            Flow.fromTask (fun _ -> task { do! Task.Yield() })
+            |> Flow.bind (fun () -> Flow.delay (fun () -> raise error))
+        else
+            Flow.delay (fun () -> raise error)
+
+    let private boundaries (afterAwait: bool) (error: exn) : (string * Flow<unit, string, int>) list =
+        [ "root", throwsForeign afterAwait error
+          "foldCause",
+          throwsForeign afterAwait error |> Flow.foldCause Flow.ok (fun cause -> Flow.ofExit (Exit.Failure cause))
+          "fork",
+          flow {
+              let! fiber = Flow.fork (throwsForeign afterAwait error)
+              return! Fiber.join fiber
+          }
+          "retry", throwsForeign afterAwait error |> Flow.retry (Schedule.recurs 2)
+          "Layer.zipPar",
+          Flow.env<int * int, string>
+          |> Layer.provide (Layer.zipPar (Layer.fromFlow (throwsForeign afterAwait error)) (Layer.fromFlow (Flow.ok 2)))
+          |> Flow.map fst ]
+
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
+    let ``a foreign OperationCanceledException is a defect at every boundary`` (afterAwait: bool) =
+        let error = foreignCancellation ()
+
+        let outcomes =
+            boundaries afterAwait error
+            |> List.map (fun (name, source) ->
+                let running = Task.Run(fun () -> Flow.runSync () source)
+                Assert.True(running.Wait(TimeSpan.FromSeconds 10.0), $"{name} did not settle.")
+                name, running.Result)
+
+        let expected = boundaries afterAwait error |> List.map (fun (name, _) -> name, Exit.Failure(Cause.Die error))
+        test <@ outcomes = expected @>
