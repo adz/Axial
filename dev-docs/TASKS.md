@@ -7,14 +7,6 @@ lists the queue. Work on main.
 
 ## Queue
 
-- [ ] T31: 0.12 package reshape (owner decisions 2026-10-31)
-  - Move the `Clock`/`Random`/`Guid`/`Log` operations and `TestLog`/`TestPlatform`/`TestClock`/`runTest` from `Axial.PlatformService`
-    into core `Axial` (keep their namespaces for 0.12); delete the duplicate live services so one implementation remains (T29 item).
-  - Delete `Axial.PlatformService` (not deprecated); environment variables become a source in `Axial.Configuration` (T32), and old
-    env-var typed reads are deleted. DECIDED (owner, 2026-10-31).
-  - Merge `Axial.Files` into `Axial.FileSystem`. Check what Files, Hosting, Hosting.Node, HttpClient and Process still need from the
-    old package after the move, and drop references they no longer need.
-  - Migration rows in `dev-docs/releases/0.12.0.md`. Do this before T33 so docs pages move once.
 - [x] T32: `Axial.Configuration`, culture and time zone (0.12; DECIDED, owner, 2026-10-31)
   - `Axial.Configuration` lives here and references Reified; core remains Reified-free. Sources produce Reified Data: environment,
     CLI args on every host, JSON via FileSystem/Reified, an IConfiguration adapter in Axial.Hosting, browser query string.
@@ -35,10 +27,6 @@ lists the queue. Work on main.
     re-read/merge/decode; env/args static, successful decodes published, last good retained, failures logged and exposed as an error stream.
   - Configuration docs present Axial.Configuration as Axial's approach and document Microsoft IConfiguration/Options via Axial.Hosting
     as a supported alternative, including the bridge. Design in `dev-docs/current-ideas/configuration.md`.
-- [ ] T33: A docs set per non-core package, shaped like `docs/process` and `docs/http`
-  - Folder, `_index.md`, numbered pages, `api/`, an entry in `docs/packages/index.md`: FileSystem (with Files), Console,
-    Configuration, WebSocket, Hosting (one set, a page per host package), Elmish, Telemetry (one set), Guardrails (with `Axial.Tool`).
-  - Core chapters keep only core and link to the sets. After T31/T32.
 - [ ] T23: Property-based concurrency law suite
   - Generate random flows over fork/race/zipPar/scope/interrupt and check the laws: a flow that starts work waits for it,
     cleanup runs once and after cancellation, a loser settles before `race` returns, defects are reported exactly once,
@@ -47,23 +35,13 @@ lists the queue. Work on main.
 - [ ] T24: Fiber dumps show the root, what each fiber waits on, and attach late
   - Design: `dev-docs/current-ideas/fiber-dump-root-waits-attach.md`. Benchmarks required (FiberCost, Race, Pingpong/Threadring,
     a tiny `runSync` loop); allocation identical, time within noise. The torture watchdog shows waits in its stall dump.
-- [ ] T25a: Platform in the runtime (Clock, Guid, Random), log sink slot, remove `ISecureRandom` (breaking)
-  - Spec: `~/projects/scratch/axial-coord/pi/capabilities-spec.md`, sections 1, 2, 9, 10. Write
-    `dev-docs/current-ideas/capabilities.md` (T25a part) first and stop for the owner's review before any code.
-  - Includes `Flow.runTest` and `withClock`/`withRandom`/`withGuid`, `withLogSink`/`withTelemetry` slots (Console default, Info,
-    stderr), explicit-stepping test clock replacing `runOnManualTime`, and the invariant tests (written first, failing).
-  - Design approved in `capabilities.md` (decisions D1-D9). `ISecureRandom` is removed first, on its own, before 0.12. The rest is
-    breaking: 0.12 only if it finishes with benchmarks, else 0.13. Benchmark runtime-context reads against env reads on
-    sleep/timeout loops. Decide `platform-env-class.md` afterwards.
-  - Status: implementation is complete locally (phases A-F and the R3 review fixes) and awaits the final verify and push. The
-    0.12 breaking table is rebuilt against v0.11.3. The R3 follow-ups are tracked in T29 (T28 is fixed).
 - [ ] T25b: Capability declarations (`ICapability`: Live/Fake/Replaces) and the build-time manifest
   - Spec sections 3, 4, 10. After T25a ships. Manifest in `obj/axial-capabilities.json` and the nupkg, `axial capabilities`,
     docs and `llms.txt`, agent skill; Guardrails effect rules built from merged manifests (28 built-in rules shrink).
 - [ ] T25c: Guardrails rules for capabilities (naming, no generic IHas chains, no generic ICapability calls, Replaces resolve and
   are unique, Live only in host role)
   - Spec section 5. After T25b.
-- [ ] T29: T25a review nice-to-haves (0.12: the renames, the Elmish `LogSink` option, the WebSocket `Connect` hook; rest can follow)
+- [ ] T29: T25a review nice-to-haves (still for 0.12: the Elmish `LogSink` option and the WebSocket `Connect` hook; the renames shipped in T31; the rest can follow)
   - Elmish: add `ElmishRuntimeOptions.LogSink: ILogSink option`, installed where `Clock` is (`Pump()`, `startLayer`); today Fable's
     default sink sends `Log.info` to `console.error` (red) and the pump is internal. Do it before 0.12 so it is one break.
   - WebSocket `Connect` hook (`WebSocket.fs` ~230) runs as a fresh root and ignores the caller's `withClock`/`withLogSink`; capture
@@ -94,7 +72,7 @@ lists the queue. Work on main.
   - DECIDED (owner, 2026-10-31): core `Axial` has no Reified references; packages that need Reified data (the HTTP adapters,
     `Axial.Configuration`) may. They live in this repo for now and may be extracted later.
 
-- [ ] T15b: Migrate gitkay and LogDug to Axial.Files and Axial.ElmishFlows once 0.11 is published
+- [ ] T15b: Migrate gitkay and LogDug to Axial.FileSystem (formerly Axial.Files) and Axial.ElmishFlows once 0.11 is published
   - Remove gitkay's walk/lines/watch Guardrails suppressions and swap LogDug's Files internals for the package.
   - Replace both apps' flow-to-Elmish bridges with the per-program runtime; replace gitkay's slots and debounce
     with keyed commands and an inbox subscription, and await cleanup on shutdown.
@@ -112,6 +90,9 @@ lists the queue. Work on main.
   - Hedging as a documented recipe over `Flow.race`; a "Coming from Polly" page mapping every Polly strategy.
   - Adaptive concurrency stays a `dev-docs/current-ideas/` sketch until an application needs it.
 
+- [ ] T36: Generated API pages for Axial.Hosting.AspNetCore, Axial.Hosting.GenHttp, Axial.Tool and Axial.Guardrails
+  - livedocs cannot extract them yet (framework references, no XML doc file, DirectoryInfo resolution); their guide pages exist
+    (T33 report). Fix the tooling or the projects so each docs set gets its `api/` pages like Process and HTTP.
 - [ ] T34: `Axial.Sql`: provider-agnostic ADO.NET access (after 0.12)
   - Connection as a layer, transaction as a scope (commit on success, roll back on failure or interruption), transient-error retry.
 - [ ] T35: Browser storage capability for Fable apps (after 0.12)
