@@ -13,7 +13,7 @@ runtime.
 | Package | .NET | Fable JavaScript: Node | Fable JavaScript: browser | Notes |
 | --- | --- | --- | --- | --- |
 | `Axial` | Yes | Yes | Yes | Core workflows, runtime platform services (clock, logging, random, GUID and test helpers), layers, concurrency, streams, schedules, and `App`. |
-| `Axial.Configuration` | Yes | Yes* | Yes* | Layered environment, command-line, JSON, browser and Microsoft configuration decoded by Reified, with redacted secrets and optional watching. *Fable source loading/merging works on Reified 0.12.0; typed `schema<...>`/`Config.load` decoding requires Reified 0.12.1. |
+| `Axial.Configuration` | Yes | Yes* | Yes* | Layered environment, command-line, JSON, browser and Microsoft configuration decoded by Reified, with redacted secrets and optional watching. *Fable requires Reified 0.12.1 or later; typed `schema<...>`/`Config.load` decoding works on Fable. |
 | `Axial.Console` | Yes | Yes | Yes | Console service; JavaScript behavior is limited to facilities supplied by the host console. |
 | `Axial.FileSystem` | Yes | API only | API only | The live filesystem implementation is .NET-only. Supply a JavaScript implementation explicitly if needed. |
 | `Axial.HttpClient` | Yes | API only | API only | Request plans are portable; the live `HttpClient` implementation is .NET-only. |

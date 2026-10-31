@@ -23,9 +23,9 @@ Sources produce `Reified.Data`; later sources win, and one schema decodes the me
 plans or transcripts. Microsoft `IConfiguration` remains supported through `HostConfiguration.source` in
 `Axial.Hosting`.
 
-> **Fable:** with Reified 0.12.0, source loading, merging, `Config.loadData`, `Config.tryFind`, and `Config.watch`
-> plumbing work on Fable. Typed `schema<...>` construction and `Config.load` decoding require Reified 0.12.1 until
-> the upstream Fable schema-builder fix lands.
+> **Fable:** Axial 0.12 requires Reified 0.12.1. Its Fable schema builder supports typed `schema<...>`
+> construction and `Config.load` decoding, so source loading, merging, plain reads and watching use the same typed
+> path on Fable.
 
 ## Guides
 

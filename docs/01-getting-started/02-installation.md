@@ -60,7 +60,7 @@ suppression syntax.
 
 - [Hosting](/hosting/dotnet.html) chooses between standalone .NET, Generic Host, Node, and browser
   entry points.
-- [Platform services](/services/platform-services/index.html) introduces the explicit clock, logging, random, secure-random,
-  GUID, and environment-variable contracts.
+- [Platform services](/services/platform-services/index.html) introduces the explicit clock, logging, random, GUID,
+  culture, time-zone, and formatting services. Configuration lives in the [Configuration set](/configuration/).
 - [Effect-boundary guardrails](/guardrails/guardrails.html) is the analyzer that enforces those contracts as a build
   check instead of a review convention.

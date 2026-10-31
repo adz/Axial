@@ -24,8 +24,8 @@ let isExpired (expiry: DateTimeOffset) : Flow<'env, Never, bool> =
 
 `IClock`, `IRandom`, `IGuid` and the platform modules are defined in `Axial`. Their reader modules keep the
 `Axial.PlatformService` namespace for 0.12, but the implementation ships in the `Axial` package. The
-`Axial.PlatformService` package now holds only environment-variable services. There is no general runtime service
-registry. An environment remains an ordinary application record, and `Flow.envWith` selects its fields.
+`Axial.PlatformService` package is deleted; environment, argument and file configuration live in
+`Axial.Configuration`. There is no general runtime service registry. An environment remains an ordinary application record, and `Flow.envWith` selects its fields.
 
 ## Observation slots
 

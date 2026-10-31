@@ -248,11 +248,21 @@ module ConfigSource =
             (Data.Object [])
         |> fun data -> Data.mergeAllWith comparer [ data ]
 
+    let private queryDataResult (search: string) =
+        try
+            Ok(queryData search)
+        with error ->
+            Error(ConfigError.SourceFailed("query", error.Message))
+
     /// <summary>Reads a browser query string such as <c>?Db.Host=localhost&amp;Db.Port=5432</c>.</summary>
     let queryString (search: string) : ConfigSource<'env> =
         { Name = "query"
           Spell = dataSpell "query"
-          Read = Flow.succeed (queryData search)
+          Read =
+            Flow.delay (fun () ->
+                match queryDataResult search with
+                | Ok data -> Flow.succeed data
+                | Error error -> Flow.fail error)
           Paths = [] }
 
     /// <summary>Reads structured data provided by the caller; use it for defaults, fixtures and fakes.</summary>

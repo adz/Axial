@@ -51,6 +51,16 @@ let tests =
           | Exit.Failure cause -> return [ isTrue "configuration loaded" false ]
       })
 
+      test "a malformed browser query string is a typed source failure on Fable" (flow {
+          let! exit = loaded [ ConfigSource.queryString "?Port=%" ]
+
+          match exit with
+          | Exit.Failure(Cause.Fail [ ConfigError.SourceFailed("query", _) ]) ->
+              return [ isTrue "malformed query is a source failure" true ]
+          | Exit.Failure _ -> return [ isTrue "malformed query names the query source" false ]
+          | Exit.Success _ -> return [ isTrue "malformed query failed" false ]
+      })
+
       test "browser query parameters are empty when no browser is present" (flow {
           return [ equal "query string fallback" "" (BrowserApp.queryParameters ()) ]
       })
