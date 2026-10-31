@@ -64,6 +64,29 @@ module RuntimeSemanticsTests =
         test <@ result = Exit.Failure(Cause.Both(Cause.Fail "left", Cause.Fail "right")) @>
 
     [<Fact>]
+    let ``Layer zipPar interrupts and releases both branches in reverse acquisition order`` () =
+        let released = ResizeArray<int>()
+        let ready = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let acquire n =
+            Flow.scopeAcquireRelease (Flow.succeed n) (fun value -> Flow.delay (fun () -> released.Add value; Flow.succeed ()))
+        let left = Layer.fromFlow (flow {
+            let! _ = acquire 1
+            do! Flow.fromTask (fun _ -> ready.Task)
+            return! Flow.fail "failed"
+        })
+        let right = Layer.fromFlow (flow {
+            let! _ = acquire 2
+            ready.SetResult ()
+            return! Flow.never
+        })
+        let result =
+            Flow.env<int * int, string>
+            |> Layer.provide (Layer.zipPar left right)
+            |> Flow.runSync ()
+        test <@ result = Exit.Failure(Cause.Fail "failed") @>
+        test <@ Seq.toList released = [2; 1] @>
+
+    [<Fact>]
     let ``Flow scoped resource sequences use failure before release defect`` () =
         let releaseDefect = InvalidOperationException "release failed"
 

@@ -679,13 +679,15 @@ module WorkflowConcurrencyTests =
     let ``zipPar: a branch that throws after an await interrupts and joins its sibling, and keeps its exception`` (onLeft: bool) =
         let boom = InvalidOperationException "boom"
         let released = ref 0
+        let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
         let throwing : Flow<unit, string, int> =
-            Flow.fromTask (fun _ -> task { do! Task.Yield() }) |> Flow.bind (fun () -> raise boom)
+            Flow.fromTask (fun _ -> started.Task) |> Flow.bind (fun () -> raise boom)
 
         let waiting : Flow<unit, string, int> =
             flow {
                 try
+                    started.SetResult ()
                     return! Flow.never
                 finally
                     Interlocked.Increment released |> ignore
