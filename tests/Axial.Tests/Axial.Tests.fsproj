@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <Compile Include="TestSupport.fs" />
+    <Compile Include="PlatformPackagingTests.fs" />
     <Compile Include="FlowRuntimeMetadataTests.fs" />
     <Compile Include="RuntimeSemanticsTests.fs" />
     <Compile Include="ExecutionTests.fs" />
