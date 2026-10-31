@@ -190,7 +190,7 @@ let stamp : Flow<'env, Never, PlacedOrder> =
 `Flow.withClock` and `Flow.withGuid`, and gets the same result every time:
 
 ```fsharp
-let fixedClock = Clock.``fixed`` (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))
+let fixedClock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))
 
 let placed =
     stamp

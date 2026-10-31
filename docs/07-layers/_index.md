@@ -42,7 +42,7 @@ let describeRegion : Flow<RegionEnv, Never, string> =
 
 ```fsharp run
 let env = { Region = "eu" }
-describeRegion |> Flow.withClock (Clock.``fixed`` (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))) |> Flow.run env |> shouldEqual (Exit.Success "eu at 2026")
+describeRegion |> Flow.withClock (Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))) |> Flow.run env |> shouldEqual (Exit.Success "eu at 2026")
 ```
 
 Direct construction needs no layer. See [dependencies](/dependencies/index.html).

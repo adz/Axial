@@ -5,7 +5,8 @@ description: Runtime values controlled by scoped fixed, seeded and scripted impl
 
 `Random.*` and `Guid.newGuid` read runtime services, not fields in `'env`. Use `Flow.withRandom` and
 `Flow.withGuid` to override them for a subtree, including forked fibers. Leaving that subtree restores the outer
-services. `IRandom` and `IGuid` are defined in `Axial`; their modules live in `Axial.PlatformService`.
+services. `IRandom` and `IGuid` are defined in `Axial`; their modules keep the `Axial.PlatformService` namespace
+but ship in the `Axial` package.
 
 ## Randomness
 

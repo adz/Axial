@@ -35,7 +35,7 @@ let startup : Flow<StartupEnv, EnvironmentVariableError, int> =
 ```fsharp run
 let log = Log.memory ()
 startup
-|> Flow.withClock (Clock.``fixed`` (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)))
+|> Flow.withClock (Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)))
 |> Flow.withRandom (Random.seeded 42)
 |> Flow.withGuid (Guid.fromValue System.Guid.Empty)
 |> Flow.withLogSink log

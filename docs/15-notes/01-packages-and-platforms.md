@@ -12,8 +12,8 @@ runtime.
 
 | Package | .NET | Fable JavaScript: Node | Fable JavaScript: browser | Notes |
 | --- | --- | --- | --- | --- |
-| `Axial` | Yes | Yes | Yes | Core workflows, runtime, layers, concurrency, streams, schedules, and `App`. |
-| `Axial.PlatformService` | Yes | Yes | Yes | Clock, logging, ordinary and secure randomness, GUID, and environment-variable services; live behavior follows the host. |
+| `Axial` | Yes | Yes | Yes | Core workflows, runtime platform services (clock, logging, random, GUID and test helpers), layers, concurrency, streams, schedules, and `App`. |
+| `Axial.PlatformService` | Yes | Yes | Yes | Environment-variable services only. Clock, logging, random, GUID and test helpers now ship in `Axial` with the `Axial.PlatformService` namespace retained. |
 | `Axial.Console` | Yes | Yes | Yes | Console service; JavaScript behavior is limited to facilities supplied by the host console. |
 | `Axial.FileSystem` | Yes | API only | API only | The live filesystem implementation is .NET-only. Supply a JavaScript implementation explicitly if needed. |
 | `Axial.HttpClient` | Yes | API only | API only | Request plans are portable; the live `HttpClient` implementation is .NET-only. |
@@ -36,7 +36,7 @@ visibility or unload as dependable application shutdown.
 
 NuGet installs the transitive dependencies below; reference only the packages you use directly. Every package also depends on `FSharp.Core`.
 
-`Axial` defines the service contracts, such as `IClock`, but does not depend on `Axial.PlatformService`. That package adds the live clock, logging, ordinary and secure randomness, GUID, and environment-variable implementations.
+`Axial` defines the service contracts, such as `IClock`, and now ships the live clock, logging, ordinary and secure randomness, GUID and test helpers. `Axial.PlatformService` adds only the environment-variable implementation; its namespaces remain in `Axial` for 0.12.
 
 | Package | Axial packages it brings in | Other dependencies |
 | --- | --- | --- |
@@ -44,8 +44,8 @@ NuGet installs the transitive dependencies below; reference only the packages yo
 | `Axial.PlatformService` | `Axial` | None |
 | `Axial.Console` | `Axial` | None |
 | `Axial.FileSystem` | `Axial` | None |
-| `Axial.HttpClient` | `Axial`, `Axial.PlatformService` | None |
-| `Axial.Process` | `Axial`, `Axial.PlatformService`, `Axial.Console`, `Axial.FileSystem` | None |
+| `Axial.HttpClient` | `Axial` | None |
+| `Axial.Process` | `Axial`, `Axial.Console`, `Axial.FileSystem` | None |
 | `Axial.Hosting` | `Axial`, `Axial.PlatformService`, `Axial.HttpClient` | `Microsoft.Extensions.Configuration.Abstractions`, `DependencyInjection.Abstractions`, `Hosting.Abstractions`, `Http`, `Logging.Abstractions` |
 | `Axial.Hosting.Node` | `Axial`, `Axial.PlatformService` | `Fable.Core` |
 | `Axial.Hosting.Browser` | `Axial` | `Fable.Core` |
@@ -54,6 +54,6 @@ NuGet installs the transitive dependencies below; reference only the packages yo
 | `Axial.Hosting.AspNetCore` (experimental) | `Axial` | `Reified.Schema.Http`, `Reified.Schema`, `Reified.Data` |
 | `Axial.Hosting.GenHttp` (experimental) | `Axial` | `GenHTTP.Api`, `GenHTTP.Modules.IO`, `Reified.Schema.Http`, `Reified.Schema`, `Reified.Data` |
 
-Installing `Axial.Process` also installs `Axial.Console`, `Axial.FileSystem`, and `Axial.PlatformService`.
+Installing `Axial.Process` also installs `Axial.Console` and `Axial.FileSystem`.
 Only the two HTTP host adapters, `Axial.Hosting.AspNetCore` (experimental) and `Axial.Hosting.GenHttp` (experimental), depend on Reified. The core
 `Axial` package and the operational packages do not.

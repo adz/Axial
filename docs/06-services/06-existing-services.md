@@ -74,7 +74,7 @@ host adapters can install their own sinks; an inner scoped override still wins.
 let log = Log.memory ()
 let testEnv = { Variables = EnvironmentVariables.fromPairs ["APP_MODE", "diagnostic"] }
 loadMode
-|> Flow.withClock (Clock.``fixed`` (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)))
+|> Flow.withClock (Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)))
 |> Flow.withLogSink log
 |> Flow.run testEnv
 |> shouldEqual (Exit.Success "diagnostic")

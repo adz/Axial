@@ -54,7 +54,7 @@ Production builds the record from the live services; `SqlUserStore` is a placeho
 let fixedEnv =
     { Users = { new IUserStore with member _.Count() = 3 } }
 
-summary |> Flow.withClock (Clock.``fixed`` (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))) |> Flow.run fixedEnv |> shouldEqual (Exit.Success "3 users on 2026-01-01")
+summary |> Flow.withClock (Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))) |> Flow.run fixedEnv |> shouldEqual (Exit.Success "3 users on 2026-01-01")
 ```
 
 The record literal shows where each service comes from.

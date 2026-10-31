@@ -12,7 +12,7 @@ Supporting packages are documented with Axial Core unless they provide an indepe
 
 Maturity: Incubating
 
-Typed asynchronous workflows with explicit dependencies and expected failures, plus concurrency, resources, layers, streams, and scheduling.
+Typed asynchronous workflows with explicit dependencies and expected failures, scoped runtime platform services, concurrency, resources, layers, streams, and scheduling.
 
 [Read the Core documentation →](/)
 
@@ -40,7 +40,7 @@ Typed HTTP workflows with request construction, response handling, reliability p
 
 | Package | Maturity | Provides | First use |
 | --- | --- | --- | --- |
-| `Axial.PlatformService` | Incubating | Clock, logging, ordinary and secure randomness, GUID, and environment-variable services. | [Platform services](/services/platform-services/) |
+| `Axial.PlatformService` | Incubating | Environment-variable services only. Clock, logging, random, GUID and test helpers ship in `Axial` with the `Axial.PlatformService` namespace retained. | [Platform services](/services/platform-services/) |
 | `Axial.Console` | Incubating | The console service (`IConsole`). | [Console](/services/console.html) |
 | `Axial.FileSystem` | Incubating | The file-system service (`IFileSystem`) plus streaming traversal, atomic writes, and the append log. | [File system](/services/filesystem.html) · [Files](/services/files.html) |
 | `Axial.WebSocket` | Experimental | Typed WebSocket client workflows. | [WebSocket](/services/websocket.html) |

@@ -22,13 +22,13 @@ let expiresWithin (window: TimeSpan) (expiry: DateTimeOffset) : Flow<'env, Never
 
 ## Read a chosen instant
 
-The `fixed` name needs double-backtick escaping in F# because it is a keyword:
+`Clock.fromValue` creates a manual clock starting at a chosen instant:
 
 ```fsharp transcript
 > open System;;
 > open Axial;;
 > open Axial.PlatformService;;
-> let atNoon () = Clock.``fixed`` (DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero));;
+> let atNoon () = Clock.fromValue (DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero));;
 > (Clock.now : Flow<unit, Never, DateTimeOffset>) |> Flow.map _.Hour |> Flow.withClock (atNoon ()) |> Flow.run ();;
 val it: Exit<int,Never> = Success 12
 
@@ -61,16 +61,15 @@ let timedReport : Flow<unit, Never, string> =
 ```fsharp run
 let log = Log.memory ()
 timedReport
-|> Flow.withClock (Clock.``fixed`` DateTimeOffset.UnixEpoch)
+|> Flow.withClock (Clock.fromValue DateTimeOffset.UnixEpoch)
 |> Flow.withLogSink log
 |> Flow.run ()
 |> shouldEqual (Exit.Success "report")
 log.Entries |> Seq.map _.Message |> Seq.toList |> shouldEqual ["report built in 0 ms"]
 ```
 
-A manual clock reports zero elapsed duration only while nobody advances it. `Clock.``fixed`` instant` and
-`Clock.fromValue instant` both return `ManualClock`, on .NET and Fable. Sleep does not throw under either: it waits
-until the test advances far enough. An unadvanced timed test can therefore remain suspended indefinitely.
+A manual clock reports zero elapsed duration only while nobody advances it. `Clock.fromValue instant` returns a
+`ManualClock`, on .NET and Fable. Sleep does not throw: it waits until the test advances far enough. An unadvanced timed test can therefore remain suspended indefinitely.
 
 ## Step time explicitly
 

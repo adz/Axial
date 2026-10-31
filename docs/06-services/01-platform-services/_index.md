@@ -1,6 +1,6 @@
 ---
 title: Platform Services
-description: Runtime clock, random and GUID values, observation sinks, and explicit environment-variable authority.
+description: Runtime clock, random, GUID, culture and time-zone values, observation sinks, and explicit environment-variable authority.
 ---
 
 Clock, random numbers and GUIDs come from the runtime, not the application environment. The runtime starts with
@@ -22,9 +22,10 @@ let isExpired (expiry: DateTimeOffset) : Flow<'env, Never, bool> =
 | `IRandom` | `Random.next`, `nextInt`, `nextDouble`, `bytes` | `Flow.withRandom` |
 | `IGuid` | `Guid.newGuid` | `Flow.withGuid` |
 
-`IClock`, `IRandom` and `IGuid` are defined in `Axial`; their reader modules and implementations live in
-`Axial.PlatformService`. There is no general runtime service registry. An environment remains an ordinary
-application record, and `Flow.envWith` selects its fields.
+`IClock`, `IRandom`, `IGuid` and the platform modules are defined in `Axial`. Their reader modules keep the
+`Axial.PlatformService` namespace for 0.12, but the implementation ships in the `Axial` package. The
+`Axial.PlatformService` package now holds only environment-variable services. There is no general runtime service
+registry. An environment remains an ordinary application record, and `Flow.envWith` selects its fields.
 
 ## Observation slots
 
@@ -60,8 +61,20 @@ culture once at startup; it is a no-op on Fable.
 
 `Format.number`, `Format.currency`, `Format.date` and `Format.time` take the culture first. `TimeZone.toLocal zone
 instant` converts a UTC instant to the zone's wall clock for presentation. On .NET formatting uses `CultureInfo`; on
-Fable it uses `Intl`. Currency formatting on Fable derives a currency from the culture's region and falls back to USD
-for regions it does not map.
+Fable it uses `Intl`. Both use the instant's wall clock, not the machine's local time.
+
+The targets agree on the common tested output but not on every format. Known differences:
+
+- `Format.number` uses the .NET `"N2"` pattern and `Intl.NumberFormat` with two fractional digits. They agree for
+  de-DE and en-US in the tests; other .NET number patterns are not exposed.
+- `Format.currency` on .NET uses the culture's currency symbol and pattern. On Fable it derives a currency from the
+  culture's region and falls back to USD for unmapped regions. The invariant culture therefore renders `¤1,234.50` on
+  .NET and `$1,234.50` on Fable.
+- `Format.date` and `Format.time` use the .NET short date/time patterns (`"d"` and `"t"`) with `CultureInfo`, while
+  Fable builds numeric `Intl.DateTimeFormat` fields. Zero padding and separators can differ: de-DE date is
+  `01.06.2025` on .NET and commonly `1.6.2025` on Fable. en-US time can differ in the non-breaking space before `PM`.
+- The invariant culture uses en-US as the Fable `Intl` baseline because `Intl` has no invariant locale. Use an explicit
+  culture for presentation and do not compare invariant `Format.currency`/date/time strings across targets.
 
 Environment variables are different: they read or change external state. Supply `IHasEnvironmentVariables` in the
 application environment and use `EnvironmentVariables.fromPairs` in tests. Cryptographic randomness belongs inside

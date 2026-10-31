@@ -64,9 +64,9 @@ Clock, random and GUID values are scoped runtime services; application authority
 `Log.info` writes to the current `ILogSink` (Information+ on stderr by default); install or decorate destinations
 with `Flow.withLogSink` / `Flow.mapLogSink`, and observation callbacks with `Flow.withTelemetry`.
 
-With `Axial.PlatformService`, `Flow.runTest env` creates a fresh epoch manual clock, seeded random, sequential
-GUIDs and a recording log. Timed tests explicitly advance `TestClock` after observing sleeper registration;
-time never advances automatically. See [runtime services](docs/06-services/01-platform-services/_index.md).
+Core `Axial` ships these runtime services under the `Axial.PlatformService` namespace. `Flow.runTest env` creates a
+fresh epoch manual clock, seeded random, sequential GUIDs and a recording log. Timed tests explicitly advance
+`TestClock` after observing sleeper registration; time never advances automatically. See [runtime services](docs/06-services/01-platform-services/_index.md).
 
 ## Install
 
