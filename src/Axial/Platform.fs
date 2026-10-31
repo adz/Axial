@@ -2123,3 +2123,154 @@ module internal Bridge =
 
     let seededRandom (seed: int) : Random =
         System.Random(seed)
+
+#if FABLE_COMPILER
+    [<Emit("(typeof navigator !== 'undefined' && navigator.language) ? navigator.language : (Intl.DateTimeFormat().resolvedOptions().locale || 'en-US')")>]
+    let private jsCurrentCultureName () : string = jsNative
+
+    [<Emit("(function (name) { if (name === '') return ''; try { return Intl.getCanonicalLocales(name)[0]; } catch (error) { return null; } })($0)")>]
+    let private jsCanonicalCultureName (_name: string) : string = jsNative
+
+    [<Emit("Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'")>]
+    let private jsCurrentTimeZoneId () : string = jsNative
+
+    [<Emit("(function (id) { try { new Intl.DateTimeFormat('en-US', { timeZone: id }); return id; } catch (error) { return null; } })($0)")>]
+    let private jsCanonicalTimeZoneId (_id: string) : string = jsNative
+
+    [<Emit("(function (culture, value) { return new Intl.NumberFormat(culture === '' ? 'en-US' : culture, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value); })($0, $1)")>]
+    let private jsFormatNumber (_culture: string) (_value: float) : string = jsNative
+
+    [<Emit("(function (culture, region, value) { var currencies = { US: 'USD', GB: 'GBP', DE: 'EUR', FR: 'EUR', ES: 'EUR', IT: 'EUR', NL: 'EUR', PT: 'EUR', IE: 'EUR', AT: 'EUR', BE: 'EUR', FI: 'EUR', GR: 'EUR', JP: 'JPY', CN: 'CNY', AU: 'AUD', CA: 'CAD', CH: 'CHF', IN: 'INR', BR: 'BRL', RU: 'RUB', KR: 'KRW', MX: 'MXN', NZ: 'NZD', SE: 'SEK', NO: 'NOK', DK: 'DKK', PL: 'PLN', TR: 'TRY', ZA: 'ZAR', SG: 'SGD', HK: 'HKD', TW: 'TWD' }; var currency = currencies[region] || 'USD'; return new Intl.NumberFormat(culture === '' ? 'en-US' : culture, { style: 'currency', currency: currency }).format(value); })($0, $1, $2)")>]
+    let private jsFormatCurrency (_culture: string) (_region: string) (_value: float) : string = jsNative
+
+    [<Emit("(function (culture, milliseconds) { return new Intl.DateTimeFormat(culture === '' ? 'en-US' : culture, { timeZone: 'UTC', year: 'numeric', month: 'numeric', day: 'numeric' }).format(new Date(milliseconds)); })($0, $1)")>]
+    let private jsFormatDate (_culture: string) (_milliseconds: float) : string = jsNative
+
+    [<Emit("(function (culture, milliseconds) { return new Intl.DateTimeFormat(culture === '' ? 'en-US' : culture, { timeZone: 'UTC', hour: 'numeric', minute: 'numeric' }).format(new Date(milliseconds)); })($0, $1)")>]
+    let private jsFormatTime (_culture: string) (_milliseconds: float) : string = jsNative
+
+    [<Emit("(function (culture) { try { return new Intl.Locale(culture === '' ? 'en-US' : culture).maximize().region || 'US'; } catch (error) { return 'US'; } })($0)")>]
+    let private jsRegionOf (_culture: string) : string = jsNative
+
+    [<Emit("""(function (zoneId, milliseconds) {
+        var date = new Date(milliseconds);
+        var parts = new Intl.DateTimeFormat('en-US', { timeZone: zoneId, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(date);
+        var value = function (type) { var part = parts.find(function (candidate) { return candidate.type === type; }); return part ? parseInt(part.value, 10) : 0; };
+        var wall = Date.UTC(value('year'), value('month') - 1, value('day'), value('hour'), value('minute'), value('second'), date.getUTCMilliseconds());
+        return wall - date.getTime();
+    })($0, $1)""")>]
+    let private jsOffsetMilliseconds (_zoneId: string) (_milliseconds: float) : float = jsNative
+#endif
+
+    let currentCultureName () : string =
+#if FABLE_COMPILER
+        jsCurrentCultureName ()
+#else
+        System.Globalization.CultureInfo.CurrentCulture.Name
+#endif
+
+    let currentTimeZoneId () : string =
+#if FABLE_COMPILER
+        jsCurrentTimeZoneId ()
+#else
+        System.TimeZoneInfo.Local.Id
+#endif
+
+    let canonicalCultureName (name: string) : string option =
+#if FABLE_COMPILER
+        Option.ofObj (jsCanonicalCultureName name)
+#else
+        if String.IsNullOrEmpty name then Some ""
+        else
+            try
+                Some((System.Globalization.CultureInfo.GetCultureInfo name).Name)
+            with
+            | :? System.Globalization.CultureNotFoundException -> None
+            | :? ArgumentException -> None
+#endif
+
+    let canonicalTimeZoneId (id: string) : string option =
+#if FABLE_COMPILER
+        Option.ofObj (jsCanonicalTimeZoneId id)
+#else
+        try
+            Some((System.TimeZoneInfo.FindSystemTimeZoneById id).Id)
+        with
+        | :? System.TimeZoneNotFoundException -> None
+        | :? InvalidTimeZoneException -> None
+        | :? ArgumentException -> None
+#endif
+
+    let setProcessCulture (name: string) : unit =
+#if FABLE_COMPILER
+        ignore name
+#else
+        let culture =
+            if String.IsNullOrEmpty name then System.Globalization.CultureInfo.InvariantCulture
+            else System.Globalization.CultureInfo.GetCultureInfo name
+
+        System.Globalization.CultureInfo.DefaultThreadCurrentCulture <- culture
+        System.Globalization.CultureInfo.DefaultThreadCurrentUICulture <- culture
+        System.Globalization.CultureInfo.CurrentCulture <- culture
+        System.Globalization.CultureInfo.CurrentUICulture <- culture
+#endif
+
+    let formatNumber (cultureName: string) (value: float) : string =
+#if FABLE_COMPILER
+        jsFormatNumber cultureName value
+#else
+        let culture =
+            if String.IsNullOrEmpty cultureName then System.Globalization.CultureInfo.InvariantCulture
+            else System.Globalization.CultureInfo.GetCultureInfo cultureName
+
+        value.ToString("N2", culture)
+#endif
+
+    let formatCurrency (cultureName: string) (value: decimal) : string =
+#if FABLE_COMPILER
+        let region = jsRegionOf cultureName
+        jsFormatCurrency cultureName region (float value)
+#else
+        let culture =
+            if String.IsNullOrEmpty cultureName then System.Globalization.CultureInfo.InvariantCulture
+            else System.Globalization.CultureInfo.GetCultureInfo cultureName
+
+        value.ToString("C", culture)
+#endif
+
+    let formatDate (cultureName: string) (instant: DateTimeOffset) : string =
+#if FABLE_COMPILER
+        jsFormatDate cultureName (float (instant.ToUnixTimeMilliseconds() + int64 instant.Offset.TotalMilliseconds))
+#else
+        let culture =
+            if String.IsNullOrEmpty cultureName then System.Globalization.CultureInfo.InvariantCulture
+            else System.Globalization.CultureInfo.GetCultureInfo cultureName
+
+        instant.ToString("d", culture)
+#endif
+
+    let formatTime (cultureName: string) (instant: DateTimeOffset) : string =
+#if FABLE_COMPILER
+        jsFormatTime cultureName (float (instant.ToUnixTimeMilliseconds() + int64 instant.Offset.TotalMilliseconds))
+#else
+        let culture =
+            if String.IsNullOrEmpty cultureName then System.Globalization.CultureInfo.InvariantCulture
+            else System.Globalization.CultureInfo.GetCultureInfo cultureName
+
+        instant.ToString("t", culture)
+#endif
+
+    let toLocal (zoneId: string) (instant: DateTimeOffset) : DateTimeOffset =
+#if FABLE_COMPILER
+        if String.Equals(zoneId, "UTC", StringComparison.OrdinalIgnoreCase) then
+            instant.ToUniversalTime()
+        else
+            let offset = TimeSpan.FromMilliseconds(jsOffsetMilliseconds zoneId (float (instant.ToUnixTimeMilliseconds())))
+            DateTimeOffset(instant.UtcDateTime.Ticks + offset.Ticks, offset)
+#else
+        let zone =
+            if String.Equals(zoneId, "UTC", StringComparison.OrdinalIgnoreCase) then System.TimeZoneInfo.Utc
+            else System.TimeZoneInfo.FindSystemTimeZoneById zoneId
+
+        System.TimeZoneInfo.ConvertTime(instant, zone)
+#endif

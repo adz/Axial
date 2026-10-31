@@ -15,6 +15,10 @@ type TestPlatform private () =
     member val Guid: IGuid =
         { new IGuid with
             member _.NewGuid() = lock guidGate (fun () -> nextGuid <- nextGuid + 1; System.Guid(nextGuid, 0s, 0s, Array.zeroCreate 8)) } with get, set
+    /// The culture returned by <c>Culture.system</c> under this test run; invariant by default.
+    member val Culture = Axial.Culture.invariant with get, set
+    /// The time zone returned by <c>TimeZone.local</c> under this test run; UTC by default.
+    member val TimeZone = Axial.TimeZone.utc with get, set
     /// Enable recording before running the test. Reads are available in call order.
     member val Trace = false with get, set
     /// A stable snapshot; later reads never mutate a previously captured snapshot.
@@ -55,6 +59,7 @@ module TestPlatformExtensions =
                 |> Flow.withRandom (if platform.Trace then tracedRandom else random)
                 |> Flow.withGuid (if platform.Trace then tracedGuid else guid)
                 |> Flow.withLogSink platform.Log
+                |> Flow.withMachineDefaults platform.Culture platform.TimeZone
             installed.RunSynchronously environment
 
         /// A fresh platform for each run: Unix epoch, seeded random, sequential GUIDs, and a recording sink.

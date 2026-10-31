@@ -51,6 +51,18 @@ recording log. `Flow.runTestWith platform env` exposes those fakes for assertion
 automatically. Timed tests fork, await a registration signal, explicitly advance, then join; see [clock](clock.html).
 The test runners are .NET APIs; Fable supports `ManualClock` and the same scoped per-service overrides.
 
+## Culture and time zone
+
+`Culture` and `TimeZone` are plain sealed values, not runtime-context fields. Read a machine default as an explicit
+effect with `Culture.system` or `TimeZone.local`, keep the value in the application model, and pass it to pure
+functions. `Flow.runTest` supplies the invariant culture and UTC. `Culture.setProcessDefault` sets the .NET process
+culture once at startup; it is a no-op on Fable.
+
+`Format.number`, `Format.currency`, `Format.date` and `Format.time` take the culture first. `TimeZone.toLocal zone
+instant` converts a UTC instant to the zone's wall clock for presentation. On .NET formatting uses `CultureInfo`; on
+Fable it uses `Intl`. Currency formatting on Fable derives a currency from the culture's region and falls back to USD
+for regions it does not map.
+
 Environment variables are different: they read or change external state. Supply `IHasEnvironmentVariables` in the
 application environment and use `EnvironmentVariables.fromPairs` in tests. Cryptographic randomness belongs inside
 an explicit capability using `System.Security.Cryptography`, not the runtime's ordinary random generator.

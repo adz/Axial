@@ -1202,10 +1202,19 @@ module LogSink =
 
 type internal PlatformServices =
     { Clock: IClock; Random: IRandom; Guid: IGuid
+      /// Machine-default culture for <c>Culture.system</c>. A function keeps live reads current; TestPlatform installs a constant.
+      Culture: unit -> Culture
+      /// Machine-default time zone for <c>TimeZone.local</c>. A function keeps live reads current; TestPlatform installs a constant.
+      TimeZone: unit -> Axial.TimeZone
       /// The executor's view of <c>Clock</c>, built once per installed clock so timed primitives do not allocate on every read.
       Time: Platform.ITimeSource }
-    static member Create(clock: IClock, random: IRandom, guid: IGuid) =
-        { Clock = clock; Random = random; Guid = guid; Time = Platform.timeOfClock clock }
+    static member Create(clock: IClock, random: IRandom, guid: IGuid, culture: unit -> Culture, timeZone: unit -> Axial.TimeZone) =
+        { Clock = clock
+          Random = random
+          Guid = guid
+          Culture = culture
+          TimeZone = timeZone
+          Time = Platform.timeOfClock clock }
 
 module internal PlatformDefaults =
     let clock : IClock =
@@ -1264,7 +1273,9 @@ module internal PlatformDefaults =
         { new IGuid with
             // axial-allow-AXG001: live runtime GUID implementation.
             member _.NewGuid() = System.Guid.NewGuid() }
-    let live = PlatformServices.Create(clock, random, guid)
+    let culture () = Culture(Platform.Bridge.currentCultureName())
+    let timeZone () = Axial.TimeZone(Platform.Bridge.currentTimeZoneId())
+    let live = PlatformServices.Create(clock, random, guid, culture, timeZone)
     let logSink = LogSink.console LogLevel.Information
 
 type internal RuntimeContext =

@@ -954,13 +954,26 @@ module Flow =
 
     /// Overrides the clock within this flow and its descendants.
     let withClock (clock: IClock) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
-        withRuntime (fun runtime -> { runtime with Platform = PlatformServices.Create(clock, runtime.Platform.Random, runtime.Platform.Guid) }) source
+        withRuntime (fun runtime ->
+            { runtime with
+                Platform =
+                    { runtime.Platform with
+                        Clock = clock
+                        Time = Platform.timeOfClock clock } }) source
     /// Overrides random values within this flow and its descendants.
     let withRandom (random: IRandom) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
         withRuntime (fun runtime -> { runtime with Platform = { runtime.Platform with Random = random } }) source
     /// Overrides GUID generation within this flow and its descendants.
     let withGuid (guid: IGuid) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
         withRuntime (fun runtime -> { runtime with Platform = { runtime.Platform with Guid = guid } }) source
+    /// Installs explicit machine-default culture and time zone values for a test run.
+    let internal withMachineDefaults (culture: Culture) (timeZone: Axial.TimeZone) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        withRuntime (fun runtime ->
+            { runtime with
+                Platform =
+                    { runtime.Platform with
+                        Culture = fun () -> culture
+                        TimeZone = fun () -> timeZone } }) source
     /// Replaces the log destination within this flow and its descendants.
     let withLogSink (sink: ILogSink) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
         withRuntime (fun runtime -> { runtime with LogSink = sink }) source

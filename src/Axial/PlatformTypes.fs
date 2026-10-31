@@ -40,3 +40,30 @@ type ITelemetry =
     abstract Annotate: name: string * value: string -> unit
     abstract Attribute: attribute: Axial.Telemetry.Attribute -> unit
 
+
+/// <summary>A culture selected explicitly as a value.</summary>
+/// <remarks>
+/// On .NET this wraps a read-only <c>CultureInfo</c> and implements <c>IFormatProvider</c>; on Fable it carries a
+/// BCP 47 name for <c>Intl</c>. The empty name is the invariant culture.
+/// </remarks>
+[<Sealed>]
+type Culture internal (name: string) =
+    member _.Name = name
+
+#if !FABLE_COMPILER
+    member internal _.CultureInfo =
+        if String.IsNullOrEmpty name then System.Globalization.CultureInfo.InvariantCulture
+        else System.Globalization.CultureInfo.GetCultureInfo name
+
+    interface IFormatProvider with
+        member this.GetFormat(formatType: Type) = (this.CultureInfo :> IFormatProvider).GetFormat formatType
+#endif
+
+    override _.ToString() = if String.IsNullOrEmpty name then "invariant" else name
+
+/// <summary>A time zone selected explicitly as a value.</summary>
+/// <remarks>Ids are IANA ids on every target; .NET also accepts Windows ids. <c>UTC</c> is always available.</remarks>
+[<Sealed>]
+type TimeZone internal (id: string) =
+    member _.Id = id
+    override _.ToString() = id
