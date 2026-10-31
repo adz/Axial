@@ -179,6 +179,12 @@ structural equality; read with `Secret.reveal`; its schema replaces any issue un
 Redaction happens where errors are produced, inside `Schema.parse` and the refinement constructor; Axial sees the finished
 `SchemaErrors`. This also covers HTTP bodies and JSON encoding (a secret encodes as an error or redacted, never as plain text).
 
+**DECIDED (owner, 2026-10-31):** `Axial.Process` keeps its own argument-level redaction (`Process.secret`, `Process.secretArg`:
+the real value goes to the child, `***` in display, transcripts and failures). `Axial.Configuration` adds the bridge
+`Config.processArg : Secret<'v> -> ProcessArgument`, which yields a `Process.secret` argument without the raw value ever appearing in
+user code, so a config secret cannot reach a transcript by forgetting to re-wrap `Secret.reveal`. `Axial.Process` gains no Reified
+reference. Test: a command built with `Config.processArg` shows `***` in its plan, transcript and failure text.
+
 ### 3.9 Hosts
 
 | Host | Arguments | Environment | Files / other |

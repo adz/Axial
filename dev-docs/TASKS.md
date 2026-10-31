@@ -22,6 +22,8 @@ lists the queue. Work on main.
     Default `Config.load` returns a plain value captured by consumers; fake with Data.
   - Reified 0.12 prerequisites: Data.merge/mergeAll/ofEnvironment, case-insensitive key parse option, nested CLI `--Db:Port`, and
     `Secret<'v>` in Refinements with redacted errors/ToString. Axial 0.12 requires Reified 0.12.
+  - `Config.processArg : Secret<'v> -> ProcessArgument` bridges config secrets into `Process.secret` arguments (no Reified
+    reference in `Axial.Process`).
   - Culture/TimeZone are sealed values outside the runtime context. `Culture.system`/`TimeZone.local` are explicit effects;
     TestPlatform supplies invariant/UTC under `runTest`; browser/Fable culture comes from navigator.language.
     Keep values in the app model or pass them to pure `Format.number/currency/date/time` and `TimeZone.toLocal` (UTC-to-local only).
