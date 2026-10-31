@@ -297,8 +297,11 @@ T32 ships UTC-to-local only; local-to-UTC (skipped and repeated hours) needs a t
 
 ## 6. Runtime boundary
 
-**DECIDED (owner, 2026-10-31):** neither `Culture` nor `TimeZone` is a field of `PlatformServices` or the runtime context.
-`TestPlatform` supplies their machine-default effects without installing culture or zone values there. Drop the proposed `withClock`
+**DECIDED (owner, 2026-10-31, amended):** no culture or zone *value* is stored or scoped in the runtime context: there is
+no `withCulture`/`withTimeZone`/`Culture.current`, and application code passes the values explicitly. Only the machine-default
+*readers* behind `Culture.system`/`TimeZone.local` sit in `PlatformServices`, exactly like `Clock`, so that every machine read is a
+platform effect that `runTest` makes deterministic (invariant, UTC). They are overridden only by the internal test path; there is no
+public API to replace them. This matches ZIO/Effect-TS test services. Drop the proposed `withClock`
 record-update fix and preservation test: they existed only to retain the now-removed fields.
 
 ## 7. Guardrails rules beyond culture

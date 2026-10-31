@@ -15,7 +15,6 @@ capabilities = [
 ]
 services = [
     "src/Axial.ElmishFlows/Axial.ElmishFlows.fsproj",
-    "src/Axial.Files/Axial.Files.fsproj",
     "src/Axial.Telemetry/Axial.Telemetry.fsproj",
     "src/Axial.Telemetry.JavaScript/Axial.Telemetry.JavaScript.fsproj",
 ]
