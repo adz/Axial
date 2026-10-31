@@ -70,7 +70,7 @@ module Clock =
         { new IClock with
             member _.UtcNow() = provider.GetUtcNow()
             member _.Elapsed() = provider.GetElapsedTime(startedAt)
-            member _.Sleep(delay, cancellationToken) = System.Threading.Tasks.Task.Delay(delay, provider, cancellationToken) }
+            member _.Sleep(delay, cancellationToken) = Axial.Platform.Bridge.timeProviderDelay provider delay cancellationToken }
 
     /// <summary>Wraps an Axial clock as a .NET <see cref="T:System.TimeProvider" />.</summary>
     let toTimeProvider (clock: IClock) : TimeProvider =
@@ -81,7 +81,7 @@ module Clock =
 
             member _.CreateTimer(callback, state, dueTime, period) =
                 let mutable disposed = 0
-                let mutable current = new System.Threading.CancellationTokenSource()
+                let mutable current = Axial.Platform.Bridge.newCancellationSource()
                 let mutable currentDue = dueTime
                 let mutable currentPeriod = period
 
@@ -106,7 +106,7 @@ module Clock =
 
                 let restart () =
                     let previous = current
-                    current <- new System.Threading.CancellationTokenSource()
+                    current <- Axial.Platform.Bridge.newCancellationSource()
                     previous.Cancel()
                     previous.Dispose()
                     run () |> ignore
@@ -267,8 +267,7 @@ module Random =
 
     /// Creates a reproducible generator, independent for each test run.
     let seeded (seed: int) : IRandom =
-        // axial-allow-AXG001: explicit deterministic seeded random implementation, not ambient randomness.
-        let generator = System.Random(seed)
+        let generator = Axial.Platform.Bridge.seededRandom seed
         let gate = obj()
         { new IRandom with
             member _.Next() = lock gate generator.Next

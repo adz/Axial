@@ -342,8 +342,8 @@ module PlatformScopeTests =
         Assert.All(pending, fun item -> Assert.True(item.IsCompletedSuccessfully))
 
     [<Fact>]
-    let ``fixed clock sleeps until explicitly advanced`` () =
-        let clock = Clock.``fixed`` DateTimeOffset.UnixEpoch
+    let ``manual clock sleeps until explicitly advanced`` () =
+        let clock = Clock.fromValue DateTimeOffset.UnixEpoch
         let pending = (clock :> IClock).Sleep(TimeSpan.FromSeconds 1., Threading.CancellationToken.None)
         Assert.False(pending.IsCompleted)
         clock.AdvanceBy(TimeSpan.FromSeconds 1.)

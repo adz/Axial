@@ -9,9 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Shared\SimulatedWork.fs" Link="SimulatedWork.fs" />
     <Compile Include="TestSupport.fs" />
     <Compile Include="FileSystemServiceTests.fs" />
     <Compile Include="TestFileSystemTests.fs" />
+    <Compile Include="FilesTests.fs" />
+    <Compile Include="AppendLogTests.fs" />
+    <Compile Include="CrashTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -26,6 +30,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial.FileSystem\Axial.FileSystem.fsproj" />
+    <ProjectReference Include="..\..\examples\Axial.Files.CrashProbe\Axial.Files.CrashProbe.fsproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

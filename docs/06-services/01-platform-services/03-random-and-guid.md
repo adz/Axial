@@ -53,7 +53,7 @@ inside an explicit capability, not the runtime's ordinary random service.
 val it: Exit<string,Never> = Success "order-11111111-1111-1111-1111-111111111111"
 ```
 
-`Guid.live` is the default. `Guid.fromValue` returns the same identifier on every call. `Guid.fromSequence` supplies
+`Guid.live` is the default. `Guid.fromValue` returns the same identifier on every call. `Guid.sequence` supplies
 a finite scripted sequence and fails clearly on exhaustion. Use a fresh generator per test.
 
 `Flow.runTest` creates seeded randomness and an infinite sequential GUID generator for each run, alongside its

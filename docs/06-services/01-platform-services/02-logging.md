@@ -53,7 +53,7 @@ scope restores the outer sink. `Flow.mapLogSink decorate` instead transforms the
 | `LogSink.map transform sink` | Transforms entries and checks the mapped level against the destination gate |
 | `LogSink.tee first second` | Sends enabled entries to both guarded destinations |
 
-`Log.live` is the default console sink, not a no-op. `Log.none` is a no-op, and `Log.fromSink` accepts a
+`Log.live` is the default console sink, not a no-op. `LogSink.none` is a no-op, and `LogSink.fromFunction` accepts a
 `LogEntry -> unit` function. These are convenience values; there is no logging layer to put into `'env`.
 
 ```fsharp run

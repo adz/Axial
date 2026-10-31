@@ -30,7 +30,6 @@ projects=(
   "src/Axial.Console/Axial.Console.fsproj"
   "src/Axial.ElmishFlows/Axial.ElmishFlows.fsproj"
   "src/Axial.FileSystem/Axial.FileSystem.fsproj"
-  "src/Axial.Files/Axial.Files.fsproj"
   "src/Axial.HttpClient/Axial.HttpClient.fsproj"
   "src/Axial.WebSocket/Axial.WebSocket.fsproj"
   "src/Axial.Process/Axial.Process.fsproj"

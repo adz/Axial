@@ -23,7 +23,6 @@ A real application is in active use outside this repository. Currently gitkay an
 | `Axial.Console` | Incubating | gitkay |
 | `Axial.HttpClient` | Incubating | gitkay |
 | `Axial.Process` | Incubating | gitkay |
-| `Axial.Files` | Incubating | Logs Digger |
 | `Axial.Hosting` | Experimental | No qualifying application |
 | `Axial.Hosting.Browser` | Experimental | No qualifying application |
 | `Axial.Hosting.Node` | Experimental | No qualifying application |

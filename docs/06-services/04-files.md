@@ -2,15 +2,15 @@
 title: Files
 linkTitle: Files
 description: Streaming traversal, atomic writes, and the append log as first-use operations over IFileSystem.
-project: src/Axial.Files/Axial.Files.fsproj
+project: src/Axial.FileSystem/Axial.FileSystem.fsproj
 ---
 
-# Axial.Files
+# Files in Axial.FileSystem
 
-Install `Axial.Files`; it composes `IFileSystem` operations into lazy streams:
+Install `Axial.FileSystem`; it composes `IFileSystem` operations into lazy streams:
 
 ```bash
-dotnet add package Axial.Files
+dotnet add package Axial.FileSystem
 ```
 
 `Files.walk descend root` lists descendants breadth-first; `descend` receives each directory path and decides whether to list its children. `Files.lines path` reads text in batches of 2048 lines, detects UTF-8 and UTF-16 BOMs, and returns an empty stream for files with NUL bytes in the first 8192 bytes (unless they have a UTF-16 BOM). Stopping a line stream early closes its reader. Both operations work with `FileSystem.test`.

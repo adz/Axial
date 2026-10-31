@@ -10,7 +10,6 @@
     <ProjectReference Include="../../src/Axial.Console/Axial.Console.fsproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="../../src/Axial.ElmishFlows/Axial.ElmishFlows.fsproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="../../src/Axial.FileSystem/Axial.FileSystem.fsproj" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="../../src/Axial.Files/Axial.Files.fsproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="../../src/Axial.HttpClient/Axial.HttpClient.fsproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="../../src/Axial.WebSocket/Axial.WebSocket.fsproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="../../src/Axial.Process/Axial.Process.fsproj" ReferenceOutputAssembly="false" />

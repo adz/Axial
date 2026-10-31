@@ -42,8 +42,7 @@ Typed HTTP workflows with request construction, response handling, reliability p
 | --- | --- | --- | --- |
 | `Axial.PlatformService` | Incubating | Clock, logging, ordinary and secure randomness, GUID, and environment-variable services. | [Platform services](/services/platform-services/) |
 | `Axial.Console` | Incubating | The console service (`IConsole`). | [Console](/services/console.html) |
-| `Axial.FileSystem` | Incubating | The file-system service (`IFileSystem`). | [File system](/services/filesystem.html) |
-| `Axial.Files` | Incubating | Streaming file traversal and text reading. | [Files](/services/files.html) |
+| `Axial.FileSystem` | Incubating | The file-system service (`IFileSystem`) plus streaming traversal, atomic writes, and the append log. | [File system](/services/filesystem.html) · [Files](/services/files.html) |
 | `Axial.WebSocket` | Experimental | Typed WebSocket client workflows. | [WebSocket](/services/websocket.html) |
 | `Axial.Hosting` | Experimental | .NET and Microsoft Generic Host integration. | [Platforms and hosting](/platforms-and-hosting/) |
 | `Axial.Hosting.Node` | Experimental | Node.js signals, arguments, exit code, and environment. | [Node](/platforms-and-hosting/node.html) |

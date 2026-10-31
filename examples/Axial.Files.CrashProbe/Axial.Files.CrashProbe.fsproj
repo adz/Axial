@@ -7,7 +7,6 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Axial.Files\Axial.Files.fsproj" />
     <ProjectReference Include="..\..\src\Axial.FileSystem\Axial.FileSystem.fsproj" />
   </ItemGroup>
 </Project>

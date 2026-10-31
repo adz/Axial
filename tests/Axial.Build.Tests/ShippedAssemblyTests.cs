@@ -15,7 +15,6 @@ public sealed class ShippedAssemblyTests
         ("Axial.Console", ["net8.0", "netstandard2.1"]),
         ("Axial.ElmishFlows", ["net8.0", "netstandard2.1"]),
         ("Axial.FileSystem", ["net8.0", "netstandard2.1"]),
-        ("Axial.Files", ["net8.0", "netstandard2.1"]),
         ("Axial.HttpClient", ["net8.0", "netstandard2.1"]),
         ("Axial.WebSocket", ["net8.0", "netstandard2.1"]),
         ("Axial.Process", ["net8.0", "netstandard2.1"]),

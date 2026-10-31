@@ -1,5 +1,6 @@
-// This file is the live IFileSystem implementation: its entire purpose is to be the explicit,
-// mockable boundary around System.IO.File/Directory, so ambient filesystem access here is intentional.
+// This file is the live IFileSystem implementation and the merged streaming/append-log operations: its entire
+// purpose is to be the explicit, mockable boundary around System.IO.File/Directory, so ambient filesystem access
+// here is intentional.
 // axial-allow-file-AXG001: this file implements the explicit filesystem boundary
 namespace Axial.FileSystem
 
@@ -1541,4 +1542,328 @@ module FileSystem =
 
     /// <summary>Creates an empty in-memory file-system test double; seed via the <c>TestFileSystem</c> constructor.</summary>
     let test () : TestFileSystem = TestFileSystem()
+#endif
+
+#if !FABLE_COMPILER
+namespace Axial.Files
+
+open System
+open System.Collections.Generic
+open System.IO
+open System.Text
+open Axial
+open Axial.FileSystem
+open Axial.PlatformService
+
+[<Sealed>]
+type private PrefixedStream(prefix: byte array, length: int, rest: Stream) =
+    inherit Stream()
+    let mutable position = 0
+    override _.CanRead = true
+    override _.CanSeek = false
+    override _.CanWrite = false
+    override _.Length = raise (NotSupportedException())
+    override _.Position with get () = raise (NotSupportedException()) and set _ = raise (NotSupportedException())
+    override _.Flush() = ()
+    override _.Seek(_, _) = raise (NotSupportedException())
+    override _.SetLength _ = raise (NotSupportedException())
+    override _.Write(_, _, _) = raise (NotSupportedException())
+    override _.Read(buffer, offset, count) =
+        if position < length then
+            let copied = min count (length - position)
+            Buffer.BlockCopy(prefix, position, buffer, offset, copied)
+            position <- position + copied
+            copied
+        else rest.Read(buffer, offset, count)
+    override _.Dispose(disposing) =
+        if disposing then rest.Dispose()
+        base.Dispose(disposing)
+
+[<RequireQualifiedAccess>]
+module Files =
+    let private sniffLength = 8192
+    let private batchSize = 2048
+    /// <summary>Writes bytes to a sibling temporary file, flushes them to disk, then replaces the destination by rename.</summary>
+    /// <remarks>A process crash cannot leave a partial destination file. Surviving power loss on some file systems
+    /// also requires fsync of the parent directory after rename; this function does not perform directory fsync.
+    /// A killed process may leave a .&lt;name&gt;.*.tmp sibling, safe to remove with cleanupStaleTemps.</remarks>
+    let writeAtomic (path: string) (contents: byte array) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem =
+        flow {
+            let! fs = FileSystem.service
+            let! guid = Guid.service
+            return!
+                Flow.attemptBlocking (fun token ->
+                    let directory = Path.GetDirectoryName(Path.GetFullPath path)
+                    let name = Path.GetFileName path
+                    let mutable temporary = ""
+                    let mutable owned = false
+                    try
+                        let mutable opened = false
+                        let mutable stream = Unchecked.defaultof<FileStream>
+                        let mutable attempts = 0
+                        while not opened && attempts < 5 do
+                            attempts <- attempts + 1
+                            let identifier = guid.NewGuid().ToString("N")
+                            temporary <- Path.Combine(directory, "." + name + "." + identifier + ".tmp")
+                            try
+                                stream <- fs.OpenFile(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None)
+                                owned <- true
+                                opened <- true
+                            with :? IOException when fs.FileExists temporary && attempts < 5 -> ()
+                        do
+                            use output = stream
+                            output.Write(contents, 0, contents.Length)
+                            output.Flush(true)
+                        token.ThrowIfCancellationRequested()
+                        fs.MoveFile(temporary, path, true)
+                        owned <- false
+                    with error ->
+                        if owned then
+                            // axial-note AXG010: temporary-file cleanup must not replace the original atomic-write failure rethrown below.
+                            try fs.DeleteFile temporary with _ -> ()
+                        System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
+                |> Flow.mapError (FileSystemError.fromException (Some path))
+        }
+
+    /// <summary>Deletes sibling atomic-write temporary files older than age for the target path.</summary>
+    /// <remarks>Only names matching .&lt;name&gt;.&lt;32 hex digits&gt;.tmp are removed. Do not run concurrently with writers using an age shorter than their write duration.</remarks>
+    let cleanupStaleTemps (path: string) (age: TimeSpan) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem =
+        flow {
+            let! fs = FileSystem.service
+            let! now = Clock.now
+            return!
+                Flow.attemptBlocking (fun token ->
+                    let directory = Path.GetDirectoryName(Path.GetFullPath path)
+                    let prefix = "." + Path.GetFileName path + "."
+                    let cutoff = now.UtcDateTime - age
+                    for candidate in fs.EnumerateFiles(directory, prefix + "*.tmp", SearchOption.TopDirectoryOnly) do
+                        token.ThrowIfCancellationRequested()
+                        let name = Path.GetFileName candidate
+                        if name.StartsWith(prefix, StringComparison.Ordinal) && name.EndsWith(".tmp", StringComparison.Ordinal) &&
+                           name.Length = prefix.Length + 32 + 4 &&
+                           (name.Substring(prefix.Length, 32) |> Seq.forall Uri.IsHexDigit) then
+                            if fs.GetFileLastWriteTimeUtc candidate < cutoff then fs.DeleteFile candidate)
+                |> Flow.mapError (FileSystemError.fromException (Some path))
+        }
+
+    /// <summary>Encodes text as UTF-8 and atomically replaces a file.</summary>
+    let writeAllTextAtomic (path: string) (contents: string) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem =
+        writeAtomic path (Encoding.UTF8.GetBytes contents)
+
+    /// <summary>Encodes text with the supplied encoding and atomically replaces a file.</summary>
+    let writeAllTextAtomicWithEncoding (path: string) (contents: string) (encoding: Encoding) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem =
+        writeAtomic path (encoding.GetBytes contents)
+
+    /// <summary>Watches a directory (optionally recursively) or one file until consumption ends.</summary>
+    /// <remarks>The 1024-event buffer fails on overflow rather than silently losing changes. Rescan after any failure.</remarks>
+    let watch (recursive: bool) (path: string) : FlowStream<'env, FileSystemError, FileSystemChange> when 'env :> IHasFileSystem =
+        FlowStream.fromCallbackWith 1024 (CallbackOverflow.Fail (FileSystemError.Io(Some path, "Watcher buffer overflow; rescan required")))
+            (fun emit ->
+                flow {
+                    let! fs = FileSystem.service
+                    return fs.Watch(path, recursive, (fun change -> emit.Value change |> ignore),
+                                    (fun error -> emit.Fail (FileSystemError.fromException (Some path) error)))
+                }
+                |> Flow.catch (FileSystemError.fromException (Some path)))
+
+    /// <summary>Walks the children of root breadth-first. Directories are listed only when pulled and permitted by descend.</summary>
+    let walk (descend: string -> bool) (root: string) : FlowStream<'env, FileSystemError, FileSystemEntry> when 'env :> IHasFileSystem =
+        let rec step (pending: string list, entries: FileSystemEntry list) =
+            (
+                match entries, pending with
+                | entry :: tail, _ ->
+                    let next =
+                        if entry.Kind = FileSystemEntryKind.Directory && descend entry.FullPath then
+                            pending @ [ entry.FullPath ]
+                        else pending
+                    Flow.succeed (Some(entry, (next, tail)))
+                | [], directory :: remaining ->
+                    FileSystem.enumerateFileSystemInfos directory "*" SearchOption.TopDirectoryOnly
+                    |> Flow.bind (fun found -> step (remaining, List.ofSeq found))
+                | [], [] -> Flow.succeed None)
+        FlowStream.unfoldFlow step ([ root ], [])
+
+    /// <summary>Opens a BOM-aware text reader, or None if the first 8192 bytes contain a NUL (except UTF-16 with a BOM).</summary>
+    let reader (path: string) : Resource<'env, FileSystemError, TextReader option> when 'env :> IHasFileSystem =
+        Resource.create
+            (flow {
+                let! raw = FileSystem.openRead path
+                return!
+                    Flow.attemptBlocking (fun _ ->
+                        // Sniffing failures are mapped to FileSystemError by attemptBlocking.
+                        try
+                            let prefix = Array.zeroCreate<byte> sniffLength
+                            let mutable length = 0
+                            let mutable reading = true
+                            while reading && length < sniffLength do
+                                let count = raw.Read(prefix, length, sniffLength - length)
+                                if count = 0 then reading <- false else length <- length + count
+                            let utf16 = length >= 2 &&
+                                        ((prefix[0] = 0xFFuy && prefix[1] = 0xFEuy) ||
+                                         (prefix[0] = 0xFEuy && prefix[1] = 0xFFuy))
+                            if not utf16 && Array.IndexOf(prefix, 0uy, 0, length) >= 0 then
+                                raw.Dispose()
+                                None
+                            else
+                                let replay = new PrefixedStream(prefix, length, raw)
+                                Some(new StreamReader(replay, Encoding.UTF8, true) :> TextReader)
+                        with error ->
+                            raw.Dispose()
+                            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw()
+                            Unchecked.defaultof<_>)
+                    |> Flow.mapError (FileSystemError.fromException (Some path))
+            })
+            (fun text -> Flow.delay (fun () -> text |> Option.iter _.Dispose(); Flow.succeed ()))
+
+    /// <summary>Streams text in 2048-line batches. Binary files produce no lines; stopping early closes the reader.</summary>
+    let lines (path: string) : FlowStream<'env, FileSystemError, string> when 'env :> IHasFileSystem =
+        FlowStream.using (reader path) (function
+            | None -> FlowStream.empty
+            | Some text ->
+                FlowStream.repeatFlow (
+                    Flow.attemptBlocking (fun _ ->
+                        let batch = ResizeArray<string>(batchSize)
+                        let mutable line = text.ReadLine()
+                        while not (isNull line) && batch.Count < batchSize - 1 do
+                            batch.Add line
+                            line <- text.ReadLine()
+                        if not (isNull line) then batch.Add line
+                        batch.ToArray())
+                    |> Flow.mapError (FileSystemError.fromException (Some path)))
+                |> FlowStream.takeWhile (fun batch -> batch.Length > 0)
+                |> FlowStream.collect FlowStream.fromSeq)
+
+namespace Axial.Files
+
+open System
+open System.IO
+open Axial
+open Axial.FileSystem
+
+/// <summary>A bounded framed file log retaining two generations. Dispose the resource before opening another writer.</summary>
+[<Sealed>]
+type AppendLog internal (path: string, maxBytes: int64, fs: IFileSystem, stream: FileStream) =
+    let mutable current = stream
+    let gate = Semaphore.make 1 |> Flow.run () |> function Exit.Success value -> value | _ -> failwith "Invalid semaphore"
+    let mutable failed = false
+    member internal _.Gate = gate
+    member internal _.Failed with get () = failed and set value = failed <- value
+    member internal _.Path = path
+    member internal _.MaxBytes = maxBytes
+    member internal _.FileSystem = fs
+    member internal _.Stream with get () = current and set value = current <- value
+    override _.ToString() = $"AppendLog({path})"
+
+[<RequireQualifiedAccess>]
+module AppendLog =
+    let private table =
+        Array.init 256 (fun index ->
+            let mutable value = uint32 index
+            for _ in 1 .. 8 do
+                value <- if value &&& 1u = 1u then (value >>> 1) ^^^ 0xEDB88320u else value >>> 1
+            value)
+
+    let private crc (bytes: byte array) =
+        let mutable value = 0xFFFFFFFFu
+        for b in bytes do
+            value <- table[int ((value ^^^ uint32 b) &&& 0xFFu)] ^^^ (value >>> 8)
+        ~~~value
+
+    let private scan (maxBytes: int64) (stream: FileStream) =
+        stream.Position <- 0L
+        let header = Array.zeroCreate<byte> 8
+        let records = ResizeArray<byte array>()
+        let mutable valid = 0L
+        let mutable scanning = true
+        while scanning && stream.Length - stream.Position >= 8L do
+            let mutable count = 0
+            while count < 8 do
+                let n = stream.Read(header, count, 8 - count)
+                if n = 0 then raise (EndOfStreamException())
+                count <- count + n
+            let length = BitConverter.ToInt32(header, 0)
+            if length < 0 || int64 length > maxBytes - 8L || int64 length > stream.Length - stream.Position then
+                scanning <- false
+            else
+                let payload = Array.zeroCreate<byte> length
+                let mutable offset = 0
+                while offset < length do
+                    let n = stream.Read(payload, offset, length - offset)
+                    if n = 0 then raise (EndOfStreamException())
+                    offset <- offset + n
+                if crc payload <> BitConverter.ToUInt32(header, 4) then scanning <- false
+                else
+                    valid <- stream.Position
+                    records.Add payload
+        valid, records.ToArray()
+
+    /// <summary>Opens a log, preserving the rotated generation when the current file is missing, and truncates a corrupt tail. Frame lengths are bounded by maxBytes.</summary>
+    let openLog (path: string) (maxBytes: int64) : Resource<'env, FileSystemError, AppendLog> when 'env :> IHasFileSystem =
+        Resource.create
+            (flow {
+                let! fs = FileSystem.service
+                if maxBytes < 8L then
+                    return! Flow.fail (FileSystemError.InvalidPath(Some path, "Log cap must fit a frame header"))
+                return!
+                    Flow.attemptBlocking (fun _ ->
+                        let stream = fs.OpenFile(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read)
+                        try
+                            let valid, _ = scan maxBytes stream
+                            if valid <> stream.Length then
+                                stream.SetLength valid
+                                stream.Flush(true)
+                            stream.Position <- valid
+                            AppendLog(path, maxBytes, fs, stream)
+                        with error ->
+                            stream.Dispose()
+                            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw()
+                            Unchecked.defaultof<_>)
+                    |> Flow.mapError (FileSystemError.fromException (Some path))
+            })
+            (fun log -> Flow.delay (fun () -> log.Stream.Dispose(); Flow.succeed ()))
+
+    /// <summary>Serialises appends and flushes record contents to storage before acknowledgement. Rotation retains two generations; directory entries are not fsynced for power-loss durability.</summary>
+    let append (record: byte array) (log: AppendLog) : Flow<'env, FileSystemError, unit> =
+        (Flow.attemptBlocking (fun _ ->
+            if log.Failed then raise (IOException("AppendLog is unavailable after failed rotation"))
+            let size = int64 record.Length + 8L
+            if size > log.MaxBytes then invalidArg (nameof record) "Record exceeds log cap"
+            let stream = log.Stream
+            if stream.Length + size > log.MaxBytes then
+                stream.Flush(true)
+                stream.Dispose()
+                try
+                    log.FileSystem.MoveFile(log.Path, log.Path + ".1", true)
+                    log.Stream <- log.FileSystem.OpenFile(log.Path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read)
+                with error ->
+                    try
+                        if log.FileSystem.FileExists log.Path then
+                            log.Stream <- log.FileSystem.OpenFile(log.Path, FileMode.Open, FileAccess.ReadWrite, FileShare.Read)
+                            log.Stream.Position <- log.Stream.Length
+                        else log.Failed <- true
+                    // axial-note AXG010: failed recovery poisons the log; rethrow the original write failure below rather than replace it with the reopen failure.
+                    with _ -> log.Failed <- true
+                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw()
+            let stream = log.Stream
+            let header = Array.zeroCreate<byte> 8
+            Buffer.BlockCopy(BitConverter.GetBytes(record.Length), 0, header, 0, 4)
+            Buffer.BlockCopy(BitConverter.GetBytes(crc record), 0, header, 4, 4)
+            stream.Write(header, 0, 8)
+            stream.Write(record, 0, record.Length)
+            stream.Flush(true))
+        |> Flow.mapError (FileSystemError.fromException (Some log.Path)))
+        |> Semaphore.withPermit log.Gate
+
+    /// <summary>Replays valid frames from the current file.</summary>
+    let readAll (log: AppendLog) : FlowStream<'env, FileSystemError, byte array> =
+        FlowStream.fromFlow (
+            Flow.attemptBlocking (fun _ ->
+                let read path =
+                    if log.FileSystem.FileExists path then
+                        use stream = log.FileSystem.OpenFile(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+                        scan log.MaxBytes stream |> snd
+                    else [||]
+                Array.append (read (log.Path + ".1")) (read log.Path))
+            |> Flow.mapError (FileSystemError.fromException (Some log.Path)))
+        |> FlowStream.collect FlowStream.fromSeq
 #endif

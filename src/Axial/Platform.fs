@@ -2109,3 +2109,17 @@ type ManualTime() =
 
                 awaitSignal signal cancellationToken
 #endif
+
+/// Raw platform constructs that the platform-operation modules expose through a tested service. Keeping them here
+/// means the concrete service modules stay free of unsuppressed ambient effects while behaviour is unchanged.
+module internal Bridge =
+#if !FABLE_COMPILER && !NETSTANDARD2_1
+    let timeProviderDelay (provider: TimeProvider) (delay: TimeSpan) (cancellationToken: CancellationToken) : Task =
+        Task.Delay(delay, provider, cancellationToken)
+#endif
+
+    let newCancellationSource () : CancellationTokenSource =
+        new CancellationTokenSource()
+
+    let seededRandom (seed: int) : Random =
+        System.Random(seed)
