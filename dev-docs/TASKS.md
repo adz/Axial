@@ -41,11 +41,7 @@ lists the queue. Work on main.
 - [ ] T25c: Guardrails rules for capabilities (naming, no generic IHas chains, no generic ICapability calls, Replaces resolve and
   are unique, Live only in host role)
   - Spec section 5. After T25b.
-- [ ] T29: T25a review nice-to-haves (still for 0.12: the Elmish `LogSink` option and the WebSocket `Connect` hook; the renames shipped in T31; the rest can follow)
-  - Elmish: add `ElmishRuntimeOptions.LogSink: ILogSink option`, installed where `Clock` is (`Pump()`, `startLayer`); today Fable's
-    default sink sends `Log.info` to `console.error` (red) and the pump is internal. Do it before 0.12 so it is one break.
-  - WebSocket `Connect` hook (`WebSocket.fs` ~230) runs as a fresh root and ignores the caller's `withClock`/`withLogSink`; capture
-    `RuntimePlatform.current ()` and invoke it under that runtime as Process callbacks do, or document the defaults.
+- [ ] T29: T25a review nice-to-haves (the renames shipped in T31; the rest can follow)
   - Duplicate live platform services (C1 #12): `PlatformDefaults` in `Core.fs` against `Clock.live`/`Random.live`/`Guid.live`/`Log.live`
     in `Axial.PlatformService`; keep one implementation (the two Fable sleep copies already differ on a null token).
   - Alias and naming cleanup before 0.12: `Log.none`/`Log.fromSink` against `LogSink.none`/`fromFunction`; `Clock.fixed`/`Clock.fromValue`;

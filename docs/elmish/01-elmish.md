@@ -22,9 +22,9 @@ dotnet add package Axial.ElmishFlows
 `Axial.ElmishFlows` brings Elmish 5 with it. Reference Elmish directly when your program uses `Program.mkProgram` and
 `dispatch`. Open `Axial.ElmishFlows` for the Axial API, and `Axial.PlatformService` when you override the runtime clock.
 
-A minimal runtime supplies an environment, a `Post` function, a defect handler, a history capacity, and an optional
-clock (`Clock = None` keeps the runtime's live default; `Some clock` installs that clock for commands, subscriptions
-and layer provisioning):
+A minimal runtime supplies an environment, a `Post` function, a defect handler, a history capacity, and optional
+clock and log-sink overrides (`Clock = None` and `LogSink = None` keep the runtime's live defaults; `Some` installs
+that clock or sink for commands, subscriptions and layer provisioning):
 
 ```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.ElmishFlows.Tests"
 open Axial
@@ -38,7 +38,8 @@ let runtime =
         { Post = (fun callback -> callback ())
           OnDefect = (fun defect -> failwith defect.Rendered)
           HistoryCapacity = 32
-          Clock = None }
+          Clock = None
+          LogSink = None }
         ()
 ```
 
@@ -48,7 +49,8 @@ dispatching back to a UI loop); never call Elmish's dispatch directly from a wor
 ## First-use lifecycle
 
 `ElmishRuntime` takes any environment, with no clock interface required: time comes from the runtime, and
-`ElmishRuntimeOptions.Clock` overrides it. Keep the runtime's environment stable, and
+`ElmishRuntimeOptions.Clock` overrides it, and `ElmishRuntimeOptions.LogSink` replaces the default
+Information-and-above console sink. Keep the runtime's environment stable, and
 supply a command's current dependencies with `Flow.localEnv`. For example, a git client can open another repository
 without recreating its Elmish runtime:
 
@@ -64,7 +66,8 @@ let runtime =
         { Post = (fun callback -> callback ())
           OnDefect = (fun defect -> failwith defect.Rendered)
           HistoryCapacity = 32
-          Clock = None }
+          Clock = None
+          LogSink = None }
         ()
 let currentEnv = { Repository = "/repos/new" }
 let repositoryName : Flow<RepositoryEnvironment, string, string> =
@@ -107,7 +110,8 @@ let runtime =
             { Post = (fun callback -> callback ())
               OnDefect = (fun defect -> failwith defect.Rendered)
               HistoryCapacity = 32
-              Clock = None }
+              Clock = None
+              LogSink = None }
             layer
             ()
         |> Async.RunSynchronously

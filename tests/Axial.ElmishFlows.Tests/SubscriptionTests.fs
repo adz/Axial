@@ -15,7 +15,7 @@ module SubscriptionTests =
                 member _.UtcNow() = DateTimeOffset.UtcNow
                 member _.Elapsed() = TimeSpan.FromTicks(Environment.TickCount64)
                 member _.Sleep(delay, token) = Task.Delay(delay, token) }
-        ElmishRuntime.start { Post = post; OnDefect = defect; HistoryCapacity = 32; Clock = Some clock } ()
+        ElmishRuntime.start { Post = post; OnDefect = defect; HistoryCapacity = 32; Clock = Some clock; LogSink = None } ()
 
     [<Fact>]
     let ``inbox drops full offers and counts them`` () =

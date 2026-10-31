@@ -19,7 +19,8 @@ type TestRuntime<'env> internal (clock: ManualClock, environment: 'env) =
                 { Post = deliveries.Enqueue
                   OnDefect = errors.Enqueue
                   HistoryCapacity = 128
-                  Clock = Some clock })
+                  Clock = Some clock
+                  LogSink = None })
         let handle = App.start environment (Flow.withFiberRegistry runtime.Registry (runtime.Pump()))
         runtime.SetEnvironment(environment)
         runtime.Attach(handle)
@@ -107,7 +108,7 @@ module ElmishRuntime =
                             | [] -> Deferred.dieNow (OperationCanceledException("Elmish runtime provisioning was interrupted.")) ready |> ignore
                         Flow.ok ())
                 |> Flow.withFiberRegistry runtime.Registry
-                |> fun source -> match options.Clock with Some clock -> Flow.withClock clock source | None -> source
+                |> RuntimeOptions.apply options
 
             let handle = App.start input root
             runtime.Attach(handle)

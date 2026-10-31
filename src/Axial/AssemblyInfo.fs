@@ -15,4 +15,5 @@ namespace Axial
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Hosting")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Telemetry")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Telemetry.JavaScript")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.WebSocket")>]
 do ()

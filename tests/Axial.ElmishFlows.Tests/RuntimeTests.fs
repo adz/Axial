@@ -8,6 +8,10 @@ open Axial
 open Axial.ElmishFlows
 open Xunit
 
+[<CollectionDefinition("Console error", DisableParallelization = true)>]
+type ConsoleErrorCollection() = class end
+
+[<Collection("Console error")>]
 module RuntimeTests =
     let private liveClock () =
         { new IClock with
@@ -16,7 +20,7 @@ module RuntimeTests =
             member _.Sleep(delay, token) = Task.Delay(delay, token) }
 
     let private options post onDefect =
-        { Post = post; OnDefect = onDefect; HistoryCapacity = 32; Clock = Some(liveClock ()) }
+        { Post = post; OnDefect = onDefect; HistoryCapacity = 32; Clock = Some(liveClock ()); LogSink = None }
 
     type CacheEnvironment = { Cache: Cache<int, Never, string> }
 
@@ -30,6 +34,46 @@ module RuntimeTests =
         use runtime = match provisioned with Ok value -> value | Error error -> failwith error
         Assert.Equal(instant, runtime.Environment)
         Assert.True(runtime.StopAndWait(TimeSpan.FromSeconds 5.))
+
+    [<Fact>]
+    let ``pump installs the configured log sink`` () =
+        let sink = Axial.PlatformService.Log.memory ()
+        let configuration =
+            { options (fun callback -> callback ()) (fun defect -> failwith defect.Rendered) with
+                LogSink = Some(sink :> ILogSink) }
+        use runtime = ElmishRuntime.start configuration ()
+        let command = Cmd.OfFlow.perform "log" runtime (flow { do! Axial.PlatformService.Log.info "pump-entry" }) id
+        for start in command do start ignore
+        Assert.True(SpinWait.SpinUntil((fun () -> sink.Entries |> Seq.exists (fun entry -> entry.Message = "pump-entry")), 5000))
+
+    [<Fact>]
+    let ``startLayer installs the configured log sink during provisioning`` () =
+        let sink = Axial.PlatformService.Log.memory ()
+        let layer : Layer<unit, string, unit> =
+            Layer.fromFlow (flow {
+                do! Axial.PlatformService.Log.info "layer-entry"
+                return ()
+            })
+        let configuration =
+            { options (fun callback -> callback ()) (fun defect -> failwith defect.Rendered) with
+                LogSink = Some(sink :> ILogSink) }
+        let result = ElmishRuntime.startLayer configuration layer () |> Async.RunSynchronously
+        use _runtime = match result with Ok runtime -> runtime | Error error -> failwith error
+        Assert.True(sink.Entries |> Seq.exists (fun entry -> entry.Message = "layer-entry"))
+
+    [<Fact>]
+    let ``None keeps the default console log sink`` () =
+        let original = Console.Error
+        use writer = new System.IO.StringWriter()
+        Console.SetError writer
+        try
+            use runtime = ElmishRuntime.start (options (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)) ()
+            let command =
+                Cmd.OfFlow.perform "log" runtime (flow { do! Axial.PlatformService.Log.info "default-entry" }) id
+            for start in command do start ignore
+            Assert.True(SpinWait.SpinUntil((fun () -> writer.ToString().Contains "default-entry"), 5000))
+        finally
+            Console.SetError original
 
     [<Fact>]
     let ``startLayer provisions a cache and release flow until stop`` () =

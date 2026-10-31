@@ -12,7 +12,8 @@ module NamespaceTests =
         { Post = (fun callback -> callback ())
           OnDefect = (fun defect -> failwith defect.Rendered)
           HistoryCapacity = 32
-          Clock = None }
+          Clock = None
+          LogSink = None }
 
     [<Fact>]
     let ``Elmish and Axial command modules coexist`` () =

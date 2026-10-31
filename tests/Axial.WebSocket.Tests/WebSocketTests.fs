@@ -10,6 +10,7 @@ open System.Net.WebSockets
 open System.Threading
 open System.Threading.Tasks
 open Axial
+open Axial.PlatformService
 open Axial.WebSocket
 open Xunit
 
@@ -201,6 +202,36 @@ module WebSocketTests =
         Assert.True(received > 5, sprintf "received %d" received)
         Assert.Equal(actualSent.Value, sent)
         Assert.Equal(actualReceived.Value, received)
+
+    [<Fact>]
+    let ``custom connect hook sees the caller clock and log sink`` () =
+        use server = new Server(false)
+        let instant = DateTimeOffset(2022, 3, 4, 5, 6, 7, TimeSpan.Zero)
+        let clock = ManualClock(instant)
+        let sink = Log.memory ()
+        let mutable observed = None
+        let hook (context: ConnectContext) : Flow<unit, WebSocketError, Stream> =
+            flow {
+                let! now = Clock.now
+                do! Log.info "connect-hook"
+                observed <- Some now
+                let socket = new Socket(SocketType.Stream, ProtocolType.Tcp)
+                socket.Connect(context.Host, context.Port)
+                return new NetworkStream(socket, true) :> Stream
+            }
+        let options = WebSocket.connect server.Url |> WebSocket.connectWith hook
+        let env = { new IHasWebSocket with member _.WebSocket = WebSocket.live() }
+        use session =
+            match
+                WebSocket.openSession options
+                |> Flow.withClock (clock :> IClock)
+                |> Flow.withLogSink sink
+                |> fun source -> source.RunSynchronously(env)
+            with
+            | Exit.Success value -> value
+            | other -> failwithf "connect: %A" other
+        Assert.Equal(Some instant, observed)
+        Assert.True(sink.Entries |> Seq.exists (fun entry -> entry.Message = "connect-hook"))
 
     let private tlsOptions url ca client =
         WebSocket.connect url

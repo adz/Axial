@@ -169,9 +169,26 @@ module WebSocket =
         FlowStream.unfoldFlow (fun () -> session.Receive() |> Flow.map (Option.map (fun value -> value, ()))) ()
     let close code reason (session: WebSocketSession) = session.Close code reason
 
+    // The transport hook is called from a handler task, so start it under the caller's runtime services.
+    let private withCallerServices (caller: RuntimeContext) (source: Flow<'env, 'error, 'value>) =
+        Flow(fun environment token ->
+            let current = RuntimePlatform.current ()
+
+            let runtime =
+                { current with
+                    Platform = caller.Platform
+                    LogSink = caller.LogSink
+                    AnnotationSink = caller.AnnotationSink
+                    TelemetrySink = caller.TelemetrySink
+                    Tracer = caller.Tracer
+                    Observer = caller.Observer }
+
+            RuntimeState.withRuntime runtime (fun () -> FlowInternal.invoke source environment token))
+
     let live () : IWebSocket =
         { new IWebSocket with
             member _.Connect options =
+                let caller = RuntimePlatform.current ()
                 let defaultTls = { ClientCertificate = None; TrustAnchors = None; MinimumVersion = TlsVersion.Default }
                 if options.Invoker.IsSome && options.Tls <> defaultTls then
                     Flow.fail(WebSocketError.ConnectFailed "A caller-supplied HTTP invoker cannot be combined with WebSocket.tls.")
@@ -227,7 +244,11 @@ module WebSocket =
                                                 let! transport = task {
                                                     match options.Connect with
                                                     | Some hook ->
-                                                        match (hook { Host = context.DnsEndPoint.Host; Port = context.DnsEndPoint.Port }).RunSynchronously((), cancellationToken = token) with
+                                                        match
+                                                            (hook { Host = context.DnsEndPoint.Host; Port = context.DnsEndPoint.Port }
+                                                             |> withCallerServices caller)
+                                                                .RunSynchronously((), cancellationToken = token)
+                                                        with
                                                         | Exit.Success stream -> return stream
                                                         | Exit.Failure(Cause.Fail error) -> return raise (IOException("Custom connect failed: " + error.ToString()))
                                                         | Exit.Failure(Cause.Die error) ->

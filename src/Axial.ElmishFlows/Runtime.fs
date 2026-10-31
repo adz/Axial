@@ -19,7 +19,20 @@ type ElmishRuntimeOptions =
     { Post: (unit -> unit) -> unit
       OnDefect: CommandDefect -> unit
       HistoryCapacity: int
-      Clock: IClock option }
+      Clock: IClock option
+      LogSink: ILogSink option }
+
+[<RequireQualifiedAccess>]
+module internal RuntimeOptions =
+    let apply (options: ElmishRuntimeOptions) (source: Flow<'env, 'error, 'value>) =
+        let source =
+            match options.LogSink with
+            | Some sink -> Flow.withLogSink sink source
+            | None -> source
+
+        match options.Clock with
+        | Some clock -> Flow.withClock clock source
+        | None -> source
 
 /// Owns the root scope for all commands in one Elmish program.
 [<Sealed>]
@@ -53,10 +66,7 @@ type ElmishRuntime<'env> internal (options: ElmishRuntimeOptions) =
     member internal _.Options = options
     member internal _.Pending = Volatile.Read(&pending)
     member internal _.LatestCount = lock gate (fun () -> latest.Count)
-    member internal _.Pump() : Flow<'env, Never, unit> =
-        match options.Clock with
-        | Some clock -> pump () |> Flow.withClock clock
-        | None -> pump ()
+    member internal _.Pump() : Flow<'env, Never, unit> = pump () |> RuntimeOptions.apply options
 
     member internal _.SetEnvironment(environmentValue: 'env) =
         environment <- environmentValue

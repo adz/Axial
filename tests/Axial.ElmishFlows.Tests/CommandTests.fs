@@ -16,7 +16,7 @@ module CommandTests =
                 member _.Elapsed() = TimeSpan.FromTicks(Environment.TickCount64)
                 member _.Sleep(delay, token) = Task.Delay(delay, token) }
         ElmishRuntime.start
-            { Post = post; OnDefect = onDefect; HistoryCapacity = 1024; Clock = Some clock }
+            { Post = post; OnDefect = onDefect; HistoryCapacity = 1024; Clock = Some clock; LogSink = None }
             ()
 
     [<Fact>]
@@ -27,7 +27,8 @@ module CommandTests =
             { Post = fun callback -> posts.Enqueue(Thread.CurrentThread.ManagedThreadId); callback ()
               OnDefect = fun defect -> failwith defect.Rendered
               HistoryCapacity = 32
-              Clock = None }
+              Clock = None
+              LogSink = None }
         use runtime = runtime options.Post options.OnDefect
         let success = Cmd.OfFlow.either "ok" runtime (Flow.succeed 42) id (fun (_: string) -> -1)
         let failure = Cmd.OfFlow.either "bad" runtime (Flow.fail "bad") (fun (_: int) -> 0) (fun _ -> -1)
