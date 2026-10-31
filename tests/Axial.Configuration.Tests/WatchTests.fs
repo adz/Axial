@@ -22,7 +22,7 @@ let private settle () = Flow.sleep (TimeSpan.FromMilliseconds 600.0)
 let private newPath () =
     System.IO.Path.Combine(System.IO.Path.GetTempPath(), "axial-config-" + Guid.NewGuid().ToString("N") + ".json")
 
-let private timeoutError =
+let private timeoutError () =
     [ ConfigError.SourceFailed("test", "watch did not settle before the test timeout") ]
 
 [<Fact>]
@@ -50,7 +50,7 @@ let ``watch keeps the last valid value and publishes a later valid change`` () =
                 watch.Errors |> FlowStream.take 1 |> FlowStream.runCollect |> Flow.widenError
             return initial.Port, afterInvalid.Port, afterValid.Port, failures
         }
-        |> Flow.timeout (TimeSpan.FromSeconds 10.0) timeoutError
+        |> Flow.timeout (TimeSpan.FromSeconds 10.0) (timeoutError ())
 
     match Flow.run environment workflow with
     | Exit.Success(initial, afterInvalid, afterValid, failures) ->
@@ -78,7 +78,7 @@ let ``a watcher setup failure is reported without rejecting the watch`` () =
                 watch.Errors |> FlowStream.take 1 |> FlowStream.runCollect |> Flow.widenError
             return initial.Port, failures
         }
-        |> Flow.timeout (TimeSpan.FromSeconds 10.0) timeoutError
+        |> Flow.timeout (TimeSpan.FromSeconds 10.0) (timeoutError ())
 
     match Flow.run environment workflow with
     | Exit.Success(initial, failures) ->
@@ -109,7 +109,7 @@ let ``a burst of file changes debounces to one reload`` () =
                 watch.Errors |> FlowStream.take 1 |> FlowStream.runCollect |> Flow.widenError
             return failures
         }
-        |> Flow.timeout (TimeSpan.FromSeconds 10.0) timeoutError
+        |> Flow.timeout (TimeSpan.FromSeconds 10.0) (timeoutError ())
         |> Flow.withLogSink log
 
     match Flow.run environment workflow with
@@ -145,7 +145,7 @@ let ``environment sources stay static while the file changes`` () =
             let! after = SubscriptionRef.get watch.Current
             return initial.Port, after.Port
         }
-        |> Flow.timeout (TimeSpan.FromSeconds 10.0) timeoutError
+        |> Flow.timeout (TimeSpan.FromSeconds 10.0) (timeoutError ())
 
     match Flow.run environment workflow with
     | Exit.Success(initial, after) ->

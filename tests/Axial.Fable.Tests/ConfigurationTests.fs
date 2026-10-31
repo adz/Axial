@@ -7,7 +7,7 @@ open Axial.Hosting.Browser
 open Reified
 open Reified.SchemaDSL
 
-type private PendingSettings = { Port: int }
+type private FableSettings = { Port: int }
 
 let private loaded sources =
     Config.loadData sources |> exitOf
@@ -66,17 +66,17 @@ let tests =
           match exit with
           | Exit.Success text -> return [ equal "required text" "5432" text ]
           | Exit.Failure cause -> return [ isTrue "plain read succeeded" false ]
-      }) ]
+      })
 
-// TODO(Reified 0.12.1): Reified 0.12.0's Fable schema builder throws in GetterName_split.
-// Keep this test written but out of Program.fs until 0.12.1 lands, then move it into `tests`.
-let pendingSchemaTests =
-    [ test "typed schema decoding on Fable waits for Reified 0.12.1" (flow {
+      test "typed schema decoding works on Fable" (flow {
           let schema =
-              schema<PendingSettings> {
-                  field (fun (settings: PendingSettings) -> settings.Port)
+              schema<FableSettings> {
+                  field (fun (settings: FableSettings) -> settings.Port)
                   construct (fun port -> { Port = port })
               }
-          let! exit = Config.load schema [ ConfigSource.ofData "defaults" (Data.Object []) ] |> exitOf
-          return [ isTrue "schema decoding pending Reified 0.12.1" (match exit with Exit.Success _ -> true | _ -> false) ]
+          let! exit = Config.load schema [ ConfigSource.ofData "defaults" (Data.Object [ "Port", Data.Number "7" ]) ] |> exitOf
+
+          match exit with
+          | Exit.Success settings -> return [ equal "typed port" 7 settings.Port ]
+          | Exit.Failure cause -> return [ isTrue "schema decoding succeeded" false ]
       }) ]
