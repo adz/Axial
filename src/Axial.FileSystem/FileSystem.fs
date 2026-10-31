@@ -456,7 +456,7 @@ module FileSystemError =
 /// <remarks>Stream-returning, timestamp, symbolic-link, attribute, and logical-drive members throw
 /// <see cref="T:System.NotSupportedException" />.</remarks>
 /// <param name="readAllTextAsync">Overrides only ReadAllTextAsync, for tests that need to control that read (for example, hold it open).</param>
-type TestFileSystem(?initial: seq<string * string>, ?readAllTextAsync: string -> Flow<unit, FileSystemError, string>) =
+type TestFileSystem(?initial: seq<string * string>, ?readAllTextAsync: string -> Flow<unit, FileSystemError, string>, ?watchFailure: exn) =
     let files = System.Collections.Generic.Dictionary<string, byte array>(StringComparer.OrdinalIgnoreCase)
     let directories = System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase)
     let mutable currentDirectory = Path.GetTempPath()
@@ -533,11 +533,14 @@ type TestFileSystem(?initial: seq<string * string>, ?readAllTextAsync: string ->
 
     interface IFileSystem with
         member _.Watch(path, recursive, onChange, onError) =
-            let id = lock watchers (fun () ->
-                nextWatcher <- nextWatcher + 1
-                watchers[nextWatcher] <- (path, recursive, onChange, onError)
-                nextWatcher)
-            { new IDisposable with member _.Dispose() = lock watchers (fun () -> watchers.Remove id |> ignore) }
+            match watchFailure with
+            | Some error -> raise error
+            | None ->
+                let id = lock watchers (fun () ->
+                    nextWatcher <- nextWatcher + 1
+                    watchers[nextWatcher] <- (path, recursive, onChange, onError)
+                    nextWatcher)
+                { new IDisposable with member _.Dispose() = lock watchers (fun () -> watchers.Remove id |> ignore) }
         member _.ReadAllText(path) = requireFile path |> Encoding.UTF8.GetString
         member _.ReadAllText(path, encoding) = requireFile path |> encoding.GetString
         member _.ReadAllTextAsync(path) =

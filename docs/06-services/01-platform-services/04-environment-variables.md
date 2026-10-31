@@ -7,6 +7,10 @@ description: Layered typed configuration decoded by a Reified schema, with accum
 `Reified.Data`; later sources win, and one Reified schema decodes the merged result. Missing and malformed settings
 are values in a `ConfigError` list, not exceptions, and all of them are reported at once.
 
+> **Fable:** with Reified 0.12.0, source loading, merging, `Config.loadData`, `Config.tryFind` and `Config.watch`
+> plumbing work on Fable. Typed `schema<...>` construction and `Config.load` decoding require Reified 0.12.1 until
+> the upstream Fable schema-builder fix lands.
+
 ```fsharp prepare
 // Setup for the checked examples on this page.
 open System
@@ -79,10 +83,10 @@ let settingsSchema () =
 
 let loadSettings argv =
     Config.load
+        (settingsSchema ())
         [ ConfigSource.ofData "defaults" (Data.Object [ "Db", Data.Object [ "Host", Data.Text "localhost" ] ])
           ConfigSource.environment (Some "MYAPP")
           ConfigSource.commandLine argv ]
-        (settingsSchema ())
 ```
 
 ```fsharp run

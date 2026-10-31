@@ -137,7 +137,7 @@ module GuardrailConfigTests =
                     + "    rng.GetBytes buffer // axial-allow-AXG001: secure random live implementation\n")
             test <@ found = [] @>
             let rule = builtInRules |> List.find (fun rule -> rule.Id = "random.cryptographic")
-            test <@ rule.Guardrail = "Axial.PlatformService" @>
+            test <@ rule.Guardrail = "Axial" @>
             test <@ rule.Category = "secure-random" @>
             test <@ rule.Replacement = "use System.Security.Cryptography inside capability code" @>
         }
@@ -152,8 +152,16 @@ module GuardrailConfigTests =
                     + "    System.TimeZoneInfo.ConvertTimeFromUtc(utc, zone)\n")
             test <@ found = [ 1 ] @>
             let rule = builtInRules |> List.find (fun rule -> rule.Id = "clock.local-timezone")
-            test <@ rule.Guardrail = "Axial.PlatformService" && rule.Category = "environment" @>
+            test <@ rule.Guardrail = "Axial" && rule.Category = "environment" @>
+            test <@ rule.Replacement.Contains("TimeZone.local") @>
         }
+
+    [<Fact>]
+    let ``environment state points at the configuration capability`` () =
+        let rule = builtInRules |> List.find (fun rule -> rule.Id = "environment.state")
+        test <@ rule.Guardrail = "Axial.Configuration" @>
+        test <@ not (rule.Replacement.Contains("IEnvironment")) @>
+        test <@ rule.Replacement.Contains("ConfigSource.environment") @>
 
     [<Fact>]
     let ``constructing FileSystemWatcher is flagged`` () =

@@ -38,8 +38,8 @@ let ``later sources win and reversing the list reverses the winner`` () =
             | "args" -> ConfigSource.commandLine [ "--Port=2" ]
             | value -> ConfigSource.ofData value (Data.Object [ "Port", Data.Number "3" ]))
 
-    let forward = success (Config.load (source [ "env"; "args" ]) (portSchema ()))
-    let reversed = success (Config.load (source [ "args"; "env" ]) (portSchema ()))
+    let forward = success (Config.load (portSchema ()) (source [ "env"; "args" ]))
+    let reversed = success (Config.load (portSchema ()) (source [ "args"; "env" ]))
     test <@ forward.Port = 2 @>
     test <@ reversed.Port = 1 @>
 
@@ -49,7 +49,7 @@ let ``a later null overrides an earlier value`` () =
         [ ConfigSource.environmentOf None [ "Name", "from-env"; "Port", "1" ]
           ConfigSource.json "later.json" """{"Name":null}""" ]
 
-    let settings = success (Config.load sources (portSchema ()))
+    let settings = success (Config.load (portSchema ()) sources)
     test <@ settings.Name = None @>
 
 [<Fact>]
@@ -59,7 +59,7 @@ let ``keys match case-insensitively across merged sources`` () =
           ConfigSource.json "app.json" """{"port":"2"}"""
           ConfigSource.commandLine [ "--Port=3" ] ]
 
-    let settings = success (Config.load sources (portSchema ()))
+    let settings = success (Config.load (portSchema ()) sources)
     test <@ settings.Port = 3 @>
 
 [<Fact>]
@@ -82,7 +82,7 @@ let ``three bad fields across two sources accumulate in one invalid error`` () =
         [ ConfigSource.environmentOf None [ "A", "not-an-int"; "B", "also-bad" ]
           ConfigSource.commandLine [ "--C=nope" ] ]
 
-    match failure (Config.load sources (threeSchema ())) with
+    match failure (Config.load (threeSchema ()) sources) with
     | [ ConfigError.Invalid issues ] ->
         let paths = issues |> SchemaErrors.toList |> List.map (fun issue -> SchemaPath.format issue.Path) |> List.sort
         test <@ List.length paths = 3 @>
@@ -95,7 +95,7 @@ let ``two unreadable sources report two source failures and no decode error`` ()
         [ ConfigSource.json "one.json" "{bad"
           ConfigSource.json "two.json" "[bad" ]
 
-    match failure (Config.load sources (threeSchema ())) with
+    match failure (Config.load (threeSchema ()) sources) with
     | [ ConfigError.SourceFailed("one.json", _); ConfigError.SourceFailed("two.json", _) ] -> ()
     | other -> failwithf "Expected exactly two SourceFailed, got %A" other
 
@@ -144,10 +144,9 @@ let ``plain string reads return text for numbers and booleans and type the absen
 let ``a fake configuration parses through the same schema as a loaded one`` () =
     let loaded =
         success (
-            Config.load
+            Config.load (nestedSchema ())
                 [ ConfigSource.environmentOf None [ "Db__Host", "env-host"; "Db__Port", "1"; "Timeout", "30" ]
                   ConfigSource.commandLine [ "--Db:Host=fake-host"; "--Db:Port=2" ] ]
-                (nestedSchema ())
         )
 
     let faked =
@@ -172,7 +171,7 @@ let ``a fake configuration parses through the same schema as a loaded one`` () =
 let ``a JSON source parses text and a browser query string nests dotted keys`` () =
     let fromJson =
         success (
-            Config.load [ ConfigSource.json "inline.json" """{"Db":{"Host":"json-host","Port":"7"},"Timeout":"9"}""" ] (nestedSchema ())
+            Config.load (nestedSchema ()) [ ConfigSource.json "inline.json" """{"Db":{"Host":"json-host","Port":"7"},"Timeout":"9"}""" ]
         )
 
     test <@ fromJson.Db.Host = "json-host" @>
@@ -180,7 +179,7 @@ let ``a JSON source parses text and a browser query string nests dotted keys`` (
 
     let fromQuery =
         success (
-            Config.load [ ConfigSource.queryString "?Db.Host=query%20host&Db.Port=5432&Timeout=4" ] (nestedSchema ())
+            Config.load (nestedSchema ()) [ ConfigSource.queryString "?Db.Host=query%20host&Db.Port=5432&Timeout=4" ]
         )
 
     test <@ fromQuery.Db.Host = "query host" @>
@@ -215,6 +214,23 @@ let ``a secret value never appears in errors, display or logs`` () =
         let messages = log.Entries |> Seq.map _.Message |> String.concat "\n"
         test <@ not (messages.Contains value) @>
         test <@ messages.Contains "<redacted>" || messages.Contains "secret" || messages.Contains "int" @>
+
+[<Fact>]
+let ``schema omission issues list every source spelling`` () =
+    let sources =
+        [ ConfigSource.environmentOf (Some "MYAPP") []
+          ConfigSource.commandLine []
+          ConfigSource.ofData "appsettings.json" (Data.Object [ "Db", Data.Object [] ]) ]
+
+    let config = success (Config.loadData sources)
+
+    match failure (Config.load (nestedSchema ()) sources) with
+    | [ ConfigError.Invalid _ as error ] ->
+        let text = (ConfigError.describe config error).ToLowerInvariant()
+        test <@ text.Contains("--db:host") @>
+        test <@ text.Contains("myapp__db__host") @>
+        test <@ text.Contains("appsettings.json db.host") @>
+    | other -> failwithf "Expected an omitted-field decode failure, got %A" other
 
 [<Fact>]
 let ``the live environment source reads process variables under a prefix`` () =

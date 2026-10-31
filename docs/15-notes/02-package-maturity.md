@@ -15,7 +15,7 @@ A real application is in active use outside this repository. Currently gitkay an
 | Package | Maturity | Evidence |
 | --- | --- | --- |
 | `Axial` | Incubating | gitkay, Logs Digger |
-| `Axial.PlatformService` | Incubating | gitkay, Logs Digger |
+| `Axial.Configuration` | Experimental | No qualifying application |
 | `Axial.FileSystem` | Incubating | gitkay, Logs Digger |
 | `Axial.Guardrails` | Incubating | gitkay, Logs Digger |
 | `Axial.Tool` | Experimental | No qualifying application |

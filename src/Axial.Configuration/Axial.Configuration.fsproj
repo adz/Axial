@@ -8,7 +8,7 @@
     <RootNamespace>Axial.Configuration</RootNamespace>
     <PackageId>Axial.Configuration</PackageId>
     <Authors>Adam Davies</Authors>
-    <PackageMaturity>Incubating</PackageMaturity>
+    <PackageMaturity>Experimental</PackageMaturity>
     <Description>Typed application configuration for Axial workflows, with layered environment, command-line, JSON, browser and Microsoft configuration sources decoded by a Reified schema.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>

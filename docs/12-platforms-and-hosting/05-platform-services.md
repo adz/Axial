@@ -32,7 +32,7 @@ let startupSchema () =
     }
 
 let startup : Flow<unit, ConfigError list, int> =
-    Config.load [ ConfigSource.environmentOf None [ "PORT", "8080" ] ] (startupSchema ())
+    Config.load (startupSchema ()) [ ConfigSource.environmentOf None [ "PORT", "8080" ] ]
     |> Flow.bind (fun settings ->
         flow {
             let! now = Clock.now

@@ -39,7 +39,7 @@ module PolicyReviewTests =
             write ConfigName "version = 2\nbaseline = \"Axial.Guardrails.baseline\"\n[default]\nrole = \"domain\"\n[roles.domain.rules]\n\"clock.datetime\" = \"deny\"\n"
             write DefaultBaseline ""
             write "App.fs" "module App\n"
-            write "App.fsproj" "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net8.0</TargetFramework><AxialGuardrailsEnabled>true</AxialGuardrailsEnabled><AxialGuardrailsRole>domain</AxialGuardrailsRole><IsTestProject>false</IsTestProject></PropertyGroup><ItemGroup><Compile Include=\"App.fs\"/><AxialGuardrail Include=\"Axial.PlatformService\"/></ItemGroup></Project>"
+            write "App.fsproj" "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net8.0</TargetFramework><AxialGuardrailsEnabled>true</AxialGuardrailsEnabled><AxialGuardrailsRole>domain</AxialGuardrailsRole><IsTestProject>false</IsTestProject></PropertyGroup><ItemGroup><Compile Include=\"App.fs\"/><AxialGuardrail Include=\"Axial.Configuration\"/></ItemGroup></Project>"
             let snapshot = inspect root |> function Ok s -> s | Error e -> failwith e
             write LockName (serialize snapshot)
             git ["add"; "."] |> ignore
@@ -173,7 +173,7 @@ module PolicyReviewTests =
             | "baseline" -> write DefaultBaseline "clock.datetime\tApp.fs\tfingerprint\n"
             | "enabled" -> write "App.fsproj" (project.Replace("Enabled>true", "Enabled>false"))
             | "project-role" -> write "App.fsproj" (project.Replace("Role>domain", "Role>host"))
-            | "guardrail" -> write "App.fsproj" (project.Replace("</ItemGroup>", "<AxialGuardrail Remove=\"Axial.PlatformService\"/></ItemGroup>"))
+            | "guardrail" -> write "App.fsproj" (project.Replace("</ItemGroup>", "<AxialGuardrail Remove=\"Axial.Configuration\"/></ItemGroup>"))
             | "test-project" -> write "App.fsproj" (project.Replace("IsTestProject>false", "IsTestProject>true"))
             | "verify" -> write "scripts/verify.sh" "echo skipped\n"
             | "workflow" -> write ".github/workflows/release.yml" "jobs: {}\n"

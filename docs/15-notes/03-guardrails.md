@@ -98,7 +98,7 @@ Build the project. The build exits non-zero and reports the finding:
 
 ```text
 error AXG001: This call reads the ambient system clock through System.DateTimeOffset, which makes timing untestable.
-The Axial guardrail asks for an explicit, mockable alternative: use Axial.IClock (Axial.PlatformService.Clock.now).
+The Axial guardrail asks for an explicit, mockable alternative: use Axial.IClock (Clock.now).
 ```
 
 If you see no finding, the analyzer is not running in that project: check the package reference and that the
@@ -179,8 +179,8 @@ Referencing a package turns its guardrail on: a rule that recommends `IHttp` is 
 
 | Guardrail | Rules |
 | --- | --- |
-| `Axial` | Ambient clock reads, `Stopwatch`, `Task.Delay`, `Thread.Sleep`, `Environment.ProcessorCount`, blocking waits, and `AXG002`–`AXG013` |
-| `Axial.PlatformService` | Ordinary randomness (`random`), cryptographic randomness (`secure-random`), GUIDs, environment state, and `TimeZoneInfo.Local` |
+| `Axial` | Ambient clock reads, `Stopwatch`, `Task.Delay`, `Thread.Sleep`, `Environment.ProcessorCount`, ordinary and cryptographic randomness, GUIDs, `TimeZoneInfo.Local`, blocking waits, and `AXG002`–`AXG013` |
+| `Axial.Configuration` | Ambient environment state |
 | `Axial.Console` | `System.Console` |
 | `Axial.FileSystem` | `System.IO.File` and `System.IO.Directory` |
 | `Axial.Process` | `Process.Start` |

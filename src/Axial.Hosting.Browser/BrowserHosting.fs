@@ -64,6 +64,13 @@ module BrowserApp =
 
     [<Emit("$0.removeEventListener('abort', $1)")>]
     let private removeAbort (_signal: AbortSignal) (_handler: unit -> unit) : unit = jsNative
+
+    [<Emit("(typeof window !== 'undefined' && window.location && typeof window.location.search === 'string') ? window.location.search : ''")>]
+    let private currentSearch () : string = jsNative
+
+    /// <summary>Returns the current browser query string, including the leading <c>?</c>, or an empty string outside a browser.</summary>
+    /// <example><code>ConfigSource.queryString (BrowserApp.queryParameters ())</code></example>
+    let queryParameters () : string = currentSearch ()
     /// <summary>Starts an application owned explicitly by the calling UI or browser module.</summary>
     let mountWithOptions
         (options: BrowserAppOptions)

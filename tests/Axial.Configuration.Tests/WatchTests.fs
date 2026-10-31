@@ -64,6 +64,31 @@ let ``watch keeps the last valid value and publishes a later valid change`` () =
     | Exit.Failure cause -> failwithf "Expected success, got %A" cause
 
 [<Fact>]
+let ``a watcher setup failure is reported without rejecting the watch`` () =
+    let path = newPath ()
+    let fileSystem = TestFileSystem([ path, """{"Port":"1"}""" ], watchFailure = InvalidOperationException("parent directory is missing"))
+    let environment = { Config = Config.ofData (Data.Object []); FileSystem = fileSystem :> IFileSystem }
+    let sources = [ ConfigSource.jsonFile path ]
+
+    let workflow =
+        flow {
+            let! watch = Config.watch sources (portSchema ())
+            let! initial = SubscriptionRef.get watch.Current
+            let! failures =
+                watch.Errors |> FlowStream.take 1 |> FlowStream.runCollect |> Flow.widenError
+            return initial.Port, failures
+        }
+        |> Flow.timeout (TimeSpan.FromSeconds 10.0) timeoutError
+
+    match Flow.run environment workflow with
+    | Exit.Success(initial, failures) ->
+        Assert.Equal(1, initial)
+        match failures with
+        | [ [ ConfigError.SourceFailed(source, _) ] ] when source = "watch " + path -> ()
+        | other -> failwithf "Expected one watcher setup failure, got %A" other
+    | Exit.Failure cause -> failwithf "Expected success, got %A" cause
+
+[<Fact>]
 let ``a burst of file changes debounces to one reload`` () =
     let path = newPath ()
     let fileSystem = TestFileSystem([ path, """{"Port":"1"}""" ])

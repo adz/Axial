@@ -53,7 +53,7 @@ module CoreServicesExample =
         printfn "random=%d" (run (Random.nextInt 0 10) |> function Exit.Success value -> value | _ -> -1)
         printfn "guid=%O" (run Guid.newGuid)
 
-        match run (Config.load sources (settingsSchema ())) with
+        match run (Config.load (settingsSchema ()) sources) with
         | Exit.Success settings ->
             printfn "port=%d" settings.Port
             printfn "enabled=%b" settings.Enabled

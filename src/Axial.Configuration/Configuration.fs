@@ -44,13 +44,28 @@ module ConfigError =
         | Some parsed -> parsed |> List.choose (function DataPathSegment.Name name -> Some name | DataPathSegment.Index _ -> None)
         | None -> path.Split('.') |> Array.toList
 
-    let private issueLine issue =
+    let private sourceSpellings (sources: IConfig) names =
+        sources.Sources |> List.map (fun (_, spell) -> spell names)
+
+    let private pathNames (path: SchemaPath) =
+        SchemaPath.fold (fun names key -> names @ [ key ]) (fun names _ -> names) [] path
+
+    let private omittedLine (sources: IConfig) path names =
+        let spellings = sourceSpellings sources names
+
+        if spellings.IsEmpty then
+            path + " was omitted"
+        else
+            path + " was omitted (set one of: " + String.concat ", " spellings + ")"
+
+    let private issueLine (sources: IConfig) issue =
         let path = SchemaPath.format issue.Path
 
-        if String.IsNullOrEmpty path then
-            issue.Error.ToString()
-        else
-            path + ": " + issue.Error.ToString()
+        match issue.Error with
+        | SchemaError.Omitted when not (String.IsNullOrEmpty path) ->
+            omittedLine sources path (pathNames issue.Path)
+        | _ when String.IsNullOrEmpty path -> issue.Error.ToString()
+        | _ -> path + ": " + issue.Error.ToString()
 
     /// <summary>Renders a failure as invariant, sorted lines. Secret values never reach this text.</summary>
     /// <example><code>ConfigError.describe config (ConfigError.Missing "Db.Host")</code></example>
@@ -61,16 +76,10 @@ module ConfigError =
             errors
             |> SchemaErrors.toList
             |> List.sortBy (fun issue -> SchemaPath.format issue.Path, issue.Error.ToString())
-            |> List.map issueLine
+            |> List.map (issueLine sources)
             |> String.concat Environment.NewLine
         | ConfigError.Missing path ->
-            let names = segments path
-            let spellings = sources.Sources |> List.map (fun (_, spell) -> spell names)
-
-            if spellings.IsEmpty then
-                path + " was omitted"
-            else
-                path + " was omitted (set one of: " + String.concat ", " spellings + ")"
+            omittedLine sources path (segments path)
         | ConfigError.NotText path -> path + " is not a text value"
         | ConfigError.InvalidPath path -> path + " is not a valid configuration path"
 
@@ -354,8 +363,8 @@ module Config =
 
     /// <summary>Reads every source, merges them with later-wins precedence and decodes the result with <paramref name="schema" />.</summary>
     /// <remarks>Every source failure is reported together; the schema is not run when any source failed.</remarks>
-    /// <example><code>Config.load [ ConfigSource.environment (Some "MYAPP"); ConfigSource.commandLine argv ] settingsSchema</code></example>
-    let load (sources: ConfigSource<'env> list) (schema: Schema<'model>) : Flow<'env, ConfigError list, 'model> =
+    /// <example><code>Config.load settingsSchema [ ConfigSource.environment (Some "MYAPP"); ConfigSource.commandLine argv ]</code></example>
+    let load (schema: Schema<'model>) (sources: ConfigSource<'env> list) : Flow<'env, ConfigError list, 'model> =
         loadDataFrom sources
         |> Flow.bind (fun config ->
             match Schema.parseWith Schema.ignoreKeyCase schema config.Data with
@@ -425,7 +434,7 @@ module Config =
     /// </remarks>
     let watch (sources: ConfigSource<'env> list) (schema: Schema<'model>) : Flow<'env, ConfigError list, ConfigWatch<'env, 'model>> when 'env :> IHasFileSystem =
         flow {
-            let! initial = load sources schema
+            let! initial = load schema sources
             let! current = SubscriptionRef.make initial
             let! (errors: Queue<ConfigError list>) = Queue.unbounded ()
             let spells = sourceList sources
@@ -452,20 +461,30 @@ module Config =
 
                 for path in paths do
                     let subscription =
-                        fileSystem.Watch(
-                            path,
-                            false,
-                            (fun _ -> Queue.tryOffer () changes |> ignore),
-                            (fun error ->
-                                Queue.tryOffer [ ConfigError.SourceFailed("watch " + path, error.Message) ] errors
-                                |> ignore))
+                        try
+                            Ok(
+                                fileSystem.Watch(
+                                    path,
+                                    false,
+                                    (fun _ -> Queue.tryOffer () changes |> ignore),
+                                    (fun error ->
+                                        Queue.tryOffer [ ConfigError.SourceFailed("watch " + path, error.Message) ] errors
+                                        |> ignore)
+                                )
+                            )
+                        with error ->
+                            Error error
 
-                    do!
-                        Flow.scopeFinalizer (
-                            Flow.delay (fun () ->
-                                subscription.Dispose()
-                                Flow.succeed ())
-                        )
+                    match subscription with
+                    | Ok subscription ->
+                        do!
+                            Flow.scopeFinalizer (
+                                Flow.delay (fun () ->
+                                    subscription.Dispose()
+                                    Flow.succeed ())
+                            )
+                    | Error error ->
+                        do! publish errors spells [ ConfigError.SourceFailed("watch " + path, error.Message) ]
 
                 let! _ =
                     Flow.fork (

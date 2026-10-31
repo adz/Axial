@@ -13,7 +13,7 @@ runtime.
 | Package | .NET | Fable JavaScript: Node | Fable JavaScript: browser | Notes |
 | --- | --- | --- | --- | --- |
 | `Axial` | Yes | Yes | Yes | Core workflows, runtime platform services (clock, logging, random, GUID and test helpers), layers, concurrency, streams, schedules, and `App`. |
-| `Axial.Configuration` | Yes | Yes | Yes | Layered environment, command-line, JSON, browser and Microsoft configuration decoded by Reified, with redacted secrets and optional watching. |
+| `Axial.Configuration` | Yes | Yes* | Yes* | Layered environment, command-line, JSON, browser and Microsoft configuration decoded by Reified, with redacted secrets and optional watching. *Fable source loading/merging works on Reified 0.12.0; typed `schema<...>`/`Config.load` decoding requires Reified 0.12.1. |
 | `Axial.Console` | Yes | Yes | Yes | Console service; JavaScript behavior is limited to facilities supplied by the host console. |
 | `Axial.FileSystem` | Yes | API only | API only | The live filesystem implementation is .NET-only. Supply a JavaScript implementation explicitly if needed. |
 | `Axial.HttpClient` | Yes | API only | API only | Request plans are portable; the live `HttpClient` implementation is .NET-only. |
@@ -42,10 +42,11 @@ NuGet installs the transitive dependencies below; reference only the packages yo
 | --- | --- | --- |
 | `Axial` | None | `Fable.Core` |
 | `Axial.Console` | `Axial` | None |
+| `Axial.Configuration` | `Axial`, `Axial.FileSystem`, `Axial.Process` | `Fable.Core`, `Reified.Data`, `Reified.Schema`, `Reified.Refinements` |
 | `Axial.FileSystem` | `Axial` | None |
 | `Axial.HttpClient` | `Axial` | None |
 | `Axial.Process` | `Axial`, `Axial.Console`, `Axial.FileSystem` | None |
-| `Axial.Hosting` | `Axial`, `Axial.Configuration`, `Axial.HttpClient` | `Microsoft.Extensions.Configuration.Abstractions`, `DependencyInjection.Abstractions`, `Hosting.Abstractions`, `Http`, `Logging.Abstractions` |
+| `Axial.Hosting` | `Axial`, `Axial.Configuration`, `Axial.HttpClient` | `Microsoft.Extensions.Configuration.Abstractions`, `DependencyInjection.Abstractions`, `Hosting.Abstractions`, `Http`, `Logging.Abstractions`, `Reified.Data` |
 | `Axial.Hosting.Node` | `Axial` | `Fable.Core` |
 | `Axial.Hosting.Browser` | `Axial` | `Fable.Core` |
 | `Axial.Telemetry` | `Axial` | `System.Diagnostics.DiagnosticSource` |
@@ -54,5 +55,4 @@ NuGet installs the transitive dependencies below; reference only the packages yo
 | `Axial.Hosting.GenHttp` (experimental) | `Axial` | `GenHTTP.Api`, `GenHTTP.Modules.IO`, `Reified.Schema.Http`, `Reified.Schema`, `Reified.Data` |
 
 Installing `Axial.Process` also installs `Axial.Console` and `Axial.FileSystem`.
-Only the two HTTP host adapters, `Axial.Hosting.AspNetCore` (experimental) and `Axial.Hosting.GenHttp` (experimental), depend on Reified. The core
-`Axial` package and the operational packages do not.
+`Axial.Configuration` depends on Reified.Data/Schema/Refinements, `Axial.Hosting` directly references Reified.Data, and the two HTTP host adapters also depend on Reified. The core `Axial` package and the other operational packages do not.

@@ -42,7 +42,7 @@
   -->
   <ItemGroup>
     <AxialGuardrail Include="Axial" />
-    <AxialGuardrail Include="Axial.PlatformService" />
+    <AxialGuardrail Include="Axial.Configuration" />
     <AxialGuardrail Include="Axial.Console" />
     <AxialGuardrail Include="Axial.FileSystem" />
     <AxialGuardrail Include="Axial.Process" />

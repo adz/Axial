@@ -40,7 +40,7 @@ Typed HTTP workflows with request construction, response handling, reliability p
 
 | Package | Maturity | Provides | First use |
 | --- | --- | --- | --- |
-| `Axial.Configuration` | Incubating | Layered environment, command-line, JSON, browser and Microsoft configuration decoded by a Reified schema, with plain string reads, redacted secrets and optional file watching. | [Configuration](/services/platform-services/environment-variables.html) |
+| `Axial.Configuration` | Experimental | Layered environment, command-line, JSON, browser and Microsoft configuration decoded by a Reified schema, with plain string reads, redacted secrets and optional file watching. | [Configuration](/services/platform-services/environment-variables.html) |
 | `Axial.PlatformService` | Removed | Deleted in 0.12. Clock, logging, random, GUID and test helpers ship in `Axial` with the `Axial.PlatformService` namespace retained; use `Axial.Configuration` for environment variables. | |
 | `Axial.Console` | Incubating | The console service (`IConsole`). | [Console](/services/console.html) |
 | `Axial.FileSystem` | Incubating | The file-system service (`IFileSystem`) plus streaming traversal, atomic writes, and the append log. | [File system](/services/filesystem.html) · [Files](/services/files.html) |
