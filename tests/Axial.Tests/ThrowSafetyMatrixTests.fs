@@ -1048,15 +1048,7 @@ module ThrowSafetyMatrix =
     /// "throw-specific" gaps hold when the user flow returns Flow.die instead of throwing, so converting throws at the
     /// user-code call site (the planned leaf wrapper, T30) fixes them; "combinator" gaps fail with Flow.die too.
     let knownGaps () : Map<string, string> =
-        let layerZipParHang =
-            "combinator: Layer.zipPar waits for both branches (zipParAllExecution) and never interrupts the other one, "
-            + "so a failing branch beside a long-running branch hangs, with Flow.die as well (awaiting an owner decision)"
-
-        Map
-            [ "Layer.zipPar/left [Sync]", layerZipParHang
-              "Layer.zipPar/left [AfterAwait]", layerZipParHang
-              "Layer.zipPar/right [Sync]", layerZipParHang
-              "Layer.zipPar/right [AfterAwait]", layerZipParHang ]
+        Map.empty
 
     /// Members of the checked modules that have no cells of their own, and why.
     let exemptions () : Map<string, Exemption> =

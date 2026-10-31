@@ -315,13 +315,7 @@ let private cells () : Cell list =
 /// Cells that fail on JavaScript at the current HEAD. A cell in this list passes while it still fails and fails once
 /// it holds, so fixing a gap forces removing it here; a cell not in it must hold the invariant.
 let private knownGaps () : Map<string, string> =
-    let layerZipPar =
-        "combinator: Layer.zipPar waits for both branches and never interrupts the other one (hangs with Flow.die too; "
-        + "awaiting an owner decision)"
-
-    Map
-        [ for mode in [ "Sync"; "AfterAwait" ] do
-              $"throw-safety Layer.zipPar/left [{mode}]", layerZipPar ]
+    Map.empty
 
 [<Literal>]
 let private boundMilliseconds = 5000
