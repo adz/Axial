@@ -137,11 +137,12 @@ module RuntimeFoundationTests =
         test <@ List.ofSeq calls = [ "left"; "right" ] @>
 
     [<Fact>]
-    let ``layer zipPar starts independent branches and cleans child scopes left then right`` () =
+    let ``layer zipPar starts independent branches and releases in reverse acquisition order`` () =
         let calls = ResizeArray<string>()
         let mutable started = 0
         let bothStarted = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let leftAcquired = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
         let makeLayer name value =
 
@@ -159,7 +160,10 @@ module RuntimeFoundationTests =
                                 do! release.Task
                             })
 
+                    if name = "right" then
+                        do! Flow.fromTask (fun _ -> leftAcquired.Task)
                     do! Flow.scopeFinalizer (Flow.delay (fun () -> calls.Add($"{name}-cleanup"); Flow.succeed ()))
+                    if name = "left" then leftAcquired.SetResult ()
                     return value
                 }
             )
@@ -181,7 +185,7 @@ module RuntimeFoundationTests =
 
         test <@ result = Exit.Success (1, 2) @>
         test <@ starts = Set.ofList [ "left-start"; "right-start" ] @>
-        test <@ cleanups = [ "left-cleanup"; "right-cleanup" ] @>
+        test <@ cleanups = [ "right-cleanup"; "left-cleanup" ] @>
 
     [<Fact>]
     let ``layer merge has zipPar semantics`` () =
