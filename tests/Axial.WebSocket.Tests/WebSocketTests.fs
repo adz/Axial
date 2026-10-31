@@ -29,26 +29,29 @@ module WebSocketTests =
         let endpoint = sprintf "http://127.0.0.1:%d/" (port ())
         do listener.Prefixes.Add endpoint; listener.Start()
         let worker = task {
-            try
-                let! request = listener.GetContextAsync()
-                let! context = request.AcceptWebSocketAsync(null)
-                accepted <- context.WebSocket
-                let buffer = Array.zeroCreate<byte> 8192
-                let mutable running = true
-                while running do
-                    let! result = accepted.ReceiveAsync(ArraySegment<byte>(buffer), CancellationToken.None)
-                    if result.MessageType = WebSocketMessageType.Close then
-                        closed.TrySetResult true |> ignore
-                        running <- false
-                        do! accepted.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None)
-                    else
-                        do! accepted.SendAsync(ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None)
-                        if abortAfterEcho then
-                            do! abortAllowed.Task
-                            accepted.Abort()
-                            accepted.Dispose()
+            let mutable keepAccepting = true
+            while keepAccepting do
+                try
+                    let! request = listener.GetContextAsync()
+                    let! context = request.AcceptWebSocketAsync(null)
+                    accepted <- context.WebSocket
+                    let buffer = Array.zeroCreate<byte> 8192
+                    let mutable running = true
+                    while running do
+                        let! result = accepted.ReceiveAsync(ArraySegment<byte>(buffer), CancellationToken.None)
+                        if result.MessageType = WebSocketMessageType.Close then
+                            closed.TrySetResult true |> ignore
                             running <- false
-            with _ -> ()
+                            do! accepted.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None)
+                        else
+                            do! accepted.SendAsync(ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None)
+                            if abortAfterEcho then
+                                do! abortAllowed.Task
+                                accepted.Abort()
+                                accepted.Dispose()
+                                running <- false
+                with _ ->
+                    if not listener.IsListening then keepAccepting <- false
         }
         member _.Url = endpoint.Replace("http:", "ws:")
         member _.Closed = closed.Task
@@ -232,6 +235,76 @@ module WebSocketTests =
             | other -> failwithf "connect: %A" other
         Assert.Equal(Some instant, observed)
         Assert.True(sink.Entries |> Seq.exists (fun entry -> entry.Message = "connect-hook"))
+
+    [<Fact>]
+    let ``Connect flow sees the clock and log sink installed on the flow`` () =
+        use server = new Server(false)
+        let instant = DateTimeOffset(2022, 3, 4, 5, 6, 7, TimeSpan.Zero)
+        let clock = ManualClock(instant)
+        let sink = Log.memory ()
+        let mutable observed = None
+        let hook (context: ConnectContext) : Flow<unit, WebSocketError, Stream> =
+            flow {
+                let! now = Clock.now
+                do! Log.info "connect-flow-hook"
+                observed <- Some now
+                let socket = new Socket(SocketType.Stream, ProtocolType.Tcp)
+                socket.Connect(context.Host, context.Port)
+                return new NetworkStream(socket, true) :> Stream
+            }
+        let options = WebSocket.connect server.Url |> WebSocket.connectWith hook
+        use session =
+            match
+                WebSocket.live().Connect options
+                |> Flow.withClock (clock :> IClock)
+                |> Flow.withLogSink sink
+                |> fun source -> source.RunSynchronously(())
+            with
+            | Exit.Success value -> value
+            | other -> failwithf "connect: %A" other
+        Assert.Equal(Some instant, observed)
+        Assert.True(sink.Entries |> Seq.exists (fun entry -> entry.Message = "connect-flow-hook"))
+
+    [<Fact>]
+    let ``Connect flow captures the runtime of each execution`` () =
+        use server = new Server(false)
+        let firstInstant = DateTimeOffset(2021, 1, 2, 3, 4, 5, TimeSpan.Zero)
+        let secondInstant = DateTimeOffset(2023, 6, 7, 8, 9, 10, TimeSpan.Zero)
+        let firstClock = ManualClock(firstInstant)
+        let secondClock = ManualClock(secondInstant)
+        let firstSink = Log.memory ()
+        let secondSink = Log.memory ()
+        let observed = ResizeArray<DateTimeOffset>()
+        let hook (context: ConnectContext) : Flow<unit, WebSocketError, Stream> =
+            flow {
+                let! now = Clock.now
+                do! Log.info (sprintf "connect-%O" now)
+                observed.Add now
+                let socket = new Socket(SocketType.Stream, ProtocolType.Tcp)
+                socket.Connect(context.Host, context.Port)
+                return new NetworkStream(socket, true) :> Stream
+            }
+        let options = WebSocket.connect server.Url |> WebSocket.connectWith hook
+        let connection = WebSocket.live().Connect options
+        let run clock sink =
+            match
+                connection
+                |> Flow.withClock (clock :> IClock)
+                |> Flow.withLogSink sink
+                |> fun source -> source.RunSynchronously(())
+            with
+            | Exit.Success value -> value
+            | other -> failwithf "connect: %A" other
+        let first = run firstClock firstSink
+        (first :> IDisposable).Dispose()
+        use second = run secondClock secondSink
+        Assert.Equal<DateTimeOffset list>([ firstInstant; secondInstant ], List.ofSeq observed)
+        let firstMessage = sprintf "connect-%O" firstInstant
+        let secondMessage = sprintf "connect-%O" secondInstant
+        Assert.True(firstSink.Entries |> Seq.exists (fun entry -> entry.Message = firstMessage))
+        Assert.False(firstSink.Entries |> Seq.exists (fun entry -> entry.Message = secondMessage))
+        Assert.True(secondSink.Entries |> Seq.exists (fun entry -> entry.Message = secondMessage))
+        Assert.False(secondSink.Entries |> Seq.exists (fun entry -> entry.Message = firstMessage))
 
     let private tlsOptions url ca client =
         WebSocket.connect url

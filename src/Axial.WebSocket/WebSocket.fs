@@ -188,13 +188,13 @@ module WebSocket =
     let live () : IWebSocket =
         { new IWebSocket with
             member _.Connect options =
-                let caller = RuntimePlatform.current ()
                 let defaultTls = { ClientCertificate = None; TrustAnchors = None; MinimumVersion = TlsVersion.Default }
                 if options.Invoker.IsSome && options.Tls <> defaultTls then
                     Flow.fail(WebSocketError.ConnectFailed "A caller-supplied HTTP invoker cannot be combined with WebSocket.tls.")
                 elif options.Invoker.IsSome && options.Connect.IsSome then
                     Flow.fail(WebSocketError.ConnectFailed "A caller-supplied HTTP invoker cannot be combined with WebSocket.connectWith.")
                 else flow {
+                    let caller = RuntimePlatform.current ()
                     let! ct = Flow.cancellationToken
                     return! Flow.fromAsyncResult (async {
                         return! task {
