@@ -12,8 +12,10 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Axial
+open Axial.Configuration
 open Axial.HttpClient
 open Axial.PlatformService
+open Reified
 
 module private ScopedLogging =
     let withScope (logger: ILogger) (action: unit -> unit) =
@@ -235,12 +237,12 @@ module Hosting =
     /// <summary>Runs a scheduler heartbeat gated by an optional application health flow, using the installed runtime clock and log sink.</summary>
     let watchdogWithHeartbeat<'env>
         (heartbeatGate: Flow<'env, Never, unit>)
-        (variables: IEnvironmentVariables)
+        (variables: string -> string option)
         (processId: int)
         (notifier: ISystemdNotifier)
         (isHealthy: Flow<'env, Never, bool>) : Flow<'env, Never, unit> =
         flow {
-            match variables.TryGet "WATCHDOG_USEC" with
+            match variables "WATCHDOG_USEC" with
             | None -> return ()
             | Some value ->
                 match UInt64.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture) with
@@ -251,7 +253,7 @@ module Hosting =
                     do! Log.warning "WATCHDOG_USEC exceeds TimeSpan range; watchdog disabled"
                 | true, microseconds ->
                     let enabled =
-                        match variables.TryGet "WATCHDOG_PID" with
+                        match variables "WATCHDOG_PID" with
                         | None -> true
                         | Some pid -> pid = string processId
                     if enabled then
@@ -279,13 +281,13 @@ module Hosting =
 
     /// <summary>Runs the scheduler heartbeat with an application-owned progress check; use this to detect stalled work.</summary>
     let watchdogWith<'env>
-        (variables: IEnvironmentVariables) (processId: int) (notifier: ISystemdNotifier)
+        (variables: string -> string option) (processId: int) (notifier: ISystemdNotifier)
         (isHealthy: Flow<'env, Never, bool>) : Flow<'env, Never, unit> =
         watchdogWithHeartbeat (Flow.succeed ()) variables processId notifier isHealthy
 
     /// <summary>Detects a wedged Axial scheduler or starved thread pool; supply watchdogWith isHealthy to tie the watchdog to your application's progress.</summary>
     let watchdog<'env>
-        (variables: IEnvironmentVariables) (processId: int) (notifier: ISystemdNotifier) : Flow<'env, Never, unit> =
+        (variables: string -> string option) (processId: int) (notifier: ISystemdNotifier) : Flow<'env, Never, unit> =
         watchdogWith variables processId notifier (Flow.succeed true)
 
     /// <summary>Registers a root application that owns the Generic Host lifetime.</summary>
@@ -375,49 +377,25 @@ module DotNetApp =
                 Console.CancelKeyPress.RemoveHandler handler // axial-allow-AXG001: intentional console host or live-service boundary
         }
 
-/// <summary>Adapts Microsoft configuration to Axial's explicit environment-variable service.</summary>
+/// <summary>Adapts a Microsoft configuration to an Axial configuration source.</summary>
 [<RequireQualifiedAccess>]
-module Configuration =
-    let private flatten (configuration: IConfiguration) : (string * string) list =
-        let rec walk (prefix: string) (section: IConfiguration) =
-            [ for child in section.GetChildren() do
-                  let key = if prefix = "" then child.Key else prefix + ":" + child.Key
-                  let children = child.GetChildren()
-
-                  if Seq.isEmpty children then
-                      yield key, (if isNull child.Value then "" else child.Value)
-                  else
-                      yield! walk key child ]
-
-        walk "" configuration
-
-    /// <summary>Creates an explicit environment-variable service backed by a Microsoft configuration.</summary>
-    let environmentVariables (configuration: IConfiguration) : IEnvironmentVariables =
+module HostConfiguration =
+    /// <summary>
+    /// Creates a configuration layer from a Microsoft configuration.
+    /// </summary>
+    /// <remarks>
+    /// Use this to keep appsettings.json, environment variables, command-line arguments and user secrets supplied by
+    /// <c>ConfigurationBuilder</c>, then place the layer in the same precedence list as native Axial sources.
+    /// The configuration is read once when the source runs; later changes are not watched.
+    /// </remarks>
+    /// <example><code>Config.load [ HostConfiguration.source "host" builder.Configuration; ConfigSource.commandLine argv ] schema</code></example>
+    let source (name: string) (configuration: IConfiguration) : ConfigSource<'env> =
         if isNull configuration then nullArg (nameof configuration)
 
-        let lookup =
-            let dictionary = System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-
-            for key, value in flatten configuration do
-                dictionary[key] <- value
-
-            dictionary
-
-        { new IEnvironmentVariables with
-            member _.TryGet name = configuration[name] |> Option.ofObj
-
-            member _.Set(_, _) =
-                raise (NotSupportedException("Configuration is read-only; provide environment variables explicitly."))
-
-            member _.Expand text =
-                lookup
-                |> Seq.fold (fun (result: string) pair -> result.Replace("%" + pair.Key + "%", pair.Value)) text
-
-            member _.GetAll() = lookup :> System.Collections.Generic.IReadOnlyDictionary<string, string> }
-
-    /// <summary>Builds the environment-variable service from a Microsoft configuration supplied at composition.</summary>
-    let layer (configuration: IConfiguration) : Layer<unit, Never, IEnvironmentVariables> =
-        Layer.succeed (environmentVariables configuration)
+        { Name = name
+          Spell = fun path -> name + " " + String.concat "." path
+          Read = Flow.succeed (Data.ofConfigurationPairs(configuration.AsEnumerable()))
+          Paths = [] }
 
 /// <summary>Adapts <see cref="T:Microsoft.Extensions.Http.IHttpClientFactory" /> to Axial's HTTP service.</summary>
 [<RequireQualifiedAccess>]

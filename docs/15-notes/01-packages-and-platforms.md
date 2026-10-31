@@ -13,7 +13,7 @@ runtime.
 | Package | .NET | Fable JavaScript: Node | Fable JavaScript: browser | Notes |
 | --- | --- | --- | --- | --- |
 | `Axial` | Yes | Yes | Yes | Core workflows, runtime platform services (clock, logging, random, GUID and test helpers), layers, concurrency, streams, schedules, and `App`. |
-| `Axial.PlatformService` | Yes | Yes | Yes | Environment-variable services only. Clock, logging, random, GUID and test helpers now ship in `Axial` with the `Axial.PlatformService` namespace retained. |
+| `Axial.Configuration` | Yes | Yes | Yes | Layered environment, command-line, JSON, browser and Microsoft configuration decoded by Reified, with redacted secrets and optional watching. |
 | `Axial.Console` | Yes | Yes | Yes | Console service; JavaScript behavior is limited to facilities supplied by the host console. |
 | `Axial.FileSystem` | Yes | API only | API only | The live filesystem implementation is .NET-only. Supply a JavaScript implementation explicitly if needed. |
 | `Axial.HttpClient` | Yes | API only | API only | Request plans are portable; the live `HttpClient` implementation is .NET-only. |
@@ -36,18 +36,17 @@ visibility or unload as dependable application shutdown.
 
 NuGet installs the transitive dependencies below; reference only the packages you use directly. Every package also depends on `FSharp.Core`.
 
-`Axial` defines the service contracts, such as `IClock`, and now ships the live clock, logging, ordinary and secure randomness, GUID and test helpers. `Axial.PlatformService` adds only the environment-variable implementation; its namespaces remain in `Axial` for 0.12.
+`Axial` defines the service contracts, such as `IClock`, and ships the live clock, logging, ordinary and secure randomness, GUID and test helpers. Their `Axial.PlatformService` namespaces remain in `Axial` for 0.12. The old `Axial.PlatformService` package is deleted; `Axial.Configuration` owns environment, argument, JSON, browser and Microsoft configuration.
 
 | Package | Axial packages it brings in | Other dependencies |
 | --- | --- | --- |
 | `Axial` | None | `Fable.Core` |
-| `Axial.PlatformService` | `Axial` | None |
 | `Axial.Console` | `Axial` | None |
 | `Axial.FileSystem` | `Axial` | None |
 | `Axial.HttpClient` | `Axial` | None |
 | `Axial.Process` | `Axial`, `Axial.Console`, `Axial.FileSystem` | None |
-| `Axial.Hosting` | `Axial`, `Axial.PlatformService`, `Axial.HttpClient` | `Microsoft.Extensions.Configuration.Abstractions`, `DependencyInjection.Abstractions`, `Hosting.Abstractions`, `Http`, `Logging.Abstractions` |
-| `Axial.Hosting.Node` | `Axial`, `Axial.PlatformService` | `Fable.Core` |
+| `Axial.Hosting` | `Axial`, `Axial.Configuration`, `Axial.HttpClient` | `Microsoft.Extensions.Configuration.Abstractions`, `DependencyInjection.Abstractions`, `Hosting.Abstractions`, `Http`, `Logging.Abstractions` |
+| `Axial.Hosting.Node` | `Axial` | `Fable.Core` |
 | `Axial.Hosting.Browser` | `Axial` | `Fable.Core` |
 | `Axial.Telemetry` | `Axial` | `System.Diagnostics.DiagnosticSource` |
 | `Axial.Telemetry.JavaScript` | `Axial` | `Fable.Core` |

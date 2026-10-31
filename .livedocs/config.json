@@ -1,11 +1,10 @@
 {
   "projects": [
     "src/Axial/Axial.fsproj",
-    "src/Axial.PlatformService/Axial.PlatformService.fsproj",
+    "src/Axial.Configuration/Axial.Configuration.fsproj",
     "src/Axial.ElmishFlows/Axial.ElmishFlows.fsproj",
     "src/Axial.Console/Axial.Console.fsproj",
     "src/Axial.FileSystem/Axial.FileSystem.fsproj",
-    "src/Axial.Files/Axial.Files.fsproj",
     "src/Axial.HttpClient/Axial.HttpClient.fsproj",
     "src/Axial.Process/Axial.Process.fsproj",
     "src/Axial.Hosting/Axial.Hosting.fsproj",
@@ -21,11 +20,23 @@
   "logoDarkPath": "content/img/hero-lockup-dark.png",
   "showSiteName": false,
   "stylesheet": "content/axial-docs.css",
-  "themes": ["light", "dark"],
+  "themes": [
+    "light",
+    "dark"
+  ],
   "navigation": [
-    { "label": "Docs", "href": "/" },
-    { "label": "Packages", "href": "/packages/" },
-    { "label": "GitHub", "href": "https://github.com/adz/Axial" }
+    {
+      "label": "Docs",
+      "href": "/"
+    },
+    {
+      "label": "Packages",
+      "href": "/packages/"
+    },
+    {
+      "label": "GitHub",
+      "href": "https://github.com/adz/Axial"
+    }
   ],
   "fSharpPrelude": "open System\nopen System.IO\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.Console\nopen Axial.FileSystem\nopen Axial.Hosting\nopen Axial.Hosting.Browser\nopen Axial.Hosting.Node\nopen Axial.PlatformService\nopen Axial.State\nopen Axial.Telemetry\nopen Axial.Telemetry.JavaScript",
   "docsSets": [
@@ -37,11 +48,10 @@
       "default": true,
       "projects": [
         "src/Axial/Axial.fsproj",
-        "src/Axial.PlatformService/Axial.PlatformService.fsproj",
+        "src/Axial.Configuration/Axial.Configuration.fsproj",
         "src/Axial.ElmishFlows/Axial.ElmishFlows.fsproj",
         "src/Axial.Console/Axial.Console.fsproj",
         "src/Axial.FileSystem/Axial.FileSystem.fsproj",
-        "src/Axial.Files/Axial.Files.fsproj",
         "src/Axial.Hosting/Axial.Hosting.fsproj",
         "src/Axial.Hosting.Node/Axial.Hosting.Node.fsproj",
         "src/Axial.Hosting.Browser/Axial.Hosting.Browser.fsproj",
@@ -54,7 +64,9 @@
       "title": "Axial.Process",
       "source": "docs/process",
       "path": "process",
-      "projects": ["src/Axial.Process/Axial.Process.fsproj"],
+      "projects": [
+        "src/Axial.Process/Axial.Process.fsproj"
+      ],
       "fSharpPrelude": "open System\nopen System.IO\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.Console\nopen Axial.FileSystem\nopen Axial.PlatformService\nopen Axial.Process"
     },
     {
@@ -62,7 +74,9 @@
       "title": "Axial.HttpClient",
       "source": "docs/http",
       "path": "http",
-      "projects": ["src/Axial.HttpClient/Axial.HttpClient.fsproj"],
+      "projects": [
+        "src/Axial.HttpClient/Axial.HttpClient.fsproj"
+      ],
       "fSharpPrelude": "open System\nopen System.Net.Http\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.HttpClient\nopen Axial.PlatformService"
     },
     {

@@ -82,11 +82,7 @@ module HostingTests =
         source |> Flow.withClock clock |> Flow.withLogSink sink |> App.run ()
     let private variables (entries: (string * string) list) =
         let values = Dictionary<string, string>(entries |> Seq.map (fun (key, value) -> KeyValuePair(key, value)))
-        { new IEnvironmentVariables with
-            member _.TryGet key = match values.TryGetValue key with true, value -> Some value | _ -> None
-            member _.Set(_, _) = ()
-            member _.Expand value = value
-            member _.GetAll() = values }
+        fun key -> match values.TryGetValue key with true, value -> Some value | _ -> None
 
     let private recordingNotifier () =
         let messages = System.Collections.Concurrent.ConcurrentQueue<string>()
@@ -103,12 +99,7 @@ module HostingTests =
 
     [<Fact>]
     let ``watchdog without interval completes without notifying`` () =
-        let variables =
-            { new IEnvironmentVariables with
-                member _.TryGet _ = None
-                member _.Set(_, _) = ()
-                member _.Expand value = value
-                member _.GetAll() = Dictionary<string, string>() }
+        let variables (_: string) = None
         let mutable count = 0
         let notifier = { new ISystemdNotifier with member _.Notify _ = count <- count + 1 }
         let clock = ManualClock(DateTimeOffset.UnixEpoch)

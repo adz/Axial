@@ -7,7 +7,7 @@ description: Install runtime values and observation sinks at an application boun
 # Supplying Platform Services
 
 A root Flow starts with live clock/random/GUID implementations and an Information+ stderr log sink. No platform
-bundle is required in `'env`. Keep authority such as environment variables, HTTP, files and process execution in
+bundle is required in `'env`. Keep authority such as configuration, HTTP, files and process execution in
 an application record; override runtime values around the flow itself.
 
 ```fsharp prepare
@@ -19,17 +19,26 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-type StartupEnv =
-    { Variables: IEnvironmentVariables }
-    interface IHasEnvironmentVariables with member this.EnvironmentVariables = this.Variables
+open Axial.Configuration
+open Reified
+open Reified.SchemaDSL
 
-let startup : Flow<StartupEnv, EnvironmentVariableError, int> =
-    flow {
-        let! port = EnvironmentVariable.getInt "PORT"
-        let! now = Clock.now
-        do! Log.info $"Starting port {port} in {now.Year}"
-        return port
+type StartupSettings = { Port: int }
+
+let startupSchema () =
+    schema<StartupSettings> {
+        field (fun (settings: StartupSettings) -> settings.Port)
+        construct (fun port -> { Port = port })
     }
+
+let startup : Flow<unit, ConfigError list, int> =
+    Config.load [ ConfigSource.environmentOf None [ "PORT", "8080" ] ] (startupSchema ())
+    |> Flow.bind (fun settings ->
+        flow {
+            let! now = Clock.now
+            do! Log.info ("Starting port " + string settings.Port + " in " + string now.Year)
+            return settings.Port
+        })
 ```
 
 ```fsharp run
@@ -39,7 +48,7 @@ startup
 |> Flow.withRandom (Random.seeded 42)
 |> Flow.withGuid (Guid.fromValue System.Guid.Empty)
 |> Flow.withLogSink log
-|> Flow.run { Variables = EnvironmentVariables.fromPairs ["PORT", "8080"] }
+|> Flow.run ()
 |> shouldEqual (Exit.Success 8080)
 log.Entries |> Seq.map _.Message |> Seq.toList |> shouldEqual ["Starting port 8080 in 2026"]
 ```

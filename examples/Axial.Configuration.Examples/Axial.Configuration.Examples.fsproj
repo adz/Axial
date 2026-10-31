@@ -11,7 +11,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
+    <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Configuration\Axial.Configuration.fsproj" />
+    <PackageReference Include="Reified.Schema" Version="$(ReifiedVersion)" />
   </ItemGroup>
 
 </Project>

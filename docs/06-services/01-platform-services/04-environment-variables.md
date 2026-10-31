@@ -1,11 +1,11 @@
 ---
-title: Environment Variables
-description: Typed configuration reads with a failure channel instead of nulls.
+title: Configuration and environment variables
+description: Layered typed configuration decoded by a Reified schema, with accumulated keyed errors.
 ---
 
-A missing environment variable can surface as `null`, and a malformed value can throw a parse exception later. `Axial.PlatformService`
-splits this into two modules: one for raw access, and one for typed reads with a failure channel. Unlike runtime
-clock/random/GUID values, environment-variable authority stays explicit through `IHasEnvironmentVariables` in `'env`.
+`Axial.Configuration` replaces ad-hoc environment reads with layered configuration. Every source produces
+`Reified.Data`; later sources win, and one Reified schema decodes the merged result. Missing and malformed settings
+are values in a `ConfigError` list, not exceptions, and all of them are reported at once.
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -14,6 +14,7 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
+open Axial.Configuration
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
@@ -23,6 +24,8 @@ open Axial.PlatformService
 open Axial.State
 open Axial.Telemetry
 open Axial.Telemetry.JavaScript
+open Reified
+open Reified.SchemaDSL
 
 /// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =
@@ -32,130 +35,141 @@ let shouldEqual expected actual =
 ```fsharp
 open System
 open Axial
-open Axial.PlatformService
+open Axial.Configuration
+open Reified
 ```
 
-## Raw access
+## Sources
 
-`EnvironmentVariables` provides raw access without requiring values:
+| Source | Constructor | Notes |
+| --- | --- | --- |
+| Environment | `ConfigSource.environment (Some "MYAPP")` | Reads the process environment once, splitting `MYAPP__Db__Port` on `__` |
+| Fixed environment | `ConfigSource.environmentOf prefix pairs` | The same conversion from pairs supplied by a test or host |
+| Command line | `ConfigSource.commandLine argv` | `--Db:Port=5432`, `--flag`, `--no-flag`; positionals arrive under `_` |
+| JSON file | `ConfigSource.jsonFile path` | Reads through `IHasFileSystem`; `optionalJsonFile` treats a missing file as an empty object |
+| JSON text | `ConfigSource.json name text` | For embedded or already-read JSON |
+| Browser query | `ConfigSource.queryString search` | `?Db.Port=5432`; use `BrowserApp.queryParameters ()` from the browser host |
+| Microsoft configuration | `HostConfiguration.source "host" configuration` | In `Axial.Hosting`; keeps `appsettings.json`, user secrets and `CreateDefaultBuilder(args)` |
+| Fixed data | `ConfigSource.ofData name data` | Defaults and fixtures |
 
-| Function | Result |
-| --- | --- |
-| `EnvironmentVariables.tryGet name` | `string option` |
-| `EnvironmentVariables.getAll` | `IReadOnlyDictionary<string, string>` |
-| `EnvironmentVariables.set name value` | Sets a variable |
-| `EnvironmentVariables.clear name` | Removes a variable |
-| `EnvironmentVariables.expand text` | Expands `%VAR%` references |
+List order is precedence, and later wins. Keys match case-insensitively across layers, so `Db.Port` from JSON,
+`MYAPP__DB__PORT` from the environment and `--Db:Port` from arguments address the same field.
 
-`EnvironmentVariables.fromPairs` builds an in-memory set for tests:
-
-```fsharp transcript
-> open Axial;;
-> open Axial.PlatformService;;
-> let runtime () = let variables = EnvironmentVariables.fromPairs [ "REGION", "eu" ] in { new IHasEnvironmentVariables with member _.EnvironmentVariables = variables };;
-> (EnvironmentVariables.tryGet "REGION" : Flow<IHasEnvironmentVariables, Never, string option>) |> Flow.run (runtime ());;
-val it: Exit<string option,Never> = Success (Some "eu")
-
-> (EnvironmentVariables.tryGet "MISSING" : Flow<IHasEnvironmentVariables, Never, string option>) |> Flow.run (runtime ());;
-val it: Exit<string option,Never> = Success None
-```
-
-These never fail; an absent variable is `None`.
-
-## Typed reads
-
-`EnvironmentVariable` reads a variable, requires it, and parses it, failing with `EnvironmentVariableError`:
+## Decode a typed model
 
 ```fsharp
-type ConfigurationEnv =
-    { Variables: IEnvironmentVariables }
-    interface IHasEnvironmentVariables with member this.EnvironmentVariables = this.Variables
+type Db = { Host: string; Port: int }
 
-let readPort : Flow<ConfigurationEnv, EnvironmentVariableError, int> =
-    EnvironmentVariable.getInt "PORT"
-```
+type Settings = { Db: Db; Timeout: int }
 
-The environment is named concretely here rather than written as `#IHasEnvironmentVariables`, because a flow bound
-to a plain value hits F#'s value restriction while its environment is still generic: a value cannot be generalised
-over a type variable.
-
-Adding a parameter removes the restriction, because a function can be. A `unit` parameter is enough, and the result
-stays usable in any environment supplying the service:
-
-```fsharp
-let readPortIn () : Flow<#IHasEnvironmentVariables, EnvironmentVariableError, int> =
-    EnvironmentVariable.getInt "PORT"
-```
-
-Prefer naming the environment when a workflow belongs to one application, and the parameterised form when a helper
-is genuinely shared across environment shapes.
-
-| Function | Result |
-| --- | --- |
-| `get` | `string`, failing when absent |
-| `tryGet` | `string option`, never failing |
-| `getInt`, `getInt64` | Integers |
-| `getDouble`, `getDecimal` | Numbers |
-| `getBool` | Booleans |
-| `getGuid` | GUIDs |
-| `getUri` | URIs |
-| `getTimeSpan` | Durations |
-
-Numeric parsing uses the invariant culture, so a variable set on a machine with a comma decimal separator reads the
-same everywhere.
-
-`EnvironmentVariableError` has two cases:
-
-- `MissingVariable name`: the variable was not set.
-- `InvalidVariable (name, value, expected)`: it was set but did not parse, with what was expected.
-
-`EnvironmentVariableErrors.describe` formats either into a sentence such as `Environment variable 'PORT' had value
-'eighty' but expected an integer.`
-
-## Validating configuration at startup
-
-Typed reads compose into a workflow that produces settings or fails with `EnvironmentVariableError`:
-
-```fsharp
-type Settings = { Port: int; Endpoint: Uri; Timeout: TimeSpan }
-
-let readSettings : Flow<ConfigurationEnv, EnvironmentVariableError, Settings> =
-    flow {
-        let! port = EnvironmentVariable.getInt "PORT"
-        let! endpoint = EnvironmentVariable.getUri "API_ENDPOINT"
-        let! timeout = EnvironmentVariable.getTimeSpan "API_TIMEOUT"
-        return { Port = port; Endpoint = endpoint; Timeout = timeout }
+let settingsSchema () =
+    schema<Settings> {
+        field (fun (settings: Settings) -> settings.Db) {
+            withSchema (
+                schema<Db> {
+                    field (fun (db: Db) -> db.Host)
+                    field (fun (db: Db) -> db.Port)
+                    construct (fun host port -> { Host = host; Port = port })
+                }
+            )
+        }
+        field (fun (settings: Settings) -> settings.Timeout)
+        construct (fun db timeout -> { Db = db; Timeout = timeout })
     }
 
-let withVariables pairs =
-    { Variables = EnvironmentVariables.fromPairs pairs }
+let loadSettings argv =
+    Config.load
+        [ ConfigSource.ofData "defaults" (Data.Object [ "Db", Data.Object [ "Host", Data.Text "localhost" ] ])
+          ConfigSource.environment (Some "MYAPP")
+          ConfigSource.commandLine argv ]
+        (settingsSchema ())
 ```
 
 ```fsharp run
-readSettings
-|> Flow.run (withVariables [ "PORT", "8080"; "API_ENDPOINT", "https://api.example.com"; "API_TIMEOUT", "00:00:30" ])
-|> shouldEqual (Exit.Success { Port = 8080; Endpoint = Uri "https://api.example.com"; Timeout = TimeSpan.FromSeconds 30.0 })
-
-readSettings
-|> Flow.run (withVariables [ "PORT", "eighty" ])
-|> shouldEqual (Exit.Failure(Cause.Fail(EnvironmentVariableError.InvalidVariable("PORT", "eighty", "an integer"))))
+loadSettings [ "--Db:Port=5432"; "--Timeout=30" ]
+|> Flow.run ()
+|> shouldEqual
+    (Exit.Success
+        { Db = { Host = "localhost"; Port = 5432 }
+          Timeout = 30 })
 ```
 
-This binds sequentially, so it stops at the first problem. Run it as a layer during startup and the application
-cannot reach its first request with unparsed configuration; see
-[layers](/layers/index.html) for provisioning failure.
-
-## Supplying the service
-
-`EnvironmentVariables.live` reads the current process environment. `EnvironmentVariables.fromPairs` builds a fixed
-provider, which is how tests avoid mutating global process state:
+`ConfigError.Invalid` carries every `SchemaIssue` keyed by `SchemaPath`. `ConfigError.describe` renders them in
+invariant, path-sorted order and lists the spelling each source uses for an omitted path:
 
 ```fsharp
-let environment =
-    EnvironmentVariables.fromPairs
-        [ "PORT", "8080"
-          "API_ENDPOINT", "https://api.example.com" ]
+let describeFailure config errors =
+    errors |> List.map (ConfigError.describe config) |> String.concat Environment.NewLine
 ```
 
-Prefer `fromPairs` over setting real variables in a test. Process environment state is shared across a test run, so
-mutating it makes tests order-dependent.
+A source failure (unreadable file or malformed JSON) is reported as `ConfigError.SourceFailed`, and schema decoding
+is skipped so one bad file does not produce misleading omission messages.
+
+## Secrets
+
+Declare a secret in the model with `Secret<'v>` from `Reified.Refinements`. Its value never appears in `ToString`,
+`%A`, `%O`, schema errors, `ConfigError.describe` or log entries:
+
+```fsharp
+open Reified.Refinements
+
+type Credentials = { Password: Secret<string> }
+
+let credentialsSchema () =
+    schema<Credentials> {
+        field (fun (credentials: Credentials) -> credentials.Password) {
+            withSchema (Schema.secretWith Schema.text)
+        }
+        construct (fun password -> { Password = password })
+    }
+```
+
+Use `Config.processArg` to pass a secret to a process. It yields a redacted argument, so plans, transcripts and
+failures show `***` while the child receives the real value:
+
+```fsharp no-check reason="Process examples live in the Process documentation set"
+let deploy (token: Secret<string>) =
+    Axial.Process.DSL.cmd $"deploy --token {Config.processArg token}"
+```
+
+## Plain string reads
+
+For one or two settings a schema is ceremony. `Config.required` and `Config.optional` read text from an
+`IHasConfig` environment, and `Config.tryFind` is the pure form:
+
+```fsharp
+type ToolEnv =
+    { Config: IConfig }
+
+    interface IHasConfig with
+        member this.Config = this.Config
+
+let readEndpoint : Flow<ToolEnv, ConfigError, string> = Config.required "Api.Endpoint"
+let readProxy : Flow<ToolEnv, ConfigError, string option> = Config.optional "Api.Proxy"
+```
+
+Numbers and booleans come back as their text; use a schema when the value needs typed validation.
+
+## Watch file sources
+
+`Config.watch sources schema` loads once and returns a `SubscriptionRef` of the latest successfully decoded value.
+File changes are debounced, all sources are re-read and merged, and a failed decode keeps the last good value, logs
+the failure, and emits it on the `Errors` stream. Environment and command-line sources remain static.
+
+```fsharp
+let watchSettings<'env when 'env :> IHasFileSystem> argv =
+    Config.watch
+        [ ConfigSource.jsonFile "appsettings.json"
+          ConfigSource.commandLine argv ]
+        (settingsSchema ())
+```
+
+## Load once, pass the value
+
+Configuration is usually loaded once at startup into a plain record, like Elm flags. Put the value, or the section
+a service needs, in the application environment and read it with `Flow.envWith`; build handlers and Elmish programs
+as closures over it. `Config.section path schema` exists for libraries that own one section.
+
+The Microsoft `IConfiguration` path is a supported alternative. Pass
+`HostConfiguration.source "host" builder.Configuration` as one layer, or keep `IOptions<T>` for components that
+already depend on it.

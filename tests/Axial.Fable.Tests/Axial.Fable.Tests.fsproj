@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Fable.Core" Version="4.3.0" />
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Configuration\Axial.Configuration.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Process\Axial.Process.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Hosting.Node\Axial.Hosting.Node.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Hosting.Browser\Axial.Hosting.Browser.fsproj" />
@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PlatformScopeTests.fs" />
+    <Compile Include="ConfigurationTests.fs" />
     <Compile Include="CultureTests.fs" />
     <Compile Include="HostLoggingTests.fs" />
     <Compile Include="TelemetryHostTests.fs" />

@@ -142,10 +142,8 @@ Service records compose the same way as the other platform packages:
 
 ```fsharp
 type WorkerEnv =
-    { Http: IHttp
-      Variables: IEnvironmentVariables }
+    { Http: IHttp }
     interface IHasHttp with member this.Http = this.Http
-    interface IHasEnvironmentVariables with member this.EnvironmentVariables = this.Variables
 ```
 
 The same pattern adds `IHasProcess` for `Axial.Process`, or any other package's contract.

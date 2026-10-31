@@ -10,6 +10,5 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.fs" />
-    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
   </ItemGroup>
 </Project>

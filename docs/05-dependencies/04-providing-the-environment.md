@@ -62,7 +62,7 @@ The record literal shows where each service comes from.
 Clock, random and GUID values are runtime services, not authority in this record. Install test values with
 `Flow.withClock`, `Flow.withRandom` and `Flow.withGuid`. Log and telemetry destinations use `Flow.withLogSink`
 and `Flow.withTelemetry`. These scoped overrides inherit through forks and restore the outer values on exit.
-Environment-variable reads still require an explicit `IHasEnvironmentVariables` dependency; see
+Configuration reads still require an explicit `IHasConfig` dependency; see
 [Tutorial: Composing Built-in Services](/services/existing-services.html).
 
 ## 2. Take it from a host container

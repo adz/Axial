@@ -76,8 +76,8 @@ The targets agree on the common tested output but not on every format. Known dif
 - The invariant culture uses en-US as the Fable `Intl` baseline because `Intl` has no invariant locale. Use an explicit
   culture for presentation and do not compare invariant `Format.currency`/date/time strings across targets.
 
-Environment variables are different: they read or change external state. Supply `IHasEnvironmentVariables` in the
-application environment and use `EnvironmentVariables.fromPairs` in tests. Cryptographic randomness belongs inside
+Configuration is different: environment variables, arguments and files read external state. Supply `IHasConfig` in
+the application environment, or load once with `Config.load`, and build sources from pairs in tests. Cryptographic randomness belongs inside
 an explicit capability using `System.Security.Cryptography`, not the runtime's ordinary random generator.
 
 ## In this section

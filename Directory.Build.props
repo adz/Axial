@@ -8,7 +8,7 @@
 
     <!-- Local/dev default only; the release workflow stamps the real version via -p:Version from the release tag. -->
     <VersionPrefix>0.7.1</VersionPrefix>
-    <ReifiedVersion Condition="'$(ReifiedVersion)' == ''">0.11.0</ReifiedVersion>
+    <ReifiedVersion Condition="'$(ReifiedVersion)' == ''">0.12.0</ReifiedVersion>
     <NuGetAudit>false</NuGetAudit>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryBranch>main</RepositoryBranch>

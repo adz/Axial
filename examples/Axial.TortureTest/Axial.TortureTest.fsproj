@@ -31,7 +31,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Process\Axial.Process.fsproj" />
   </ItemGroup>
 </Project>

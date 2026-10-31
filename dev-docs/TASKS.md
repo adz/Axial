@@ -15,7 +15,7 @@ lists the queue. Work on main.
   - Merge `Axial.Files` into `Axial.FileSystem`. Check what Files, Hosting, Hosting.Node, HttpClient and Process still need from the
     old package after the move, and drop references they no longer need.
   - Migration rows in `dev-docs/releases/0.12.0.md`. Do this before T33 so docs pages move once.
-- [ ] T32: `Axial.Configuration`, culture and time zone (0.12; DECIDED, owner, 2026-10-31)
+- [x] T32: `Axial.Configuration`, culture and time zone (0.12; DECIDED, owner, 2026-10-31)
   - `Axial.Configuration` lives here and references Reified; core remains Reified-free. Sources produce Reified Data: environment,
     CLI args on every host, JSON via FileSystem/Reified, an IConfiguration adapter in Axial.Hosting, browser query string.
     `Data.mergeAll` gives later-wins precedence; Schema decoding accumulates keyed errors; required/optional strings cover simple cases.

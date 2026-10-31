@@ -133,12 +133,14 @@ member, delegating to the stored value. Clock, random, GUID and log come from th
 [Tutorial: Composing Built-in Services](/services/existing-services.html) for the built-in half of this:
 
 ```fsharp
+open Axial.Configuration
+
 type FullAppEnv =
-    { Variables: IEnvironmentVariables
+    { Config: IConfig
       Rates: IExchangeRates }
 
-    interface IHasEnvironmentVariables with
-        member this.EnvironmentVariables = this.Variables
+    interface IHasConfig with
+        member this.Config = this.Config
 
     interface IHasExchangeRates with
         member this.ExchangeRates = this.Rates

@@ -9,12 +9,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="TestSupport.fs" />
-    <Compile Include="CoreServiceTests.fs" />
+    <Compile Include="Fixtures.fs" />
+    <Compile Include="ConfigurationTests.fs" />
+    <Compile Include="WatchTests.fs" />
+    <Compile Include="ProcessArgTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="Reified.Data" Version="$(ReifiedVersion)" />
+    <PackageReference Include="Reified.Refinements" Version="$(ReifiedVersion)" />
+    <PackageReference Include="Reified.Schema" Version="$(ReifiedVersion)" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -24,7 +29,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
+    <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Configuration\Axial.Configuration.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.FileSystem\Axial.FileSystem.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Process\Axial.Process.fsproj" />
   </ItemGroup>
 
 </Project>

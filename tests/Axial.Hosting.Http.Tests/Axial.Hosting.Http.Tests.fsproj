@@ -36,7 +36,6 @@
   <ItemGroup>
     <PackageReference Include="Reified.Schema.Http" Version="$(ReifiedVersion)" />
     <ProjectReference Include="..\..\src\Axial.Hosting.AspNetCore\Axial.Hosting.AspNetCore.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Hosting.GenHttp\Axial.Hosting.GenHttp.fsproj" />
     <PackageReference Include="Reified.Schema" Version="$(ReifiedVersion)" />
     <PackageReference Include="Reified.Data" Version="$(ReifiedVersion)" />

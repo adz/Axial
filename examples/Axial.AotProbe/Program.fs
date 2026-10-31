@@ -174,11 +174,6 @@ let main _ =
         expect "FileSystemError" ((FileSystemError.FileNotFound "/x").ToString()) "File not found: /x"
 
         expect
-            "EnvironmentVariableError"
-            ((EnvironmentVariableError.MissingVariable "HOME").ToString())
-            "Missing required environment variable 'HOME'."
-
-        expect
             "OutputTarget"
             ((OutputTarget.Tee [ OutputTarget.Discard; OutputTarget.File "log" ]).ToString())
             "Tee(Discard, File log)")

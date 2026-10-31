@@ -15,12 +15,13 @@
     <Project Path="examples/Axial.Hosting.WatchdogProbe/Axial.Hosting.WatchdogProbe.fsproj" />
     <Project Path="examples/Axial.Hosting.Node.Example/Axial.Hosting.Node.Example.fsproj" />
     <Project Path="examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj" />
-    <Project Path="examples/Axial.PlatformService.Examples/Axial.PlatformService.Examples.fsproj" />
+    <Project Path="examples/Axial.Configuration.Examples/Axial.Configuration.Examples.fsproj" />
     <Project Path="examples/Axial.Playground/Axial.Playground.fsproj" />
     <Project Path="examples/Axial.ReadmeExample/Axial.ReadmeExample.fsproj" />
     <Project Path="examples/Axial.TortureTest/Axial.TortureTest.fsproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/Axial.Configuration/Axial.Configuration.fsproj" />
     <Project Path="src/Axial.Console/Axial.Console.fsproj" />
     <Project Path="src/Axial.ElmishFlows/Axial.ElmishFlows.fsproj" />
     <Project Path="src/Axial.FileSystem/Axial.FileSystem.fsproj" />
@@ -30,7 +31,6 @@
     <Project Path="src/Axial.Hosting/Axial.Hosting.fsproj" />
     <Project Path="src/Axial.HttpClient/Axial.HttpClient.fsproj" />
     <Project Path="src/Axial.WebSocket/Axial.WebSocket.fsproj" />
-    <Project Path="src/Axial.PlatformService/Axial.PlatformService.fsproj" />
     <Project Path="src/Axial.Process/Axial.Process.fsproj" />
     <Project Path="src/Axial.Telemetry.JavaScript/Axial.Telemetry.JavaScript.fsproj" />
     <Project Path="src/Axial.Telemetry/Axial.Telemetry.fsproj" />
@@ -39,6 +39,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Axial.Comparisons.Tests/Axial.Comparisons.Tests.fsproj" />
+    <Project Path="tests/Axial.Configuration.Tests/Axial.Configuration.Tests.fsproj" />
     <Project Path="tests/Axial.ElmishFlows.Tests/Axial.ElmishFlows.Tests.fsproj" />
     <Project Path="tests/Axial.Fable.Tests/Axial.Fable.Tests.fsproj" />
     <Project Path="tests/Axial.FileSystem.Tests/Axial.FileSystem.Tests.fsproj" />
@@ -46,7 +47,6 @@
     <Project Path="tests/Axial.HttpClient.Tests/Axial.HttpClient.Tests.fsproj" />
     <Project Path="tests/Axial.WebSocket.Tests/Axial.WebSocket.Tests.fsproj" />
     <Project Path="tests/Axial.Integration.Tests/Axial.Integration.Tests.fsproj" />
-    <Project Path="tests/Axial.PlatformService.Tests/Axial.PlatformService.Tests.fsproj" />
     <Project Path="tests/Axial.PrintfFixture/Axial.PrintfFixture.fsproj" />
     <Project Path="tests/Axial.Telemetry.Tests/Axial.Telemetry.Tests.fsproj" />
     <Project Path="tests/Axial.Guardrails.Tests/Axial.Guardrails.Tests.fsproj" />

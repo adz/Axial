@@ -26,19 +26,25 @@ shape below is schematic: `AppError`, `program`, and `appLayer` are not defined 
 ```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
 type StartupInputs =
     { Arguments: string list
-      EnvironmentVariables: IEnvironmentVariables }
+      Config: IConfig }
 
 let inputs =
+    let config =
+        match Flow.run () (Config.loadData [ ConfigSource.environment None ]) with
+        | Exit.Success config -> config
+        | Exit.Failure _ -> Config.ofData (Data.Object [])
+
     { Arguments = NodeApp.arguments()
-      EnvironmentVariables = NodeEnvironment.live }
+      Config = config }
 
 let application : Flow<StartupInputs, AppError, unit> =
     program
     |> Layer.provide appLayer
 ```
 
-`NodeEnvironment.live` implements `IEnvironmentVariables` over `process.env`. `TryGet`, `Set`, and `GetAll` use the
-live Node object. `Expand` expands `$NAME` and `${NAME}` forms.
+`ConfigSource.environment None` reads `process.env` through `Axial.Configuration` on Node. Keys keep their case and
+`__` splits sections; a schema decodes them with case-insensitive matching. Use `Config.tryFind` for a single text
+value.
 
 ## Run and Exit
 

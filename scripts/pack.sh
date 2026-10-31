@@ -33,7 +33,7 @@ projects=(
   "src/Axial.HttpClient/Axial.HttpClient.fsproj"
   "src/Axial.WebSocket/Axial.WebSocket.fsproj"
   "src/Axial.Process/Axial.Process.fsproj"
-  "src/Axial.PlatformService/Axial.PlatformService.fsproj"
+  "src/Axial.Configuration/Axial.Configuration.fsproj"
   "src/Axial.Hosting/Axial.Hosting.fsproj"
   "src/Axial.Hosting.AspNetCore/Axial.Hosting.AspNetCore.fsproj"
   "src/Axial.Hosting.GenHttp/Axial.Hosting.GenHttp.fsproj"

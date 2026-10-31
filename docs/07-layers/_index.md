@@ -99,11 +99,13 @@ interrupted.
 **Typed startup failure.** A layer can validate configuration before constructing application services:
 
 ```fsharp
-let connectionString : Layer<IHasEnvironmentVariables, EnvironmentVariableError, string> =
-    Layer.fromFlow (EnvironmentVariable.get "CONNECTION_STRING")
+open Axial.Configuration
+
+let connectionString : Layer<IHasConfig, ConfigError, string> =
+    Layer.fromFlow (Config.required "ConnectionString")
 ```
 
-The error channel is `EnvironmentVariableError`, not `Never`. `Layer.provide` runs the downstream workflow only
+The error channel is `ConfigError`, not `Never`. `Layer.provide` runs the downstream workflow only
 after provisioning succeeds, releases resources acquired by earlier steps when a later step fails, and lets
 independent steps build in parallel with `merge`. A direct factory returning `Result` can model the error too;
 the layer additionally owns acquisition and release.

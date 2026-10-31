@@ -4,34 +4,39 @@
     <TargetFrameworks>netstandard2.1;net8.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAotCompatible Condition="'$(TargetFramework)' == 'net8.0'">true</IsAotCompatible>
-    <AssemblyName>Axial.PlatformService</AssemblyName>
-    <RootNamespace>Axial.PlatformService</RootNamespace>
-    <PackageId>Axial.PlatformService</PackageId>
+    <AssemblyName>Axial.Configuration</AssemblyName>
+    <RootNamespace>Axial.Configuration</RootNamespace>
+    <PackageId>Axial.Configuration</PackageId>
     <Authors>Adam Davies</Authors>
     <PackageMaturity>Incubating</PackageMaturity>
-    <Description>Explicit environment-variable access for Axial workflows.</Description>
+    <Description>Typed application configuration for Axial workflows, with layered environment, command-line, JSON, browser and Microsoft configuration sources decoded by a Reified schema.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <PackageTags>fsharp;axial;flow;platform;clock;random;guid;environment</PackageTags>
+    <PackageTags>fsharp;axial;flow;configuration;settings;environment;arguments</PackageTags>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Fable.Core" Version="4.3.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <PackageReference Include="Reified.Data" Version="$(ReifiedVersion)" />
+    <PackageReference Include="Reified.Refinements" Version="$(ReifiedVersion)" />
+    <PackageReference Include="Reified.Schema" Version="$(ReifiedVersion)" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Axial\Axial.fsproj" />
+    <ProjectReference Include="..\Axial.FileSystem\Axial.FileSystem.fsproj" />
+    <ProjectReference Include="..\Axial.Process\Axial.Process.fsproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Services.fs" />
     <Compile Include="Platform.fs" />
-    <Compile Include="Operations.fs" />
+    <Compile Include="Configuration.fs" />
   </ItemGroup>
 
 </Project>

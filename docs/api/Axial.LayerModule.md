@@ -64,7 +64,7 @@ provisions both sides and returns their outputs, so build the final environment 
 
 Layer error types must match the flow error type. When provisioning steps use different errors, map them into one
 startup error type with `Layer.mapError` before calling `Layer.provide`. A layer that cannot fail, such as
-`EnvironmentVariables.layer`, has error type `Never`; `Layer.widenError` gives it any error type.
+any layer built from `Layer.succeed`, has error type `Never`; `Layer.widenError` gives it any error type.
 
 Parallel composition interrupts the other branch on the first failure and waits for it to settle. Both branches'
 resources are released in reverse acquisition order before failure returns; successful provisioning keeps them open

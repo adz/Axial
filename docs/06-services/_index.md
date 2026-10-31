@@ -14,7 +14,7 @@ Other packages build on these capabilities. [Axial.Process](/process/) composes 
 | [Clock](platform-services/clock.html) | `DateTimeOffset.UtcNow` | Current time and derived Unix-time readers |
 | [Logging](platform-services/logging.html) | Host logging | Structured messages and exception-preserving logging |
 | [Randomness and GUIDs](platform-services/random-and-guid.html) | `System.Random`, `Guid.NewGuid()` | Explicit random values, byte generation, and GUID creation |
-| [Environment variables](platform-services/environment-variables.html) | `Environment.GetEnvironmentVariable` | Required and parsed reads with `EnvironmentVariableError` |
+| [Configuration](platform-services/environment-variables.html) | `Environment.GetEnvironmentVariable`, `IConfiguration` | Layered environment, argument, JSON, browser and host configuration decoded by a Reified schema, with `ConfigError` |
 | [Console](console.html) | `System.Console` | Standard streams, redirection, and terminal control |
 | [File system](filesystem.html) | `System.IO.File` and `Directory` | File and directory operations with `FileSystemError` |
 | [Files](files.html) | `System.IO` traversal and writes, with GUID-named atomic-write temporary files | `Files.walk`, `Files.lines`, `Files.writeAtomic`, `AppendLog` |

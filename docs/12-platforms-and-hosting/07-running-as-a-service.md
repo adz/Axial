@@ -55,7 +55,7 @@ open Axial.PlatformService
 
 // The host supplies these services at composition time.
 let progressWatchdog<'env>
-    (clock: IClock) (variables: IEnvironmentVariables) (processId: int) (notifier: ISystemdNotifier) =
+    (clock: IClock) (variables: string -> string option) (processId: int) (notifier: ISystemdNotifier) =
     let mutable lastCompletedTicks: int64 = clock.Elapsed().Ticks
     // Call after each completed unit of work in the job loop.
     let recordCompletion () =
@@ -87,7 +87,7 @@ let jobLoop (recordCompletion: unit -> unit) : Flow<'env, Never, unit> =
     loop ()
 
 let application<'env>
-    (clock: IClock) (variables: IEnvironmentVariables) (processId: int) (notifier: ISystemdNotifier)
+    (clock: IClock) (variables: string -> string option) (processId: int) (notifier: ISystemdNotifier)
     : Flow<'env, Never, unit> =
     let recordCompletion, watchdog = progressWatchdog<'env> clock variables processId notifier
     Flow.zipPar (jobLoop recordCompletion) watchdog
@@ -96,12 +96,7 @@ let application<'env>
 
 ```fsharp run
 // The host can compose the watchdog without opening a systemd socket.
-let variables =
-    { new IEnvironmentVariables with
-        member _.TryGet _ = None
-        member _.Set(_, _) = ()
-        member _.Expand text = text
-        member _.GetAll() = System.Collections.Generic.Dictionary<string, string>() }
+let variables (_: string) = None
 let notifier = { new ISystemdNotifier with member _.Notify _ = () }
 let recordCompletion, watchdog = progressWatchdog<unit> Clock.live variables 1 notifier
 recordCompletion ()

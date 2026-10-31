@@ -1,5 +1,5 @@
 open System
-open Axial.PlatformService.Examples
+open Axial.Configuration.Examples
 
 module Runner =
     let run () =

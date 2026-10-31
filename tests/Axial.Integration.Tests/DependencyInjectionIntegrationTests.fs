@@ -7,17 +7,18 @@ open System.Net.Http
 open System.Threading
 open System.Threading.Tasks
 open Axial
+open Axial.Configuration
 open Axial.Console
 open Axial.PlatformService
 open Axial.FileSystem
 open Axial.HttpClient
 open Axial.Process
 open Microsoft.Extensions.DependencyInjection
+open Reified
 open Swensen.Unquote
 open Xunit
 
 module CoreClock = Axial.PlatformService.Clock
-module CoreEnvironmentVariables = Axial.PlatformService.EnvironmentVariables
 module CoreGuid = Axial.PlatformService.Guid
 module CoreLog = Axial.PlatformService.Log
 module CoreRandom = Axial.PlatformService.Random
@@ -53,8 +54,8 @@ module DependencyInjectionIntegrationTests =
         override _.SendAsync(_: HttpRequestMessage, _: CancellationToken) =
             Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent(responseText)))
 
-    type VariablesEnvironment = { Variables: IEnvironmentVariables } with
-        interface IHasEnvironmentVariables with member this.EnvironmentVariables = this.Variables
+    type ConfigEnvironment = { Config: IConfig } with
+        interface IHasConfig with member this.Config = this.Config
 
     [<Fact>]
     let ``DI supplies authority while platform overrides are installed at the edge`` () =
@@ -62,17 +63,16 @@ module DependencyInjectionIntegrationTests =
         let log = CoreLog.memory ()
         use provider =
             ServiceCollection()
-                .AddSingleton<IEnvironmentVariables>(CoreEnvironmentVariables.fromPairs [ "AXIAL_DI", "registered" ])
+                .AddSingleton<IConfig>(Config.ofData (Data.Object [ "Axial", Data.Object [ "Di", Data.Text "registered" ] ]))
                 .BuildServiceProvider()
-        let workflow : Flow<VariablesEnvironment, unit, string> = flow {
+        let workflow : Flow<ConfigEnvironment, ConfigError, string> = flow {
             let! now = CoreClock.now
             let formattedNow = now.ToString("HH:mm")
             do! CoreLog.info $"di-now={formattedNow}"
             let! next = CoreRandom.nextInt 1 100
             let! id = CoreGuid.newGuid
-            let! value = CoreEnvironmentVariables.tryGet "AXIAL_DI"
-            let environmentValue = defaultArg value "<missing>"
-            return $"{next}:{id}:{environmentValue}"
+            let! value = Config.required "Axial.Di"
+            return $"{next}:{id}:{value}"
         }
         let result =
             workflow
@@ -80,7 +80,7 @@ module DependencyInjectionIntegrationTests =
             |> Flow.withLogSink log
             |> Flow.withRandom (CoreRandom.fromValue 17)
             |> Flow.withGuid (CoreGuid.fromValue (System.Guid.Parse "cccccccc-cccc-cccc-cccc-cccccccccccc"))
-            |> Flow.runSync { Variables = provider.GetRequiredService<IEnvironmentVariables>() }
+            |> Flow.runSync { Config = provider.GetRequiredService<IConfig>() }
         test <@ result = Exit.Success "17:cccccccc-cccc-cccc-cccc-cccccccccccc:registered" @>
         test <@ log.Entries |> Seq.map (fun entry -> entry.Level, entry.Message) |> Seq.toList = [ LogLevel.Information, "di-now=09:30" ] @>
 

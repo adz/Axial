@@ -49,7 +49,7 @@ module HostLogTests =
                 do! Log.info "root-message"
                 let! child = Log.errorExn error "child-message" |> Flow.forkNamed "host-log-child"
                 do! Fiber.join child
-                do! Hosting.watchdog (EnvironmentVariables.fromPairs ["WATCHDOG_USEC", "invalid"]) 1 notifier |> Flow.widenError
+                do! Hosting.watchdog (function "WATCHDOG_USEC" -> Some "invalid" | _ -> None) 1 notifier |> Flow.widenError
                 finished.TrySetResult() |> ignore
             }) |> Flow.annotate "request" "req-1" |> FiberLocal.locally "job-1" local
         let lifetime = RecordingLifetime()

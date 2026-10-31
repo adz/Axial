@@ -13,16 +13,13 @@ let private elapsedSince started = nowMilliseconds () - started
 let tests : Test list =
     [ test "scoped platform values remain independent of application authority" (flow {
           let logged = ResizeArray<string>()
-          let variables = EnvironmentVariables.fromPairs ["REGION", "eu"]
-          let environment = { new IHasEnvironmentVariables with member _.EnvironmentVariables = variables }
-          let services : Flow<IHasEnvironmentVariables, Never, int * int * global.System.Guid * string option> =
+          let services : Flow<unit, Never, int * int * global.System.Guid> =
               flow {
                   let! now = Clock.now
                   let! number = Random.next
                   let! id = Guid.newGuid
-                  let! region = EnvironmentVariables.tryGet "REGION"
                   do! Log.info "seen"
-                  return now.Year, number, id, region
+                  return now.Year, number, id
               }
 
           let! actual = services
@@ -30,9 +27,8 @@ let tests : Test list =
                         |> Flow.withLogSink (LogSink.fromFunction (fun entry -> logged.Add entry.Message))
                         |> Flow.withRandom (Random.fromValue 7)
                         |> Flow.withGuid (Guid.fromValue global.System.Guid.Empty)
-                        |> Flow.localEnv (fun (_: unit) -> environment)
           return
-              [ equal "services" (2026, 7, global.System.Guid.Empty, Some "eu") actual
+              [ equal "services" (2026, 7, global.System.Guid.Empty) actual
                 equal "log" [ "seen" ] (List.ofSeq logged) ]
       })
 

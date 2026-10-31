@@ -2,8 +2,10 @@ open System
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.DependencyInjection
 open Axial
+open Axial.Configuration
 open Axial.Hosting
 open Axial.PlatformService
+open Reified
 
 type ProbeEnv = unit
 
@@ -29,11 +31,17 @@ let main args =
             | None -> return true
             | Some seconds -> return (clock.Elapsed() - started).TotalSeconds < float seconds
         }
-    let variables = EnvironmentVariables.live
+    let configuration =
+        match Flow.run () (Config.loadData [ ConfigSource.environment None ]) with
+        | Exit.Success config -> config
+        | Exit.Failure _ -> Config.ofData (Data.Object [])
+
+    let variables name =
+        Config.tryFind name configuration |> Result.toOption |> Option.bind id
     let application : Flow<ProbeEnv, Never, unit> =
         Flow.zipPar heartbeat
             (Hosting.watchdogWith variables Environment.ProcessId
-                (SystemdNotify.live (variables.TryGet "NOTIFY_SOCKET" |> Option.defaultValue "@unused")) health)
+                (SystemdNotify.live (variables "NOTIFY_SOCKET" |> Option.defaultValue "@unused")) health)
         |> Flow.map ignore
     Host.CreateDefaultBuilder(args)
         .UseSystemd()

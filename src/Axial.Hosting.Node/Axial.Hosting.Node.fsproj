@@ -23,7 +23,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Axial\Axial.fsproj" />
-    <ProjectReference Include="..\Axial.PlatformService\Axial.PlatformService.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="NodeHosting.fs" />

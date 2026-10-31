@@ -18,7 +18,7 @@ public sealed class ShippedAssemblyTests
         ("Axial.HttpClient", ["net8.0", "netstandard2.1"]),
         ("Axial.WebSocket", ["net8.0", "netstandard2.1"]),
         ("Axial.Process", ["net8.0", "netstandard2.1"]),
-        ("Axial.PlatformService", ["net8.0", "netstandard2.1"]),
+        ("Axial.Configuration", ["net8.0", "netstandard2.1"]),
         ("Axial.Hosting", ["net8.0", "netstandard2.1"]),
         ("Axial.Hosting.AspNetCore", ["net8.0"]),
         ("Axial.Hosting.GenHttp", ["net8.0"]),

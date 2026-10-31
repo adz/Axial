@@ -13,7 +13,7 @@
     <ProjectReference Include="../../src/Axial.HttpClient/Axial.HttpClient.fsproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="../../src/Axial.WebSocket/Axial.WebSocket.fsproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="../../src/Axial.Process/Axial.Process.fsproj" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="../../src/Axial.PlatformService/Axial.PlatformService.fsproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/Axial.Configuration/Axial.Configuration.fsproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="../../src/Axial.Hosting/Axial.Hosting.fsproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="../../src/Axial.Hosting.AspNetCore/Axial.Hosting.AspNetCore.fsproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="../../src/Axial.Hosting.GenHttp/Axial.Hosting.GenHttp.fsproj" ReferenceOutputAssembly="false" />

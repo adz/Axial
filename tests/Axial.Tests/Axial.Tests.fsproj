@@ -70,7 +70,6 @@
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
     <!-- The phased core migration can validate without the Process-dependent torture graph. -->
     <ProjectReference Include="..\..\examples\Axial.TortureTest\Axial.TortureTest.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
   </ItemGroup>
 
 </Project>
