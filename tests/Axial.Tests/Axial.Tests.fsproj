@@ -12,6 +12,7 @@
     <Compile Include="TestSupport.fs" />
     <Compile Include="PlatformPackagingTests.fs" />
     <Compile Include="PlatformScopeTests.fs" />
+    <Compile Include="CultureTests.fs" />
     <Compile Include="RuntimeFoundationTests.fs" />
     <Compile Include="ServiceRuntimePatternTests.fs" />
     <Compile Include="TestRuntimeTests.fs" />

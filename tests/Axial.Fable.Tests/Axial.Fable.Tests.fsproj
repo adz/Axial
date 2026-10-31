@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PlatformScopeTests.fs" />
+    <Compile Include="CultureTests.fs" />
     <Compile Include="HostLoggingTests.fs" />
     <Compile Include="TelemetryHostTests.fs" />
     <Compile Include="Program.fs" />
