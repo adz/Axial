@@ -137,18 +137,25 @@ module CoreCancellationClassificationTests =
         use canceled = new CancellationTokenSource()
         canceled.Cancel()
 
-        let canceledBranch : Flow<unit, string, int> =
+        let leftStarted = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let releaseRight = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+        let signalingCanceledBranch : Flow<unit, string, int> =
             Flow(fun (_: unit) _ ->
+                leftStarted.SetResult()
                 ValueTask<Exit<int, string>>(Task.FromCanceled<Exit<int, string>> canceled.Token))
 
         let failingBranch : Flow<unit, string, int> =
             Flow(fun (_: unit) _ ->
                 ValueTask<Exit<int, string>>(
                     task {
-                        do! Task.Delay 20
+                        do! releaseRight.Task
                         return Exit.Failure(Cause.Fail "right")
                     }
                 ))
 
-        let result = Flow.zipPar canceledBranch failingBranch |> Flow.runSync ()
+        let running = (Flow.zipPar signalingCanceledBranch failingBranch).StartAsTask(())
+        Assert.True(leftStarted.Task.Wait(TimeSpan.FromSeconds 10.0))
+        releaseRight.SetResult()
+        let result = running.WaitAsync(TimeSpan.FromSeconds 10.0).GetAwaiter().GetResult()
         Assert.Equal(Exit.Failure(Cause.Fail "right"), result)

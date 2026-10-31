@@ -73,12 +73,12 @@ module ParallelSettlementTests =
         test <@ isDefect (run (Flow.zipPar (Flow.ok 1) (throwing ()))) @>
 
     // T30 review fix: the right branch throws while starting, after the left one has started and holds a resource.
-    let private holdingLeft (released: bool ref) (defect: exn option) : Flow<unit, string, unit> =
-        // Ignores cancellation for 100 ms, as a branch in the middle of a release would, then ends with its defect.
+    let private holdingLeft (release: TaskCompletionSource<unit>) (released: bool ref) (defect: exn option) : Flow<unit, string, unit> =
+        // Ignores cancellation until the test releases it, as a branch in the middle of a release would.
         Flow(fun _ _ ->
             ValueTask<Exit<unit, string>>(
                 task {
-                    do! Task.Delay 100
+                    do! release.Task
                     released.Value <- true
 
                     return
@@ -87,8 +87,10 @@ module ParallelSettlementTests =
                         | None -> Exit.Success()
                 }))
 
-    let private throwingUnit () : Flow<unit, string, unit> =
-        Flow(fun _ _ -> raise (InvalidOperationException "thrown while starting"))
+    let private throwingUnit (started: TaskCompletionSource<unit>) : Flow<unit, string, unit> =
+        Flow(fun _ _ ->
+            started.SetResult()
+            raise (InvalidOperationException "thrown while starting"))
 
     let private rec' (cause: Cause<string>) =
         let rec dies c =
@@ -98,14 +100,28 @@ module ParallelSettlementTests =
             | _ -> []
         dies cause
 
+    let private settledAfterRelease
+        (combinator: Flow<unit, string, unit> -> Flow<unit, string, unit> -> Flow<unit, string, unit>)
+        (defect: exn option)
+        : bool * Exit<unit, string>
+        =
+        let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let rightStarted = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let released = ref false
+        let running = (combinator (holdingLeft release released defect) (throwingUnit rightStarted)).StartAsTask(())
+        Assert.True(rightStarted.Task.Wait(TimeSpan.FromSeconds 10.0))
+
+        release.SetResult()
+        let outcome = running.WaitAsync(TimeSpan.FromSeconds 10.0).GetAwaiter().GetResult()
+        released.Value, outcome
+
     [<Fact>]
     let ``a synchronously throwing right branch settles the started left branch before the outcome`` () =
         for combinator in
             [ (fun l r -> Flow.zipPar l r |> Flow.map ignore)
               (fun l r -> Flow.sequencePar [ l; r ] |> Flow.map ignore) ] do
-            let released = ref false
-            let outcome = run (combinator (holdingLeft released None) (throwingUnit ()))
-            test <@ released.Value @>
+            let released, outcome = settledAfterRelease combinator None
+            test <@ released @>
             test <@ (match outcome with Exit.Failure(Cause.Die _) -> true | _ -> false) @>
 
     [<Fact>]
@@ -113,10 +129,9 @@ module ParallelSettlementTests =
         for combinator in
             [ (fun l r -> Flow.zipPar l r |> Flow.map ignore)
               (fun l r -> Flow.sequencePar [ l; r ] |> Flow.map ignore) ] do
-            let released = ref false
             let leftBoom = InvalidOperationException "left finalizer"
-            let outcome = run (combinator (holdingLeft released (Some leftBoom)) (throwingUnit ()))
-            test <@ released.Value @>
+            let released, outcome = settledAfterRelease combinator (Some leftBoom)
+            test <@ released @>
             match outcome with
             | Exit.Failure cause -> test <@ rec' cause |> List.exists (fun e -> obj.ReferenceEquals(e, leftBoom)) @>
             | _ -> failwith "expected failure"
