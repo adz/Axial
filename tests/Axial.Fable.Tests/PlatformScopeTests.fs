@@ -43,7 +43,7 @@ let tests =
       test "fixed clock sleep is explicitly advanced" (flow {
           let instant = DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero)
           let clock = Clock.fromValue instant
-          let fixedClock = Clock.``fixed`` instant
+          let fixedClock = Clock.fromValue instant
           let! registered = Deferred.make ()
           let notifying =
               { new IClock with

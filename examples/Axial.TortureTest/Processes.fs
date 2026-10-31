@@ -58,7 +58,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
             })
             |> Process.toFlow
             |> Flow.localEnv (fun () -> callbackEnvironment)
-            |> Flow.withClock (Axial.PlatformService.Clock.``fixed`` callbackTime)
+            |> Flow.withClock (Axial.PlatformService.Clock.fromValue callbackTime)
             |> Flow.withLogSink callbackLog
             |> exitOf
 #endif

@@ -1,7 +1,4 @@
-// This file holds the `live` implementations of Axial.PlatformService's service interfaces (IRandom,
-// IEnvironment, ...): it is the explicit, mockable boundary those services exist to be, so the ambient
-// effects here are intentional rather than leaked.
-// axial-allow-file-AXG001: this file implements the explicit random, environment boundary
+// axial-allow-file-AXG001: explicit process-environment service implementation
 namespace Axial.PlatformService
 
 open System
@@ -11,29 +8,6 @@ open Axial
 
 /// Runtime-specific implementations of the otherwise portable services.
 module internal Platform =
-    let random () : IRandom =
-        let rng = Random()
-
-        #if FABLE_COMPILER
-        { new IRandom with
-            member _.Next() = rng.Next()
-            member _.NextMax maxExclusive = rng.Next maxExclusive
-            member _.NextInt minInclusive maxExclusive = rng.Next(minInclusive, maxExclusive)
-            member _.NextDouble() = rng.NextDouble()
-            member _.NextBytes buffer =
-                for index in 0 .. buffer.Length - 1 do
-                    buffer[index] <- byte (rng.Next(0, 256)) }
-        #else
-        let gate = obj()
-
-        { new IRandom with
-            member _.Next() = lock gate rng.Next
-            member _.NextMax maxExclusive = lock gate (fun () -> rng.Next maxExclusive)
-            member _.NextInt minInclusive maxExclusive = lock gate (fun () -> rng.Next(minInclusive, maxExclusive))
-            member _.NextDouble() = lock gate rng.NextDouble
-            member _.NextBytes buffer = lock gate (fun () -> rng.NextBytes buffer) }
-        #endif
-
     let private dictionary (values: seq<string * string>) =
         #if FABLE_COMPILER
         let lookup = Dictionary<string, string>()

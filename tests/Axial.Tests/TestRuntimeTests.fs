@@ -10,8 +10,8 @@ module TestRuntimeTests =
     [<Fact>]
     let ``memory log records entries in order`` () =
         let log = Log.memory ()
-        log.Log(LogLevel.Information, "hello")
-        log.LogException(LogLevel.Error, InvalidOperationException "boom", "bad")
+        Log.info "hello" |> Flow.withLogSink log |> Flow.runSync () |> ignore
+        Log.errorExn (InvalidOperationException "boom") "bad" |> Flow.withLogSink log |> Flow.runSync () |> ignore
         test <@ log.Entries.Count = 2 @>
         test <@ log.Entries[0] = { Level = LogLevel.Information; Message = "hello"; Error = None; Annotations = Map.empty; Locals = [] } @>
         test <@ log.Entries[1].Level = LogLevel.Error @>

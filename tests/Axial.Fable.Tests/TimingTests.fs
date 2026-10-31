@@ -27,7 +27,7 @@ let tests : Test list =
 
           let! actual = services
                         |> Flow.withClock (Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)))
-                        |> Flow.withLogSink (Log.fromSink (fun entry -> logged.Add entry.Message))
+                        |> Flow.withLogSink (LogSink.fromFunction (fun entry -> logged.Add entry.Message))
                         |> Flow.withRandom (Random.fromValue 7)
                         |> Flow.withGuid (Guid.fromValue global.System.Guid.Empty)
                         |> Flow.localEnv (fun (_: unit) -> environment)

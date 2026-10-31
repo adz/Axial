@@ -1234,10 +1234,11 @@ module internal PlatformDefaults =
                         else timer.Value <- Platform.scheduleTimer wait (int (min 2147483647.0 (Math.Ceiling remaining.TotalMilliseconds)))
                     if cancellationToken.IsCancellationRequested then finish (Some(OperationCanceledException()))
                     else
-                        let registered = unbox<IDisposable> (box (cancellationToken.Register(fun () -> finish (Some(OperationCanceledException())))))
-                        registration.Value <- Some registered
-                        if settled.Value then registered.Dispose()
-                        else wait ())
+                        if not (isNull (box cancellationToken)) then
+                            let registered = unbox<IDisposable> (box (cancellationToken.Register(fun () -> finish (Some(OperationCanceledException())))))
+                            registration.Value <- Some registered
+                            if settled.Value then registered.Dispose()
+                        if not settled.Value then wait ())
                 unbox<Task> pending
 #else
                 task {

@@ -9,7 +9,7 @@
     <PackageId>Axial.PlatformService</PackageId>
     <Authors>Adam Davies</Authors>
     <PackageMaturity>Incubating</PackageMaturity>
-    <Description>Shared explicit service primitives for Axial flow clock, random, GUID, logging, and environment-variable boundaries.</Description>
+    <Description>Explicit environment-variable access for Axial workflows.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -32,7 +32,6 @@
     <Compile Include="Services.fs" />
     <Compile Include="Platform.fs" />
     <Compile Include="Operations.fs" />
-    <Compile Include="TestPlatform.fs" />
   </ItemGroup>
 
 </Project>

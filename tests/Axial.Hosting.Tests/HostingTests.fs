@@ -194,7 +194,7 @@ module HostingTests =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
         let warnings = ResizeArray<string>()
         let logger =
-            Log.fromSink (fun entry -> if entry.Level = Axial.LogLevel.Warning then warnings.Add entry.Message)
+            LogSink.fromFunction (fun entry -> if entry.Level = Axial.LogLevel.Warning then warnings.Add entry.Message)
         let notifier, messages = recordingNotifier ()
         let result = runWatchdog clock logger (Hosting.watchdog (variables ["WATCHDOG_USEC", value]) 42 notifier)
                      |> Async.RunSynchronously

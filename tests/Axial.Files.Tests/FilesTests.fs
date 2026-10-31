@@ -75,7 +75,7 @@ type FilesTests() =
             File.WriteAllText(predictableTemp, "existing")
             let env =
                 { FileSystem = FileSystem.live
-                  Guid = Axial.PlatformService.Guid.fromSequence [ first; second ] }
+                  Guid = Axial.PlatformService.Guid.sequence [ first; second ] }
 
             Assert.Equal(Exit.Success (), Files.writeAllTextAtomic path "new" |> Flow.withGuid env.Guid |> Flow.run env)
             Assert.Equal("existing", File.ReadAllText predictableTemp)

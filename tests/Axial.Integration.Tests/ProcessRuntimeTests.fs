@@ -37,7 +37,7 @@ module ProcessRuntimeTests =
         if not (OperatingSystem.IsWindows()) then
             let engine = ManualClock(DateTimeOffset(2001, 1, 1, 0, 0, 0, TimeSpan.Zero))
             let callerTime = DateTimeOffset(1990, 1, 1, 0, 0, 0, TimeSpan.Zero)
-            let caller = Clock.``fixed`` callerTime
+            let caller = Clock.fromValue callerTime
             let log = Log.memory ()
             let seen = ConcurrentQueue<string * DateTimeOffset * int * System.Guid>()
             let annotations = ConcurrentQueue<string * string>()

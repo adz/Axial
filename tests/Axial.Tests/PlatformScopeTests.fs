@@ -306,12 +306,12 @@ module PlatformScopeTests =
     [<Fact>]
     let ``recording log snapshots remain stable while writers and clear run concurrently`` () =
         let log = TestLog()
-        log.Log(LogLevel.Information, "retained")
+        Log.info "retained" |> Flow.withLogSink log |> Flow.runSync () |> ignore
         let retained = log.Entries
         let writer () =
             for i in 1 .. 2000 do
-                log.Log(LogLevel.Information, string i)
-                log.LogException(LogLevel.Error, InvalidOperationException("test"), string i)
+                Log.info (string i) |> Flow.withLogSink log |> Flow.runSync () |> ignore
+                Log.errorExn (InvalidOperationException("test")) (string i) |> Flow.withLogSink log |> Flow.runSync () |> ignore
                 (log :> ILogSink).Write { Level = LogLevel.Debug; Message = string i; Error = None; Annotations = Map.empty; Locals = [] }
         let reader () =
             for _ in 1 .. 2000 do
@@ -363,10 +363,10 @@ module PlatformScopeTests =
     [<Fact>]
     let ``recording log entries are snapshots`` () =
         let log = TestLog()
-        log.Log(LogLevel.Information, "first")
+        Log.info "first" |> Flow.withLogSink log |> Flow.runSync () |> ignore
         let snapshot = log.Entries
         log.Clear()
-        log.Log(LogLevel.Information, "second")
+        Log.info "second" |> Flow.withLogSink log |> Flow.runSync () |> ignore
         Assert.Single(snapshot) |> ignore
         Assert.Equal("first", snapshot.[0].Message)
 
@@ -397,7 +397,7 @@ module PlatformScopeTests =
     [<Fact>]
     let ``test platform trace identifies service reads and fibers`` () =
         let platform = TestPlatform.create ()
-        platform.trace <- true
+        platform.Trace <- true
         let workflow = flow {
             let! _ = reads ()
             let! fiber = Flow.fork (reads ())

@@ -8,6 +8,7 @@ open Axial
 type TestPlatform private () =
     let mutable nextGuid = 0
     let guidGate = obj()
+    let reads = ResizeArray<string * int64>()
     member val Clock = ManualClock(DateTimeOffset.UnixEpoch)
     member val Log = TestLog()
     member val Random: IRandom = Random.seeded 0 with get, set
@@ -15,8 +16,11 @@ type TestPlatform private () =
         { new IGuid with
             member _.NewGuid() = lock guidGate (fun () -> nextGuid <- nextGuid + 1; System.Guid(nextGuid, 0s, 0s, Array.zeroCreate 8)) } with get, set
     /// Enable recording before running the test. Reads are available in call order.
-    member val trace = false with get, set
-    member val Reads = ResizeArray<string * int64>()
+    member val Trace = false with get, set
+    /// A stable snapshot; later reads never mutate a previously captured snapshot.
+    member _.Reads : System.Collections.Generic.IReadOnlyList<string * int64> =
+        lock reads (fun () -> reads.ToArray() :> System.Collections.Generic.IReadOnlyList<string * int64>)
+    member internal _.Record(name, id) = lock reads (fun () -> reads.Add(name, id))
     static member create () = TestPlatform()
 
 type private TracedClock(clock: ManualClock, record: string -> unit) =
@@ -32,9 +36,9 @@ module TestPlatformExtensions =
         /// Runs with explicitly controlled platform values; it never advances time automatically.
         let runTestWith (platform: TestPlatform) (environment: 'env) (source: Flow<'env, 'error, 'value>) : Exit<'value, 'error> =
             let record name =
-                if platform.trace then
+                if platform.Trace then
                     let id = RuntimePlatform.current().FiberId.Value
-                    lock platform.Reads (fun () -> platform.Reads.Add(name, id))
+                    platform.Record(name, id)
             let random = platform.Random
             let guid = platform.Guid
             let tracedRandom =
@@ -47,9 +51,9 @@ module TestPlatformExtensions =
             let tracedGuid = { new IGuid with member _.NewGuid() = record "Guid.NewGuid"; guid.NewGuid() }
             let installed =
                 source
-                |> Flow.withClock (if platform.trace then TracedClock(platform.Clock, record) :> IClock else platform.Clock :> IClock)
-                |> Flow.withRandom (if platform.trace then tracedRandom else random)
-                |> Flow.withGuid (if platform.trace then tracedGuid else guid)
+                |> Flow.withClock (if platform.Trace then TracedClock(platform.Clock, record) :> IClock else platform.Clock :> IClock)
+                |> Flow.withRandom (if platform.Trace then tracedRandom else random)
+                |> Flow.withGuid (if platform.Trace then tracedGuid else guid)
                 |> Flow.withLogSink platform.Log
             installed.RunSynchronously environment
 
