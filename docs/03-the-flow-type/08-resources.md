@@ -59,7 +59,7 @@ interruption.
 Both examples open the file with `File.OpenText` to keep the focus on ownership and cleanup. That is an ambient
 .NET call, not the `IFileSystem` service: it is not interruptible, and I/O failures are not modeled as a typed
 `FileSystemError`. For the recommended pattern — an explicit filesystem dependency with a typed error channel — see
-[FileSystem](/services/filesystem.html).
+[FileSystem](/filesystem/filesystem.html).
 
 For reusable acquisition descriptions and direct registration of disposables or finalizers, see
 [scopes and resources](/scopes/index.html).

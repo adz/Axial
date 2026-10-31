@@ -7,7 +7,7 @@ description: The contract of each AXG diagnostic, what it detects, what to use i
 # Guardrail diagnostics
 
 Each `AXG` diagnostic has a narrow contract: the effect or convention it detects, the service or form that replaces
-it, and the suppression directive that allows an intentional boundary. The [adoption guide](guardrails.html) covers
+it, and the suppression directive that allows an intentional boundary. The [adoption guide](/guardrails/guardrails.html) covers
 install, severity, and suppression choices; this page is the per-diagnostic reference.
 
 ## AXG001: Use explicit effect services

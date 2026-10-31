@@ -16,7 +16,7 @@ project: src/Axial.Hosting/Axial.Hosting.fsproj
 dotnet add package Axial.Hosting
 ```
 
-[`App`](application-lifecycle.html) works in console, desktop, test, and embedded applications without this package, Microsoft.Extensions.Hosting, or a dependency-injection container.
+[`App`](/platforms-and-hosting/application-lifecycle.html) works in console, desktop, test, and embedded applications without this package, Microsoft.Extensions.Hosting, or a dependency-injection container.
 
 ## Standalone CLI or Script
 
@@ -172,7 +172,7 @@ let withHostLogging (logger: Microsoft.Extensions.Logging.ILogger) (application:
 All Axial log levels and exception objects are preserved. Locals, annotations (for example `trace_id`) and named
 FiberLocals become a Microsoft logging scope; an entry with none of them opens no scope. Set
 `HostedAppOptions.LogSink` to `None` to leave the runtime default, or to `Some(fun _ -> LogSink.none)` to silence
-Axial logs. An inner `Flow.withLogSink` always wins. See [platform services](platform-services.html#host-logging-defaults).
+Axial logs. An inner `Flow.withLogSink` always wins. See [platform services](/platforms-and-hosting/platform-services.html#host-logging-defaults).
 
 ## Fiber Defect Logging
 
@@ -220,5 +220,5 @@ Do not block the UI thread on `Completion`. A framework-specific package is unne
 
 ## Other Runtimes
 
-- [Node hosting](./node.html) handles Node arguments, `process.env`, signals, and exit status.
-- [Browser hosting](./browser.html) handles explicit UI ownership and `AbortSignal`.
+- [Node hosting](/hosting/node.html) handles Node arguments, `process.env`, signals, and exit status.
+- [Browser hosting](/hosting/browser.html) handles explicit UI ownership and `AbortSignal`.

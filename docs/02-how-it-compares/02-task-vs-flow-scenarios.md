@@ -145,7 +145,7 @@ ZIO correspondence: `zipPar`, typed `catchAll` (here `orElse`), `race`.
 
 ## 4. Scoped temporary workspace
 
-Create a temporary directory through [`Axial.FileSystem`](/services/filesystem.html), perform fallible
+Create a temporary directory through [`Axial.FileSystem`](/filesystem/filesystem.html), perform fallible
 steps, remove the directory exactly once on every exit shape.
 
 Read the [workspace comparison source](https://github.com/adz/Axial/blob/main/examples/Axial.Comparisons/ScopedWorkspace.fs).
@@ -177,8 +177,8 @@ Read the [report-wiring comparison source](https://github.com/adz/Axial/blob/mai
 
 The Flow version declares the capability set once as an environment record implementing one contract per
 capability, and business code names only what it uses through the package operations
-([`Clock.now`](/services/platform-services/clock.html), [`FileSystem.readAllText`](/services/filesystem.html),
-[`Console.writeLine`](/services/console.html)):
+([`Clock.now`](/services/platform-services/clock.html), [`FileSystem.readAllText`](/filesystem/filesystem.html),
+[`Console.writeLine`](/console/console.html)):
 
 {{< snippet id="compare-report" mode="no-check" reason="Excerpt from examples/Axial.Comparisons, whose tests compile and run it" >}}
 

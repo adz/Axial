@@ -21,7 +21,7 @@ also fails because the Node `process` object is required.
 
 The Node entry point handles process lifecycle; the application workflow remains platform-neutral. The root-application
 shape below is schematic: `AppError`, `program`, and `appLayer` are not defined on this page. See
-[Application lifecycle](application-lifecycle.html) for a complete, checked root application that defines them.
+[Application lifecycle](/platforms-and-hosting/application-lifecycle.html) for a complete, checked root application that defines them.
 
 ```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
 type StartupInputs =

@@ -139,7 +139,7 @@ policy change. Ordinary policy approval refuses baseline growth.
 to arrays of repository-relative project-path globs. Only matching `host` projects are exempt;
 other roles and other diagnostics are unchanged. No tooling or benchmark directory is implicitly exempt.
 Unknown keys, non-array values, escaping paths, and patterns matching no files are rejected.
-See the [diagnostic reference](04-guardrail-diagnostics.html) for an example.
+See the [diagnostic reference](/guardrails/diagnostics.html) for an example.
 
 ## Review the diagnostics
 
@@ -203,20 +203,20 @@ rules:
 
 A package can contribute rules to a guardrail of its own without writing a separate analyzer, by shipping
 `<AxialGuardrailRule>` items in its `buildTransitive` props. The
-[rule-authoring reference](guardrail-rule-authoring.html) documents the `AxialGuardrailRule` metadata and the `Match`
+[rule-authoring reference](/guardrails/rule-authoring.html) documents the `AxialGuardrailRule` metadata and the `Match`
 grammar.
 
 ## Diagnostic reference
 
 Each diagnostic's contract — what it detects, what to use instead, and whether it permits a boundary allowance
-or a visible guide acknowledgement — is on the [diagnostics reference](guardrail-diagnostics.html):
+or a visible guide acknowledgement — is on the [diagnostics reference](/guardrails/diagnostics.html):
 
-- [`AXG001`](guardrail-diagnostics.html#axg001-use-explicit-effect-services): ambient .NET effects.
-- [`AXG002`](guardrail-diagnostics.html#axg002-remove-invalid-suppressions): invalid or unused suppressions.
-- [`AXG003`](guardrail-diagnostics.html#axg003-return-typed-failures-from-workflows): exceptions raised in `flow { }`.
-- [`AXG004`](guardrail-diagnostics.html#axg004-create-fresh-test-fixtures): shared module-level test fixtures.
-- [`AXG005`](guardrail-diagnostics.html#axg005-preserve-cancellation-tokens): task adapters that drop their token.
-- [`AXG006`](guardrail-diagnostics.html#axg006-format-without-reflection): reflection-dependent formatting.
-- [`AXG007`](guardrail-diagnostics.html#axg007-keep-resources-acquired-by-a-fiber): resources returned from fibers.
-- [`AXG013`](guardrail-diagnostics.html#axg013-wait-for-facts-not-time): blocking test sleeps (error) and awaited delays (guide). Runs only in policy role `test`; legacy `test.wait-for-facts` levels do not change the tiers. Workflow clock sleeps are out of scope.
-- [`AXG008`](guardrail-diagnostics.html#axg008-keep-scope-owned-services-inside-their-run): scoped queues and hubs, subscriptions, and caches returned by a run. Unscoped `Queue.make` (including its shorthands) and `Hub.make` are allowed.
+- [`AXG001`](/guardrails/diagnostics.html#axg001-use-explicit-effect-services): ambient .NET effects.
+- [`AXG002`](/guardrails/diagnostics.html#axg002-remove-invalid-suppressions): invalid or unused suppressions.
+- [`AXG003`](/guardrails/diagnostics.html#axg003-return-typed-failures-from-workflows): exceptions raised in `flow { }`.
+- [`AXG004`](/guardrails/diagnostics.html#axg004-create-fresh-test-fixtures): shared module-level test fixtures.
+- [`AXG005`](/guardrails/diagnostics.html#axg005-preserve-cancellation-tokens): task adapters that drop their token.
+- [`AXG006`](/guardrails/diagnostics.html#axg006-format-without-reflection): reflection-dependent formatting.
+- [`AXG007`](/guardrails/diagnostics.html#axg007-keep-resources-acquired-by-a-fiber): resources returned from fibers.
+- [`AXG013`](/guardrails/diagnostics.html#axg013-wait-for-facts-not-time): blocking test sleeps (error) and awaited delays (guide). Runs only in policy role `test`; legacy `test.wait-for-facts` levels do not change the tiers. Workflow clock sleeps are out of scope.
+- [`AXG008`](/guardrails/diagnostics.html#axg008-keep-scope-owned-services-inside-their-run): scoped queues and hubs, subscriptions, and caches returned by a run. Unscoped `Queue.make` (including its shorthands) and `Hub.make` are allowed.

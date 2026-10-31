@@ -51,16 +51,16 @@ existing findings remain visible as warnings while later findings fail the build
 A category-specific suppression is valid only for an intentional effect boundary in an explicitly declared file.
 To omit a package-specific category entirely, remove its `AxialGuardrail` MSBuild item; this disables that rule set
 rather than changing finding severity. Guardrail selection, baseline adoption, and the local troubleshooting switch
-are documented in [Effect-boundary guardrails](/notes/guardrails.html).
+are documented in [Effect-boundary guardrails](/guardrails/guardrails.html).
 
-See [Effect-boundary guardrails](/notes/guardrails.html) for the diagnostic list, configuration options, and
+See [Effect-boundary guardrails](/guardrails/guardrails.html) for the diagnostic list, configuration options, and
 suppression syntax.
 
 ## Related guides
 
-- [Hosting](/platforms-and-hosting/dotnet.html) chooses between standalone .NET, Generic Host, Node, and browser
+- [Hosting](/hosting/dotnet.html) chooses between standalone .NET, Generic Host, Node, and browser
   entry points.
 - [Platform services](/services/platform-services/index.html) introduces the explicit clock, logging, random, secure-random,
   GUID, and environment-variable contracts.
-- [Effect-boundary guardrails](/notes/guardrails.html) is the analyzer that enforces those contracts as a build
+- [Effect-boundary guardrails](/guardrails/guardrails.html) is the analyzer that enforces those contracts as a build
   check instead of a review convention.

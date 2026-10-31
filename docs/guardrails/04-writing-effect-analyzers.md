@@ -6,7 +6,7 @@ description: Build and package an analyzer that detects direct access to effects
 
 # Write an effect-boundary analyzer
 
-[Effect-boundary guardrails](/notes/guardrails.html) describes how `Axial.Guardrails` detects direct calls to ambient .NET effects. You can apply the same pattern to an effect owned by your package.
+[Effect-boundary guardrails](/guardrails/guardrails.html) describes how `Axial.Guardrails` detects direct calls to ambient .NET effects. You can apply the same pattern to an effect owned by your package.
 
 For example, callers can bypass an HTTP, queue, or database service interface by using the underlying .NET API. A package-specific analyzer can detect that access during the build.
 
@@ -106,7 +106,7 @@ loop: it writes a consumer into a temp directory, runs `dotnet build`, and asser
 ## Package the analyzer
 
 Packaging — the NuGet layout, `PackageDownload` for the CLI, and the MSBuild props/targets that run it — is
-documented in the [analyzer packaging reference](analyzer-packaging.html). In short: pack the analyzer's
+documented in the [analyzer packaging reference](/guardrails/analyzer-packaging.html). In short: pack the analyzer's
 `analyzers/` and `cli/` directories into the package, add `build/{YourPackageId}.props` and
 `build/{YourPackageId}.targets`, and run the CLI with an `<Exec>` task that can fail the build.
 

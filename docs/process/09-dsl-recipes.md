@@ -100,7 +100,7 @@ finally
 
 The `System.IO.File` calls above are docs-test setup: they create and remove scratch files so the routing output can
 be checked. In an application, model the filesystem with `IFileSystem` and a typed `FileSystemError`; see
-[FileSystem](/services/filesystem.html).
+[FileSystem](/filesystem/filesystem.html).
 
 `Output.callback` receives exact bytes, while `Output.stream` and `Output.textWriter` adapt caller-owned .NET
 objects. Axial flushes adapters without disposing those objects; a text-writer decoder is fresh for each execution.

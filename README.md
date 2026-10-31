@@ -76,11 +76,19 @@ dotnet add package Axial
 
 ## Package family
 
-- [`Axial`](https://www.nuget.org/packages/Axial): the core workflow model: typed failures, dependencies, concurrency, resources, schedules, streams, and layers.
-- [`Axial.Process`](https://www.nuget.org/packages/Axial.Process): external process composition, pipelines, streaming output, typed failures, cancellation, and cleanup.
-- [`Axial.HttpClient`](https://www.nuget.org/packages/Axial.HttpClient): typed HTTP requests, response handling, and reliability policies.
+- [`Axial`](https://www.nuget.org/packages/Axial): the core workflow model: typed failures, dependencies, concurrency, resources, schedules, streams, and runtime platform services.
+- [`Axial.Process`](https://www.nuget.org/packages/Axial.Process): external process composition, pipelines, streaming output, typed failures, cancellation, and cleanup. [Process docs](docs/process/_index.md)
+- [`Axial.HttpClient`](https://www.nuget.org/packages/Axial.HttpClient): typed HTTP requests, response handling, and reliability policies. [HTTP docs](docs/http/_index.md)
+- [`Axial.Configuration`](https://www.nuget.org/packages/Axial.Configuration): layered environment, argument, JSON, browser, and Microsoft configuration decoded by Reified, with redacted secrets. [Configuration docs](docs/configuration/_index.md)
+- [`Axial.Console`](https://www.nuget.org/packages/Axial.Console): standard streams, redirection, and terminal control. [Console docs](docs/console/_index.md)
+- [`Axial.FileSystem`](https://www.nuget.org/packages/Axial.FileSystem): file-system access, streaming traversal, atomic writes, and the append log. [FileSystem docs](docs/filesystem/_index.md)
+- [`Axial.WebSocket`](https://www.nuget.org/packages/Axial.WebSocket): typed WebSocket client sessions and errors. [WebSocket docs](docs/websocket/_index.md)
+- [`Axial.Hosting`](https://www.nuget.org/packages/Axial.Hosting), [`Axial.Hosting.AspNetCore`](https://www.nuget.org/packages/Axial.Hosting.AspNetCore), [`Axial.Hosting.GenHttp`](https://www.nuget.org/packages/Axial.Hosting.GenHttp), [`Axial.Hosting.Node`](https://www.nuget.org/packages/Axial.Hosting.Node), and [`Axial.Hosting.Browser`](https://www.nuget.org/packages/Axial.Hosting.Browser): host adapters. [Hosting docs](docs/hosting/_index.md)
+- [`Axial.ElmishFlows`](https://www.nuget.org/packages/Axial.ElmishFlows): Elmish commands and subscriptions backed by workflows. [Elmish docs](docs/elmish/_index.md)
+- [`Axial.Telemetry`](https://www.nuget.org/packages/Axial.Telemetry) and [`Axial.Telemetry.JavaScript`](https://www.nuget.org/packages/Axial.Telemetry.JavaScript): .NET and Fable tracing, metrics, and dumps. [Telemetry docs](docs/telemetry/_index.md)
+- [`Axial.Guardrails`](https://www.nuget.org/packages/Axial.Guardrails) and [`Axial.Tool`](https://www.nuget.org/packages/Axial.Tool): effect-boundary analysis and the `axial` policy CLI. [Guardrails docs](docs/guardrails/_index.md)
 
-Experimental [`Axial.Hosting.AspNetCore`](https://www.nuget.org/packages/Axial.Hosting.AspNetCore) and [`Axial.Hosting.GenHttp`](https://www.nuget.org/packages/Axial.Hosting.GenHttp) host Reified HTTP contracts on Axial workflows. Supporting packages provide platform services, console and file-system access, hosting, and telemetry. See the [package maturity table](docs/15-notes/02-package-maturity.md) for each package's rating and application evidence. The [package catalogue](https://adz.github.io/Axial/packages/) links the first-class libraries and the complete compatibility matrix.
+See the [package maturity table](docs/15-notes/02-package-maturity.md) for each package's rating and application evidence. The [package catalogue](https://adz.github.io/Axial/packages/) links the first-class libraries and the complete compatibility matrix.
 
 ## Documentation and examples
 
@@ -96,4 +104,4 @@ Experimental [`Axial.Hosting.AspNetCore`](https://www.nuget.org/packages/Axial.H
 
 ## Reified integration
 
-[Reified](https://github.com/adz/Reified) declares value, model, JSON, and HTTP contracts. Axial's optional server adapters execute Reified HTTP contracts as workflows; neither core depends on the other.
+[Reified](https://github.com/adz/Reified) declares value, model, JSON, and HTTP contracts. Axial's optional server adapters execute Reified HTTP contracts as workflows; neither core depends on the other. Axial 0.12 requires Reified 0.12.1 or later, whose Fable schema builder supports typed schema construction and `Config.load` decoding on Fable.

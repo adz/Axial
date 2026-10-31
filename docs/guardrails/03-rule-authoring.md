@@ -8,7 +8,7 @@ description: Declare package-specific guardrail rules with AxialGuardrailRule it
 
 A package can contribute rules to a guardrail of its own, without writing a separate analyzer. Ship the rules in the
 package's `buildTransitive` props, next to the item that turns the guardrail on. This page is the reference for the
-`AxialGuardrailRule` metadata syntax and matching grammar; the [adoption guide](guardrails.html) shows the install
+`AxialGuardrailRule` metadata syntax and matching grammar; the [adoption guide](/guardrails/guardrails.html) shows the install
 path.
 
 ## Declaring rules

@@ -112,5 +112,8 @@
 - `Axial.Hosting.Node` is Fable JavaScript for Node only.
 - `Axial.Hosting.Browser` is Fable JavaScript for browsers only.
 - Core Flow is supported in Fable JavaScript on both Node and browsers.
+- Host guides: `/hosting/index.html`, `/hosting/dotnet.html`, `/hosting/aspnet-core.html`, `/hosting/genhttp.html`, `/hosting/node.html`, `/hosting/browser.html`, and `/hosting/running-as-a-service.html`.
+
+Package guides: `/configuration/`, `/console/`, `/filesystem/`, `/websocket/`, `/hosting/`, `/elmish/`, `/telemetry/`, and `/guardrails/`.
 
 See `/notes/packages-and-platforms.html` for the complete package matrix and `/notes/package-maturity.html` for ratings and application evidence.

@@ -161,7 +161,7 @@ val it: Exit<string,Never> = Success "size 2, accepted 5, evicted 3"
 ```
 
 To export these figures as metrics, register the queue with `QueueMetrics.observe`; see
-[watching queues and hub subscriptions](/observability/telemetry/index.html#watch-queues-and-hub-subscriptions).
+[watching queues and hub subscriptions](/telemetry/index.html#watch-queues-and-hub-subscriptions).
 
 ## Tying a queue to a scope
 

@@ -1,11 +1,11 @@
 ---
 title: Platform Services
-description: Runtime clock, random, GUID, culture and time-zone values, observation sinks, and explicit environment-variable authority.
+description: Runtime clock, random, GUID, culture and time-zone values, and observation sinks.
 ---
 
 Clock, random numbers and GUIDs come from the runtime, not the application environment. The runtime starts with
 live implementations; a scoped override applies to its flow and forked descendants, then restores the outer value.
-Application authority such as files, HTTP, process execution and environment variables stays explicit in `'env`.
+Application authority such as files, HTTP, process execution and configuration stays explicit in `'env`.
 
 ```fsharp
 open System
@@ -76,13 +76,14 @@ The targets agree on the common tested output but not on every format. Known dif
 - The invariant culture uses en-US as the Fable `Intl` baseline because `Intl` has no invariant locale. Use an explicit
   culture for presentation and do not compare invariant `Format.currency`/date/time strings across targets.
 
-Configuration is different: environment variables, arguments and files read external state. Supply `IHasConfig` in
-the application environment, or load once with `Config.load`, and build sources from pairs in tests. Cryptographic randomness belongs inside
-an explicit capability using `System.Security.Cryptography`, not the runtime's ordinary random generator.
+Configuration is different: environment variables, arguments, and files read external state. See the
+[Configuration set](/configuration/) for `ConfigSource`, `Config.load`, `Config.watch`, and `Config.processArg`.
+Cryptographic randomness belongs inside an explicit capability using `System.Security.Cryptography`, not the runtime's
+ordinary random generator.
 
 ## In this section
 
 1. [Clock](clock.html): timestamps, durations and explicit manual stepping.
 2. [Logging](logging.html): level gates, metadata, sink composition and host adapters.
 3. [Randomness and GUIDs](random-and-guid.html): fixed, seeded and scripted values.
-4. [Environment variables](environment-variables.html): explicit authority and typed configuration errors.
+4. [Configuration set](/configuration/): layered external configuration and secrets.

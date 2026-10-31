@@ -75,7 +75,7 @@ Microsoft logging scopes include annotations and named FiberLocals; empty entrie
 
 The default `flowEndpoint` functions retain their existing argument order. Use `flowEndpointWithOptions` for an
 explicit endpoint policy. Node offers `startWithOptions` / `runWithOptions`; Browser offers `mountWithOptions` /
-`startWithSignalOptions`. See [.NET hosting](dotnet.html), [Node](node.html) and [application lifecycle](application-lifecycle.html).
+`startWithSignalOptions`. See [.NET hosting](/hosting/dotnet.html), [Node](/hosting/node.html) and [application lifecycle](/platforms-and-hosting/application-lifecycle.html).
 
 ## Tests and authority
 

@@ -12,4 +12,4 @@
 | `axial.flow.fibers.unobserved_defects` | counter | defects the runtime proved no code could observe |
 
 A climbing `fibers.live` with flat `fibers.settled` is a fiber leak; a nonzero `unobserved_defects` rate is crashing
-background work nobody joins. Read the [telemetry guide](/observability/telemetry/index.html) for the edge install.
+background work nobody joins. Read the [telemetry guide](/telemetry/index.html) for the edge install.

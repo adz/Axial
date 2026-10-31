@@ -199,7 +199,7 @@ let placed =
     |> Flow.run ()
 ```
 
-With the fixed clock and GUID implementations above, repeated runs produce the same stamp. A live service can read changing external state or hold mutable state, so reusing an installation alone does not guarantee identical results. With [Axial.Guardrails](../notes/guardrails.html) installed, the build
+With the fixed clock and GUID implementations above, repeated runs produce the same stamp. A live service can read changing external state or hold mutable state, so reusing an installation alone does not guarantee identical results. With [Axial.Guardrails](../guardrails/guardrails.html) installed, the build
 also warns when code reads the clock, randomness, or environment variables directly instead of through a service.
 
 ## 5. Resources belong to the flow that acquired them
@@ -290,9 +290,9 @@ ignores. A scope releases its resources in reverse order however it ends. An int
 a value. Code that uses these pieces does not need to be checked for each interleaving by hand, and the
 [torture tests](../concurrency-and-state/torture-tests/index.html) check that the rules hold under random interruption.
 
-The build enforces the conventions the types cannot. [Axial.Guardrails](../notes/guardrails.html) reports direct calls
+The build enforces the conventions the types cannot. [Axial.Guardrails](../guardrails/guardrails.html) reports direct calls
 to ambient effects, exceptions raised inside `flow { }`, task adapters that drop their cancellation token, and
-formatting that breaks under NativeAOT; the [diagnostics reference](../notes/guardrail-diagnostics.html) lists what
+formatting that breaks under NativeAOT; the [diagnostics reference](../guardrails/diagnostics.html) lists what
 each `AXG` code checks.
 
 ## When to use something else

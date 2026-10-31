@@ -1,47 +1,41 @@
 ---
 title: Platform Services
-description: Explicit clock, logging, randomness, environment, console, and file-system capabilities for Axial workflows.
+description: Explicit clock, logging, randomness, and GUID capabilities for Axial workflows.
 ---
 
 # Platform services
 
-Platform services expose common host capabilities to `Flow` with cancellation, replaceable implementations, and typed errors where callers can recover. They support Axial Core rather than defining separate documentation contexts.
+Platform services expose host capabilities that are runtime-scoped rather than application authority. They support
+Axial Core rather than defining separate documentation contexts.
 
-Other packages build on these capabilities. [Axial.Process](/process/) composes external commands and streams. [Axial.HttpClient](/http/) models HTTP requests, responses, and reliability. Each has its own guides and API reference.
+Other packages build on these capabilities and have their own guides and API references:
+
+- [Console](/console/): standard streams, redirection, terminal control, and test doubles.
+- [FileSystem](/filesystem/): file and directory access, streaming traversal, atomic writes, and the append log.
+- [Configuration](/configuration/): layered environment, argument, JSON, browser, and host configuration.
+- [WebSocket](/websocket/): typed WebSocket client sessions.
+- [Process](/process/): external process composition and streaming.
+- [HTTP](/http/): typed requests, responses, and reliability.
 
 | Service | Wraps | Axial API |
 | --- | --- | --- |
 | [Clock](platform-services/clock.html) | `DateTimeOffset.UtcNow` | Current time and derived Unix-time readers |
 | [Logging](platform-services/logging.html) | Host logging | Structured messages and exception-preserving logging |
 | [Randomness and GUIDs](platform-services/random-and-guid.html) | `System.Random`, `Guid.NewGuid()` | Explicit random values, byte generation, and GUID creation |
-| [Configuration](platform-services/environment-variables.html) | `Environment.GetEnvironmentVariable`, `IConfiguration` | Layered environment, argument, JSON, browser and host configuration decoded by a Reified schema, with `ConfigError` |
-| [Console](console.html) | `System.Console` | Standard streams, redirection, and terminal control |
-| [File system](filesystem.html) | `System.IO.File` and `Directory` | File and directory operations with `FileSystemError` |
-| [Files](files.html) | `System.IO` traversal and writes, with GUID-named atomic-write temporary files | `Files.walk`, `Files.lines`, `Files.writeAtomic`, `AppendLog` |
-| [WebSocket](websocket.html) | `ClientWebSocket` | Typed sessions, sends, receives, and `WebSocketError` |
+| [Culture, time zone, and formatting](platform-services/index.html#culture-and-time-zone) | `CultureInfo`, `TimeZoneInfo` | Explicit culture and zone values with pure formatting |
+| [Using existing services](existing-services.html) | Application authority and runtime values | Compose explicit dependencies with runtime clock, random, GUID, and log values |
 
 ```fsharp
 open Axial
-open Axial.Console
 ```
 
-A workflow declares the capability it needs:
-
-```fsharp
-let greet name : Flow<#IHasConsole, Never, unit> =
-    Console.writeLine $"Hello, {name}."
-```
-
-The host supplies the live implementation at the edge, `Console.live`. Tests supply a recording or in-memory
-implementation of the same contract; the [console page](console.html#testing) builds one. Composite operations declare every environment capability they use: `Files.writeAtomic` requires `IHasFileSystem`, and its temporary-file name comes from the runtime GUID generator, so tests control it with `Flow.withGuid`.
+A workflow declares the authority it needs. Runtime services such as `Clock.now` need no environment member; package
+services such as `Console.writeLine` constrain the environment to their `IHas*` contract.
 
 ## In this section
 
-1. [Platform-service bundle](platform-services/index.html): clock, logging, randomness, GUIDs, and environment variables.
-2. [Console](console.html): standard streams, redirection, and terminal control.
-3. [File system](filesystem.html): files, directories, paths, and typed failures.
-4. [Files](files.html): streaming traversal, atomic writes, and the append log.
-5. [Using existing services](existing-services.html): compose application dependencies with runtime clock, random, GUID and log services.
-6. [WebSocket](websocket.html): typed WebSocket client sessions.
+1. [Platform-service bundle](platform-services/index.html): clock, logging, randomness, culture, time zone, and formatting.
+2. [Using existing services](existing-services.html): compose application dependencies with runtime values.
 
-[Telemetry](/observability/telemetry/index.html) instruments the runtime rather than defining a workflow dependency. [Hosting](/platforms-and-hosting/index.html) supplies environments and application lifecycle integration.
+[Telemetry](/telemetry/) instruments the runtime rather than defining a workflow dependency. [Hosting](/hosting/)
+supplies environments and process/server lifecycle integration.

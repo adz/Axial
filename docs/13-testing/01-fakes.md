@@ -106,4 +106,4 @@ let answeredEof = RecordingConsole ""
 confirm "Continue?" |> Flow.run { Console = answeredEof } |> shouldEqual (Exit.Success false)
 ```
 
-Read the [console guide](/services/console.html) for the service's usage; this fake exercises it without a terminal.
+Read the [console guide](/console/console.html) for the service's usage; this fake exercises it without a terminal.

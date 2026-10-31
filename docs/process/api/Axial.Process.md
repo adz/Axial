@@ -33,6 +33,9 @@ api:
         - Axial.Process.ProcessHostEnvironmentModule
         - Axial.Process.TestProcess
         - Axial.Process.TestProcessHostEnvironment
+        - Axial.Process.IProcessStartedObserver
+        - Axial.Process.ProcessStarted
+        - Axial.Process.StopRequest
     - package: Axial.Process
       id: output
       title: Output and streaming
@@ -70,6 +73,8 @@ api:
         - Axial.Process.ProcessOutputFailure
         - Axial.Process.ProcessObservationFailure
         - Axial.Process.ProcessRunException`1
+        - Axial.Process.ProcessStopFailure
+        - Axial.Process.StopRequestError
 ---
 
 # Axial.Process API

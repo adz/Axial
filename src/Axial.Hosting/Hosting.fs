@@ -388,7 +388,6 @@ module HostConfiguration =
     /// <c>ConfigurationBuilder</c>, then place the layer in the same precedence list as native Axial sources.
     /// The configuration is read once when the source runs; later changes are not watched.
     /// </remarks>
-    /// <example><code>Config.load schema [ HostConfiguration.source "host" builder.Configuration; ConfigSource.commandLine argv ]</code></example>
     let source (name: string) (configuration: IConfiguration) : ConfigSource<'env> =
         if isNull configuration then nullArg (nameof configuration)
 

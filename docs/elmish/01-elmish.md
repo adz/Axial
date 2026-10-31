@@ -1,3 +1,10 @@
+---
+title: Elmish programs
+linkTitle: Elmish
+description: Connect Elmish 5 programs to Axial commands, subscriptions, and the test runtime.
+project: src/Axial.ElmishFlows/Axial.ElmishFlows.fsproj
+---
+
 # Elmish programs
 
 The `Axial.ElmishFlows` package exposes the `Axial.ElmishFlows` namespace and connects an Elmish 5 program to Axial
@@ -200,12 +207,12 @@ The order is `name runtime workflow onSuccess onError` for `either`; `perform` d
 
 The exhaustive operation inventory lives in the API reference:
 
-- [Cmd](/api/Axial.ElmishFlows.Cmd.html): `Cmd.OfFlow.either`/`perform`/`attempt`/`start` and the latest-wins
+- [Cmd](/elmish/api/Axial.ElmishFlows.Cmd.html): `Cmd.OfFlow.either`/`perform`/`attempt`/`start` and the latest-wins
   `Cmd.OfFlow.Latest` variants.
-- [Sub](/api/Axial.ElmishFlows.Sub.html): `Sub.OfFlowStream.subscribe` for running a stream under a subscription id.
-- [Inbox](/api/Axial.ElmishFlows.Inbox.html): `Inbox.create`/`offer`/`post`/`dropped`/`stream` for synchronous UI
+- [Sub](/elmish/api/Axial.ElmishFlows.Sub.html): `Sub.OfFlowStream.subscribe` for running a stream under a subscription id.
+- [Inbox](/elmish/api/Axial.ElmishFlows.Inbox.html): `Inbox.create`/`offer`/`post`/`dropped`/`stream` for synchronous UI
   input and search-as-you-type.
-- [ElmishRuntime](/api/Axial.ElmishFlows.ElmishRuntime.html): `start`, `startLayer`, `test`, and the
+- [ElmishRuntime](/elmish/api/Axial.ElmishFlows.ElmishRuntime.html): `start`, `startLayer`, `test`, and the
   `Stop`/`StopAndWait` shutdown methods.
-- [TestRuntime](/api/Axial.ElmishFlows.TestRuntime.html): `run`, `settle`, `drain`, `dispatched`, and `defects` for
+- [TestRuntime](/elmish/api/Axial.ElmishFlows.TestRuntime.html): `run`, `settle`, `drain`, `dispatched`, and `defects` for
   tests with a manual clock.

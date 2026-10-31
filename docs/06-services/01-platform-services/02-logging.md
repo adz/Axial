@@ -102,7 +102,7 @@ let hosted factory application =
 ```
 
 `FiberLogging.observe logger` remains a separate, opt-in observer for defects. Installing a host log sink does not
-silently enable it. See the [.NET hosting guide](/platforms-and-hosting/dotnet.html).
+silently enable it. See the [.NET hosting guide](/hosting/dotnet.html).
 
 ## Logging and telemetry
 

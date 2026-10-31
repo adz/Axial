@@ -68,7 +68,6 @@ module ConfigError =
         | _ -> path + ": " + issue.Error.ToString()
 
     /// <summary>Renders a failure as invariant, sorted lines. Secret values never reach this text.</summary>
-    /// <example><code>ConfigError.describe config (ConfigError.Missing "Db.Host")</code></example>
     let describe (sources: IConfig) (error: ConfigError) : string =
         match error with
         | ConfigError.SourceFailed(source, message) -> source + ": " + message
@@ -272,6 +271,7 @@ type ConfigWatch<'env, 'model> = {
 }
 
 /// <summary>Loads, decodes and watches layered configuration.</summary>
+/// <remarks>Axial 0.12 requires Reified 0.12.1 or later; its Fable schema builder supports typed schema construction and <c>Config.load</c> decoding on Fable.</remarks>
 [<RequireQualifiedAccess>]
 module Config =
     let private comparer =
@@ -363,7 +363,6 @@ module Config =
 
     /// <summary>Reads every source, merges them with later-wins precedence and decodes the result with <paramref name="schema" />.</summary>
     /// <remarks>Every source failure is reported together; the schema is not run when any source failed.</remarks>
-    /// <example><code>Config.load settingsSchema [ ConfigSource.environment (Some "MYAPP"); ConfigSource.commandLine argv ]</code></example>
     let load (schema: Schema<'model>) (sources: ConfigSource<'env> list) : Flow<'env, ConfigError list, 'model> =
         loadDataFrom sources
         |> Flow.bind (fun config ->
@@ -399,7 +398,6 @@ module Config =
             member _.Sources = [] }
 
     /// <summary>Reads a required text value at a Reified data path, comparing keys ordinal-ignore-case.</summary>
-    /// <example><code>Config.required "Db.Host"</code></example>
     let required (path: string) : Flow<'env, ConfigError, string> when 'env :> IHasConfig =
         currentConfig
         |> Flow.bind (fun config ->

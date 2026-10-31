@@ -7,7 +7,7 @@ api:
 # Cmd
 
 `Axial.ElmishFlows.Cmd` turns Axial workflows into Elmish commands. Each command runs in the runtime's scope, off the
-dispatch thread. Read the [Elmish guide](/platforms-and-hosting/elmish.html) for the first-use lifecycle example.
+dispatch thread. Read the [Elmish guide](/elmish/elmish.html) for the first-use lifecycle example.
 
 ## Command operations
 

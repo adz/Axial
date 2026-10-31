@@ -1,8 +1,8 @@
 # FileSystem
 
 `IFileSystem` makes file access an explicit, mockable dependency. Every operation returns
-`Flow<'env, FileSystemError, _>` and fails with [`FileSystemError`](/api/Axial.FileSystem.FileSystemError.html)
-rather than throwing. Read the [FileSystem guide](/services/filesystem.html) for supplying the service and
+`Flow<'env, FileSystemError, _>` and fails with [`FileSystemError`](/filesystem/api/Axial.FileSystem.FileSystemError.html)
+rather than throwing. Read the [FileSystem guide](/filesystem/filesystem.html) for supplying the service and
 representative usage; this page is the operation catalog.
 
 ## Whole-file reads and writes

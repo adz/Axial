@@ -12,7 +12,7 @@ description: Register a root Flow with the Microsoft Generic Host, notify system
 
 Wire the root Flow to the host lifetime once. `Hosting.addApp` runs the workflow when the host starts and requests
 `App.Stop()` on shutdown; `AddSystemd()` (or `AddWindowsService()` on Windows) selects the host lifetime. The
-[.NET hosting guide](dotnet.html) shows the full end-to-end composition, including building the application
+[.NET hosting guide](/hosting/dotnet.html) shows the full end-to-end composition, including building the application
 environment from the container with a layer:
 
 ```fsharp no-check reason="Needs the Microsoft.Extensions.Hosting package, which the documentation build does not reference"

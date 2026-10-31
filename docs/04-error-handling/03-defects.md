@@ -51,7 +51,7 @@ let loadConfig : ExnFlow<string> =
 ```
 
 This example calls `File.ReadAllTextAsync` directly only to show `attemptTask` capturing an interop exception. For
-application code, prefer [`FileSystem.readAllText`](/services/filesystem.html), which makes file access an explicit
+application code, prefer [`FileSystem.readAllText`](/filesystem/filesystem.html), which makes file access an explicit
 dependency and returns `Flow<'env, FileSystemError, string>` instead of throwing.
 
 Use `Flow.catch` to convert simple defects into domain errors after a flow has already produced `Cause.Die`. Existing typed failures and interruptions are preserved. Compound causes such as `Cause.Then` and `Cause.Both` are left unchanged.

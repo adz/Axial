@@ -156,9 +156,10 @@ Numbers and booleans come back as their text; use a schema when the value needs 
 
 ## Watch file sources
 
-`Config.watch sources schema` loads once and returns a `SubscriptionRef` of the latest successfully decoded value.
-File changes are debounced, all sources are re-read and merged, and a failed decode keeps the last good value, logs
-the failure, and emits it on the `Errors` stream. Environment and command-line sources remain static.
+`Config.watch sources schema` loads once and returns a `ConfigWatch`: `Current` is a `SubscriptionRef` of the latest
+successfully decoded value, and `Errors` is a stream of failed reloads. File changes are debounced, all sources are
+re-read and merged, and a failed decode keeps the last good value, logs the failure, and emits it on `Errors`.
+Environment and command-line sources are not watched.
 
 ```fsharp
 let watchSettings<'env when 'env :> IHasFileSystem> argv =

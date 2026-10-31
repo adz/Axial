@@ -162,9 +162,9 @@ interop boundaries. `App` adds ownership around a root workflow:
 | Run a finite root application | `App.run env application` |
 | Start and later stop a root application | `App.start env application` |
 | Publish services with a scoped lifetime | `App.startWith env build` |
-| Integrate with .NET Generic Host | [`Axial.Hosting`](./dotnet.html) |
-| Run under Node signals | [Node hosting](./node.html) |
-| Tie lifetime to a browser owner | [Browser hosting](./browser.html) |
+| Integrate with .NET Generic Host | [`Axial.Hosting`](/hosting/dotnet.html) |
+| Run under Node signals | [Node hosting](/hosting/node.html) |
+| Tie lifetime to a browser owner | [Browser hosting](/hosting/browser.html) |
 
 `App` does not render errors, choose process exit codes, or subscribe to platform lifecycle events. Those decisions
 belong to the application edge or one of the platform hosting packages.

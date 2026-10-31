@@ -187,5 +187,5 @@ For installation and configuration, see
 - [Expected errors and defects](/error-handling/index.html) explains which failures belong in `'error` and which
   belong in the defect channel.
 - [Your first application](first-application.html) replaces the host entirely when a Flow is the application root.
-- [Effect-boundary guardrails](/notes/guardrails.html) covers what the analyzer checks and how to mark an
+- [Effect-boundary guardrails](/guardrails/guardrails.html) covers what the analyzer checks and how to mark an
   intended boundary.

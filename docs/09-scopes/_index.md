@@ -44,7 +44,7 @@ safely use the resource.
 `File.OpenText` and `ReadLineAsync` are ambient .NET filesystem calls, not the `IFileSystem` service, so this example is
 about lifetime only: a missing file or failed read throws instead of producing a typed error. For the recommended
 pattern — an explicit filesystem dependency with a typed error channel — see
-[FileSystem](/services/filesystem.html).
+[FileSystem](/filesystem/filesystem.html).
 
 A Flow scope is a runtime ownership boundary. It lets resources and child fibers live across function and subflow calls,
 then closes all of them together after success, failure, interruption, or defect.
@@ -367,7 +367,7 @@ keptConnection |> Flow.run () |> shouldEqual (Exit.Success(false, [ "open audit"
 ```
 
 If the caller's scope closes before the acquisition finishes, the fiber is interrupted, and a resource acquired anyway
-is released straight away. [`Axial.Guardrails`](/notes/guardrail-diagnostics.html#axg007-keep-resources-acquired-by-a-fiber)
+is released straight away. [`Axial.Guardrails`](/guardrails/diagnostics.html#axg007-keep-resources-acquired-by-a-fiber)
 reports a forked flow that returns its own scoped resource as `AXG007`.
 
 ### Coming from ZIO or Effect

@@ -54,4 +54,4 @@ guides show the .NET, Node, and browser boundaries.
 - [Application Lifecycle](/platforms-and-hosting/application-lifecycle.html) covers `App.start`, coordinated stop, and lifecycle ownership.
 - [Scopes and Resources](/scopes/index.html) explains finalizers and
   acquisition/release safety.
-- [Hosting](/platforms-and-hosting/dotnet.html) connects the root application to .NET, Node, or browser hosts.
+- [Hosting](/hosting/dotnet.html) connects the root application to .NET, Node, or browser hosts.

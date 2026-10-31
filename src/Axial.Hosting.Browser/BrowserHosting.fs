@@ -69,7 +69,6 @@ module BrowserApp =
     let private currentSearch () : string = jsNative
 
     /// <summary>Returns the current browser query string, including the leading <c>?</c>, or an empty string outside a browser.</summary>
-    /// <example><code>ConfigSource.queryString (BrowserApp.queryParameters ())</code></example>
     let queryParameters () : string = currentSearch ()
     /// <summary>Starts an application owned explicitly by the calling UI or browser module.</summary>
     let mountWithOptions

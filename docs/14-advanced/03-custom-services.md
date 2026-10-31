@@ -76,7 +76,7 @@ field. It only needs `IHasExchangeRates`, the same generic-constraint pattern `C
 
 `priceInAud` above lets a failed lookup surface as an unhandled `Task` exception, which is a defect, not something
 a caller can react to. For typed failures, compare
-[`FileSystemError`](/services/filesystem.html#typed-errors) or `HttpError`:
+[`FileSystemError`](/filesystem/filesystem.html#typed-errors) or `HttpError`:
 
 ```fsharp
 type ExchangeRateError =

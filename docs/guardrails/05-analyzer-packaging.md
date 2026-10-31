@@ -7,7 +7,7 @@ description: The NuGet layout, CLI download, and MSBuild target wiring that make
 # Analyzer packaging
 
 Package an analyzer so that `dotnet add package` enables it without requiring consumers to edit MSBuild files. This
-page is the packaging reference; [Write an effect-boundary analyzer](writing-effect-analyzers.html) shows how to
+page is the packaging reference; [Write an effect-boundary analyzer](/guardrails/writing-effect-analyzers.html) shows how to
 adapt a rule and verify a diagnostic.
 
 Use [`src/Axial.Guardrails/Axial.Guardrails.fsproj`](https://github.com/adz/Axial/blob/main/src/Axial.Guardrails/Axial.Guardrails.fsproj) and [`src/Axial.Guardrails/build/`](https://github.com/adz/Axial/tree/main/src/Axial.Guardrails/build) from the Axial source tree as references for the following steps.

@@ -116,7 +116,7 @@ type WebSocketSession internal
     interface IDisposable with member _.Dispose() = dispose ()
 
 type IWebSocket =
-    abstract Connect: WebSocketOptions -> Flow<unit, WebSocketError, WebSocketSession>
+    abstract Connect: options: WebSocketOptions -> Flow<unit, WebSocketError, WebSocketSession>
 
 type IHasWebSocket =
     abstract WebSocket: IWebSocket

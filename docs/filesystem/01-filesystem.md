@@ -138,7 +138,7 @@ length |> shouldEqual (int64 ("one" + Environment.NewLine + "two" + Environment.
 
 The same family — `readAllTextWithEncoding`, `readAllTextAsync`, `readAllBytes`, `writeAllBytes`, the `Async`
 members on `IFileSystem`, file metadata getters/setters, and symbolic-link operations — is catalogued in the
-[FileSystem API reference](/api/Axial.FileSystem.FileSystemModule.html). The workflow-facing module functions wrap
+[FileSystem API reference](/filesystem/api/Axial.FileSystem.FileSystemModule.html). The workflow-facing module functions wrap
 the `Async` interface members and pass the runtime's cancellation token to the underlying I/O, so interrupting a
 workflow stops a large read in progress.
 
@@ -192,7 +192,7 @@ fsharpSources (Path.Combine(root, "src")) |> Flow.run live |> shouldEqual (Exit.
 
 The other listing forms, `enumerateFileSystemInfos`, and the path helpers (`combine`, `getFullPath`, `getFileName`,
 `getExtension`, `getRelativePath`, `getTempPath`, `getRandomFileName`, and the rest) are catalogued in the
-[FileSystem API reference](/api/Axial.FileSystem.FileSystemModule.html).
+[FileSystem API reference](/filesystem/api/Axial.FileSystem.FileSystemModule.html).
 
 ## Testing
 
