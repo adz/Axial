@@ -6,10 +6,10 @@ role = "domain"
 
 [projects]
 capabilities = [
+    "src/Axial.Configuration/Axial.Configuration.fsproj",
     "src/Axial.Console/Axial.Console.fsproj",
     "src/Axial.FileSystem/Axial.FileSystem.fsproj",
     "src/Axial.HttpClient/Axial.HttpClient.fsproj",
-    "src/Axial.PlatformService/Axial.PlatformService.fsproj",
     "src/Axial.Process/Axial.Process.fsproj",
     "src/Axial.WebSocket/Axial.WebSocket.fsproj",
 ]
@@ -87,6 +87,7 @@ files = [
     "examples/Axial.TortureTest/Scenario.fs",
     "src/Axial/App.fs",
     "src/Axial.Console/Console.fs",
+    "src/Axial.Configuration/Platform.fs",
     "src/Axial/Core.fs",
     "src/Axial.ElmishFlows/Sub.fs",
     "src/Axial.ElmishFlows/TestRuntime.fs",
@@ -96,8 +97,6 @@ files = [
     "src/Axial/Parallelism.fs",
     "src/Axial/Platform.fs",
     "src/Axial/Stream.fs",
-    "src/Axial.PlatformService/Operations.fs",
-    "src/Axial.PlatformService/Platform.fs",
     "src/Axial.Process/Process.fs",
     "src/Axial.Process/ProcessLive.fs",
     "src/Axial.Process/ProcessRun.fs",
