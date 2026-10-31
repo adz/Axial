@@ -1,6 +1,7 @@
 namespace Axial
 
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Tests")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Fable.Tests")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Comparisons.Tests")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Benchmarks")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Examples")>]

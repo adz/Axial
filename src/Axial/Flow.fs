@@ -93,14 +93,19 @@ type KeyedFiberSlot<'key, 'error, 'value when 'key: equality> internal () =
     member internal _.Count = Platform.lock gate (fun () -> entries.Count)
 
 module Flow =
-    let rec private cleanupCause (error: exn) : Cause<'error> =
+    let rec private cleanupCauseWithToken (cancellationToken: CancellationToken) (error: exn) : Cause<'error> =
         match error with
         | :? ReleaseCauseException as release -> Cause.map (fun _ -> Unchecked.defaultof<'error>) release.Cause
 #if !FABLE_COMPILER
         | :? AggregateException as aggregate when aggregate.InnerExceptions.Count > 0 ->
-            aggregate.InnerExceptions |> Seq.map cleanupCause |> Seq.reduce Cause.thenCause
+            aggregate.InnerExceptions
+            |> Seq.map (cleanupCauseWithToken cancellationToken)
+            |> Seq.reduce Cause.thenCause
 #endif
-        | _ -> Execution.causeOfException error
+        | _ -> Platform.causeOfThrown cancellationToken error
+
+    // Cleanup runs without interruption at these finalizer sites, so no cancellation was requested there.
+    let private cleanupCauseUninterruptible = cleanupCauseWithToken Platform.Cancellation.never
 
     let inline internal invoke
         (flow: Flow<'env, 'error, 'value>)
@@ -122,19 +127,8 @@ module Flow =
         with error ->
             Execution.ofCause (Platform.causeOfThrown cancellationToken error)
 
-    // The cause of an exception the flow itself threw at a run boundary: as cleanupCause, except that an
-    // OperationCanceledException is an interruption only when the run's own token asked for it.
-    let rec private executionCause (cancellationToken: CancellationToken) (error: exn) : Cause<'error> =
-        match error with
-        | :? ReleaseCauseException
-#if !FABLE_COMPILER
-        | :? AggregateException
-#endif
-            -> cleanupCause error
-        | _ -> Platform.causeOfThrown cancellationToken error
-
     let private combineOutcome
-        (causeOfExecutionError: exn -> Cause<'error>)
+        (causeOfError: exn -> Cause<'error>)
         (cleanupError: exn option)
         (executionError: exn option)
         (exit: Exit<'value, 'error> option)
@@ -142,25 +136,28 @@ module Flow =
         : Exit<'value, 'error> =
         let primary =
             match executionError, exit with
-            | Some error, _ -> Exit.Failure (causeOfExecutionError error)
+            | Some error, _ -> Exit.Failure (causeOfError error)
             | None, Some result -> result
             | None, None -> Exit.Failure (Cause.Die (InvalidOperationException missingOutcomeMessage))
 
         match cleanupError, primary with
         | Some error, Exit.Failure cause ->
-            Exit.Failure (Cause.thenCause cause (cleanupCause error))
+            Exit.Failure (Cause.thenCause cause (causeOfError error))
         | Some error, Exit.Success _ ->
-            Exit.Failure (cleanupCause error)
+            Exit.Failure (causeOfError error)
         | None, result ->
             result
 
-    // Folds a cleanup failure into an outcome that has no exception of its own to classify.
+    // A cleanup failure at an uninterruptible finalizer has no requested cancellation to preserve.
     let private combineCleanup cleanupError executionError exit missingOutcomeMessage =
-        combineOutcome cleanupCause cleanupError executionError exit missingOutcomeMessage
+        combineOutcome cleanupCauseUninterruptible cleanupError executionError exit missingOutcomeMessage
 
-    // Folds a run boundary's outcome: the flow's own exception is classified against the run's token.
+    let private combineCleanupWithToken (cancellationToken: CancellationToken) cleanupError executionError exit missingOutcomeMessage =
+        combineOutcome (cleanupCauseWithToken cancellationToken) cleanupError executionError exit missingOutcomeMessage
+
+    // Folds a run boundary's outcome: a thrown cancellation is an interruption only when the run's token asked for it.
     let private combineRun (cancellationToken: CancellationToken) cleanupError executionError exit missingOutcomeMessage =
-        combineOutcome (executionCause cancellationToken) cleanupError executionError exit missingOutcomeMessage
+        combineCleanupWithToken cancellationToken cleanupError executionError exit missingOutcomeMessage
 
     let private chooseParallelExit
         (leftExit: Exit<'left, 'error>)
@@ -210,7 +207,7 @@ module Flow =
                     do! scope.Close cancellationToken
                 with error ->
                     result.Value <-
-                        combineCleanup (Some error) None (Some result.Value) "Branch cleanup produced no outcome."
+                        combineCleanupWithToken cancellationToken (Some error) None (Some result.Value) "Branch cleanup produced no outcome."
 
             return result.Value
         }
@@ -236,11 +233,11 @@ module Flow =
                         do! closing
                         return exit
                     with error ->
-                        return combineCleanup (Some error) None (Some exit) "Branch cleanup produced no outcome."
+                        return combineCleanupWithToken cancellationToken (Some error) None (Some exit) "Branch cleanup produced no outcome."
                 }
                 |> Platform.ofAwaitable
         with error ->
-            combineCleanup (Some error) None (Some exit) "Branch cleanup produced no outcome."
+            combineCleanupWithToken cancellationToken (Some error) None (Some exit) "Branch cleanup produced no outcome."
             |> Platform.ofExit
 #endif
 
@@ -1410,7 +1407,7 @@ module Flow =
                                     supersedeThenWait
                                         time
                                         attemptScope
-                                        (fun cleanupError -> Cause.thenCause cause (Execution.causeOfException cleanupError))
+                                        (fun cleanupError -> Cause.thenCause cause (cleanupCauseWithToken cancellationToken cleanupError))
                                         delay
                                         cancellationToken
                                     |> Execution.map (fun () -> Platform.Continue(attempt + 1, time.Now()))
@@ -1453,7 +1450,7 @@ module Flow =
                     |> Execution.bind (fun (decision, (delay: TimeSpan)) ->
                         match decision with
                         | Some _ ->
-                            supersedeThenWait time lastScope Execution.causeOfException delay cancellationToken
+                            supersedeThenWait time lastScope (cleanupCauseWithToken cancellationToken) delay cancellationToken
                             |> Execution.bind (fun () ->
                                 let started = time.Now()
                                 let nextScope, next = runAttempt flow environment cancellationToken
@@ -1514,7 +1511,7 @@ module Flow =
                                     supersedeThenWait
                                         time
                                         attemptScope
-                                        (fun cleanupError -> Cause.thenCause cause (Execution.causeOfException cleanupError))
+                                        (fun cleanupError -> Cause.thenCause cause (cleanupCauseWithToken cancellationToken cleanupError))
                                         delay
                                         cancellationToken
                                     |> Execution.map (fun () -> Platform.Continue(attempt + 1, time.Now()))

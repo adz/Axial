@@ -49,6 +49,7 @@
     <Compile Include="PlatformScopeTests.fs" />
     <Compile Include="ConfigurationTests.fs" />
     <Compile Include="CultureTests.fs" />
+    <Compile Include="CancellationClassificationTests.fs" />
     <Compile Include="HostLoggingTests.fs" />
     <Compile Include="TelemetryHostTests.fs" />
     <Compile Include="Program.fs" />

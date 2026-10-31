@@ -19,6 +19,7 @@
     <Compile Include="TimeProviderTests.fs" />
     <Compile Include="FlowRuntimeMetadataTests.fs" />
     <Compile Include="RuntimeSemanticsTests.fs" />
+    <Compile Include="CoreCancellationClassificationTests.fs" />
     <Compile Include="ExecutionTests.fs" />
     <Compile Include="AppTests.fs" />
     <Compile Include="WorkflowBasicTests.fs" />

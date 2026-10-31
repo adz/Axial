@@ -1073,7 +1073,8 @@ type private Branch<'value, 'error> =
     { Settled: unit -> Exit<'value, 'error> option
       OnSettled: (Exit<'value, 'error> -> unit) -> unit }
 
-/// Starts an execution at once. An exception it raises settles the branch as a defect.
+/// Starts an execution at once. An exception it raises settles the branch with the same token-aware cause as the
+/// other Fable boundaries: requested cancellation is an interruption, anything else is a defect.
 let private startBranch (operation: CancellationToken -> Execution<'value, 'error>) (token: CancellationToken) =
     let finished: Exit<'value, 'error> option ref = ref None
     let waiters: (Exit<'value, 'error> -> unit) list ref = ref []
@@ -1085,7 +1086,7 @@ let private startBranch (operation: CancellationToken -> Execution<'value, 'erro
                     try
                         return! operation token
                     with error ->
-                        return Exit.Failure(Cause.Die error)
+                        return Exit.Failure(causeOfThrown token error)
                 }
 
             finished.Value <- Some exit
@@ -1252,6 +1253,7 @@ let private settleAfterCancel (cts: CancellationTokenSource) (branch: Task<Exit<
 /// (as when a branch throws synchronously), so an enclosing try/with still sees it, unless the other branch failed
 /// for a reason of its own: then both are returned as causes, the exception as Die, so neither is lost.
 let private faultedAfterCancel
+    (cancellationToken: CancellationToken)
     (leftFirst: bool)
     (faulted: Task<Exit<'first, 'error>>)
     (other: Exit<'other, 'error>)
@@ -1263,14 +1265,18 @@ let private faultedAfterCancel
         faulted.GetAwaiter().GetResult() |> ignore
         Unchecked.defaultof<Exit<'value, 'error>>
     | Exit.Failure otherCause ->
-        let error =
-            match faulted.Exception with
-            | null -> OperationCanceledException() :> exn
-            | aggregate when aggregate.InnerExceptions.Count = 1 -> aggregate.InnerExceptions[0]
-            | aggregate -> aggregate :> exn
+        if faulted.IsCanceled && cancellationToken.IsCancellationRequested then
+            // The sibling failure cancelled this branch. Its cancellation is that request, not a defect.
+            Exit.Failure otherCause
+        else
+            let error =
+                match faulted.Exception with
+                | null -> OperationCanceledException() :> exn
+                | aggregate when aggregate.InnerExceptions.Count = 1 -> aggregate.InnerExceptions[0]
+                | aggregate -> aggregate :> exn
 
-        let first = Cause.Die error
-        Exit.Failure(if leftFirst then Cause.Both(first, otherCause) else Cause.Both(otherCause, first))
+            let first = Cause.Die error
+            Exit.Failure(if leftFirst then Cause.Both(first, otherCause) else Cause.Both(otherCause, first))
 
 /// The asynchronous half of <c>zipParExecution</c>: waits for the first branch to settle, cancels the other on
 /// failure, and combines the exits. A branch that faults (user code threw after an await) counts as a failure too:
@@ -1291,7 +1297,7 @@ let private awaitBoth
                 if not leftFiberTask.IsCompletedSuccessfully then
                     cts.Cancel()
                     let! rightExit = settleAfterCancel cts rightFiberTask
-                    return faultedAfterCancel true leftFiberTask rightExit
+                    return faultedAfterCancel cts.Token true leftFiberTask rightExit
                 else
                     match leftFiberTask.Result with
                     | Exit.Failure cause ->
@@ -1308,7 +1314,7 @@ let private awaitBoth
             else if not rightFiberTask.IsCompletedSuccessfully then
                 cts.Cancel()
                 let! leftExit = settleAfterCancel cts leftFiberTask
-                return faultedAfterCancel false rightFiberTask leftExit
+                return faultedAfterCancel cts.Token false rightFiberTask leftExit
             else
                 match rightFiberTask.Result with
                 | Exit.Failure cause ->
@@ -1338,7 +1344,7 @@ let private rightStartFaulted
     ValueTask<Exit<'left * 'right, 'error>>(
         task {
             let! leftExit = settleAfterCancel cts (leftRun.AsTask())
-            return faultedAfterCancel false (Task.FromException<Exit<'right, 'error>>(error)) leftExit
+            return faultedAfterCancel cts.Token false (Task.FromException<Exit<'right, 'error>>(error)) leftExit
         })
 
 #endif
