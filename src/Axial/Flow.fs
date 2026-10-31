@@ -1253,6 +1253,7 @@ module Flow =
                 (fun () -> Platform.ofExit (Exit.Failure(Cause.Fail timeoutError))))
 
     /// <summary>Returns the supplied success value when the flow does not complete before the timeout.</summary>
+    /// <remarks>Waits for interruption cleanup. A defect from the timed-out flow or its cleanup replaces the supplied value.</remarks>
     /// <param name="after">The timeout duration.</param>
     /// <param name="value">The success value returned when the timeout wins.</param>
     /// <param name="flow">The source flow.</param>
@@ -1275,6 +1276,7 @@ module Flow =
         timeout after error flow
 
     /// <summary>Runs a fallback flow when the source flow does not complete before the timeout.</summary>
+    /// <remarks>Waits for interruption cleanup before running the fallback. A defect from the timed-out flow or its cleanup becomes the failure, combined with a failing fallback.</remarks>
     /// <param name="after">The timeout duration.</param>
     /// <param name="fallback">Creates the fallback flow when the timeout wins.</param>
     /// <param name="flow">The source flow.</param>

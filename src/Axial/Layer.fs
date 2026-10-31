@@ -196,41 +196,22 @@ module Layer =
                 invoke right input scope cancellationToken
                 |> Execution.map (fun rightValue -> leftValue, rightValue)))
 
-    let private chooseParallelExit
-        (leftExit: Exit<'left, 'error>)
-        (rightExit: Exit<'right, 'error>)
-        : Exit<'left * 'right, 'error> =
-        match leftExit, rightExit with
-        | Exit.Success leftValue, Exit.Success rightValue ->
-            Exit.Success (leftValue, rightValue)
-        | Exit.Failure leftCause, Exit.Failure rightCause ->
-            Exit.Failure (Cause.both leftCause rightCause)
-        | Exit.Failure leftCause, Exit.Success _ ->
-            Exit.Failure leftCause
-        | Exit.Success _, Exit.Failure rightCause ->
-            Exit.Failure rightCause
-
     /// <summary>Builds two independent layers in parallel and returns both outputs.</summary>
     /// <remarks>
-    /// Each branch is provisioned in a parent-owned child scope. When the parent scope closes,
-    /// child scopes are closed in deterministic left-to-right order. If both branches fail,
-    /// both failures are returned as a parallel cause.
+    /// The first failure interrupts the other branch and waits for it to settle. Resources acquired by
+    /// either branch are released in reverse acquisition order before failure returns. On success they
+    /// remain open until the providing scope closes. Independent failures are combined as a parallel cause.
     /// </remarks>
     let zipPar
         (left: Layer<'input, 'error, 'left>)
         (right: Layer<'input, 'error, 'right>)
         : Layer<'input, 'error, 'left * 'right> =
-        Layer(fun (input, scope) cancellationToken ->
-            // Register right first because scopes close finalizers in reverse registration order.
-            let rightScope = scope.AddChild()
-            let leftScope = scope.AddChild()
+        let asFlow item =
+            Flow(fun input cancellationToken ->
+                invoke item input (RuntimeState.current().Scope) cancellationToken)
 
-            Platform.zipParAllExecution
-                (fun () -> invoke left input leftScope cancellationToken)
-                (fun () -> invoke right input rightScope cancellationToken)
-                (Platform.causeOfThrown cancellationToken)
-                chooseParallelExit
-        )
+        // Use the same shared acquisition scope and fail-fast settlement as workflow parallelism.
+        fromFlow (Flow.zipPar (asFlow left) (asFlow right))
 
     /// <summary>Merges two independent service layers in parallel.</summary>
     /// <remarks>

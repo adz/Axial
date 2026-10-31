@@ -66,6 +66,6 @@ Layer error types must match the flow error type. When provisioning steps use di
 startup error type with `Layer.mapError` before calling `Layer.provide`. A layer that cannot fail, such as
 `EnvironmentVariables.layer`, has error type `Never`; `Layer.widenError` gives it any error type.
 
-Parallel composition uses parent-owned child scopes, so when one parallel branch fails after another acquired
-resources, the acquired resources are still released. If both parallel branches fail, Axial preserves both failures
-as `Cause.Both (leftCause, rightCause)` rather than discarding one side.
+Parallel composition interrupts the other branch on the first failure and waits for it to settle. Both branches'
+resources are released in reverse acquisition order before failure returns; successful provisioning keeps them open
+until the providing scope closes. Independent failures are preserved as `Cause.Both (leftCause, rightCause)`.

@@ -133,7 +133,7 @@ countOrders
 ```
 
 Plain `let!` is sequential and dependent. Sibling `and!` bindings are independent and use `Layer.merge`, which provisions
-branches in parallel through child scopes. An `and!` sibling cannot depend on a value introduced by another sibling;
+branches in parallel through a shared acquisition scope. An `and!` sibling cannot depend on a value introduced by another sibling;
 that is an ordinary F# compile-time scope error, and the fix is to move it into a prior `let!`.
 
 ## Layer functions
@@ -222,9 +222,9 @@ Flow.ok 0
 List.ofSeq events |> shouldEqual [ "opened db://orders"; "closed db://orders" ]
 ```
 
-Parallel composition uses parent-owned child scopes, so the same holds when one parallel branch fails after another
-acquired resources. If both parallel branches fail, Axial preserves both failures as `Cause.Both (leftCause, rightCause)` rather than
-discarding one side.
+Parallel composition interrupts the other branch on the first failure and waits for it to settle. Both branches'
+resources are released in reverse acquisition order before failure returns; successful provisioning keeps them open
+until the providing scope closes. Independent failures are preserved as `Cause.Both (leftCause, rightCause)`.
 
 ```fsharp
 let failOrders : Layer<unit, ProvisionError, int> =

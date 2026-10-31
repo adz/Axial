@@ -1372,7 +1372,11 @@ let zipParExecution
         match startOperation rightOp cts.Token with
         | Error error ->
             cts.Cancel()
-            faultedExecution error
+            ValueTask<Exit<'left * 'right, 'error>>(
+                task {
+                    let! leftExit = settleAfterCancel cts (leftRun.AsTask())
+                    return faultedAfterCancel false (Task.FromException<Exit<'right, 'error>>(error)) leftExit
+                })
         | Ok rightRun when leftRun.IsCompletedSuccessfully && rightRun.IsCompletedSuccessfully ->
             // Both settled: the left exit counts as the first, as Task.WhenAny would report it.
             let exit =
