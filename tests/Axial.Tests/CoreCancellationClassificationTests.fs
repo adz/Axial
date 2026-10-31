@@ -133,9 +133,37 @@ module CoreCancellationClassificationTests =
         Assert.Equal(Exit.Failure(Cause.Then(Cause.Die bodyDefect, Cause.Die cleanup)), result)
 
     [<Fact>]
-    let ``zipPar keeps a sibling failure when the first branch was canceled`` () =
-        use canceled = new CancellationTokenSource()
-        canceled.Cancel()
+    let ``zipPar drops a cancellation from its own source and keeps the sibling failure`` () =
+        use shared = new CancellationTokenSource()
+        let leftStarted = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let releaseRight = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+        let signalingCanceledBranch (token: CancellationToken) =
+            leftStarted.SetResult()
+            let canceled = TaskCompletionSource<Exit<int, string>>(TaskCreationOptions.RunContinuationsAsynchronously)
+            token.Register(fun () -> canceled.TrySetCanceled token |> ignore) |> ignore
+            ValueTask<Exit<int, string>>(canceled.Task)
+
+        let failingBranch (_: CancellationToken) =
+            ValueTask<Exit<int, string>>(
+                task {
+                    do! releaseRight.Task
+                    return Exit.Failure(Cause.Fail "right")
+                }
+            )
+
+        let execution = Platform.zipParExecution signalingCanceledBranch failingBranch shared (fun _ _ -> Exit.Success(0, 0))
+        let running = execution.AsTask()
+        Assert.True(leftStarted.Task.Wait(TimeSpan.FromSeconds 10.0))
+        shared.Cancel()
+        releaseRight.SetResult()
+        let result = running.WaitAsync(TimeSpan.FromSeconds 10.0).GetAwaiter().GetResult()
+        Assert.Equal(Exit.Failure(Cause.Fail "right"), result)
+
+    [<Fact>]
+    let ``zipPar retains a foreign cancellation alongside the sibling failure`` () =
+        use foreign = new CancellationTokenSource()
+        foreign.Cancel()
 
         let leftStarted = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let releaseRight = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
@@ -143,7 +171,7 @@ module CoreCancellationClassificationTests =
         let signalingCanceledBranch : Flow<unit, string, int> =
             Flow(fun (_: unit) _ ->
                 leftStarted.SetResult()
-                ValueTask<Exit<int, string>>(Task.FromCanceled<Exit<int, string>> canceled.Token))
+                ValueTask<Exit<int, string>>(Task.FromCanceled<Exit<int, string>> foreign.Token))
 
         let failingBranch : Flow<unit, string, int> =
             Flow(fun (_: unit) _ ->
@@ -158,4 +186,9 @@ module CoreCancellationClassificationTests =
         Assert.True(leftStarted.Task.Wait(TimeSpan.FromSeconds 10.0))
         releaseRight.SetResult()
         let result = running.WaitAsync(TimeSpan.FromSeconds 10.0).GetAwaiter().GetResult()
-        Assert.Equal(Exit.Failure(Cause.Fail "right"), result)
+
+        match result with
+        | Exit.Failure cause ->
+            Assert.Contains("right", Cause.failures cause)
+            Assert.True(Cause.defects cause |> List.exists (fun error -> error :? OperationCanceledException))
+        | Exit.Success _ -> failwith "Expected a cancellation defect and the sibling failure."

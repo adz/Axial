@@ -1253,7 +1253,7 @@ let private settleAfterCancel (cts: CancellationTokenSource) (branch: Task<Exit<
 /// (as when a branch throws synchronously), so an enclosing try/with still sees it, unless the other branch failed
 /// for a reason of its own: then both are returned as causes, the exception as Die, so neither is lost.
 let private faultedAfterCancel
-    (cancellationToken: CancellationToken)
+    (requestedCancellation: bool)
     (leftFirst: bool)
     (faulted: Task<Exit<'first, 'error>>)
     (other: Exit<'other, 'error>)
@@ -1265,8 +1265,8 @@ let private faultedAfterCancel
         faulted.GetAwaiter().GetResult() |> ignore
         Unchecked.defaultof<Exit<'value, 'error>>
     | Exit.Failure otherCause ->
-        if faulted.IsCanceled && cancellationToken.IsCancellationRequested then
-            // The sibling failure cancelled this branch. Its cancellation is that request, not a defect.
+        if faulted.IsCanceled && requestedCancellation then
+            // The shared source was already cancelled before this branch settled: the cancellation was requested.
             Exit.Failure otherCause
         else
             let error =
@@ -1295,9 +1295,10 @@ let private awaitBoth
 
             if obj.ReferenceEquals(completed, leftFiberTask) then
                 if not leftFiberTask.IsCompletedSuccessfully then
+                    let requestedCancellation = cts.IsCancellationRequested
                     cts.Cancel()
                     let! rightExit = settleAfterCancel cts rightFiberTask
-                    return faultedAfterCancel cts.Token true leftFiberTask rightExit
+                    return faultedAfterCancel requestedCancellation true leftFiberTask rightExit
                 else
                     match leftFiberTask.Result with
                     | Exit.Failure cause ->
@@ -1312,9 +1313,10 @@ let private awaitBoth
                             | Exit.Success rightValue -> Exit.Success(leftValue, rightValue)
                             | Exit.Failure cause -> Exit.Failure cause
             else if not rightFiberTask.IsCompletedSuccessfully then
+                let requestedCancellation = cts.IsCancellationRequested
                 cts.Cancel()
                 let! leftExit = settleAfterCancel cts leftFiberTask
-                return faultedAfterCancel cts.Token false rightFiberTask leftExit
+                return faultedAfterCancel requestedCancellation false rightFiberTask leftExit
             else
                 match rightFiberTask.Result with
                 | Exit.Failure cause ->
@@ -1344,7 +1346,7 @@ let private rightStartFaulted
     ValueTask<Exit<'left * 'right, 'error>>(
         task {
             let! leftExit = settleAfterCancel cts (leftRun.AsTask())
-            return faultedAfterCancel cts.Token false (Task.FromException<Exit<'right, 'error>>(error)) leftExit
+            return faultedAfterCancel false false (Task.FromException<Exit<'right, 'error>>(error)) leftExit
         })
 
 #endif
