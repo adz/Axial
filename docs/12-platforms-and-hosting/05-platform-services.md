@@ -19,27 +19,17 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-open Axial.Configuration
-open Reified
-open Reified.SchemaDSL
-
-type StartupSettings = { Port: int }
-
-let startupSchema () =
-    schema<StartupSettings> {
-        field (fun (settings: StartupSettings) -> settings.Port)
-        construct (fun port -> { Port = port })
+let startup : Flow<unit, Never, int> =
+    flow {
+        let! now = Clock.now
+        do! Log.info ("Starting port 8080 in " + string now.Year)
+        return 8080
     }
-
-let startup : Flow<unit, ConfigError list, int> =
-    Config.load (startupSchema ()) [ ConfigSource.environmentOf None [ "PORT", "8080" ] ]
-    |> Flow.bind (fun settings ->
-        flow {
-            let! now = Clock.now
-            do! Log.info ("Starting port " + string settings.Port + " in " + string now.Year)
-            return settings.Port
-        })
 ```
+
+A port decoded from an environment variable with a Reified schema is shown in the
+[configuration guide](/configuration/configuration.html#decode-a-typed-model); this page stays on the runtime
+values themselves.
 
 ```fsharp run
 let log = Log.memory ()

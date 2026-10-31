@@ -431,7 +431,8 @@ module Config =
 
     /// <summary>Bridges a schema-declared secret into a redacted process argument without exposing its payload.</summary>
     /// <remarks>The real value reaches the child process; plans, transcripts and failures show <c>***</c>.</remarks>
-    /// <example><code>cmd $"deploy --token {Config.processArg settings.Token}"</code></example>
+    /// <example><code>let deploy (token: Reified.Refinements.Secret&lt;string&gt;) =
+    ///     Axial.Process.DSL.cmd $"deploy --token {Axial.Configuration.Config.processArg token}"</code></example>
     let processArg (secret: Secret<'value>) : SecretArgument = DSL.secret (Secret.reveal secret)
 
     /// <summary>Watches file sources and publishes each successfully decoded configuration.</summary>

@@ -13,33 +13,34 @@ write-only observation slots. None of those runtime slots needs forwarding inter
 open System
 open System.Threading.Tasks
 open Axial
-open Axial.Configuration
 open Axial.PlatformService
-open Reified
 let shouldEqual expected actual =
     if actual <> expected then failwithf "Expected %A but got %A" expected actual
 ```
 
 ## Declare application authority
 
-Configuration remains explicit because it reads external state:
+An application record carries authority and exposes only what its workflows need:
 
 ```fsharp
-type AppEnv =
-    { Config: IConfig }
-    interface IHasConfig with member this.Config = this.Config
+type IAppSettings =
+    abstract Mode: string
 
-let loadMode : Flow<AppEnv, ConfigError, string> =
+type AppEnv =
+    { Settings: IAppSettings }
+
+let loadMode : Flow<AppEnv, Never, string> =
     flow {
         let! now = Clock.utcDateTime
-        let! mode = Config.required "AppMode"
+        let! mode = Flow.envWith (fun env -> env.Settings.Mode)
         do! Log.info $"[{now:O}] starting in mode {mode}"
         return mode
     }
 ```
 
-Only the configuration read constrains the application environment. The clock and log destination can be
-controlled without changing `AppEnv` or the workflow.
+Only the settings projection constrains the application environment. The clock and log destination can be
+controlled without changing `AppEnv` or the workflow. Loading configuration into `IAppSettings` at the edge is
+covered in the [configuration guide](/configuration/configuration.html).
 
 ## Add application dependencies
 
@@ -50,9 +51,7 @@ type IOrderRepository =
     abstract Count: unit -> int
 
 type ShopEnv =
-    { Config: IConfig
-      Orders: IOrderRepository }
-    interface IHasConfig with member this.Config = this.Config
+    { Orders: IOrderRepository }
 
 let countOrders : Flow<ShopEnv, Never, int> = Flow.envWith (fun env -> env.Orders.Count())
 ```
@@ -63,24 +62,24 @@ helpers should work across environment shapes; see [custom services](/advanced/c
 ## Run at the edge
 
 ```fsharp
-let runLive () : Task<Exit<string, ConfigError>> =
+let runLive (settings: IAppSettings) : Task<Exit<string, Never>> =
     loadMode
-    |> Flow.startTask
-        { Config =
-            Config.ofData (
-                Data.Object
-                    [ "AppMode", Data.Text "diagnostic" ]
-            ) }
+    |> Flow.startTask { Settings = settings }
 ```
 
-The runtime supplies live clock/random/GUID values and an Information+ stderr log sink. Generic Host and HTTP
-host adapters can install their own sinks; an inner scoped override still wins.
+The host constructs the application authority at the edge and supplies it in the environment. The runtime supplies
+live clock/random/GUID values and an Information+ stderr log sink. Generic Host and HTTP host adapters can install
+their own sinks; an inner scoped override still wins.
 
 ## Test without global state
 
+A workflow that reads runtime values can be tested without global state by overriding the scoped values:
+
 ```fsharp run
+let testEnv =
+    { Settings = { new IAppSettings with member _.Mode = "diagnostic" } }
+
 let log = Log.memory ()
-let testEnv = { Config = Config.ofData (Data.Object [ "AppMode", Data.Text "diagnostic" ]) }
 loadMode
 |> Flow.withClock (Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)))
 |> Flow.withLogSink log
