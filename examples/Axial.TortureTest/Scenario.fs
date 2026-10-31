@@ -1,6 +1,8 @@
 /// What every torture scenario shares: the checks it reports, and the seeded chaos that drives its random choices.
 module Axial.TortureTest.Scenario
 
+open Axial
+
 let clockEnvironment = ()
 
 /// One invariant and whether it held on a run.
@@ -37,9 +39,9 @@ type Round(seed: int, scale: int) =
 
 /// A release flow that runs a synchronous action.
 let finalizer (action: unit -> unit) : Axial.Flow<'env, Axial.Never, unit> =
-    Axial.Flow.delay (fun () ->
+    Flow.delay (fun () ->
         action ()
-        Axial.Flow.succeed ())
+        Flow.succeed ())
 
 /// Adds one to a counter shared between fibers and returns the new value. JavaScript runs one fiber at a time, so a
 /// plain increment is enough there.
@@ -78,7 +80,7 @@ let stopwatch () : unit -> System.TimeSpan =
 
 /// Runs a flow and returns its outcome as a value, so a scenario can inspect failures and interruptions.
 let exitOf (flow: Axial.Flow<'env, 'error, 'value>) : Axial.Flow<'env, 'none, Axial.Exit<'value, 'error>> =
-    flow |> Axial.Flow.foldCause (fun value -> Axial.Flow.ok (Axial.Exit.Success value)) (fun cause -> Axial.Flow.ok (Axial.Exit.Failure cause))
+    flow |> Flow.foldCause (fun value -> Flow.ok (Axial.Exit.Success value)) (fun cause -> Flow.ok (Axial.Exit.Failure cause))
 
 let isInterrupted (exit: Axial.Exit<'value, 'error>) =
     match exit with

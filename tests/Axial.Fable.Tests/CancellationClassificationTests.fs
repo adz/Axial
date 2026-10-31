@@ -5,6 +5,7 @@ open System.Threading
 open Axial
 open Axial.Fable.Tests.Harness
 
+#if FABLE_COMPILER
 let tests =
     [ test "timeout treats a canceled branch's thrown cancellation as interruption" (flow {
           let branch : Flow<unit, string, int> =
@@ -21,3 +22,6 @@ let tests =
           let! result = Flow.timeout (TimeSpan.FromMilliseconds 1.0) "timeout" branch |> exitOf
           return [ equal "timeout wins without a cancellation defect" (Exit.Failure(Cause.Fail "timeout")) result ]
       }) ]
+#else
+let tests : Test list = []
+#endif
