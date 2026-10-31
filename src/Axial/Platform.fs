@@ -1325,6 +1325,23 @@ let private awaitBoth
         })
 
 #endif
+#if !FABLE_COMPILER
+/// The right operation threw while starting, after the left one had started: cancels, awaits the left branch (so it
+/// is interrupted and has released before the outcome is observed, and its defect is combined) and faults.
+let private rightStartFaulted
+    (cts: CancellationTokenSource)
+    (leftRun: Execution<'left, 'error>)
+    (error: exn)
+    : Execution<'left * 'right, 'error> =
+    cts.Cancel()
+
+    ValueTask<Exit<'left * 'right, 'error>>(
+        task {
+            let! leftExit = settleAfterCancel cts (leftRun.AsTask())
+            return faultedAfterCancel false (Task.FromException<Exit<'right, 'error>>(error)) leftExit
+        })
+
+#endif
 /// Runs two operations concurrently under <paramref name="source" />, cancelling it as soon as one of them fails,
 /// and folds their exits with <paramref name="chooseParallel" /> (both settled) or <c>failedAfterCancel</c> (one
 /// failed and cancelled the other). The caller owns <paramref name="source" />: nested calls that share it cancel one
@@ -1370,13 +1387,7 @@ let zipParExecution
         faultedExecution error
     | Ok leftRun ->
         match startOperation rightOp cts.Token with
-        | Error error ->
-            cts.Cancel()
-            ValueTask<Exit<'left * 'right, 'error>>(
-                task {
-                    let! leftExit = settleAfterCancel cts (leftRun.AsTask())
-                    return faultedAfterCancel false (Task.FromException<Exit<'right, 'error>>(error)) leftExit
-                })
+        | Error error -> rightStartFaulted cts leftRun error
         | Ok rightRun when leftRun.IsCompletedSuccessfully && rightRun.IsCompletedSuccessfully ->
             // Both settled: the left exit counts as the first, as Task.WhenAny would report it.
             let exit =
@@ -1412,8 +1423,11 @@ let zipParUnitExecution
     | Ok leftRun ->
         match startOperation rightOp source.Token with
         | Error error ->
-            source.Cancel()
-            faultedExecution error
+            ValueTask<Exit<unit, 'error>>(
+                task {
+                    let! exit = rightStartFaulted source leftRun error
+                    return match exit with Exit.Success _ -> Exit.Success() | Exit.Failure cause -> Exit.Failure cause
+                })
         | Ok rightRun when leftRun.IsCompletedSuccessfully && rightRun.IsCompletedSuccessfully ->
             match leftRun.Result, rightRun.Result with
             | Exit.Failure cause, rightExit ->
