@@ -2,15 +2,15 @@ version = 2
 BASELINE_PATH  Axial.Guardrails.baseline
 SHA256  2b078d571a2415b4395d0b789a67fdb6e5020af0f84926f2f61d34c71fad1cee  .editorconfig
 SHA256  cc8a1c075025701e675b9fdb4331bace6421ac1bf71111f91c7772992624c3f5  Axial.Guardrails.baseline
-SHA256  ca00babb0c0c587067ddf700f97356f7bd27ac5aed3730b5f3f7eb644f90c969  Axial.Guardrails.toml
-SHA256  26f5a99ad520c214b9f52e7e13d13a1198a5913c717c5b6b010b23f43f806662  Directory.Build.props
+SHA256  77ae1d473c12ee1e4447c8dd6b41e6247bf7a2d03aac85734dfc7b21aa4d7ef9  Axial.Guardrails.toml
+SHA256  397d3a665ad4de86265895556712ec27d2e965ad934b3771e8291946adff5bcd  Directory.Build.props
 SHA256  34e52624be1432a21e95d160606ee979d9e708355e5efae6673fc27b2fdeabd1  Directory.Build.targets
+SHA256  c9a976e73aa3c0642dacd5078208fccb9dd3a2586c564e8ff7e865075998be2d  src/Axial.Configuration/buildTransitive/Axial.Configuration.props
 SHA256  6d7437334f7cf44d5039e85b6a0b61a77b3f1be3088982b7c4df354b80b724a6  src/Axial.Console/buildTransitive/Axial.Console.props
 SHA256  ea327e356b2a5baf96e6db3b8d8f9dbec9fed22f733ba732082d96d1a55841ef  src/Axial.FileSystem/buildTransitive/Axial.FileSystem.props
 SHA256  59d2d5141c3a010e25b6fb5eb9fc788b82f6862fb6c6e7d8b7c22eb0ca1dc1b6  src/Axial.Guardrails/build/Axial.Guardrails.props
 SHA256  9da50368dd951fc722346c60c34731128ee0f9e0e719279207b5bcde6526b57a  src/Axial.Guardrails/build/Axial.Guardrails.targets
 SHA256  49e0c0a0e8a7a783a5ca0977accda3bf78ba16af192e05a2b0977d97f03df078  src/Axial.HttpClient/buildTransitive/Axial.HttpClient.props
-SHA256  673d27b30e3cc90859ed4e029809f2f5efb322b6156ce0211448c7edafafdbff  src/Axial.PlatformService/buildTransitive/Axial.PlatformService.props
 SHA256  44b1d4e543c9f17534f6f13ffaa2c158b1da8932f868235c5a14f61e97ee00e2  src/Axial.Process/buildTransitive/Axial.Process.props
 SHA256  8853cdccc10de754e12b422cfed5c4c850f3f6eab92843b1e6b893686d097a88  src/Axial.WebSocket/buildTransitive/Axial.WebSocket.props
 SHA256  a300dc05faef5a3440b323644cd234f8c261fd56d44dca13b751c41a4e0df032  src/Axial/buildTransitive/Axial.props
@@ -39,13 +39,12 @@ BOUNDARY  runtime:src/Axial/Platform.fs
 BOUNDARY  runtime:src/Axial/Queue.fs
 BOUNDARY  runtime:src/Axial/Ref.fs
 BOUNDARY  runtime:src/Axial/Stream.fs
+BOUNDARY  src/Axial.Configuration/Platform.fs
 BOUNDARY  src/Axial.Console/Console.fs
 BOUNDARY  src/Axial.ElmishFlows/Sub.fs
 BOUNDARY  src/Axial.ElmishFlows/TestRuntime.fs
 BOUNDARY  src/Axial.FileSystem/FileSystem.fs
 BOUNDARY  src/Axial.Hosting/Hosting.fs
-BOUNDARY  src/Axial.PlatformService/Operations.fs
-BOUNDARY  src/Axial.PlatformService/Platform.fs
 BOUNDARY  src/Axial.Process/Process.fs
 BOUNDARY  src/Axial.Process/ProcessLive.fs
 BOUNDARY  src/Axial.Process/ProcessRun.fs
@@ -96,6 +95,7 @@ SUPPRESSION  examples/Axial.TortureTest/Interop.fs	1	// axial-allow-AXG005:wrapp
 SUPPRESSION  examples/Axial.TortureTest/Interop.fs	2	// axial-allow-AXG003:foreign API communicates failure by exception
 SUPPRESSION  examples/Axial.TortureTest/Scenario.fs	1	// axial-allow-AXG001:intentional clock host or live-service boundary
 SUPPRESSION  examples/Axial.TortureTest/Scenario.fs	2	// axial-allow-AXG001:intentional clock host or live-service boundary
+SUPPRESSION  src/Axial.Configuration/Platform.fs	1	// axial-allow-AXG001:live process-environment read behind ConfigSource.environment
 SUPPRESSION  src/Axial.Console/Console.fs	1	// axial-allow-file-AXG001:this file implements the explicit console boundary
 SUPPRESSION  src/Axial.ElmishFlows/Diagnostics.fs	1	// axial-note AXG010:OnDefect is the final reporting sink; its own failure cannot be sent back to it or fail the runtime job.
 SUPPRESSION  src/Axial.ElmishFlows/Diagnostics.fs	1	// axial-note AXG010:a custom exception Message getter may throw; retain the original exception in Error and still deliver the diagnostic.
@@ -104,17 +104,13 @@ SUPPRESSION  src/Axial.ElmishFlows/TestRuntime.fs	1	// axial-allow-AXG001:test-t
 SUPPRESSION  src/Axial.ElmishFlows/TestRuntime.fs	1	// axial-allow-AXG001:wall-clock test timeout
 SUPPRESSION  src/Axial.ElmishFlows/TestRuntime.fs	1	// axial-allow-AXG001:wall-clock test timeout, independent of manual workflow clock
 SUPPRESSION  src/Axial.FileSystem/FileSystem.fs	1	// axial-allow-file-AXG001:this file implements the explicit filesystem boundary
-SUPPRESSION  src/Axial.Files/AppendLog.fs	1	// axial-note AXG010:failed recovery poisons the log; rethrow the original write failure below rather than replace it with the reopen failure.
-SUPPRESSION  src/Axial.Files/Files.fs	1	// axial-note AXG010:temporary-file cleanup must not replace the original atomic-write failure rethrown below.
+SUPPRESSION  src/Axial.FileSystem/FileSystem.fs	1	// axial-note AXG010:failed recovery poisons the log; rethrow the original write failure below rather than replace it with the reopen failure.
+SUPPRESSION  src/Axial.FileSystem/FileSystem.fs	1	// axial-note AXG010:temporary-file cleanup must not replace the original atomic-write failure rethrown below.
 SUPPRESSION  src/Axial.Guardrails/Suppressions.fs	1	// axial-allow-AXG003:foreign callback translates this exception
 SUPPRESSION  src/Axial.Hosting/Hosting.fs	1	// axial-allow-AXG001:intentional console host or live-service boundary
 SUPPRESSION  src/Axial.Hosting/Hosting.fs	2	// axial-allow-AXG001:intentional console host or live-service boundary
 SUPPRESSION  src/Axial.Hosting/Hosting.fs	3	// axial-allow-AXG001:intentional console host or live-service boundary
 SUPPRESSION  src/Axial.HttpClient/Http.fs	1	// axial-note AXG010:untrusted charset names and custom encoding providers can fail; response text decoding intentionally falls back to UTF8 below.
-SUPPRESSION  src/Axial.PlatformService/Operations.fs	1	// axial-allow-AXG001:intentional secure-random host or live-service boundary
-SUPPRESSION  src/Axial.PlatformService/Operations.fs	1	// axial-allow-file-AXG001:this file implements the explicit clock, guid boundary
-SUPPRESSION  src/Axial.PlatformService/Operations.fs	2	// axial-allow-AXG001:intentional secure-random host or live-service boundary
-SUPPRESSION  src/Axial.PlatformService/Platform.fs	1	// axial-allow-file-AXG001:this file implements the explicit random, environment boundary
 SUPPRESSION  src/Axial.Process/ProcessRun.fs	1	// axial-allow-AXG003:task bridge translates this back to the typed channel
 SUPPRESSION  src/Axial.Process/ProcessRun.fs	1	// axial-allow-file-AXG001:ProcessRun is the live IProcess implementation and owns native process handles
 SUPPRESSION  src/Axial.Process/ProcessRun.fs	1	// axial-note AXG010:an inaccessible or disposed process handle is treated as not live during shutdown, not as a new pipeline failure.
@@ -124,9 +120,14 @@ SUPPRESSION  src/Axial.WebSocket/WebSocket.fs	1	// axial-allow-AXG001:intentiona
 SUPPRESSION  src/Axial/App.fs	1	// axial-allow-AXG001:StopAndWait is the documented synchronous boundary
 SUPPRESSION  src/Axial/Core.fs	1	// axial-allow-AXG001:IDisposable.Dispose is synchronous by contract
 SUPPRESSION  src/Axial/Core.fs	1	// axial-allow-AXG001:RunSynchronously is the documented blocking runner
+SUPPRESSION  src/Axial/Core.fs	1	// axial-allow-AXG001:live runtime GUID implementation.
+SUPPRESSION  src/Axial/Core.fs	1	// axial-allow-AXG001:live runtime clock implementation.
+SUPPRESSION  src/Axial/Core.fs	1	// axial-allow-AXG001:live runtime random implementation.
 SUPPRESSION  src/Axial/Core.fs	1	// axial-note AXG010:GC finalization must not terminate the process if the last-chance defect reporter fails.
 SUPPRESSION  src/Axial/Core.fs	1	// axial-note AXG010:OnEnd is diagnostic; its failure must not replace the fiber's already settled exit.
+SUPPRESSION  src/Axial/Core.fs	1	// axial-note AXG010:a broken observation gate cannot fail the application.
 SUPPRESSION  src/Axial/Core.fs	1	// axial-note AXG010:an observer's OnStart failure must not prevent the observed fiber from starting.
+SUPPRESSION  src/Axial/Core.fs	1	// axial-note AXG010:log destinations are write-only observations.
 SUPPRESSION  src/Axial/Core.fs	1	// axial-note AXG010:the unobserved-defect sink is the last reporting destination; recursively reporting its failure would call the same sink.
 SUPPRESSION  src/Axial/Flow.fs	1	// axial-allow-AXG001:task already awaited
 SUPPRESSION  src/Axial/Flow.fs	1	// axial-note AXG010:a closing scope can reject registration after startup; keep publishing the already started fiber's handle and interrupt registration.
@@ -135,6 +136,7 @@ SUPPRESSION  src/Axial/Flow.fs	1	// axial-note AXG010:diagnostic history failure
 SUPPRESSION  src/Axial/Outcome.fs	1	// axial-note AXG010:arbitrary payload ToString implementations can throw; cause rendering must retain the type-name fallback rather than fail while reporting the original cause.
 SUPPRESSION  src/Axial/Parallelism.fs	1	// axial-allow-AXG001:intentional environment host or live-service boundary
 SUPPRESSION  src/Axial/Platform.fs	1	// axial-allow-AXG001:intentional clock host or live-service boundary
+SUPPRESSION  src/Axial/Platform.fs	1	// axial-allow-AXG001:live runtime console log destination.
 SUPPRESSION  src/Axial/Platform.fs	1	// axial-allow-file-AXG001:this file implements the explicit blocking (runtime platform layer: reads results of tasks it has already checked are complete) boundary
 SUPPRESSION  src/Axial/Platform.fs	1	// axial-allow-file-AXG001:this file implements the explicit clock boundary
 SUPPRESSION  src/Axial/Stream.fs	1	// axial-allow-AXG005:wrapped operation has no cancellation-token overload: MoveNextAsync has no token overload; the enumerator observes the GetAsyncEnumerator token.
@@ -160,4 +162,4 @@ SUPPRESSION  tests/Axial.Tests/RunOnTests.fs	1	// axial-note AXG013:force an asy
 SUPPRESSION  tests/Axial.Tests/WorkflowSchedulingTests.fs	1	// axial-note AXG013:suspend inside cleanup to prove scope shutdown awaits asynchronous finalizers.
 SUPPRESSION  tests/Axial.Tests/WorkflowStreamTests.fs	1	// axial-note AXG013:stagger completions to exercise replenishment of the bounded parallel window.
 SUPPRESSION  tests/Axial.Tests/WorkflowStreamTests.fs	1	// axial-note AXG013:stagger worker completion to exercise batch ordering and its concurrency bound.
-REVIEWED_POINT  76c62bcb9f1b317340432a42b717675cfd267a0f
+REVIEWED_POINT  84a8b6d869792dd459225989a2dc6e9a8741869d
