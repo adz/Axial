@@ -21,6 +21,12 @@ trap 'git -C "$repo" worktree remove --force "$scratch/tree" >/dev/null 2>&1; rm
 git -C "$repo" worktree add --detach "$scratch/tree" HEAD >/dev/null
 git -C "$scratch/tree" checkout "$base" -- src
 
+# A slice may add source files or a whole project. Checkout restores paths that exist at the base but leaves newly
+# added source in place, so remove those paths explicitly; otherwise new tests compile against the new API and pass.
+while IFS= read -r added; do
+    [[ -n "$added" ]] && rm -rf -- "$scratch/tree/$added"
+done < <(git -C "$repo" diff --name-only --diff-filter=A "$base" HEAD -- src)
+
 if git -C "$scratch/tree" diff --quiet HEAD -- src; then
     echo "src/ is identical at $base and HEAD; nothing to revert." >&2
     exit 2
