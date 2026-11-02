@@ -5,10 +5,13 @@ open System.Collections.Concurrent
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.ElmishFlows
 open Xunit
 
+[<CollectionDefinition("Console error", DisableParallelization = true)>]
+type ConsoleErrorCollection() = class end
+
+[<Collection("Console error")>]
 module RuntimeTests =
     let private liveClock () =
         { new IClock with
@@ -17,32 +20,80 @@ module RuntimeTests =
             member _.Sleep(delay, token) = Task.Delay(delay, token) }
 
     let private options post onDefect =
-        { Post = post; OnDefect = onDefect; HistoryCapacity = 32 }
+        { Post = post; OnDefect = onDefect; HistoryCapacity = 32; Clock = Some(liveClock ()); LogSink = None }
 
-    type CacheEnvironment = { Clock: IClock; Cache: Cache<int, Never, string> } with
-        interface IHasClock with
-            member this.Clock = this.Clock
+    type CacheEnvironment = { Cache: Cache<int, Never, string> }
+
+    [<Fact>]
+    let ``startLayer installs its explicit clock during layer provisioning`` () =
+        let instant = DateTimeOffset(2001, 1, 1, 0, 0, 0, TimeSpan.Zero)
+        let clock = ManualClock instant
+        let configuration = { options (fun callback -> callback ()) (fun defect -> failwith defect.Rendered) with Clock = Some clock }
+        let layer: Layer<unit, string, DateTimeOffset> = Layer.fromFlow Axial.Clock.now
+        let provisioned = ElmishRuntime.startLayer configuration layer () |> Async.RunSynchronously
+        use runtime = match provisioned with Ok value -> value | Error error -> failwith error
+        Assert.Equal(instant, runtime.Environment)
+        Assert.True(runtime.StopAndWait(TimeSpan.FromSeconds 5.))
+
+    [<Fact>]
+    let ``pump installs the configured log sink`` () =
+        let sink = Axial.Log.memory ()
+        let configuration =
+            { options (fun callback -> callback ()) (fun defect -> failwith defect.Rendered) with
+                LogSink = Some(sink :> ILogSink) }
+        use runtime = ElmishRuntime.start configuration ()
+        let command = Cmd.OfFlow.perform "log" runtime (flow { do! Axial.Log.info "pump-entry" }) id
+        for start in command do start ignore
+        Assert.True(SpinWait.SpinUntil((fun () -> sink.Entries |> Seq.exists (fun entry -> entry.Message = "pump-entry")), 5000))
+
+    [<Fact>]
+    let ``startLayer installs the configured log sink during provisioning`` () =
+        let sink = Axial.Log.memory ()
+        let layer : Layer<unit, string, unit> =
+            Layer.fromFlow (flow {
+                do! Axial.Log.info "layer-entry"
+                return ()
+            })
+        let configuration =
+            { options (fun callback -> callback ()) (fun defect -> failwith defect.Rendered) with
+                LogSink = Some(sink :> ILogSink) }
+        let result = ElmishRuntime.startLayer configuration layer () |> Async.RunSynchronously
+        use _runtime = match result with Ok runtime -> runtime | Error error -> failwith error
+        Assert.True(sink.Entries |> Seq.exists (fun entry -> entry.Message = "layer-entry"))
+
+    [<Fact>]
+    let ``None keeps the default console log sink`` () =
+        let original = Console.Error
+        use writer = new System.IO.StringWriter()
+        Console.SetError writer
+        try
+            use runtime = ElmishRuntime.start (options (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)) ()
+            let command =
+                Cmd.OfFlow.perform "log" runtime (flow { do! Axial.Log.info "default-entry" }) id
+            for start in command do start ignore
+            Assert.True(SpinWait.SpinUntil((fun () -> writer.ToString().Contains "default-entry"), 5000))
+        finally
+            Console.SetError original
 
     [<Fact>]
     let ``startLayer provisions a cache and release flow until stop`` () =
         let messages = ConcurrentQueue<string>()
         let released = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
-        let cacheLayer : Layer<ClockEnvironment, string, CacheEnvironment> =
+        let cacheLayer : Layer<unit, string, CacheEnvironment> =
             Layer.fromFlow (flow {
                 let! cache =
                     Cache.make (fun (key: int) ->
-                        Flow.succeed $"value-{key}" : Flow<ClockEnvironment, Never, string>)
+                        Flow.succeed $"value-{key}" : Flow<unit, Never, string>)
                 do! Flow.scopeFinalizer (Flow.fromTask (fun _ ->
                     released.TrySetResult() |> ignore
                     Task.FromResult(())))
-                let! clock = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock)
-                return { Clock = clock; Cache = cache }
+                return { Cache = cache }
             })
         let result =
             ElmishRuntime.startLayer
                 (options (fun callback -> callback ()) (fun defect -> failwith defect.Rendered))
                 cacheLayer
-                (ClockEnvironment(liveClock ()))
+                ()
             |> Async.RunSynchronously
         use runtime =
             match result with
@@ -64,7 +115,7 @@ module RuntimeTests =
     [<Fact>]
     let ``startLayer returns Error and starts no runtime when provisioning fails`` () =
         let released = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
-        let failing : Layer<ClockEnvironment, string, ClockEnvironment> =
+        let failing : Layer<unit, string, unit> =
             Layer.fromFlow (flow {
                 do! Flow.scopeFinalizer (Flow.fromTask (fun _ ->
                     released.TrySetResult() |> ignore
@@ -75,9 +126,68 @@ module RuntimeTests =
             ElmishRuntime.startLayer
                 (options (fun callback -> callback ()) (fun defect -> failwith defect.Rendered))
                 failing
-                (ClockEnvironment(liveClock ()))
+                ()
             |> Async.RunSynchronously
         match result with
         | Ok _ -> failwith "startLayer should have returned Error"
         | Error error -> Assert.Equal("provision failed", error)
+        Assert.True(released.Task.Wait(5000))
+
+    [<Fact>]
+    let ``startLayer suspends provisioning and releases its resources once after stop`` () =
+        let acquired = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let released = ref 0
+        let layer : Layer<unit, string, unit> =
+            Layer.fromFlow (flow {
+                do!
+                    Flow.scopeFinalizer (
+                        Flow.fromTask (fun _ ->
+                            released.Value <- released.Value + 1
+                            Task.FromResult(()))
+                    )
+                acquired.TrySetResult() |> ignore
+                do! Flow.fromTask (fun _ -> release.Task)
+                return ()
+            })
+        let startup =
+            Task.Run(fun () ->
+                ElmishRuntime.startLayer
+                    (options (fun callback -> callback ()) (fun defect -> failwith defect.Rendered))
+                    layer
+                    ()
+                |> Async.RunSynchronously)
+        Assert.True(acquired.Task.Wait(5000))
+        Assert.False(startup.IsCompleted, "startLayer must wait for a suspending layer")
+        release.TrySetResult() |> ignore
+        use runtime = match startup.GetAwaiter().GetResult() with Ok value -> value | Error error -> failwith error
+        Assert.Equal(0, released.Value)
+        Assert.True(runtime.StopAndWait(TimeSpan.FromSeconds 5.0))
+        Assert.Equal(1, released.Value)
+        Assert.Equal(0, runtime.Registry.LiveFiberCount)
+
+    [<Fact>]
+    let ``startLayer cleans up and stops when provisioning raises a defect`` () =
+        let released = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let layer : Layer<unit, string, unit> =
+            Layer.fromFlow (flow {
+                do!
+                    Flow.scopeFinalizer (
+                        Flow.fromTask (fun _ ->
+                            released.TrySetResult() |> ignore
+                            Task.FromResult(()))
+                    )
+                return! Flow.die (InvalidOperationException "provisioning defect")
+            })
+        let raised =
+            try
+                ElmishRuntime.startLayer
+                    (options (fun callback -> callback ()) (fun defect -> failwith defect.Rendered))
+                    layer
+                    ()
+                |> Async.RunSynchronously
+                |> ignore
+                false
+            with _ -> true
+        Assert.True raised
         Assert.True(released.Task.Wait(5000))

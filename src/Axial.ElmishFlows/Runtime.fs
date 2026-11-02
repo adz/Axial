@@ -18,11 +18,25 @@ type CommandDefect =
 type ElmishRuntimeOptions =
     { Post: (unit -> unit) -> unit
       OnDefect: CommandDefect -> unit
-      HistoryCapacity: int }
+      HistoryCapacity: int
+      Clock: IClock option
+      LogSink: ILogSink option }
+
+[<RequireQualifiedAccess>]
+module internal RuntimeOptions =
+    let apply (options: ElmishRuntimeOptions) (source: Flow<'env, 'error, 'value>) =
+        let source =
+            match options.LogSink with
+            | Some sink -> Flow.withLogSink sink source
+            | None -> source
+
+        match options.Clock with
+        | Some clock -> Flow.withClock clock source
+        | None -> source
 
 /// Owns the root scope for all commands in one Elmish program.
 [<Sealed>]
-type ElmishRuntime<'env when 'env :> IHasClock> internal (options: ElmishRuntimeOptions) =
+type ElmishRuntime<'env> internal (options: ElmishRuntimeOptions) =
     let registry = FiberRegistry(options.HistoryCapacity)
     let queue = ConcurrentQueue<Flow<'env, Never, unit>>()
     let signal = new SemaphoreSlim(0)
@@ -52,7 +66,7 @@ type ElmishRuntime<'env when 'env :> IHasClock> internal (options: ElmishRuntime
     member internal _.Options = options
     member internal _.Pending = Volatile.Read(&pending)
     member internal _.LatestCount = lock gate (fun () -> latest.Count)
-    member internal _.Pump() : Flow<'env, Never, unit> = pump ()
+    member internal _.Pump() : Flow<'env, Never, unit> = pump () |> RuntimeOptions.apply options
 
     member internal _.SetEnvironment(environmentValue: 'env) =
         environment <- environmentValue

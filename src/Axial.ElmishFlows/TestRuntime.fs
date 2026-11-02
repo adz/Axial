@@ -4,23 +4,23 @@ open System
 open System.Collections.Concurrent
 open System.Diagnostics
 open System.Threading
-open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open global.Elmish
 
 /// A program runtime with queued UI delivery and captured defects.
 [<Sealed>]
-type TestRuntime<'env when 'env :> IHasClock> internal (environment: 'env) =
+type TestRuntime<'env> internal (clock: ManualClock, environment: 'env) =
     let deliveries = ConcurrentQueue<unit -> unit>()
     let messages = ConcurrentQueue<obj>()
     let errors = ConcurrentQueue<CommandDefect>()
     let runtime =
         let runtime =
-            ElmishRuntime<'env>(
+            new ElmishRuntime<'env>(
                 { Post = deliveries.Enqueue
                   OnDefect = errors.Enqueue
-                  HistoryCapacity = 128 })
+                  HistoryCapacity = 128
+                  Clock = Some clock
+                  LogSink = None })
         let handle = App.start environment (Flow.withFiberRegistry runtime.Registry (runtime.Pump()))
         runtime.SetEnvironment(environment)
         runtime.Attach(handle)
@@ -42,12 +42,12 @@ type TestRuntime<'env when 'env :> IHasClock> internal (environment: 'env) =
 
     /// Waits for all queued jobs and registered fibers, then drains UI deliveries.
     member this.Settle(timeout: TimeSpan) =
-        let watch = Stopwatch.StartNew() // axial-allow-effect: clock (wall-clock test timeout, independent of manual workflow clock)
+        let watch = Stopwatch.StartNew() // axial-allow-AXG001: wall-clock test timeout, independent of manual workflow clock
         let mutable quiet = false
-        while not quiet && watch.Elapsed < timeout do // axial-allow-effect: clock (wall-clock test timeout)
+        while not quiet && watch.Elapsed < timeout do // axial-allow-AXG001: wall-clock test timeout
             this.Drain()
             quiet <- runtime.Pending = 0 && List.isEmpty (runtime.Registry.Snapshot())
-            if not quiet then Thread.Sleep(1) // axial-allow-effect: sleep (test-thread polling, not a workflow delay)
+            if not quiet then Thread.Sleep(1) // axial-allow-AXG001: test-thread polling, not a workflow delay
         this.Drain()
         quiet && runtime.Pending = 0 && List.isEmpty (runtime.Registry.Snapshot())
 
@@ -58,10 +58,10 @@ type TestRuntime<'env when 'env :> IHasClock> internal (environment: 'env) =
 module ElmishRuntime =
     /// <summary>Starts a runtime around a caller-supplied environment.</summary>
     /// <param name="options">Host delivery and diagnostic policy.</param>
-    /// <param name="environment">The environment every command runs with; it must implement <see cref="T:Axial.IHasClock" />.</param>
+    /// <param name="environment">The application dependencies every command runs with.</param>
     /// <returns>A running <see cref="T:Axial.ElmishFlows.ElmishRuntime`1" />.</returns>
-    let start (options: ElmishRuntimeOptions) (environment: 'env when 'env :> IHasClock) =
-        let runtime = ElmishRuntime<'env>(options)
+    let start (options: ElmishRuntimeOptions) (environment: 'env) =
+        let runtime = new ElmishRuntime<'env>(options)
         let handle = App.start environment (Flow.withFiberRegistry runtime.Registry (runtime.Pump()))
         runtime.SetEnvironment(environment)
         runtime.Attach(handle)
@@ -85,14 +85,15 @@ module ElmishRuntime =
         (input: 'input)
         : Async<Result<ElmishRuntime<'env>, 'error>> =
         async {
-            let runtime = ElmishRuntime<'env>(options)
-            let ready = TaskCompletionSource<Result<ElmishRuntime<'env>, 'error>>(TaskCreationOptions.RunContinuationsAsynchronously)
+            let runtime = new ElmishRuntime<'env>(options)
+            let ready : Deferred<Never, Result<ElmishRuntime<'env>, 'error>> =
+                Deferred.make () |> Flow.run () |> Exit.toResult |> Result.defaultWith Never.absurd
 
             let root : Flow<'input, 'error, unit> =
                 Layer.provide layer (flow {
                     let! environment = Flow.env
                     runtime.SetEnvironment(environment)
-                    ready.TrySetResult(Ok runtime) |> ignore
+                    Deferred.succeedNow (Ok runtime) ready |> ignore
                     return! runtime.Pump() |> Flow.widenError
                 })
                 |> Flow.onExit (fun exit ->
@@ -100,21 +101,22 @@ module ElmishRuntime =
                     | Exit.Success () -> Flow.ok ()
                     | Exit.Failure cause ->
                         match Cause.failures cause with
-                        | error :: _ -> ready.TrySetResult(Error error) |> ignore
+                        | error :: _ -> Deferred.succeedNow (Error error) ready |> ignore
                         | [] ->
                             match Cause.defects cause with
-                            | defect :: _ -> ready.TrySetException(defect) |> ignore
-                            | [] -> ready.TrySetException(OperationCanceledException("Elmish runtime provisioning was interrupted.")) |> ignore
+                            | defect :: _ -> Deferred.dieNow defect ready |> ignore
+                            | [] -> Deferred.dieNow (OperationCanceledException("Elmish runtime provisioning was interrupted.")) ready |> ignore
                         Flow.ok ())
                 |> Flow.withFiberRegistry runtime.Registry
+                |> RuntimeOptions.apply options
 
             let handle = App.start input root
             runtime.Attach(handle)
-            return! ready.Task |> Async.AwaitTask
+            return! Deferred.toTask Never.absurd ready |> Async.AwaitTask
         }
 
     /// Creates a runtime with queued dispatch and captured defects for tests.
-    let test (environment: 'env when 'env :> IHasClock) = new TestRuntime<'env>(environment)
+    let test (clock: ManualClock) (environment: 'env) = new TestRuntime<'env>(clock, environment)
 
 [<RequireQualifiedAccess>]
 module TestRuntime =

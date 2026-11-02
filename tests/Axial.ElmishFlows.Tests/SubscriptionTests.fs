@@ -14,8 +14,8 @@ module SubscriptionTests =
             { new IClock with
                 member _.UtcNow() = DateTimeOffset.UtcNow
                 member _.Elapsed() = TimeSpan.FromTicks(Environment.TickCount64)
-                member _.Sleep(delay, token) = Task.Delay(delay, token) :> Task }
-        ElmishRuntime.start { Post = post; OnDefect = defect; HistoryCapacity = 32 } (ClockEnvironment(clock))
+                member _.Sleep(delay, token) = Task.Delay(delay, token) }
+        ElmishRuntime.start { Post = post; OnDefect = defect; HistoryCapacity = 32; Clock = Some clock; LogSink = None } ()
 
     [<Fact>]
     let ``inbox drops full offers and counts them`` () =
@@ -35,7 +35,7 @@ module SubscriptionTests =
         let source =
             Inbox.stream inbox
             |> FlowStream.mapFlow (fun value -> flow {
-                // axial-allow-discarded-cancellation
+                // axial-allow-AXG005: wrapped operation has no cancellation-token overload
                 do! Flow.scopeFinalizer (Flow.fromTask (fun _ -> released.TrySetResult() |> ignore; Task.FromResult(())))
                 return value
             })
@@ -51,18 +51,62 @@ module SubscriptionTests =
         Assert.True(released.Task.Wait(TimeSpan.FromSeconds 5.0))
 
     [<Fact>]
+    let ``dispose returns while interrupted subscription finalizer is still running`` () =
+        let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let finalizing = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let finished = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        use runtime = owner (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
+        let source : FlowStream<unit, string, int> =
+            FlowStream.repeatFlow (flow {
+                do! Flow.scopeFinalizer (Flow.fromTask (fun _ -> task {
+                    finalizing.TrySetResult() |> ignore
+                    do! release.Task
+                    finished.TrySetResult() |> ignore
+                }))
+                started.TrySetResult() |> ignore
+                do! Flow.sleep (TimeSpan.FromDays 1.0)
+                return 1
+            })
+        use active = snd (List.head (Sub.OfFlowStream.subscribe ["gated-cleanup"] runtime source (fun _ -> -1))) ignore
+        Assert.True(started.Task.Wait(TimeSpan.FromSeconds 5.0))
+        try
+            let disposing = Task.Run(fun () -> active.Dispose())
+            Assert.True(disposing.Wait(TimeSpan.FromSeconds 5.0), "Dispose blocked on cleanup")
+            Assert.True(finalizing.Task.Wait(TimeSpan.FromSeconds 5.0), "Dispose did not interrupt the started fiber")
+            Assert.False(finished.Task.IsCompleted)
+        finally
+            release.TrySetResult() |> ignore
+        Assert.True(finished.Task.Wait(TimeSpan.FromSeconds 5.0))
+
+    [<Fact>]
+    let ``immediate disposal interrupts a subscription once it starts`` () =
+        use runtime = owner (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
+        for index in 1 .. 50 do
+            let inbox = Inbox.create 1 runtime
+            let subscription = Sub.OfFlowStream.subscribe [string index] runtime (Inbox.stream inbox) (fun (_: string) -> -1)
+            let active = snd (List.head subscription) (fun _ -> failwith "disposed subscription dispatched")
+            active.Dispose()
+        Assert.True(SpinWait.SpinUntil((fun () -> runtime.Pending = 0), 5000), "Disposed subscription fibers did not settle")
+
+    [<Fact>]
     let ``manual clock search pipeline dispatches only the latest query`` () =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
-        use test = ElmishRuntime.test (ClockEnvironment(clock))
+        use test = ElmishRuntime.test clock ()
         let inbox = Inbox.create 8 test.Runtime
         let searching = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
-        let search query : Flow<ClockEnvironment, string, string> = flow {
+        let search query : Flow<unit, string, string> = flow {
             searching.TrySetResult() |> ignore
             do! Flow.sleep (TimeSpan.FromMilliseconds 100.0)
             return $"result-{query}"
         }
+        // Inbox.stream, with each pull counted: the fourth pull starts only after the third query was handed on.
+        let pulls = ref 0
+        let fourthPull = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let source =
-            Inbox.stream inbox
+            FlowStream.repeatFlow (Flow.delay (fun () ->
+                if Interlocked.Increment(&pulls.contents) = 4 then fourthPull.TrySetResult() |> ignore
+                Dequeue.take inbox.Queue))
             |> FlowStream.debounce (TimeSpan.FromMilliseconds 300.0)
             |> FlowStream.switchMapFlow search
             |> FlowStream.map (fun result -> $"found:{result}")
@@ -71,19 +115,10 @@ module SubscriptionTests =
         Assert.True(Inbox.post "a" inbox)
         Assert.True(Inbox.post "ab" inbox)
         Assert.True(Inbox.post "abc" inbox)
-        // The debounce re-arms per item, so wait until the whole burst has left the inbox, then for its timer.
-        // A fixed sleep here raced the stream under full-suite load and let "a" debounce on its own.
-        let queued () =
-            match (Dequeue.size inbox.Queue).RunSynchronously(()) with
-            | Exit.Success count -> count
-            | _ -> -1
-        let drained = SpinWait.SpinUntil((fun () -> queued () = 0 && clock.Sleepers > 0), 5000)
-        Assert.True(drained, $"queued={queued ()} sleepers={clock.Sleepers} size={(Dequeue.size inbox.Queue).RunSynchronously(())}")
-        // The debounce's timer cannot fire while the manual clock is still, so let any in-flight stream pull hand
-        // the last item to the debounce before advancing. Without this, a full-suite run could advance while the
-        // last item was still between the inbox and the debounce and then wait on a search that never started.
-        Thread.Sleep(100)
-        Assert.True(SpinWait.SpinUntil((fun () -> queued () = 0 && clock.Sleepers > 0), 5000))
+        // The debounce re-arms per item. The fourth pull proves the whole burst was handed to the debounce, and the
+        // armed timer proves it is now waiting out the quiet period for the last query.
+        Assert.True(fourthPull.Task.Wait(5000))
+        Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers > 0), 5000))
         clock.AdvanceBy(TimeSpan.FromMilliseconds 300.0)
         Assert.True(searching.Task.Wait(5000))
         Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers > 0), 5000))
@@ -100,11 +135,11 @@ module SubscriptionTests =
         let messages = ConcurrentQueue<int>()
         let defects = ConcurrentQueue<CommandDefect>()
         use runtime = owner (fun callback -> callback ()) defects.Enqueue
-        let failing : FlowStream<ClockEnvironment, string, int> = FlowStream.unfoldFlow (fun _ -> Flow.fail "bad") ()
+        let failing : FlowStream<unit, string, int> = FlowStream.unfoldFlow (fun _ -> Flow.fail "bad") ()
         use typed = snd (List.head (Sub.OfFlowStream.subscribe ["typed"] runtime failing (fun _ -> 9))) messages.Enqueue
         Assert.True(SpinWait.SpinUntil((fun () -> messages.Count = 1), 5000))
         Assert.Equal(9, messages.ToArray().[0])
-        let broken : FlowStream<ClockEnvironment, string, int> = FlowStream.unfoldFlow (fun _ -> Flow.die (Exception("boom"))) ()
+        let broken : FlowStream<unit, string, int> = FlowStream.unfoldFlow (fun _ -> Flow.die (Exception("boom"))) ()
         use defect = snd (List.head (Sub.OfFlowStream.subscribe ["broken"] runtime broken (fun _ -> 0))) messages.Enqueue
         Assert.True(SpinWait.SpinUntil((fun () -> defects.Count = 1), 5000))
         Assert.Equal(1, messages.Count)
