@@ -2,11 +2,14 @@ namespace Axial.Tests
 
 open System
 open System.Net
+open System.Net.Http
+open System.Net.Security
 open System.Net.Sockets
 open System.IO
 open System.Net.WebSockets
 open System.Threading
 open System.Threading.Tasks
+open Axial
 open Axial
 open Axial.WebSocket
 open Xunit
@@ -20,37 +23,44 @@ module WebSocketTests =
     type private Server(abortAfterEcho: bool) =
         let listener = new HttpListener()
         let closed = TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously)
+        // Released by the test once it has received the echo, so the abort can never overtake it.
+        let abortAllowed = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let mutable accepted: WebSocket = null
         let endpoint = sprintf "http://127.0.0.1:%d/" (port ())
         do listener.Prefixes.Add endpoint; listener.Start()
         let worker = task {
-            try
-                let! request = listener.GetContextAsync()
-                let! context = request.AcceptWebSocketAsync(null)
-                accepted <- context.WebSocket
-                let buffer = Array.zeroCreate<byte> 8192
-                let mutable running = true
-                while running do
-                    let! result = accepted.ReceiveAsync(ArraySegment<byte>(buffer), CancellationToken.None)
-                    if result.MessageType = WebSocketMessageType.Close then
-                        closed.TrySetResult true |> ignore
-                        running <- false
-                        do! accepted.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None)
-                    else
-                        do! accepted.SendAsync(ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None)
-                        if abortAfterEcho then
-                            do! Task.Delay 100
-                            accepted.Abort()
-                            accepted.Dispose()
+            let mutable keepAccepting = true
+            while keepAccepting do
+                try
+                    let! request = listener.GetContextAsync()
+                    let! context = request.AcceptWebSocketAsync(null)
+                    accepted <- context.WebSocket
+                    let buffer = Array.zeroCreate<byte> 8192
+                    let mutable running = true
+                    while running do
+                        let! result = accepted.ReceiveAsync(ArraySegment<byte>(buffer), CancellationToken.None)
+                        if result.MessageType = WebSocketMessageType.Close then
+                            closed.TrySetResult true |> ignore
                             running <- false
-            with _ -> ()
+                            do! accepted.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None)
+                        else
+                            do! accepted.SendAsync(ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None)
+                            if abortAfterEcho then
+                                do! abortAllowed.Task
+                                accepted.Abort()
+                                accepted.Dispose()
+                                running <- false
+                with _ ->
+                    if not listener.IsListening then keepAccepting <- false
         }
         member _.Url = endpoint.Replace("http:", "ws:")
         member _.Closed = closed.Task
+        member _.AllowAbort() = abortAllowed.TrySetResult() |> ignore
         interface IDisposable with
             member _.Dispose() =
                 listener.Stop()
                 listener.Close()
+                abortAllowed.TrySetResult() |> ignore
                 if not (isNull accepted) then accepted.Dispose()
                 try worker.Wait(TimeSpan.FromSeconds 2.) |> ignore with _ -> ()
 
@@ -88,6 +98,7 @@ module WebSocketTests =
         use session = connect server.Url
         Assert.Equal(Exit.Success (), (session |> WebSocket.sendText "first").RunSynchronously(()))
         Assert.Equal(Exit.Success [WebSocketMessage.Text "first"], (session |> WebSocket.messages |> FlowStream.take 1 |> FlowStream.runCollect).RunSynchronously(()))
+        server.AllowAbort()
         match session.Receive().RunSynchronously(()) with
         | Exit.Failure(Cause.Fail(WebSocketError.ConnectionLost _)) -> ()
         | other -> failwithf "expected ConnectionLost: %A" other
@@ -195,11 +206,145 @@ module WebSocketTests =
         Assert.Equal(actualSent.Value, sent)
         Assert.Equal(actualReceived.Value, received)
 
+    [<Fact>]
+    let ``custom connect hook sees the caller clock and log sink`` () =
+        use server = new Server(false)
+        let instant = DateTimeOffset(2022, 3, 4, 5, 6, 7, TimeSpan.Zero)
+        let clock = ManualClock(instant)
+        let sink = Log.memory ()
+        let mutable observed = None
+        let hook (context: ConnectContext) : Flow<unit, WebSocketError, Stream> =
+            flow {
+                let! now = Clock.now
+                do! Log.info "connect-hook"
+                observed <- Some now
+                let socket = new Socket(SocketType.Stream, ProtocolType.Tcp)
+                socket.Connect(context.Host, context.Port)
+                return new NetworkStream(socket, true) :> Stream
+            }
+        let options = WebSocket.connect server.Url |> WebSocket.connectWith hook
+        let env = { new IHasWebSocket with member _.WebSocket = WebSocket.live() }
+        use session =
+            match
+                WebSocket.openSession options
+                |> Flow.withClock (clock :> IClock)
+                |> Flow.withLogSink sink
+                |> fun source -> source.RunSynchronously(env)
+            with
+            | Exit.Success value -> value
+            | other -> failwithf "connect: %A" other
+        Assert.Equal(Some instant, observed)
+        Assert.True(sink.Entries |> Seq.exists (fun entry -> entry.Message = "connect-hook"))
+
+    [<Fact>]
+    let ``Connect flow sees the clock and log sink installed on the flow`` () =
+        use server = new Server(false)
+        let instant = DateTimeOffset(2022, 3, 4, 5, 6, 7, TimeSpan.Zero)
+        let clock = ManualClock(instant)
+        let sink = Log.memory ()
+        let mutable observed = None
+        let hook (context: ConnectContext) : Flow<unit, WebSocketError, Stream> =
+            flow {
+                let! now = Clock.now
+                do! Log.info "connect-flow-hook"
+                observed <- Some now
+                let socket = new Socket(SocketType.Stream, ProtocolType.Tcp)
+                socket.Connect(context.Host, context.Port)
+                return new NetworkStream(socket, true) :> Stream
+            }
+        let options = WebSocket.connect server.Url |> WebSocket.connectWith hook
+        use session =
+            match
+                WebSocket.live().Connect options
+                |> Flow.withClock (clock :> IClock)
+                |> Flow.withLogSink sink
+                |> fun source -> source.RunSynchronously(())
+            with
+            | Exit.Success value -> value
+            | other -> failwithf "connect: %A" other
+        Assert.Equal(Some instant, observed)
+        Assert.True(sink.Entries |> Seq.exists (fun entry -> entry.Message = "connect-flow-hook"))
+
+    [<Fact>]
+    let ``Connect flow captures the runtime of each execution`` () =
+        use server = new Server(false)
+        let firstInstant = DateTimeOffset(2021, 1, 2, 3, 4, 5, TimeSpan.Zero)
+        let secondInstant = DateTimeOffset(2023, 6, 7, 8, 9, 10, TimeSpan.Zero)
+        let firstClock = ManualClock(firstInstant)
+        let secondClock = ManualClock(secondInstant)
+        let firstSink = Log.memory ()
+        let secondSink = Log.memory ()
+        let observed = ResizeArray<DateTimeOffset>()
+        let hook (context: ConnectContext) : Flow<unit, WebSocketError, Stream> =
+            flow {
+                let! now = Clock.now
+                do! Log.info (sprintf "connect-%O" now)
+                observed.Add now
+                let socket = new Socket(SocketType.Stream, ProtocolType.Tcp)
+                socket.Connect(context.Host, context.Port)
+                return new NetworkStream(socket, true) :> Stream
+            }
+        let options = WebSocket.connect server.Url |> WebSocket.connectWith hook
+        let connection = WebSocket.live().Connect options
+        let run clock sink =
+            match
+                connection
+                |> Flow.withClock (clock :> IClock)
+                |> Flow.withLogSink sink
+                |> fun source -> source.RunSynchronously(())
+            with
+            | Exit.Success value -> value
+            | other -> failwithf "connect: %A" other
+        let first = run firstClock firstSink
+        (first :> IDisposable).Dispose()
+        use second = run secondClock secondSink
+        Assert.Equal<DateTimeOffset list>([ firstInstant; secondInstant ], List.ofSeq observed)
+        let firstMessage = sprintf "connect-%O" firstInstant
+        let secondMessage = sprintf "connect-%O" secondInstant
+        Assert.True(firstSink.Entries |> Seq.exists (fun entry -> entry.Message = firstMessage))
+        Assert.False(firstSink.Entries |> Seq.exists (fun entry -> entry.Message = secondMessage))
+        Assert.True(secondSink.Entries |> Seq.exists (fun entry -> entry.Message = secondMessage))
+        Assert.False(secondSink.Entries |> Seq.exists (fun entry -> entry.Message = firstMessage))
+
     let private tlsOptions url ca client =
         WebSocket.connect url
         |> WebSocket.tls { ClientCertificate = client; TrustAnchors = Some [ca]; MinimumVersion = TlsVersion.Tls13 }
 
     let private tlsEnv () = { new IHasWebSocket with member _.WebSocket = WebSocket.live() }
+
+    [<Fact>]
+    let ``caller supplied handler controls TLS validation`` () = task {
+        use ca = TlsServer.makeCa ()
+        use serverCert = TlsServer.issue ca "CN=localhost" true
+        let! port, server = TlsServer.start serverCert None
+        try
+            use handler = new SocketsHttpHandler()
+            handler.SslOptions.RemoteCertificateValidationCallback <-
+                RemoteCertificateValidationCallback(fun _ _ _ _ -> true)
+            use invoker = new HttpMessageInvoker(handler, false)
+            let options =
+                WebSocket.connect $"wss://localhost:{port}/ws"
+                |> WebSocket.invoker invoker
+            use session =
+                match (WebSocket.openSession options).RunSynchronously(tlsEnv ()) with
+                | Exit.Success value -> value
+                | other -> failwithf "custom handler connect: %A" other
+            Assert.Equal(Exit.Success (), (session |> WebSocket.sendText "hello").RunSynchronously(()))
+            Assert.Equal(Exit.Success (Some(WebSocketMessage.Text "hello")), session.Receive().RunSynchronously(()))
+        finally server.DisposeAsync().AsTask().GetAwaiter().GetResult()
+    }
+
+    [<Fact>]
+    let ``caller supplied handler rejects Axial TLS options`` () =
+        use handler = new SocketsHttpHandler()
+        use invoker = new HttpMessageInvoker(handler, false)
+        let options =
+            WebSocket.connect "wss://localhost/"
+            |> WebSocket.tls { ClientCertificate = None; TrustAnchors = None; MinimumVersion = TlsVersion.Tls12 }
+            |> WebSocket.invoker invoker
+        Assert.Equal(
+            Exit.Failure(Cause.Fail(WebSocketError.ConnectFailed "A caller-supplied HTTP invoker cannot be combined with WebSocket.tls.")),
+            (WebSocket.openSession options).RunSynchronously(tlsEnv ()))
 
     [<Fact>]
     let ``local mutual TLS text echo`` () = task {

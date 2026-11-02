@@ -4,7 +4,6 @@ open System
 open System.Globalization
 open System.Text
 open Axial
-open Axial.PlatformService
 #if !FABLE_COMPILER
 open System.Net.Http
 open System.Threading
@@ -53,9 +52,9 @@ type RequestBody =
     override this.ToString() =
         match this with
         | Empty -> "Empty"
-        | Text(content, contentType) -> $"Text({contentType}, {content.Length} chars)"
-        | Bytes(content, contentType) -> $"Bytes({contentType}, {content.Length} bytes)"
-        | Form fields -> $"Form({fields.Length} fields)"
+        | Text(content, contentType) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Text({0}, {1} chars)", contentType, content.Length))
+        | Bytes(content, contentType) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Bytes({0}, {1} bytes)", contentType, content.Length))
+        | Form fields -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Form({0} fields)", fields.Length))
 
 /// Decides which response status codes count as success for a request.
 [<RequireQualifiedAccess>]
@@ -117,7 +116,8 @@ type HttpResponse =
 
     /// A one-line summary, rendered without reflection so it stays safe under NativeAOT.
     override this.ToString() =
-        $"HttpResponse({this.Request} -> {this.StatusCode} {this.ReasonPhrase}, {this.Body.Length} bytes, {this.Duration.TotalMilliseconds:F0} ms)"
+        let duration = this.Duration.TotalMilliseconds.ToString("F0", Globalization.CultureInfo.InvariantCulture)
+        (System.String.Format(Globalization.CultureInfo.InvariantCulture, "HttpResponse({0} -> {1} {2}, {3} bytes, {4} ms)", this.Request, this.StatusCode, this.ReasonPhrase, this.Body.Length, duration))
 
 /// A recoverable HTTP transport, timeout, status, or decoding failure.
 [<RequireQualifiedAccess>]
@@ -138,17 +138,17 @@ type HttpError =
     /// Hand-written so it stays safe under NativeAOT and trimming (the generated ToString uses reflection).
     override this.ToString() =
         match this with
-        | InvalidRequest message -> $"Invalid HTTP request: {message}"
-        | ConnectionFailed(request, message) -> $"Could not reach '{request}': {message}"
+        | InvalidRequest message -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Invalid HTTP request: {0}", message))
+        | ConnectionFailed(request, message) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Could not reach '{0}': {1}", request, message))
         | TimedOut(request, timeout) ->
             let seconds = timeout.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture)
-            $"'{request}' did not complete within {seconds} seconds."
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "'{0}' did not complete within {1} seconds.", request, seconds))
         | Status response ->
             let preview = if response.Text.Length > 512 then response.Text.Substring(0, 512) + "…" else response.Text
             let detail = if preview = "" then "" else Environment.NewLine + preview
-            $"'{response.Request}' returned {response.StatusCode} {response.ReasonPhrase}.{detail}"
-        | DecodeFailed(message, response) -> $"Could not decode the response from '{response.Request}': {message}"
-        | ResponseTooLarge(request, limit) -> $"'{request}' returned a body larger than {limit} bytes."
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "'{0}' returned {1} {2}.{3}", response.Request, response.StatusCode, response.ReasonPhrase, detail))
+        | DecodeFailed(message, response) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Could not decode the response from '{0}': {1}", response.Request, message))
+        | ResponseTooLarge(request, limit) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "'{0}' returned a body larger than {1} bytes.", request, limit))
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
@@ -259,13 +259,13 @@ module Request =
     /// Adds a bearer-token Authorization header. The token is always redacted in diagnostics.
     /// <example><code>request |&gt; Request.bearer token</code></example>
     let bearer (token: string) (request: HttpRequest) =
-        secretHeader "Authorization" $"Bearer {token}" request
+        secretHeader "Authorization" (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Bearer {0}", token)) request
 
     /// Adds a basic-auth Authorization header. The credentials are always redacted in diagnostics.
     /// <example><code>request |&gt; Request.basicAuth user password</code></example>
     let basicAuth (user: string) (password: string) (request: HttpRequest) =
-        let credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes $"{user}:{password}")
-        secretHeader "Authorization" $"Basic {credentials}" request
+        let credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}:{1}", user, password)))
+        secretHeader "Authorization" (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Basic {0}", credentials)) request
 
     /// Sets the Accept header. <example><code>request |&gt; Request.accept "application/json"</code></example>
     let accept (mediaType: string) (request: HttpRequest) = header "Accept" mediaType request
@@ -343,7 +343,7 @@ module Request =
             else
                 let separator = if request.DisplayUrl.Contains "?" then "&" else "?"
                 request.DisplayUrl + separator + encodedQuery request.Query true
-        $"{Method.name request.Method} {url}"
+        (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0} {1}", Method.name request.Method, url))
 
     /// Returns a redacted request plan without sending anything.
     /// <example><code>Request.plan request</code></example>
@@ -351,9 +351,9 @@ module Request =
         let body =
             match request.Body with
             | RequestBody.Empty -> "empty"
-            | RequestBody.Text(content, contentType) -> $"{contentType} ({content.Length} characters)"
-            | RequestBody.Bytes(content, contentType) -> $"{contentType} ({content.Length} bytes)"
-            | RequestBody.Form fields -> $"form ({fields.Length} fields)"
+            | RequestBody.Text(content, contentType) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0} ({1} characters)", contentType, content.Length))
+            | RequestBody.Bytes(content, contentType) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0} ({1} bytes)", contentType, content.Length))
+            | RequestBody.Form fields -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "form ({0} fields)", fields.Length))
         let expectation =
             match request.Expectation with
             | StatusExpectation.Success -> "2xx"
@@ -552,6 +552,7 @@ module Http =
                 |> Array.tryPick (fun part ->
                     let part = part.Trim()
                     if part.StartsWith("charset=", StringComparison.OrdinalIgnoreCase) then
+                        // axial-note AXG010: untrusted charset names and custom encoding providers can fail; response text decoding intentionally falls back to UTF8 below.
                         try Some(Encoding.GetEncoding(part.Substring(8).Trim('"'))) with _ -> None
                     else None))
             |> Option.defaultValue Encoding.UTF8
@@ -583,7 +584,7 @@ module Http =
             match limit, Option.ofNullable content.Headers.ContentLength with
             | Some maximum, Some declared when declared > maximum -> return None
             | _ ->
-                use! stream = content.ReadAsStreamAsync()
+                let! stream = content.ReadAsStreamAsync()
                 use buffer = new System.IO.MemoryStream()
                 let chunk = Array.zeroCreate<byte> 81920
                 let maximum = defaultArg limit Int64.MaxValue
@@ -606,70 +607,106 @@ module Http =
                 return if total > maximum then None else Some(buffer.ToArray())
         }
 
-    /// Creates a live HTTP service backed by an explicit clock and <see cref="T:System.Net.Http.HttpClient" />.
-    /// <example><code>Http.live Clock.live (new HttpClient())</code></example>
-    let live (clock: IClock) (client: HttpClient) : IHttp =
+    /// Creates a live HTTP service backed by the caller's <see cref="T:System.Net.Http.HttpClient" />.
+    /// <remarks>Timestamps and request deadlines read the clock installed in the flow that executes the request. Set the
+    /// supplied client's <c>Timeout</c> to <c>Timeout.InfiniteTimeSpan</c> when every deadline should be driven by
+    /// <c>Request.timeout</c> and a test clock. Malformed URLs fail with <c>HttpError.InvalidRequest</c>.
+    /// Response and request-message disposal run independently; disposal exceptions remain defects.</remarks>
+    /// <example><code>Http.live (new HttpClient())</code></example>
+    let live (client: HttpClient) : IHttp =
+        let nativeTimeout (error: exn) =
+            match error with
+            | :? OperationCanceledException as cancelled when not (isNull cancelled.InnerException) ->
+                cancelled.InnerException :? TimeoutException
+            | _ -> false
+
         { new IHttp with
             member _.Send(request) =
                 flow {
                     let! cancellationToken = Flow.cancellationToken
-                    let! result = Flow.fromAsyncResult (async {
-                        return! task {
-                            let display = Request.render request
-                            let startedAt = clock.UtcNow()
-                            let started = clock.Elapsed()
-                            use timeoutSource = CancellationTokenSource.CreateLinkedTokenSource cancellationToken
-                            request.Timeout |> Option.iter timeoutSource.CancelAfter
+                    let display = Request.render request
+                    let! startedAt = Clock.now
+                    let! started = Clock.elapsed
+                    let send (token: CancellationToken) : Task<Result<HttpResponse, HttpError>> =
+                        task {
+                            let mutable message : HttpRequestMessage = null
+                            let mutable response : HttpResponseMessage = null
+                            // Classify construction and transport failures, but not disposal exceptions: cleanup
+                            // defects must not become typed transport errors.
+                            let transport =
+                                task {
+                                    try
+                                        message <- toMessage request
+                                        let! sent = client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, token)
+                                        response <- sent
+                                        match! readBody response.Content request.MaxResponseBytes token with
+                                        | None ->
+                                            return Error(HttpError.ResponseTooLarge(display, defaultArg request.MaxResponseBytes 0L))
+                                        | Some body ->
+                                            let contentType =
+                                                match response.Content.Headers.ContentType with
+                                                | null -> None
+                                                | value -> Some(value.ToString())
+                                            let headers =
+                                                [ for pair in response.Headers do
+                                                    for value in pair.Value do pair.Key, value
+                                                  for pair in response.Content.Headers do
+                                                    for value in pair.Value do pair.Key, value ]
+                                            return Ok
+                                                { StatusCode = int response.StatusCode
+                                                  ReasonPhrase = (match response.ReasonPhrase with null -> "" | reason -> reason)
+                                                  Headers = headers
+                                                  Body = body
+                                                  Text = decodeBody contentType body
+                                                  Request = display
+                                                  StartedAt = startedAt
+                                                  Duration = TimeSpan.Zero }
+                                    with
+                                    | :? OperationCanceledException as error when ForeignCancellation.isOurs cancellationToken error ->
+                                        // The workflow was interrupted: let the cancellation surface as Cause.Interrupt rather
+                                        // than inventing an error for an outcome nobody asked this request to report.
+                                        return raise error
+                                    | :? OperationCanceledException as error when nativeTimeout error ->
+                                        return Error(HttpError.TimedOut(display, client.Timeout))
+                                    | :? OperationCanceledException as error ->
+                                        return raise error
+                                    | :? HttpRequestException as error ->
+                                        let detail =
+                                            match error.InnerException with
+                                            | null -> error.Message
+                                            | inner -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0} {1}", error.Message, inner.Message))
+                                        return Error(HttpError.ConnectionFailed(display, detail))
+                                    | :? UriFormatException as error ->
+                                        return Error(HttpError.InvalidRequest error.Message)
+                                    | :? InvalidOperationException as error ->
+                                        return Error(HttpError.InvalidRequest error.Message)
+                                }
                             try
-                                use message = toMessage request
-                                use! response = client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, timeoutSource.Token)
-                                match! readBody response.Content request.MaxResponseBytes timeoutSource.Token with
-                                | None ->
-                                    return Error(HttpError.ResponseTooLarge(display, defaultArg request.MaxResponseBytes 0L))
-                                | Some body ->
-                                    let contentType =
-                                        match response.Content.Headers.ContentType with
-                                        | null -> None
-                                        | value -> Some(value.ToString())
-                                    let headers =
-                                        [ for pair in response.Headers do
-                                            for value in pair.Value do pair.Key, value
-                                          for pair in response.Content.Headers do
-                                            for value in pair.Value do pair.Key, value ]
-                                    return Ok
-                                        { StatusCode = int response.StatusCode
-                                          ReasonPhrase = (match response.ReasonPhrase with null -> "" | reason -> reason)
-                                          Headers = headers
-                                          Body = body
-                                          Text = decodeBody contentType body
-                                          Request = display
-                                          StartedAt = startedAt
-                                          Duration = clock.Elapsed() - started }
-                            with
-                            | :? OperationCanceledException as error when ForeignCancellation.isOurs cancellationToken error ->
-                                // The workflow was interrupted: let the cancellation surface as Cause.Interrupt rather
-                                // than inventing an error for an outcome nobody asked this request to report.
-                                return raise error
-                            | :? OperationCanceledException as error when timeoutSource.IsCancellationRequested ||
-                                                                 client.Timeout <> Timeout.InfiniteTimeSpan &&
-                                                                 clock.Elapsed() - started >= client.Timeout ->
-                                let timeout = request.Timeout |> Option.defaultValue client.Timeout
-                                return Error(HttpError.TimedOut(display, timeout))
-                            | :? OperationCanceledException as error ->
-                                return raise error
-                            | :? HttpRequestException as error ->
-                                let detail =
-                                    match error.InnerException with
-                                    | null -> error.Message
-                                    | inner -> $"{error.Message} {inner.Message}"
-                                return Error(HttpError.ConnectionFailed(display, detail))
-                            | :? UriFormatException as error ->
-                                return Error(HttpError.InvalidRequest error.Message)
-                            | :? InvalidOperationException as error ->
-                                return Error(HttpError.InvalidRequest error.Message)
-                        } |> Async.AwaitTask
-                    })
-                    return result
+                                let! outcome = transport
+                                return outcome
+                            finally
+                                let defects = ResizeArray<exn>()
+                                try
+                                    if not (isNull response) then response.Dispose()
+                                with error -> defects.Add error
+                                try
+                                    if not (isNull message) then message.Dispose()
+                                with error -> defects.Add error
+                                if defects.Count = 1 then
+                                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(defects[0]).Throw()
+                                elif defects.Count > 1 then
+                                    raise (AggregateException defects)
+                        }
+
+                    let operation = Flow.fromTaskResult send
+                    let operation =
+                        match request.Timeout with
+                        | Some timeout -> Flow.timeout timeout (HttpError.TimedOut(display, timeout)) operation
+                        | None -> operation
+
+                    let! response = operation
+                    let! ended = Clock.elapsed
+                    return { response with Duration = ended - started }
                 } }
 
     /// <summary>Creates a scriptable HTTP service test double that records requests.</summary>

@@ -18,7 +18,7 @@ open System.Threading
 open System.Threading.Tasks
 open Axial
 open Axial.HttpClient
-open Axial.PlatformService
+open Axial
 
 /// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =

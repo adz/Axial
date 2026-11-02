@@ -9,8 +9,7 @@ open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Axial
 open Axial.Hosting
-open Axial.PlatformService
-open Axial.Layers
+open Axial
 open Swensen.Unquote
 open Xunit
 
@@ -76,18 +75,14 @@ type ScopedProvider() =
                     entries.Add(string state, jobId) }
         member _.Dispose() = ()
 
-type WatchdogEnvironment(clock: IClock, logger: ILog) =
-    interface IHasClock with member _.Clock = clock
-    interface IHasLog with member _.Log = logger
-
 module HostingTests =
+    let private startWatchdog clock sink source =
+        source |> Flow.withClock clock |> Flow.withLogSink sink |> App.start ()
+    let private runWatchdog clock sink source =
+        source |> Flow.withClock clock |> Flow.withLogSink sink |> App.run ()
     let private variables (entries: (string * string) list) =
         let values = Dictionary<string, string>(entries |> Seq.map (fun (key, value) -> KeyValuePair(key, value)))
-        { new IEnvironmentVariables with
-            member _.TryGet key = match values.TryGetValue key with true, value -> Some value | _ -> None
-            member _.Set(_, _) = ()
-            member _.Expand value = value
-            member _.GetAll() = values }
+        fun key -> match values.TryGetValue key with true, value -> Some value | _ -> None
 
     let private recordingNotifier () =
         let messages = System.Collections.Concurrent.ConcurrentQueue<string>()
@@ -104,16 +99,11 @@ module HostingTests =
 
     [<Fact>]
     let ``watchdog without interval completes without notifying`` () =
-        let variables =
-            { new IEnvironmentVariables with
-                member _.TryGet _ = None
-                member _.Set(_, _) = ()
-                member _.Expand value = value
-                member _.GetAll() = Dictionary<string, string>() }
+        let variables (_: string) = None
         let mutable count = 0
         let notifier = { new ISystemdNotifier with member _.Notify _ = count <- count + 1 }
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
-        let result = App.run (WatchdogEnvironment(clock, Log.live)) (Hosting.watchdog variables 1 notifier) |> Async.RunSynchronously
+        let result = runWatchdog clock LogSink.none (Hosting.watchdog variables 1 notifier) |> Async.RunSynchronously
         test <@ result = Exit.Success () @>
         test <@ count = 0 @>
 
@@ -121,7 +111,7 @@ module HostingTests =
     let ``missing watchdog interval stays idle for ten virtual seconds`` () =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
         let notifier, messages = recordingNotifier ()
-        let running = App.start (WatchdogEnvironment(clock, Log.live)) (Hosting.watchdog (variables []) 42 notifier)
+        let running = startWatchdog clock LogSink.none (Hosting.watchdog (variables []) 42 notifier)
         clock.AdvanceBy(TimeSpan.FromSeconds 10.0)
         Assert.Equal(Exit.Success (), running.Completion |> Async.RunSynchronously)
         Assert.Empty(messages)
@@ -130,7 +120,7 @@ module HostingTests =
     let ``healthy watchdog pings once per second`` () =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
         let notifier, messages = recordingNotifier ()
-        let running = App.start (WatchdogEnvironment(clock, Log.live)) (Hosting.watchdog (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier)
+        let running = startWatchdog clock LogSink.none (Hosting.watchdog (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier)
         try
             for step in 1 .. 5 do advance clock 2 messages step
             Assert.Equal<string>(Array.create 5 "WATCHDOG=1", messages.ToArray())
@@ -142,9 +132,9 @@ module HostingTests =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
         let notifier, messages = recordingNotifier ()
         let mutable checks = 0
-        let health : Flow<WatchdogEnvironment, Never, bool> =
+        let health : Flow<unit, Never, bool> =
             Flow.delay (fun () -> checks <- checks + 1; Flow.succeed (checks <= 2))
-        let running = App.start (WatchdogEnvironment(clock, Log.live)) (Hosting.watchdogWith (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier health)
+        let running = startWatchdog clock LogSink.none (Hosting.watchdogWith (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier health)
         try
             for step in 1 .. 2 do advance clock 2 messages step
             for _ in 3 .. 5 do
@@ -163,8 +153,8 @@ module HostingTests =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
         let notifier, messages = recordingNotifier ()
         let gate = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
-        let heartbeat : Flow<WatchdogEnvironment, Never, unit> = Flow.fromTask (fun token -> gate.Task.WaitAsync token)
-        let running = App.start (WatchdogEnvironment(clock, Log.live)) (Hosting.watchdogWithHeartbeat heartbeat (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier (Flow.succeed true))
+        let heartbeat : Flow<unit, Never, unit> = Flow.fromTask (fun token -> gate.Task.WaitAsync token)
+        let running = startWatchdog clock LogSink.none (Hosting.watchdogWithHeartbeat heartbeat (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier (Flow.succeed true))
         try
             Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers >= 2), 5000))
             clock.AdvanceBy(TimeSpan.FromMilliseconds 500.0)
@@ -182,7 +172,7 @@ module HostingTests =
     let ``watchdog for another PID never pings`` () =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
         let notifier, messages = recordingNotifier ()
-        let running = App.start (WatchdogEnvironment(clock, Log.live)) (Hosting.watchdog (variables ["WATCHDOG_USEC", "2000000"; "WATCHDOG_PID", "99"]) 42 notifier)
+        let running = startWatchdog clock LogSink.none (Hosting.watchdog (variables ["WATCHDOG_USEC", "2000000"; "WATCHDOG_PID", "99"]) 42 notifier)
         clock.AdvanceBy(TimeSpan.FromSeconds 10.0)
         Assert.Equal(Exit.Success (), running.Completion |> Async.RunSynchronously)
         Assert.Empty(messages)
@@ -195,12 +185,9 @@ module HostingTests =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
         let warnings = ResizeArray<string>()
         let logger =
-            { new ILog with
-                member _.Log level message =
-                    if level = Axial.LogLevel.Warning then warnings.Add message
-                member _.LogException _ _ _ = () }
+            LogSink.fromFunction (fun entry -> if entry.Level = Axial.LogLevel.Warning then warnings.Add entry.Message)
         let notifier, messages = recordingNotifier ()
-        let result = App.run (WatchdogEnvironment(clock, logger)) (Hosting.watchdog (variables ["WATCHDOG_USEC", value]) 42 notifier)
+        let result = runWatchdog clock logger (Hosting.watchdog (variables ["WATCHDOG_USEC", value]) 42 notifier)
                      |> Async.RunSynchronously
         Assert.Equal(Exit.Success (), result)
         Assert.Single(warnings) |> ignore
@@ -243,12 +230,11 @@ module HostingTests =
 
     [<Fact>]
     let ``named locals follow concurrent jobs and forked logs`` () =
-        let provider = ScopedProvider()
+        let provider = new ScopedProvider()
         use factory = LoggerFactory.Create(fun builder -> builder.AddProvider(provider) |> ignore)
         let logger = MicrosoftLogging.fromFactory "jobs" factory
         let jobId = FiberLocal.named "jobId" "unset"
-        let log message : Flow<ClockEnvironment, string, unit> =
-            Flow.delay (fun () -> logger.Log LogLevel.Information message; Flow.succeed ())
+        let log message : Flow<unit, string, unit> = Log.info message
         let job id =
             flow {
                 do! log (id + " start")
@@ -258,7 +244,7 @@ module HostingTests =
             }
             |> FiberLocal.locally id jobId
         let work = Flow.zipPar (job "job-42") (job "job-7")
-        test <@ App.run (ClockEnvironment(Clock.live)) work |> Async.RunSynchronously = Exit.Success ((), ()) @>
+        test <@ App.run () (work |> Flow.withLogSink logger) |> Async.RunSynchronously = Exit.Success ((), ()) @>
         let entries = provider.Entries
         test <@ entries.Length = 6 @>
         for message, scope in entries do
@@ -266,13 +252,33 @@ module HostingTests =
             test <@ scope = Some expected @>
 
     [<Fact>]
+    let ``Microsoft logging sink uses entry snapshots rather than current locals`` () =
+        let provider = new ScopedProvider()
+        use factory = LoggerFactory.Create(fun builder -> builder.AddProvider(provider) |> ignore)
+        let sink = MicrosoftLogging.fromFactory "snapshots" factory
+        let jobId = FiberLocal.named "jobId" "unset"
+        let entry =
+            { Level = Axial.LogLevel.Information
+              Message = "captured"
+              Error = None
+              Annotations = Map.empty
+              Locals = [ "jobId", box "captured-job" ] }
+        let source : Flow<unit, Never, unit> =
+            Flow.delay (fun () -> sink.Write entry; Flow.ok ())
+            |> FiberLocal.locally "different-job" jobId
+        source |> App.run () |> Async.RunSynchronously |> ignore
+        Assert.Equal(Some "captured-job", (Assert.Single(provider.Entries) |> snd))
+
+    [<Fact>]
     let ``Microsoft logging adapter preserves levels and exceptions`` () =
         let logger = RecordingLogger()
-        let log = MicrosoftLogging.create logger
+        let log = MicrosoftLogging.sink logger
         let defect = InvalidOperationException "boom"
 
-        log.Log LogLevel.Information "started"
-        log.LogException LogLevel.Error defect "failed"
+        (flow {
+            do! Log.info "started"
+            do! Log.errorExn defect "failed"
+        }) |> Flow.withLogSink log |> App.run () |> Async.RunSynchronously |> ignore
 
         match logger.Entries with
         | [ information, first, None; error, second, Some captured ] ->
@@ -304,7 +310,7 @@ module HostingTests =
                 application,
                 TypedLogger<FlowHostedService<string, string>>(logger) :> ILogger<_>,
                 lifetime,
-                HostedAppOptions.Default)
+                { HostedAppOptions.Default with LogSink = None })
             :> IHostedService
 
         hosted.StartAsync(CancellationToken.None).GetAwaiter().GetResult()
@@ -321,7 +327,7 @@ module HostingTests =
         let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let finalized = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
-        let application : Flow<ClockEnvironment, string, unit> =
+        let application : Flow<unit, string, unit> =
             flow {
                 do! Flow.scopeFinalizer(Flow.delay (fun () -> finalized.TrySetResult() |> ignore; Flow.succeed ()))
                 started.TrySetResult() |> ignore
@@ -329,14 +335,14 @@ module HostingTests =
             }
 
         let hosted =
-            new FlowHostedService<ClockEnvironment, string>(
+            new FlowHostedService<unit, string>(
                 null,
-                (fun _ -> ClockEnvironment(Clock.live)),
+                (fun _ -> ()),
                 id,
                 application,
-                TypedLogger<FlowHostedService<ClockEnvironment, string>>(logger) :> ILogger<_>,
+                TypedLogger<FlowHostedService<unit, string>>(logger) :> ILogger<_>,
                 lifetime,
-                { StopHostOnCompletion = false })
+                { StopHostOnCompletion = false; LogSink = None })
             :> IHostedService
 
         hosted.StartAsync(CancellationToken.None).GetAwaiter().GetResult()
@@ -344,6 +350,51 @@ module HostingTests =
         (lifetime :> IHostApplicationLifetime).StopApplication()
         hosted.StopAsync(CancellationToken.None).GetAwaiter().GetResult()
         test <@ finalized.Task.IsCompletedSuccessfully @>
+
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
+    let ``Generic Host shutdown waits for cleanup unless its token abandons the wait`` abandon =
+        let logger = RecordingLogger()
+        let lifetime = RecordingLifetime()
+        let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let finalizing = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let releaseFinalizer = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+        let application : Flow<unit, string, unit> =
+            flow {
+                do! Flow.scopeFinalizer(Flow.fromTask (fun _ -> task { finalizing.TrySetResult() |> ignore; do! releaseFinalizer.Task }))
+                started.TrySetResult() |> ignore
+                do! Flow.sleep(TimeSpan.FromSeconds 30.0)
+            }
+
+        let hosted =
+            new FlowHostedService<unit, string>(
+                null,
+                (fun _ -> ()),
+                id,
+                application,
+                TypedLogger<FlowHostedService<unit, string>>(logger) :> ILogger<_>,
+                lifetime,
+                { StopHostOnCompletion = false; LogSink = None })
+            :> IHostedService
+
+        try
+            hosted.StartAsync(CancellationToken.None).GetAwaiter().GetResult()
+            test <@ started.Task.Wait(TimeSpan.FromSeconds 2.0) @>
+            use shutdownTimeout = new CancellationTokenSource()
+            let stopping = hosted.StopAsync(shutdownTimeout.Token)
+            test <@ finalizing.Task.Wait(TimeSpan.FromSeconds 2.0) @>
+            // The finalizer is still running, so stopping waits for it.
+            test <@ not stopping.IsCompleted @>
+
+            if abandon then shutdownTimeout.Cancel()
+            else releaseFinalizer.TrySetResult() |> ignore
+            test <@ stopping.Wait(TimeSpan.FromSeconds 2.0) @>
+            let warned = logger.Entries |> List.exists (fun (level, message, _) -> level = Microsoft.Extensions.Logging.LogLevel.Warning && message.Contains "still running")
+            test <@ warned = abandon @>
+        finally
+            releaseFinalizer.TrySetResult() |> ignore
 
     [<Fact>]
     let ``standalone exit codes distinguish failure defects and interruption`` () =

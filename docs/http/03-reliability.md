@@ -22,7 +22,7 @@ open System.Threading
 open System.Threading.Tasks
 open Axial
 open Axial.HttpClient
-open Axial.PlatformService
+open Axial
 
 /// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =
@@ -33,18 +33,16 @@ let shouldEqual expected actual =
 open Axial.HttpClient.DSL
 
 type TestEnv =
-    { Http: IHttp; Clock: IClock }
+    { Http: IHttp }
     interface IHasHttp with
         member this.Http = this.Http
-    interface IHasClock with
-        member this.Clock = this.Clock
 
 /// An HTTP service that replies with each status and body in turn, and records the requests it received.
 type ScriptedHttp(replies: (int * string) list) =
     let remaining = Collections.Generic.Queue(replies)
     let sent = ResizeArray<HttpRequest>()
     member _.Sent = List.ofSeq sent
-    member this.Env = { Http = this; Clock = Clock.live }
+    member this.Env = { Http = this }
 
     interface IHttp with
         member _.Send(request) =
@@ -82,8 +80,7 @@ let stalledHandler () =
             } }
 
 let timeoutEnv =
-    { Http = Http.live Clock.live (new HttpClient(stalledHandler ()))
-      Clock = Clock.live }
+    { Http = Http.live (new HttpClient(stalledHandler ())) }
 ```
 
 ```fsharp run

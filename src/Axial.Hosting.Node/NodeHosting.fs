@@ -1,50 +1,50 @@
 namespace Axial.Hosting.Node
 
 open System
-open System.Collections.Generic
 open Axial
-open Axial.PlatformService
 open Fable.Core
 open Fable.Core.JsInterop
 
-/// <summary>Node.js process environment adaptation for Axial's explicit environment-variable service.</summary>
+/// <summary>Console-error logging for Node applications.</summary>
 [<RequireQualifiedAccess>]
-module NodeEnvironment =
-    [<Emit("typeof process !== 'undefined' && process?.versions?.node != null")>]
-    let private isNode () : bool = jsNative
+module NodeLogging =
+    // Keep percent directives in user messages literal; trailing absent arguments are omitted so the console never prints null or [].
+    let private arguments (message: string) (entry: LogEntry) : obj array =
+        let error: obj = match entry.Error with Some error -> box error | None -> null
+        let annotations = Map.toArray entry.Annotations
+        let locals = List.toArray entry.Locals
+        let tail: obj array =
+            if locals.Length > 0 then [| error; box annotations; box locals |]
+            elif annotations.Length > 0 then [| error; box annotations |]
+            elif not (isNull error) then [| error |]
+            else [||]
+        Array.append [| box "%s"; box message |] tail
 
-    let internal ensureNode () =
+    [<Emit("console.error(...$0)")>]
+    let private write (_arguments: obj array) : unit = jsNative
+
+    /// <summary>Writes enabled entries to stderr with level, exception and metadata snapshots.</summary>
+    let sink (minimum: LogLevel) : ILogSink =
+        { new ILogSink with
+            member _.IsEnabled level = level >= minimum
+            member _.Write entry =
+                if entry.Level >= minimum then
+                    write (arguments (string entry.Level + ": " + entry.Message) entry) }
+
+/// <summary>Root logging policy. None leaves the runtime default; LogSink.none silences the host.</summary>
+type NodeAppOptions =
+    { LogSink: ILogSink option }
+    static member Default = { LogSink = Some(NodeLogging.sink LogLevel.Information) }
+
+/// <summary>Runtime checks shared by the Node host modules.</summary>
+[<RequireQualifiedAccess>]
+module NodeRuntime =
+    [<Emit("typeof process !== 'undefined' && process?.versions?.node != null")>]
+    let isNode () : bool = jsNative
+
+    let ensureNode () =
         if not (isNode ()) then
             raise (PlatformNotSupportedException("Axial.Hosting.Node requires Fable JavaScript running on Node.js."))
-
-    [<Emit("process.env[$0] ?? null")>]
-    let private tryGetRaw (_name: string) : string = jsNative
-
-    [<Emit("$1 == null ? delete process.env[$0] : (process.env[$0] = $1)")>]
-    let private setRaw (_name: string) (_value: string) : unit = jsNative
-
-    [<Emit("Object.entries(process.env).filter(([,v]) => v != null)")>]
-    let private entries () : (string * string) array = jsNative
-
-    [<Emit("$0.replace(/\\$\\{?([A-Za-z_][A-Za-z0-9_]*)\\}?/g, (_, n) => process.env[n] ?? '')")>]
-    let private expandRaw (_text: string) : string = jsNative
-    /// <summary>Creates an environment-variable service backed by <c>process.env</c>.</summary>
-    let live : IEnvironmentVariables =
-        { new IEnvironmentVariables with
-            member _.TryGet name =
-                ensureNode ()
-                Option.ofObj (tryGetRaw name)
-            member _.Set(name, value) =
-                ensureNode ()
-                setRaw name (Option.toObj value)
-            member _.Expand text =
-                ensureNode ()
-                expandRaw text
-            member _.GetAll() =
-                ensureNode ()
-                let values = Dictionary<string, string>()
-                for name, value in entries () do values[name] <- value
-                values :> IReadOnlyDictionary<string, string> }
 
 /// <summary>Node.js signal, argument, and process-exit integration for root Flow applications.</summary>
 [<RequireQualifiedAccess>]
@@ -65,7 +65,7 @@ module NodeApp =
     let private writeError (_message: string) : unit = jsNative
     /// <summary>Gets command-line arguments after the Node executable and script path.</summary>
     let arguments () : string list =
-        NodeEnvironment.ensureNode ()
+        NodeRuntime.ensureNode ()
         argvRaw () |> Array.toList
 
     /// <summary>Maps a final application exit to conventional Node process exit codes.</summary>
@@ -79,13 +79,15 @@ module NodeApp =
     /// <summary>
     /// Starts a Node application, translating SIGINT and SIGTERM into coordinated stop and publishing its exit code.
     /// </summary>
-    let start
+    let startWithOptions
+        (options: NodeAppOptions)
         (describeError: 'error -> string)
         (environment: 'env)
         (application: Flow<'env, 'error, 'value>)
         : AppHandle<'error, 'value> =
-        NodeEnvironment.ensureNode ()
-        let running = App.start environment application
+        NodeRuntime.ensureNode ()
+        let hosted = match options.LogSink with Some sink -> Flow.withLogSink sink application | None -> application
+        let running = App.start environment hosted
         let mutable signalExitCode: int option = None
 
         let requestStop () =
@@ -128,10 +130,19 @@ module NodeApp =
 
         running
 
-    /// <summary>Starts a Node application and waits for its final exit.</summary>
-    let run
+    /// <summary>Starts a Node application with the default console-error log sink.</summary>
+    let start describeError environment application =
+        startWithOptions NodeAppOptions.Default describeError environment application
+
+    /// <summary>Starts a Node application with explicit logging policy and waits for its final exit.</summary>
+    let runWithOptions
+        (options: NodeAppOptions)
         (describeError: 'error -> string)
         (environment: 'env)
         (application: Flow<'env, 'error, 'value>)
         : Async<Exit<'value, 'error>> =
-        (start describeError environment application).Completion
+        (startWithOptions options describeError environment application).Completion
+
+    /// <summary>Starts a Node application with the default console-error sink and waits for its final exit.</summary>
+    let run describeError environment application =
+        runWithOptions NodeAppOptions.Default describeError environment application

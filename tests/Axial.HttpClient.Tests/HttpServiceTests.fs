@@ -8,7 +8,7 @@ open System.Threading.Tasks
 open Axial
 open Axial.HttpClient
 open Axial.HttpClient.DSL
-open Axial.PlatformService
+open Axial
 open Swensen.Unquote
 open Xunit
 
@@ -17,11 +17,9 @@ type HttpTestEnv =
 
     interface IHasHttp with
         member this.Http = this.Http
-    interface IHasClock with
-        member this.Clock = this.Clock
 
 module HttpServiceTests =
-    let private syntheticTime = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) // axial-allow-fixture
+    let private syntheticTime = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) // axial-allow-AXG004: immutable value is safe to share between tests
     let private runSync (environment: 'env) (workflow: Flow<'env, 'error, 'value>) : Exit<'value, 'error> =
         workflow.RunSynchronously(environment)
 
@@ -268,7 +266,7 @@ module HttpServiceTests =
 
     let private liveEnv () =
         let client = new HttpClient()
-        { Http = Http.live Clock.live client; Clock = Clock.live }
+        { Http = Http.live client; Clock = Clock.live }
 
     [<Fact>]
     let ``live service performs a real GET with query and headers`` () =
@@ -292,17 +290,333 @@ module HttpServiceTests =
                 test <@ not (response.Request.Contains "tkn") @>)
 
     [<Fact>]
-    let ``live service timestamps transcripts through the supplied clock`` () =
+    let ``live service timestamps transcripts through the execution clock`` () =
         let fixedTime = DateTimeOffset(2030, 4, 5, 6, 7, 8, TimeSpan.Zero)
         withServer
             (fun context -> context.Response.StatusCode <- 200)
             (fun root ->
                 use client = new HttpClient()
                 let fixedClock = Clock.fromValue fixedTime
-                let env = { Http = Http.live fixedClock client; Clock = fixedClock }
-                let response = Http.get root |> Http.send |> runSync env |> requireSuccess
+                let env = { Http = Http.live client; Clock = fixedClock }
+                let response =
+                    Http.get root
+                    |> Http.send
+                    |> Flow.withClock fixedClock
+                    |> runSync env
+                    |> requireSuccess
                 test <@ response.StartedAt = fixedTime @>
                 test <@ response.Duration = TimeSpan.Zero @>)
+
+    [<Fact>]
+    let ``live HTTP uses execution clock not construction clock`` () =
+        let construction = Clock.fromValue(DateTimeOffset(2001, 1, 1, 0, 0, 0, TimeSpan.Zero))
+        let execution = Clock.fromValue(DateTimeOffset(2025, 6, 7, 8, 9, 10, TimeSpan.Zero))
+        use handler =
+            { new HttpMessageHandler() with
+                member _.SendAsync(_, _) =
+                    Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent("ok"))) }
+        use client = new HttpClient(handler)
+        let service = Http.live client
+        let env = { Http = service; Clock = execution }
+        let first =
+            Http.get "https://example.test/"
+            |> Http.send
+            |> Flow.withClock execution
+            |> runSync env
+            |> requireSuccess
+        test <@ first.StartedAt = DateTimeOffset(2025, 6, 7, 8, 9, 10, TimeSpan.Zero) @>
+        let secondClock = Clock.fromValue(DateTimeOffset(2031, 2, 3, 4, 5, 6, TimeSpan.Zero))
+        let second =
+            Http.get "https://example.test/"
+            |> Http.send
+            |> Flow.withClock secondClock
+            |> runSync { env with Clock = secondClock }
+            |> requireSuccess
+        test <@ second.StartedAt = DateTimeOffset(2031, 2, 3, 4, 5, 6, TimeSpan.Zero) @>
+
+    [<Fact>]
+    let ``request timeout advances only with the runtime clock`` () = task {
+        use entered = new ManualResetEventSlim(false)
+        use handler =
+            { new HttpMessageHandler() with
+                member _.SendAsync(_, cancellationToken) =
+                    task {
+                        entered.Set()
+                        do! Task.Delay(Timeout.Infinite, cancellationToken)
+                        return new HttpResponseMessage(HttpStatusCode.OK)
+                    } }
+        use client = new HttpClient(handler, Timeout = Timeout.InfiniteTimeSpan)
+        let clock = Clock.fromValue(DateTimeOffset.UnixEpoch)
+        let service = Http.live client
+        let env = { Http = service; Clock = clock }
+        let running =
+            Http.get "https://example.test/"
+            |> Request.timeout (TimeSpan.FromSeconds 5.)
+            |> Http.send
+            |> Flow.withClock clock
+            |> fun source -> source.StartAsTask(env)
+        Assert.True(entered.Wait(TimeSpan.FromSeconds 5.0))
+        clock.AdvanceBy(TimeSpan.FromSeconds 4.)
+        Assert.False(running.IsCompleted)
+        clock.AdvanceBy(TimeSpan.FromSeconds 1.)
+        let! exit = running.WaitAsync(TimeSpan.FromSeconds 5.0)
+        match exit with
+        | Exit.Failure(Cause.Fail(HttpError.TimedOut(_, timeout))) -> Assert.Equal(TimeSpan.FromSeconds 5., timeout)
+        | other -> failwithf "Expected request timeout, got %A" other
+    }
+
+    type private BlockingBodyStream() =
+        inherit IO.Stream()
+
+        member val Disposed = false with get, set
+
+        override _.CanRead = true
+        override _.CanSeek = false
+        override _.CanWrite = false
+        override _.Length = raise (NotSupportedException())
+        override _.Position
+            with get () = raise (NotSupportedException())
+            and set _ = raise (NotSupportedException())
+        override _.Flush() = ()
+        override _.Seek(_, _) = raise (NotSupportedException())
+        override _.SetLength _ = raise (NotSupportedException())
+        override _.Read(_, _, _) = raise (NotSupportedException())
+        override _.Write(_, _, _) = raise (NotSupportedException())
+
+        override _.ReadAsync(_, _, _, cancellationToken) =
+            Task.Delay(Timeout.Infinite, cancellationToken) |> fun delay -> task {
+                do! delay
+                return 0
+            }
+
+        override this.Dispose(disposing) =
+            this.Disposed <- true
+            base.Dispose disposing
+
+    [<Fact>]
+    let ``live HTTP samples duration from the execution clock`` () = task {
+        use entered = new ManualResetEventSlim(false)
+        let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        use handler =
+            { new HttpMessageHandler() with
+                member _.SendAsync(_, _) =
+                    entered.Set()
+                    task {
+                        do! release.Task
+                        return new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent("ok"))
+                    } }
+        use client = new HttpClient(handler, Timeout = Timeout.InfiniteTimeSpan)
+        let epoch = DateTimeOffset(2040, 1, 1, 0, 0, 0, TimeSpan.Zero)
+        let clock = ManualClock(epoch)
+        let env = { Http = Http.live client; Clock = clock }
+        let running =
+            Http.get "https://example.test/"
+            |> Http.send
+            |> Flow.withClock clock
+            |> fun source -> source.StartAsTask env
+        Assert.True(entered.Wait(TimeSpan.FromSeconds 5.0))
+        clock.AdvanceBy(TimeSpan.FromSeconds 7.)
+        release.TrySetResult() |> ignore
+        let! exit = running.WaitAsync(TimeSpan.FromSeconds 10.0)
+        match exit with
+        | Exit.Success response ->
+            Assert.Equal(epoch, response.StartedAt)
+            Assert.Equal(TimeSpan.FromSeconds 7., response.Duration)
+        | other -> failwithf "Expected success, got %A" other
+    }
+
+    [<Fact>]
+    let ``same HTTP service isolates simultaneous roots and their durations`` () = task {
+        let entered = [| for _ in 0..1 -> TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously) |]
+        let release = [| for _ in 0..1 -> TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously) |]
+        use handler =
+            { new HttpMessageHandler() with
+                member _.SendAsync(request, token) = task {
+                    let index = if request.RequestUri.AbsolutePath = "/a" then 0 else 1
+                    entered[index].TrySetResult() |> ignore
+                    do! release[index].Task.WaitAsync token
+                    return new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent(string index))
+                } }
+        use client = new HttpClient(handler, Timeout = Timeout.InfiniteTimeSpan)
+        let service = Http.live client
+        let first = ManualClock(DateTimeOffset(2002, 1, 1, 0, 0, 0, TimeSpan.Zero))
+        let second = ManualClock(DateTimeOffset(2032, 1, 1, 0, 0, 0, TimeSpan.Zero))
+        let run clock path =
+            Http.get ("https://example.test/" + path) |> Http.send |> Flow.withClock clock
+            |> fun source -> source.StartAsTask { Http = service; Clock = clock }
+        let a = run first "a"
+        let b = run second "b"
+        try
+            let! _ = Task.WhenAll(entered |> Array.map _.Task).WaitAsync(TimeSpan.FromSeconds 10.)
+            Assert.False(a.IsCompleted)
+            Assert.False(b.IsCompleted)
+            first.AdvanceBy(TimeSpan.FromSeconds 7.)
+            second.AdvanceBy(TimeSpan.FromSeconds 13.)
+        finally
+            for gate in release do gate.TrySetResult() |> ignore
+        let! exits = Task.WhenAll(a, b).WaitAsync(TimeSpan.FromSeconds 10.)
+        let responseA = requireSuccess exits[0]
+        let responseB = requireSuccess exits[1]
+        Assert.Equal(DateTimeOffset(2002, 1, 1, 0, 0, 0, TimeSpan.Zero), responseA.StartedAt)
+        Assert.Equal(DateTimeOffset(2032, 1, 1, 0, 0, 0, TimeSpan.Zero), responseB.StartedAt)
+        Assert.Equal(TimeSpan.FromSeconds 7., responseA.Duration)
+        Assert.Equal(TimeSpan.FromSeconds 13., responseB.Duration)
+        Assert.Equal("0", responseA.Text)
+        Assert.Equal("1", responseB.Text)
+    }
+
+    [<Fact>]
+    let ``request timeout covers a stalled response body and disposes it`` () = task {
+        use entered = new ManualResetEventSlim(false)
+        let stream = new BlockingBodyStream()
+        use handler =
+            { new HttpMessageHandler() with
+                member _.SendAsync(_, _) =
+                    entered.Set()
+                    Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK, Content = new StreamContent(stream))) }
+        use client = new HttpClient(handler, Timeout = Timeout.InfiniteTimeSpan)
+        let clock = ManualClock(DateTimeOffset.UnixEpoch)
+        let env = { Http = Http.live client; Clock = clock }
+        let running =
+            Http.get "https://example.test/"
+            |> Request.timeout (TimeSpan.FromSeconds 5.)
+            |> Http.send
+            |> Flow.withClock clock
+            |> fun source -> source.StartAsTask env
+        Assert.True(entered.Wait(TimeSpan.FromSeconds 5.0))
+        clock.AdvanceBy(TimeSpan.FromSeconds 5.)
+        let! exit = running.WaitAsync(TimeSpan.FromSeconds 10.0)
+        match exit with
+        | Exit.Failure cause ->
+            Assert.Contains(Cause.failures cause, fun error -> match error with HttpError.TimedOut _ -> true | _ -> false)
+        | other -> failwithf "Expected request timeout, got %A" other
+        Assert.True(stream.Disposed, "the canceled response body must be disposed")
+    }
+
+    [<Fact>]
+    let ``finite native client timeout is recognized with a frozen manual clock`` () = task {
+        use handler =
+            { new HttpMessageHandler() with
+                member _.SendAsync(_, _) =
+                    Task.FromException<HttpResponseMessage>(TaskCanceledException("native", TimeoutException("native timeout"))) }
+        use client = new HttpClient(handler, Timeout = TimeSpan.FromSeconds 5.)
+        let clock = Clock.fromValue DateTimeOffset.UnixEpoch
+        let env = { Http = Http.live client; Clock = clock }
+        let! exit = (Http.get "https://example.test/" |> Http.send |> Flow.withClock clock |> fun source -> source.StartAsTask env).WaitAsync(TimeSpan.FromSeconds 10.0)
+        match exit with
+        | Exit.Failure(Cause.Fail(HttpError.TimedOut(_, timeout))) -> Assert.Equal(TimeSpan.FromSeconds 5., timeout)
+        | other -> failwithf "Expected native timeout, got %A" other
+    }
+
+    [<Fact>]
+    let ``real native client timeout is reported as a typed timeout`` () = task {
+        use handler =
+            { new HttpMessageHandler() with
+                member _.SendAsync(_, cancellationToken) =
+                    task {
+                        do! Task.Delay(Timeout.Infinite, cancellationToken)
+                        return new HttpResponseMessage(HttpStatusCode.OK)
+                    } }
+        use client = new HttpClient(handler, Timeout = TimeSpan.FromMilliseconds 100.)
+        let env = { Http = Http.live client; Clock = Clock.live }
+        let! exit = (Http.get "https://example.test/" |> Http.send |> fun source -> source.StartAsTask env).WaitAsync(TimeSpan.FromSeconds 10.0)
+        match exit with
+        | Exit.Failure(Cause.Fail(HttpError.TimedOut(_, timeout))) -> Assert.Equal(TimeSpan.FromMilliseconds 100., timeout)
+        | other -> failwithf "Expected native timeout, got %A" other
+    }
+
+    [<Fact>]
+    let ``invalid URL construction remains a typed request failure`` () =
+        use client = new HttpClient()
+        let env = { Http = Http.live client; Clock = Clock.live }
+        let error = Http.get "http://[" |> Http.send |> runSync env |> requireError
+        Assert.True(match error with HttpError.InvalidRequest _ -> true | _ -> false)
+
+    type private ThrowingContent(marker: string, disposed: unit -> unit) =
+        inherit ByteArrayContent([| 1uy |])
+        override _.Dispose(disposing) =
+            disposed ()
+            base.Dispose disposing
+            raise (InvalidOperationException marker)
+
+    [<Fact>]
+    let ``response and request disposals both run and retain both defects`` () =
+        let mutable requestDisposed = false
+        let mutable responseDisposed = false
+        use handler =
+            { new HttpMessageHandler() with
+                member _.SendAsync(message, _) =
+                    message.Content <- new ThrowingContent("request-disposal-marker", fun () -> requestDisposed <- true)
+                    Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK,
+                        Content = new ThrowingContent("response-disposal-marker", fun () -> responseDisposed <- true))) }
+        use client = new HttpClient(handler)
+        let env = { Http = Http.live client; Clock = Clock.live }
+        let exit = Http.get "https://example.test/" |> Http.send |> runSync env
+        Assert.True(responseDisposed)
+        Assert.True(requestDisposed, "Request disposal was skipped after response disposal threw")
+        match exit with
+        | Exit.Failure cause ->
+            let rec messages (error: exn) =
+                match error with
+                | :? AggregateException as aggregate -> aggregate.InnerExceptions |> Seq.collect messages
+                | _ -> Seq.singleton error.Message
+            let defects = Cause.defects cause |> Seq.collect messages |> Seq.toList
+            Assert.Contains("response-disposal-marker", defects)
+            Assert.Contains("request-disposal-marker", defects)
+            Assert.Empty(Cause.failures cause)
+        | other -> failwithf "Expected disposal defects, got %A" other
+
+    type private CancelThenThrowOnDisposeStream() =
+        inherit IO.Stream()
+
+        override _.CanRead = true
+        override _.CanSeek = false
+        override _.CanWrite = false
+        override _.Length = raise (NotSupportedException())
+        override _.Position
+            with get () = raise (NotSupportedException())
+            and set _ = raise (NotSupportedException())
+        override _.Flush() = ()
+        override _.Seek(_, _) = raise (NotSupportedException())
+        override _.SetLength _ = raise (NotSupportedException())
+        override _.Read(_, _, _) = raise (NotSupportedException())
+        override _.Write(_, _, _) = raise (NotSupportedException())
+
+        override _.ReadAsync(_, _, _, cancellationToken) =
+            let pending = TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously)
+            cancellationToken.Register(fun () -> pending.TrySetCanceled cancellationToken |> ignore) |> ignore
+            pending.Task
+
+        override _.Dispose(disposing) =
+            base.Dispose disposing
+            raise (InvalidOperationException "cleanup-defect-marker")
+
+    [<Fact>]
+    let ``request timeout retains a response disposal defect`` () = task {
+        use entered = new ManualResetEventSlim(false)
+        use handler =
+            { new HttpMessageHandler() with
+                member _.SendAsync(_, _) =
+                    entered.Set()
+                    Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK, Content = new StreamContent(new CancelThenThrowOnDisposeStream()))) }
+        use client = new HttpClient(handler, Timeout = Timeout.InfiniteTimeSpan)
+        let clock = Clock.fromValue(DateTimeOffset.UnixEpoch)
+        let env = { Http = Http.live client; Clock = clock }
+        let running =
+            Http.get "https://example.test/"
+            |> Request.timeout (TimeSpan.FromSeconds 5.)
+            |> Http.send
+            |> Flow.withClock clock
+            |> fun source -> source.StartAsTask env
+        Assert.True(entered.Wait(TimeSpan.FromSeconds 5.0))
+        clock.AdvanceBy(TimeSpan.FromSeconds 5.)
+        let! exit = running.WaitAsync(TimeSpan.FromSeconds 10.0)
+        match exit with
+        | Exit.Failure cause ->
+            Assert.Contains(Cause.failures cause, fun error -> match error with HttpError.TimedOut _ -> true | _ -> false)
+            Assert.Contains(Cause.defects cause, fun defect -> defect.Message.Contains "cleanup-defect-marker")
+        | other -> failwithf "Expected a timeout with a cleanup defect, got %A" other
+    }
 
     [<Fact>]
     let ``live service posts JSON bodies and reads status errors`` () =
@@ -344,7 +658,7 @@ module HttpServiceTests =
     let ``live service enforces per-request timeouts as typed errors`` () =
         withServer
             (fun context ->
-                Thread.Sleep 2000
+                TestSupport.occupyThread (TimeSpan.FromSeconds 2.)
                 context.Response.StatusCode <- 200)
             (fun root ->
                 let error =
@@ -367,7 +681,7 @@ module HttpServiceTests =
             (fun root ->
                 use cancellation = new CancellationTokenSource()
                 use client = new HttpClient()
-                let environment = { Http = Http.live Clock.live client; Clock = Clock.live }
+                let environment = { Http = Http.live client; Clock = Clock.live }
                 let running = Task.Run(fun () -> (Http.get root |> Http.send).RunSynchronously(environment, cancellationToken = cancellation.Token))
                 try
                     Assert.True(started.Wait(TimeSpan.FromSeconds 5.0))
@@ -381,7 +695,7 @@ module HttpServiceTests =
             { new HttpMessageHandler() with
                 member _.SendAsync(_, _) = Task.FromException<HttpResponseMessage>(OperationCanceledException("foreign")) }
         use client = new HttpClient(handler)
-        let environment = { Http = Http.live Clock.live client; Clock = Clock.live }
+        let environment = { Http = Http.live client; Clock = Clock.live }
         match Http.get "https://example.test/" |> Http.send |> runSync environment with
         | Exit.Failure(Cause.Die (:? OperationCanceledException)) -> ()
         | other -> failwithf "Expected cancellation defect, got %A" other

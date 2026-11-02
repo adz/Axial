@@ -17,7 +17,7 @@ open System.Threading
 open System.Threading.Tasks
 open Axial
 open Axial.HttpClient
-open Axial.PlatformService
+open Axial
 
 /// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =
@@ -98,36 +98,39 @@ check how many attempts were made and what each request carried.
 
 ## The Live Service
 
-`Http.live` adapts an explicit `IClock` and one `HttpClient`; `Layer.succeed (Http.live …)` exposes them as a layer:
+`Http.live` adapts one `HttpClient`; the clock comes from the flow that executes each request. `Layer.succeed (Http.live …)` exposes it as a layer:
 
 ```fsharp
-open Axial.Layers
 
 type AppEnv =
     { Http: IHttp }
     interface IHasHttp with
         member this.Http = this.Http
 
-let appLayer (clock: IClock) (client: HttpClient) : Layer<unit, HttpError, AppEnv> =
+let appLayer (client: HttpClient) : Layer<unit, HttpError, AppEnv> =
     layer {
-        let! http = Layer.succeed (Http.live clock client)
+        let! http = Layer.succeed (Http.live client)
         return { Http = http }
     }
 
 let runUserLookup (client: HttpClient) =
     Http.getJson decodeUser "users/1"
-    |> Layer.provide (appLayer Clock.live client)
+    |> Layer.provide (appLayer client)
     |> Flow.run ()
 ```
 
 `runUserLookup` sends the relative URL `"users/1"`, so the caller must supply a `client` whose `BaseAddress` is
 set, or the lookup must use an absolute URL. Without a base address, `Http.live` fails the request with
-`HttpError.InvalidRequest`.
+`HttpError.InvalidRequest`. Malformed URLs such as `http://[` also use this typed failure channel.
+Response and request-message disposal run independently; disposal exceptions remain defects, including both
+exceptions when both disposals fail.
 
 Reuse one `HttpClient` per application: connection pooling, DNS rotation handlers,
 and proxy settings remain `HttpClient` concerns. Axial adds the typed request/response boundary on top
-without hiding the client or the clock used for transcript timestamps and durations. Tests can pass `Clock.fromValue`
-or another `IClock` fake for deterministic time.
+without hiding the client. Transcript timestamps and request deadlines read the clock installed in the executing flow.
+Tests install a `ManualClock` (`Clock.fromValue`) with `Flow.withClock` for deterministic time. Set the supplied
+`HttpClient.Timeout` to `Timeout.InfiniteTimeSpan` when all deadlines should come from `Request.timeout` and the test
+clock; a finite `HttpClient.Timeout` still uses the BCL wall clock.
 
 Base addresses configured on the client work as usual: relative request URLs resolve against
 `client.BaseAddress`:
@@ -143,10 +146,8 @@ Service records compose the same way as the other platform packages:
 
 ```fsharp
 type WorkerEnv =
-    { Http: IHttp
-      Clock: IClock }
+    { Http: IHttp }
     interface IHasHttp with member this.Http = this.Http
-    interface IHasClock with member this.Clock = this.Clock
 ```
 
 The same pattern adds `IHasProcess` for `Axial.Process`, or any other package's contract.

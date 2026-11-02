@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <IsAotCompatible>true</IsAotCompatible>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>Axial.Hosting.GenHttp</PackageId>
     <AssemblyName>Axial.Hosting.GenHttp</AssemblyName>

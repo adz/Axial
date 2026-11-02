@@ -1,0 +1,113 @@
+---
+title: Node Hosting
+linkTitle: Node
+description: Running Fable Flow applications under Node signals, process exit, arguments, and process.env.
+platform: fable
+---
+
+# Node Hosting
+
+`Axial.Hosting.Node` is a JavaScript-only Fable package for Node processes.
+
+```sh
+dotnet add package Axial.Hosting.Node
+```
+
+The NuGet package uses a .NET target asset because Fable consumes F# projects through MSBuild. It is not a .NET
+runtime implementation: calling its entry points without Fable JavaScript fails immediately. Calling it in a browser
+also fails because the Node `process` object is required.
+
+## Root Application
+
+The Node entry point handles process lifecycle; the application workflow remains platform-neutral. The root-application
+shape below is schematic: `AppError`, `program`, and `appLayer` are not defined on this page. See
+[Application lifecycle](/platforms-and-hosting/application-lifecycle.html) for a complete, checked root application that defines them.
+
+```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
+type StartupInputs =
+    { Arguments: string list
+      Config: IConfig }
+
+let inputs =
+    let config =
+        match Flow.run () (Config.loadData [ ConfigSource.environment None ]) with
+        | Exit.Success config -> config
+        | Exit.Failure _ -> Config.ofData (Data.Object [])
+
+    { Arguments = NodeApp.arguments()
+      Config = config }
+
+let application : Flow<StartupInputs, AppError, unit> =
+    program
+    |> Layer.provide appLayer
+```
+
+`ConfigSource.environment None` reads `process.env` through `Axial.Configuration` on Node. Keys keep their case and
+`__` splits sections; a schema decodes them with case-insensitive matching. Use `Config.tryFind` for a single text
+value.
+
+## Run and Exit
+
+At the Fable entry point:
+
+```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
+open Axial.Hosting.Node
+
+NodeApp.run AppError.describe inputs application
+|> Async.StartImmediate
+```
+
+`NodeApp.run`:
+
+- subscribes to `SIGINT` and `SIGTERM`;
+- requests coordinated `App.Stop()` on either signal;
+- removes both handlers after completion;
+- writes typed failures and defects through `console.error`;
+- sets `process.exitCode` only after the root scope closes.
+
+It does not call `process.exit()`, because doing so would terminate the event loop before asynchronous finalizers can
+finish.
+
+The exit-code mapping is success `0`, typed failure `1`, defect `2`, SIGINT `130`, and SIGTERM `143`. An interruption
+not caused by an installed signal uses `130`. A cleanup defect takes precedence over the interruption code.
+
+Use `NodeApp.start` when another Node module needs the `AppHandle`:
+
+```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
+let running = NodeApp.start AppError.describe inputs application
+
+async {
+    let! exit = running.Completion
+    reportCompletion exit
+}
+|> Async.StartImmediate
+```
+
+## Logging and Telemetry
+
+`Node` installs `NodeLogging.sink LogLevel.Information` (stderr via `console.error`) as the runtime log sink at the root; pass `NodeAppOptions.LogSink` to replace it or `LogSink.none` to silence it, and an inner `Flow.withLogSink` still wins. For tracing, install
+`Axial.Telemetry.JavaScript` with the host's `@opentelemetry/api` object before starting the application. Hosting
+does not choose an SDK, exporter, or context manager.
+
+## Build Shape
+
+A minimal project uses Fable and an ES module package:
+
+```json
+{
+  "type": "module",
+  "scripts": {
+    "build": "dotnet fable --outDir dist",
+    "start": "node dist/Program.fs.js"
+  }
+}
+```
+
+Only `Program.fs` needs Node hosting calls; the application and layers remain F# source.
+
+## Working example
+
+The repository's [`examples/Axial.Hosting.Node.Example`](https://github.com/adz/Axial/tree/main/examples/Axial.Hosting.Node.Example)
+is a complete Fable entry point: it reads `process.env`, installs SIGINT/SIGTERM handling, and assigns
+`process.exitCode` only after root-scope cleanup finishes. Its `README.md` lists the build and run commands. The
+browser host has a matching [`examples/Axial.Hosting.Browser.Example`](https://github.com/adz/Axial/tree/main/examples/Axial.Hosting.Browser.Example).

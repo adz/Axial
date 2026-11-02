@@ -93,7 +93,7 @@ module Request =
     /// <summary>Reads and schema-parses a JSON request body; malformed JSON and schema diagnostics become invalid-request failures.</summary>
     /// <param name="schema">The schema that establishes the trusted input type.</param>
     /// <returns>An endpoint Flow that succeeds with the trusted model.</returns>
-    /// <example><code>let! signup = Request.json Signup.schema</code></example>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema, codec, and request are supplied by the application."><code>let! signup = Request.json Signup.schema</code></example>
     let json (schema: Schema<'model>) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'model> =
         Flow.envWith _.Request
         |> Flow.bind (fun request ->
@@ -113,7 +113,7 @@ module Request =
     /// <summary>Schema-parses the query string.</summary>
     /// <param name="schema">The schema that interprets the complete query input.</param>
     /// <returns>An endpoint Flow that succeeds with the trusted model.</returns>
-    /// <example><code>let! search = Request.query Search.schema</code></example>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema, codec, and request are supplied by the application."><code>let! search = Request.query Search.schema</code></example>
     let query (schema: Schema<'model>) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'model> =
         Flow.envWith _.Request
         |> Flow.bind (SchemaRequest.query schema >> fromParsed)
@@ -121,13 +121,13 @@ module Request =
     /// <summary>Projects untrusted input directly from the native request without schema parsing.</summary>
     /// <param name="projection">The direct projection from the native request.</param>
     /// <returns>An endpoint Flow containing the projected, still-untrusted value.</returns>
-    /// <example><code>let! signature = Request.raw (fun request -&gt; string request.Headers["x-signature"])</code></example>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema, codec, and request are supplied by the application."><code>let! signature = Request.raw (fun request -&gt; string request.Headers["x-signature"])</code></example>
     let raw (projection: IRequest -> 'input) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'input> =
         Flow.envWith (fun environment -> projection environment.Request)
 
     /// <summary>Returns the native GenHTTP request for host-specific boundary handling.</summary>
     /// <returns>An endpoint Flow containing the current native request.</returns>
-    /// <example><code>let! request = Request.native</code></example>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema, codec, and request are supplied by the application."><code>let! request = Request.native</code></example>
     let native<'app, 'error> : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, IRequest> =
         Flow.envWith _.Request
 
@@ -138,7 +138,7 @@ module EndpointFlow =
     /// <param name="operation">The HTTP-independent application workflow factory.</param>
     /// <param name="input">The trusted input supplied to the application operation.</param>
     /// <returns>The application operation adapted to the endpoint environment and error channel.</returns>
-    /// <example><code>let! created = EndpointFlow.run createSignup signup</code></example>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema, codec, and request are supplied by the application."><code>let! created = EndpointFlow.run createSignup signup</code></example>
     let run
         (operation: 'input -> Flow<'app, 'error, 'output>)
         (input: 'input)
@@ -155,14 +155,14 @@ module Response =
     /// <param name="codec">The compiled codec for the trusted output type.</param>
     /// <param name="value">The trusted output value.</param>
     /// <returns>A request-relative GenHTTP response plan.</returns>
-    /// <example><code>return Response.json ResponseStatus.Created Signup.codec signup</code></example>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema, codec, and request are supplied by the application."><code>return Response.json ResponseStatus.Created Signup.codec signup</code></example>
     let json (status: ResponseStatus) (codec: JsonCodec<'model>) (value: 'model) : HttpResponse =
         HttpResponse(fun request -> SchemaResponse.codec codec status request value)
 
     /// <summary>Returns an empty response with the supplied status.</summary>
     /// <param name="status">The successful HTTP status.</param>
     /// <returns>A request-relative empty response plan.</returns>
-    /// <example><code>return Response.empty ResponseStatus.NoContent</code></example>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema, codec, and request are supplied by the application."><code>return Response.empty ResponseStatus.NoContent</code></example>
     let empty (status: ResponseStatus) : HttpResponse =
         HttpResponse(fun request -> request.Respond().Status(status).Build())
 
@@ -170,16 +170,21 @@ module Response =
     /// <param name="status">The successful HTTP status.</param>
     /// <param name="value">The response text.</param>
     /// <returns>A request-relative plain-text response plan.</returns>
-    /// <example><code>return Response.text ResponseStatus.Ok "ready"</code></example>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema, codec, and request are supplied by the application."><code>return Response.text ResponseStatus.Ok "ready"</code></example>
     let text (status: ResponseStatus) (value: string) : HttpResponse =
         HttpResponse(fun request -> request.Respond().Status(status).Content(value).Type("text/plain").Build())
 
     /// <summary>Builds a host-native response plan from the current GenHTTP request.</summary>
     /// <param name="respond">The host-specific response function.</param>
     /// <returns>A request-relative response plan.</returns>
-    /// <example><code>return Response.native (fun request -&gt; request.Respond().Build())</code></example>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema, codec, and request are supplied by the application."><code>return Response.native (fun request -&gt; request.Respond().Build())</code></example>
     let native (respond: IRequest -> IResponse) : HttpResponse =
         HttpResponse respond
+
+/// <summary>Optional request log sink. None leaves the runtime default; LogSink.none disables logging.</summary>
+type EndpointOptions =
+    { LogSink: ILogSink option }
+    static member Default = { LogSink = None }
 
 [<AutoOpen>]
 module FlowEndpoint =
@@ -207,17 +212,19 @@ module FlowEndpoint =
     /// <c>OperationCanceledException</c>, and compound typed-only causes are rejected rather than reduced to an arbitrary
     /// failure. GenHTTP does not supply a request cancellation token through this adapter.
     /// </remarks>
+    /// <param name="options">Optional log sink; None leaves the runtime default unchanged.</param>
     /// <param name="getAppEnvironment">Constructs or resolves the explicit application environment for the current request.</param>
     /// <param name="mapApplicationError">Maps one expected application failure to a GenHTTP response plan.</param>
     /// <param name="workflow">The complete endpoint Flow to execute.</param>
     /// <returns>A native delegate suitable for GenHTTP routing methods.</returns>
-    /// <example>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema, codec, and request are supplied by the application.">
     /// <code>
     /// let endpoint = flowEndpoint getAppEnvironment ApiError.toResponse
     /// Inline.Create().Post("/signups", endpoint signupEndpoint)
     /// </code>
     /// </example>
-    let flowEndpoint
+    let flowEndpointWithOptions
+        (options: EndpointOptions)
         (getAppEnvironment: IRequest -> 'app)
         (mapApplicationError: 'error -> HttpResponse)
         (workflow: Flow<HttpEndpointEnv<'app>, EndpointError<'error>, HttpResponse>)
@@ -229,7 +236,11 @@ module FlowEndpoint =
                         { App = getAppEnvironment request
                           Request = request }
 
-                    let! exit = workflow.StartAsValueTask(environment).AsTask()
+                    let hosted =
+                        match options.LogSink with
+                        | Some sink -> workflow |> Flow.withLogSink sink
+                        | None -> workflow
+                    let! exit = hosted.StartAsValueTask(environment).AsTask()
 
                     match exit with
                     | Exit.Success (HttpResponse respond) -> return respond request
@@ -254,3 +265,7 @@ module FlowEndpoint =
                                     | EndpointError.ApplicationError _ -> "application error") cause
                                 return raise (InvalidOperationException($"Endpoint Flow failed with an unsupported composite cause: {rendered}"))
                 }))
+
+    /// <summary>Runs a request with the runtime default log sink unless the flow installs its own.</summary>
+    let flowEndpoint getAppEnvironment mapApplicationError workflow =
+        flowEndpointWithOptions EndpointOptions.Default getAppEnvironment mapApplicationError workflow

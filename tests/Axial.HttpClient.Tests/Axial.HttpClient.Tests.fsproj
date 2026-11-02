@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Shared\SimulatedWork.fs" Link="SimulatedWork.fs" />
     <Compile Include="HttpServiceTests.fs" />
     <Compile Include="TestHttpTests.fs" />
   </ItemGroup>
@@ -25,7 +26,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial.HttpClient\Axial.HttpClient.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
   </ItemGroup>
 
 </Project>

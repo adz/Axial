@@ -12,9 +12,10 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Axial
+open Axial.Configuration
 open Axial.HttpClient
-open Axial.Layers
-open Axial.PlatformService
+open Axial
+open Reified
 
 module private ScopedLogging =
     let withScope (logger: ILogger) (action: unit -> unit) =
@@ -26,42 +27,52 @@ module private ScopedLogging =
             use _scope = logger.BeginScope(scope)
             action ()
 
-/// <summary>Adapts Microsoft.Extensions.Logging loggers to Axial's explicit logging service.</summary>
+/// <summary>Adapts Microsoft.Extensions.Logging loggers to runtime log sinks.</summary>
 [<RequireQualifiedAccess>]
 module MicrosoftLogging =
     let private write (logger: ILogger) (level: LogLevel) (error: exn option) (message: string) =
-        ScopedLogging.withScope logger (fun () ->
-            match level, error with
-            | LogLevel.Trace, None -> logger.LogTrace message
-            | LogLevel.Debug, None -> logger.LogDebug message
-            | LogLevel.Information, None -> logger.LogInformation message
-            | LogLevel.Warning, None -> logger.LogWarning message
-            | LogLevel.Error, None -> logger.LogError message
-            | LogLevel.Critical, None -> logger.LogCritical message
-            | LogLevel.Trace, Some error -> logger.LogTrace(error, message)
-            | LogLevel.Debug, Some error -> logger.LogDebug(error, message)
-            | LogLevel.Information, Some error -> logger.LogInformation(error, message)
-            | LogLevel.Warning, Some error -> logger.LogWarning(error, message)
-            | LogLevel.Error, Some error -> logger.LogError(error, message)
-            | LogLevel.Critical, Some error -> logger.LogCritical(error, message))
+        match level, error with
+        | LogLevel.Trace, None -> logger.LogTrace message
+        | LogLevel.Debug, None -> logger.LogDebug message
+        | LogLevel.Information, None -> logger.LogInformation message
+        | LogLevel.Warning, None -> logger.LogWarning message
+        | LogLevel.Error, None -> logger.LogError message
+        | LogLevel.Critical, None -> logger.LogCritical message
+        | LogLevel.Trace, Some error -> logger.LogTrace(error, message)
+        | LogLevel.Debug, Some error -> logger.LogDebug(error, message)
+        | LogLevel.Information, Some error -> logger.LogInformation(error, message)
+        | LogLevel.Warning, Some error -> logger.LogWarning(error, message)
+        | LogLevel.Error, Some error -> logger.LogError(error, message)
+        | LogLevel.Critical, Some error -> logger.LogCritical(error, message)
 
-    /// <summary>Creates an Axial logger backed by a supplied Microsoft logger.</summary>
-    let create (logger: ILogger) : ILog =
+    /// <summary>Creates a log sink backed by a supplied Microsoft logger.</summary>
+    let sink (logger: ILogger) : ILogSink =
         if isNull logger then nullArg (nameof logger)
+        { new ILogSink with
+            member _.IsEnabled level =
+                logger.IsEnabled(
+                    match level with
+                    | LogLevel.Trace -> Microsoft.Extensions.Logging.LogLevel.Trace
+                    | LogLevel.Debug -> Microsoft.Extensions.Logging.LogLevel.Debug
+                    | LogLevel.Information -> Microsoft.Extensions.Logging.LogLevel.Information
+                    | LogLevel.Warning -> Microsoft.Extensions.Logging.LogLevel.Warning
+                    | LogLevel.Error -> Microsoft.Extensions.Logging.LogLevel.Error
+                    | LogLevel.Critical -> Microsoft.Extensions.Logging.LogLevel.Critical)
+            member _.Write entry =
+                if entry.Locals.IsEmpty && entry.Annotations.IsEmpty then
+                    write logger entry.Level entry.Error entry.Message
+                else
+                    let scope = Dictionary<string, obj>()
+                    for name, value in entry.Locals do scope[name] <- value
+                    for KeyValue(name, value) in entry.Annotations do scope[name] <- box value
+                    use _scope = logger.BeginScope(scope)
+                    write logger entry.Level entry.Error entry.Message }
 
-        { new ILog with
-            member _.Log level message = write logger level None message
-            member _.LogException level error message = write logger level (Some error) message }
-
-    /// <summary>Creates an Axial logger with an explicit Microsoft logging category.</summary>
-    let fromFactory (categoryName: string) (loggerFactory: ILoggerFactory) : ILog =
+    /// <summary>Creates a log sink with an explicit Microsoft logging category.</summary>
+    let fromFactory (categoryName: string) (loggerFactory: ILoggerFactory) : ILogSink =
         if String.IsNullOrWhiteSpace categoryName then invalidArg (nameof categoryName) "A logging category is required."
         if isNull loggerFactory then nullArg (nameof loggerFactory)
-        create (loggerFactory.CreateLogger categoryName)
-
-    /// <summary>Builds an Axial logger from a Microsoft logger factory supplied in the layer input.</summary>
-    let layer (categoryName: string) : Layer<ILoggerFactory, Never, ILog> =
-        Layer.envWith (fromFactory categoryName)
+        sink (loggerFactory.CreateLogger categoryName)
 
 /// <summary>Fiber-lifecycle logging through Microsoft.Extensions.Logging.</summary>
 [<RequireQualifiedAccess>]
@@ -93,10 +104,14 @@ module FiberLogging =
 /// <summary>Controls how a root Flow application participates in Generic Host lifetime.</summary>
 type HostedAppOptions =
     { /// Request host shutdown when the root application completes for any reason.
-      StopHostOnCompletion: bool }
+      StopHostOnCompletion: bool
+      /// None leaves the runtime default; Some can supply a replacement or LogSink.none.
+      LogSink: (ILoggerFactory -> ILogSink) option }
 
-    /// <summary>Options for a root application that owns the host lifetime.</summary>
-    static member Default = { StopHostOnCompletion = true }
+    /// <summary>Owns the host lifetime and routes workflow logs to the Axial Microsoft logging category.</summary>
+    static member Default =
+        { StopHostOnCompletion = true
+          LogSink = Some(MicrosoftLogging.fromFactory "Axial") }
 
 /// <summary>Runs one root Flow application as a Microsoft Generic Host hosted service.</summary>
 type FlowHostedService<'env, 'error>
@@ -132,7 +147,13 @@ type FlowHostedService<'env, 'error>
         member _.StartAsync(cancellationToken: CancellationToken) =
             try
                 let environment = environmentFactory services
-                let handle = App.startWithCancellation lifetime.ApplicationStopping environment application
+                let hosted =
+                    match options.LogSink with
+                    | Some createSink ->
+                        let factory = services.GetRequiredService<ILoggerFactory>()
+                        application |> Flow.withLogSink (createSink factory)
+                    | None -> application
+                let handle = App.startWithCancellation lifetime.ApplicationStopping environment hosted
                 running <- Some handle
 
                 monitor <-
@@ -148,15 +169,41 @@ type FlowHostedService<'env, 'error>
             with error ->
                 Task.FromException error
 
+        // Waits for the root application and every finalizer. The host's token ends the wait only when the host's
+        // own shutdown timeout expires; cleanup still running then is reported, never silently abandoned.
         member _.StopAsync(cancellationToken: CancellationToken) =
             match running with
             | None -> monitor
             | Some handle ->
+                let stopped =
+                    async {
+                        let! _ = handle.Stop()
+                        do! Async.AwaitTask monitor
+                    }
+                    |> Async.StartAsTask
+
+                let wait : Flow<unit, Never, unit> =
+                    flow {
+                        let! abandoned = Deferred.make ()
+                        use registration = cancellationToken.Register(fun () -> Deferred.succeedNow () abandoned |> ignore)
+                        // Only this wait is cancellable; the already-started stop retains ownership of cleanup.
+                        let! stoppedSignal = Deferred.fromTask stopped
+                        let completed =
+                            Deferred.await stoppedSignal
+                            |> Flow.recover Flow.die
+                            |> Flow.map (fun () -> true)
+                        let! completedFirst = Flow.race completed (Deferred.await abandoned |> Flow.map (fun () -> false))
+                        if not completedFirst then
+                            logger.LogWarning(
+                                "Axial root application cleanup was still running when the host shutdown timeout expired; the process may exit before its finalizers finish"
+                            )
+                    }
+
                 async {
-                    let! _ = handle.Stop()
-                    do! Async.AwaitTask monitor
+                    let! exit = Flow.toAsync () wait
+                    return exit |> Exit.toResult |> Result.defaultWith Never.absurd
                 }
-                |> fun work -> Async.StartAsTask(work, cancellationToken = cancellationToken)
+                |> Async.StartAsTask
                 :> Task
 
 /// <summary>Transport for systemd notification datagrams.</summary>
@@ -187,15 +234,15 @@ module SystemdNotify =
 /// <summary>Microsoft Generic Host registration helpers for root Flow applications.</summary>
 [<RequireQualifiedAccess>]
 module Hosting =
-    /// <summary>Runs a scheduler heartbeat gated by an optional application health flow. Requires a clock and logger in the environment.</summary>
-    let watchdogWithHeartbeat<'env when 'env :> IHasClock and 'env :> IHasLog>
+    /// <summary>Runs a scheduler heartbeat gated by an optional application health flow, using the installed runtime clock and log sink.</summary>
+    let watchdogWithHeartbeat<'env>
         (heartbeatGate: Flow<'env, Never, unit>)
-        (variables: IEnvironmentVariables)
+        (variables: string -> string option)
         (processId: int)
         (notifier: ISystemdNotifier)
         (isHealthy: Flow<'env, Never, bool>) : Flow<'env, Never, unit> =
         flow {
-            match variables.TryGet "WATCHDOG_USEC" with
+            match variables "WATCHDOG_USEC" with
             | None -> return ()
             | Some value ->
                 match UInt64.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture) with
@@ -206,7 +253,7 @@ module Hosting =
                     do! Log.warning "WATCHDOG_USEC exceeds TimeSpan range; watchdog disabled"
                 | true, microseconds ->
                     let enabled =
-                        match variables.TryGet "WATCHDOG_PID" with
+                        match variables "WATCHDOG_PID" with
                         | None -> true
                         | Some pid -> pid = string processId
                     if enabled then
@@ -219,31 +266,28 @@ module Hosting =
                             Interlocked.Increment(&progress) |> ignore
                             return! heartbeat ()
                         }
-                        let! fiber = Flow.fork (heartbeat ())
-                        try
-                            let rec ping last = flow {
-                                do! Flow.sleep interval
-                                let current = Interlocked.Read(&progress)
-                                if current <> last then
-                                    let! healthy = isHealthy
-                                    if healthy then notifier.Notify "WATCHDOG=1"
-                                return! ping current
-                            }
-                            return! ping (Interlocked.Read(&progress))
-                        finally
-                            // The fork belongs to this Flow scope and is interrupted on cancellation.
-                            ignore fiber
+                        // The enclosing Flow scope owns and interrupts the heartbeat on cancellation.
+                        let! _ = Flow.fork (heartbeat ())
+                        let rec ping last = flow {
+                            do! Flow.sleep interval
+                            let current = Interlocked.Read(&progress)
+                            if current <> last then
+                                let! healthy = isHealthy
+                                if healthy then notifier.Notify "WATCHDOG=1"
+                            return! ping current
+                        }
+                        return! ping (Interlocked.Read(&progress))
         }
 
     /// <summary>Runs the scheduler heartbeat with an application-owned progress check; use this to detect stalled work.</summary>
-    let watchdogWith<'env when 'env :> IHasClock and 'env :> IHasLog>
-        (variables: IEnvironmentVariables) (processId: int) (notifier: ISystemdNotifier)
+    let watchdogWith<'env>
+        (variables: string -> string option) (processId: int) (notifier: ISystemdNotifier)
         (isHealthy: Flow<'env, Never, bool>) : Flow<'env, Never, unit> =
         watchdogWithHeartbeat (Flow.succeed ()) variables processId notifier isHealthy
 
     /// <summary>Detects a wedged Axial scheduler or starved thread pool; supply watchdogWith isHealthy to tie the watchdog to your application's progress.</summary>
-    let watchdog<'env when 'env :> IHasClock and 'env :> IHasLog>
-        (variables: IEnvironmentVariables) (processId: int) (notifier: ISystemdNotifier) : Flow<'env, Never, unit> =
+    let watchdog<'env>
+        (variables: string -> string option) (processId: int) (notifier: ISystemdNotifier) : Flow<'env, Never, unit> =
         watchdogWith variables processId notifier (Flow.succeed true)
 
     /// <summary>Registers a root application that owns the Generic Host lifetime.</summary>
@@ -318,7 +362,7 @@ module DotNetApp =
 
             // The console host's Ctrl+C wiring and final-error report are the OS-process entry point
             // boundary itself, not application logic; there is no environment to route them through.
-            Console.CancelKeyPress.AddHandler handler // axial-allow-effect: console
+            Console.CancelKeyPress.AddHandler handler // axial-allow-AXG001: intentional console host or live-service boundary
 
             try
                 let! exit = running.Completion |> Async.StartAsTask
@@ -326,64 +370,39 @@ module DotNetApp =
                 match exit with
                 | Exit.Success _ -> ()
                 | Exit.Failure cause when Cause.isInterrupted cause -> ()
-                | Exit.Failure cause -> Console.Error.WriteLine(Cause.prettyPrint describeError cause) // axial-allow-effect: console
+                | Exit.Failure cause -> Console.Error.WriteLine(Cause.prettyPrint describeError cause) // axial-allow-AXG001: intentional console host or live-service boundary
 
                 return exitCode exit
             finally
-                Console.CancelKeyPress.RemoveHandler handler // axial-allow-effect: console
+                Console.CancelKeyPress.RemoveHandler handler // axial-allow-AXG001: intentional console host or live-service boundary
         }
 
-/// <summary>Adapts Microsoft configuration to Axial's explicit environment-variable service.</summary>
+/// <summary>Adapts a Microsoft configuration to an Axial configuration source.</summary>
 [<RequireQualifiedAccess>]
-module Configuration =
-    let private flatten (configuration: IConfiguration) : (string * string) list =
-        let rec walk (prefix: string) (section: IConfiguration) =
-            [ for child in section.GetChildren() do
-                  let key = if prefix = "" then child.Key else prefix + ":" + child.Key
-                  let children = child.GetChildren()
-
-                  if Seq.isEmpty children then
-                      yield key, (if isNull child.Value then "" else child.Value)
-                  else
-                      yield! walk key child ]
-
-        walk "" configuration
-
-    /// <summary>Creates an explicit environment-variable service backed by a Microsoft configuration.</summary>
-    let environmentVariables (configuration: IConfiguration) : IEnvironmentVariables =
+module HostConfiguration =
+    /// <summary>
+    /// Creates a configuration layer from a Microsoft configuration.
+    /// </summary>
+    /// <remarks>
+    /// Use this to keep appsettings.json, environment variables, command-line arguments and user secrets supplied by
+    /// <c>ConfigurationBuilder</c>, then place the layer in the same precedence list as native Axial sources.
+    /// The configuration is read once when the source runs; later changes are not watched.
+    /// </remarks>
+    let source (name: string) (configuration: IConfiguration) : ConfigSource<'env> =
         if isNull configuration then nullArg (nameof configuration)
 
-        let lookup =
-            let dictionary = System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-
-            for key, value in flatten configuration do
-                dictionary[key] <- value
-
-            dictionary
-
-        { new IEnvironmentVariables with
-            member _.TryGet name = configuration[name] |> Option.ofObj
-
-            member _.Set(_, _) =
-                raise (NotSupportedException("Configuration is read-only; provide environment variables explicitly."))
-
-            member _.Expand text =
-                lookup
-                |> Seq.fold (fun (result: string) pair -> result.Replace("%" + pair.Key + "%", pair.Value)) text
-
-            member _.GetAll() = lookup :> System.Collections.Generic.IReadOnlyDictionary<string, string> }
-
-    /// <summary>Builds the environment-variable service from a Microsoft configuration supplied at composition.</summary>
-    let layer (configuration: IConfiguration) : Layer<unit, Never, IEnvironmentVariables> =
-        Layer.succeed (environmentVariables configuration)
+        { Name = name
+          Spell = fun path -> name + " " + String.concat "." path
+          Read = Flow.succeed (Data.ofConfigurationPairs(configuration.AsEnumerable()))
+          Paths = [] }
 
 /// <summary>Adapts <see cref="T:Microsoft.Extensions.Http.IHttpClientFactory" /> to Axial's HTTP service.</summary>
 [<RequireQualifiedAccess>]
 module HttpFactory =
     /// <summary>Creates an Axial HTTP service that obtains a client per send from the factory.</summary>
-    let live (clock: IClock) (factory: System.Net.Http.IHttpClientFactory) : IHttp =
+    let live (factory: System.Net.Http.IHttpClientFactory) : IHttp =
         if isNull factory then nullArg (nameof factory)
 
         { new IHttp with
             member _.Send(request) =
-                (Axial.HttpClient.Http.live clock (factory.CreateClient(""))).Send(request) }
+                (Axial.HttpClient.Http.live (factory.CreateClient(""))).Send(request) }

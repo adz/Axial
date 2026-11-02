@@ -26,7 +26,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial.WebSocket\Axial.WebSocket.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
   </ItemGroup>
 
 </Project>

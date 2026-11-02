@@ -8,26 +8,29 @@ open System.Threading.Tasks
 open Microsoft.Extensions.Configuration
 open Axial
 open Axial.Hosting
+open Axial.Configuration
 open Axial.HttpClient
-open Axial.PlatformService
+open Axial
 open Swensen.Unquote
 open Xunit
 
 module BridgeTests =
     [<Fact>]
-    let ``Configuration environmentVariables reads configuration values`` () =
+    let ``HostConfiguration source reads configuration values as data`` () =
         let configuration =
             ConfigurationBuilder()
                 .AddInMemoryCollection(dict [ "App:Name", "orders"; "App:Port", "8080" ])
                 .Build()
 
-        let environment = Configuration.environmentVariables configuration
+        let config =
+            match Flow.run () (Config.loadData [ HostConfiguration.source "host" configuration ]) with
+            | Exit.Success config -> config
+            | Exit.Failure cause -> failwithf "Expected configuration, got %A" cause
 
-        test <@ environment.TryGet "App:Name" = Some "orders" @>
-        test <@ environment.TryGet "App:Port" = Some "8080" @>
-        test <@ environment.TryGet "App:Missing" = None @>
-        test <@ environment.Expand "%App:Port%" = "8080" @>
-        test <@ environment.GetAll().Count = 2 @>
+        test <@ Config.tryFind "app.name" config = Ok(Some "orders") @>
+        test <@ Config.tryFind "App.Port" config = Ok(Some "8080") @>
+        test <@ Config.tryFind "App.Missing" config = Ok None @>
+        test <@ ConfigError.describeWithSources config (ConfigError.Missing "App.Host") = "App.Host was omitted (set one of: host App.Host)" @>
 
     [<Fact>]
     let ``HttpFactory live sends through a factory-created client`` () =
@@ -45,7 +48,7 @@ module BridgeTests =
             { new System.Net.Http.IHttpClientFactory with
                 member _.CreateClient(name) = client }
 
-        let http = HttpFactory.live Clock.live factory
+        let http = HttpFactory.live factory
 
         let response =
             http.Send(Http.get "https://example.test/items").RunSynchronously(())
