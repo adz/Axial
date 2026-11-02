@@ -7,7 +7,7 @@ open Axial.State
 open Axial.TortureTest.Scenario
 
 // <snippet:torture-stm>
-let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
+let run (round: Round) : Flow<unit, Never, Check list> =
     let accounts = 6
     let opening = 100
     let transfers = round.Size 400
@@ -50,11 +50,11 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let! audits =
             [ for _ in 1 .. round.Size 100 -> STM.atomically (total ()) ] |> Flow.sequence
 
-        let! moved = movers |> Flow.traverse (fun fiber -> if round.Chance 20 then Fiber.interrupt fiber else Fiber.await fiber)
+        let! moved = movers |> Flow.traverse (fun fiber -> if round.Chance 20 then Fiber.interrupt fiber else Fiber.awaitExit fiber)
 
         // Fund the reserve in small deposits; every patient withdrawal must then complete.
         do! [ for _ in 1..patient -> STM.atomically (reserve |> TRef.update ((+) 5)) ] |> Flow.sequencePar |> Flow.ignore
-        let! withdrawn = waiting |> Flow.traverse Fiber.await |> Flow.timeoutToOk (TimeSpan.FromSeconds 10.0) []
+        let! withdrawn = waiting |> Flow.traverse Fiber.awaitExit |> Flow.timeoutToOk (TimeSpan.FromSeconds 10.0) []
 
         // The atomic read-and-write helpers on a scratch ledger.
         let! ledger = STM.atomically (TRef.make 0)

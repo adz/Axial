@@ -31,16 +31,21 @@ module Ordinary =
     /// The correct shape: create, then immediately enter try/finally.
     let importBatch (records: string list) : Task<int> =
         task {
-            let workspace = Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
+            let workspace =
+                // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
+                Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
+            // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
             Directory.CreateDirectory workspace |> ignore
 
             try
                 if List.isEmpty records then
                     return raise (ImportFailed NoRecords)
                 else
+                    // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
                     File.WriteAllLines(Path.Combine(workspace, "batch.csv"), records)
                     return records.Length
             finally
+                // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
                 Directory.Delete(workspace, recursive = true)
         }
 
@@ -48,7 +53,10 @@ module Ordinary =
     /// into the try/finally. The directory survives the exception.
     let importBatchLeaky (records: string list) : Task<int> =
         task {
-            let workspace = Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
+            let workspace =
+                // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
+                Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
+            // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
             Directory.CreateDirectory workspace |> ignore
 
             // Setup between acquisition and try/finally: throws with no owner to clean up.
@@ -56,9 +64,11 @@ module Ordinary =
                 raise (ImportFailed NoRecords)
 
             try
+                // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
                 File.WriteAllLines(Path.Combine(workspace, "batch.csv"), records)
                 return records.Length
             finally
+                // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
                 Directory.Delete(workspace, recursive = true)
         }
 
@@ -80,7 +90,9 @@ module WithFlow =
         // <snippet:compare-workspace>
         let acquire: Flow<WorkspaceEnv, ImportError, string> =
             flow {
-                let workspace = Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
+                let! tempPath = FileSystem.getTempPath |> Bind.mapError (FileSystemError.describe >> UnreadableBatch)
+                let! name = FileSystem.getRandomFileName |> Bind.mapError (FileSystemError.describe >> UnreadableBatch)
+                let workspace = Path.Combine(tempPath, "axial-workspace-" + name)
                 do! FileSystem.createDirectory workspace |> Flow.mapError (FileSystemError.describe >> UnreadableBatch)
                 return workspace
             }
@@ -88,7 +100,11 @@ module WithFlow =
         Flow.scoped (
             Flow.scopeAcquireRelease
                 acquire
-                (fun workspace -> Flow.fromBlocking (fun _ -> Directory.Delete(workspace, recursive = true)))
+                (fun workspace ->
+                    flow {
+                        let! fileSystem = FileSystem.service
+                        fileSystem.DeleteDirectory(workspace, recursive = true)
+                    })
             |> Flow.bind (fun workspace ->
                 flow {
                     // Every step here — including this gate that fails before any file exists —

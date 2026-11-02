@@ -14,10 +14,9 @@ module Axial.Comparisons.ReportWiring
 open System
 open System.IO
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
-open Axial.PlatformService
+open Axial
 
 // --- Shared domain -----------------------------------------------------------------
 
@@ -61,13 +60,9 @@ module WithFlow =
     /// The full capability set, declared once. Production and tests build the same record from
     /// different layers; business code below can name only what it uses.
     type ReportEnv =
-        { Clock: IClock
-          FileSystem: IFileSystem
+        { FileSystem: IFileSystem
           Console: IConsole
           Store: IReportStore }
-
-        interface IHasClock with
-            member this.Clock = this.Clock
 
         interface IHasFileSystem with
             member this.FileSystem = this.FileSystem
@@ -96,13 +91,11 @@ module WithFlow =
             return name
         }
 
-    /// Production wiring: live platform services, merged into the one environment record at the
-    /// application edge. Tests build the same record from Clock.fromValue and in-memory doubles.
+    /// Production wiring supplies authority; tests install their clock with Flow.withClock.
     let liveLayer (store: IReportStore) : Layer<unit, Never, ReportEnv> =
-        Layer.merge (Layer.merge Clock.layer (Layer.succeed FileSystem.live)) (Layer.succeed Console.live)
-        |> Layer.map (fun ((clock, fileSystem), console) ->
-            { Clock = clock
-              FileSystem = fileSystem
+        Layer.merge (Layer.succeed FileSystem.live) (Layer.succeed Console.live)
+        |> Layer.map (fun (fileSystem, console) ->
+            { FileSystem = fileSystem
               Console = console
               Store = store })
     // </snippet:compare-report>

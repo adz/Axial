@@ -68,10 +68,7 @@ type Env2 =
 module ServiceExamples =
     let run () =
         let mockRepo = MockRepo() :> IOrderRepo
-        // This is throwaway fixture data for the demo run below, not workflow logic — Axial.Guardrails
-        // still flags it, so it's marked explicitly rather than silently ignored. Application code that
-        // builds real orders should route this through Axial.PlatformService's IGuid instead.
-        let order = { Id = Guid.NewGuid(); Amount = 100m } // axial-allow-effect: guid
+        let order = { Id = Guid.Parse "7b63d894-1f9e-4d67-92a9-6efb512b63e0"; Amount = 100m }
 
         // Level 1
         let env1 = { RecordExample.Repo = mockRepo }

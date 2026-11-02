@@ -7,11 +7,10 @@ open Axial.Process
 open Axial.TortureTest.Scenario
 
 type private Environment =
-    { Process: IProcess; Clock: IClock }
+    { Process: IProcess }
     interface IHasProcess with member this.Process = this.Process
-    interface IHasClock with member this.Clock = this.Clock
 
-let run (round: Round) : Flow<ClockEnvironment, Never, Check list> =
+let run (round: Round) : Flow<unit, Never, Check list> =
     let input = [for _ in 1..round.Size 100 -> round.Next 20]
     let captured = {Text="";Bytes=[||];Truncated=false;Available=true}
     let result =
@@ -27,9 +26,9 @@ let run (round: Round) : Flow<ClockEnvironment, Never, Check list> =
                                  Text=string item;Timestamp=DateTimeOffset(1970,1,1,0,0,0,TimeSpan.Zero)}
                 return result
             }}
-    let env = {Process=service;Clock=Axial.PlatformService.Clock.live}
+    let env = {Process=service}
     let source () = Process.command $"scripted" |> Process.streamStdout
-    let observe workflow = workflow |> Flow.localEnv(fun (_: ClockEnvironment) -> env) |> Flow.fold (Exit.Success >> Flow.succeed) (Exit.Failure >> Flow.succeed)
+    let observe workflow = workflow |> Flow.localEnv(fun (_: unit) -> env) |> Flow.foldCause (Exit.Success >> Flow.succeed) (Exit.Failure >> Flow.succeed)
     flow {
         let! collected = source() |> ProcessStream.map(fun item -> int item.Text) |> ProcessStream.filter(fun item -> item%2=0) |> ProcessStream.runCollect |> observe
         let! folded = source() |> ProcessStream.runFold(fun total item -> total+int item.Text) 0 |> observe
@@ -43,7 +42,104 @@ let run (round: Round) : Flow<ClockEnvironment, Never, Check list> =
         let! converted = source() |> ProcessStream.toFlowStream |> FlowStream.runCollect |> observe
         let beforeZero = runs
         let! zero = source() |> ProcessStream.take 0 |> ProcessStream.runDrain |> observe
+#if !FABLE_COMPILER
+        let callbackTime = DateTimeOffset(2001, 1, 1, 0, 0, 0, TimeSpan.Zero)
+        let callbackProcess = Process.test()
+        callbackProcess.RunHandler <- fun _ -> TestProcess.Result(0, "")
+        let callbackEnvironment = { Process = callbackProcess :> IProcess }
+        let callbackLog = Axial.Log.memory ()
+        let observedTime = ref None
+        let! callbackResult =
+            Process.command $"scripted"
+            |> Process.onStarted (fun _ -> flow {
+                let! now = Axial.Clock.now
+                observedTime.Value <- Some now
+                do! Axial.Log.info "process-callback"
+            })
+            |> Process.toFlow
+            |> Flow.localEnv (fun () -> callbackEnvironment)
+            |> Flow.withClock (Axial.Clock.fromValue callbackTime)
+            |> Flow.withLogSink callbackLog
+            |> exitOf
+#endif
+#if !FABLE_COMPILER
+        let mutable closeStopped = true
+        let mutable signalHalfClosed = true
+        let mutable childClosedInput = true
+        if not (Runtime.InteropServices.RuntimeInformation.IsOSPlatform(Runtime.InteropServices.OSPlatform.Windows)) then
+            let! closedInput =
+                Axial.Process.DSL.shText "exec 0<&-; printf done"
+                |> Process.stdinFromText (String('x', 1024 * 1024))
+                |> Process.toFlow
+                |> Flow.localEnv (fun () ->
+                    { Process = Process.live Axial.FileSystem.FileSystem.live Axial.Console.Console.live })
+                |> exitOf
+            childClosedInput <-
+                match closedInput with
+                | Exit.Success result -> result.ExitCode = 0 && result.StdOut = "done"
+                | _ -> false
+            let signalClock = ManualClock(DateTimeOffset.UnixEpoch)
+            let! halfClosed =
+                Axial.Process.DSL.shText "read line; exit 0"
+                |> Process.stopGracefully [ StopRequest.Terminate, TimeSpan.FromSeconds 17. ]
+                |> Process.onStarted (fun handle -> handle.Signal StopRequest.CloseStdIn |> Flow.recover (fun _ -> Flow.succeed ()))
+                |> Process.toFlow
+                |> Flow.withClock signalClock
+                |> Flow.localEnv (fun () ->
+                    { Process = Process.live Axial.FileSystem.FileSystem.live Axial.Console.Console.live })
+                |> exitOf
+            signalHalfClosed <-
+                (match halfClosed with Exit.Success result -> result.ExitCode = 0 | _ -> false)
+                && signalClock.Sleepers = 0
+            let mutable retained = None
+            let clock = ManualClock(DateTimeOffset.UnixEpoch)
+            let! armed = Deferred.make<unit, Never, unit> ()
+            let grace = TimeSpan.FromSeconds 17.
+            let notifying =
+                { new IClock with
+                    member _.UtcNow() = (clock :> IClock).UtcNow()
+                    member _.Elapsed() = (clock :> IClock).Elapsed()
+                    member _.Sleep(delay, token) =
+                        let pending = (clock :> IClock).Sleep(delay, token)
+                        if delay = grace then Deferred.succeedNow () armed |> ignore
+                        pending }
+            let! stopped =
+                Axial.Process.DSL.shText "trap '' TERM HUP; while :; do :; done"
+                |> Process.stopGracefully [ StopRequest.CloseStdIn, grace ]
+                |> Process.overallTimeout (TimeSpan.FromSeconds 100.)
+                |> Process.onStarted (fun handle -> flow {
+                    retained <- Some handle
+                    // EOF cannot terminate this child. Close must start the coordinator's ladder,
+                    // even when submitted before output pumps and exit monitors have started.
+                    let! _ = handle.Close StopRequest.CloseStdIn |> exitOf
+                    do! Deferred.await armed
+                    // The second acceptance must precede clock advancement, not shutdown.
+                    let! _ = handle.Close StopRequest.CloseStdIn |> exitOf
+                    let! _ = handle.Signal StopRequest.CloseStdIn |> exitOf
+                    clock.AdvanceBy grace
+                    return ()
+                })
+                |> Process.toFlow
+                |> Flow.withClock notifying
+                |> Flow.localEnv (fun () ->
+                    { Process = Process.live Axial.FileSystem.FileSystem.live Axial.Console.Console.live })
+                |> exitOf
+            let! afterExit =
+                match retained with
+                | Some handle -> handle.Signal StopRequest.Terminate |> exitOf
+                | None -> Flow.succeed (Exit.Failure (Cause.Fail (ProcessError.StopUnsupported StopRequest.Terminate)))
+            closeStopped <-
+                (match stopped with Exit.Failure(Cause.Fail(ProcessError.StageFailed _)) -> true | _ -> false)
+                && afterExit = Exit.Success ()
+                && clock.Sleepers = 0
+#endif
         return [
+#if !FABLE_COMPILER
+            check "a child closing stdin settles its feeder without losing successful output" childClosedInput
+            check "Signal half-closes stdin without escalation or leaked timers" signalHalfClosed
+            check "repeated Close is accepted with grace parked, then the ladder reaps without leaking timers" closeStopped
+            check "process callbacks inherit runtime clock and log sink without a new root" (match callbackResult with Exit.Success _ -> observedTime.Value = Some callbackTime && callbackLog.Entries.Count = 1 | _ -> false)
+#endif
             check "transforms preserve completion" (match collected with Exit.Success(values,ProcessCompletion.Completed _) -> values=List.filter(fun item -> item%2=0) input | _ -> false)
             check "pure fold agrees with input" (match folded with Exit.Success(sum,ProcessCompletion.Completed _) -> sum=List.sum input | _ -> false)
             check "drain completes" (match drained with Exit.Success(ProcessCompletion.Completed _) -> true | _ -> false)

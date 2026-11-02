@@ -69,6 +69,7 @@ module Ordinary =
                     outcome <- Some(Error TimedOut)
                 | TransientTransportException message when attempt < maxAttempts ->
                     // An overly broad `with _ ->` here would also retry NullReferenceException.
+                    // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient Task.Delay
                     do! Task.Delay(baseDelay * float (pown 2 (attempt - 1)), timeoutSource.Token)
                     attempt <- attempt + 1
                 | TransientTransportException message ->
@@ -81,12 +82,12 @@ module Ordinary =
 
 module WithFlow =
 
-    /// Flow<'env, RateError, Rate> where 'env :> IHasHttp and 'env :> IHasClock.
+    /// Flow<'env, RateError, Rate> where 'env :> IHasHttp.
     ///
     /// The request itself is one declaration; retry and timeout are policies applied to the cold
     /// workflow from outside. The retry predicate selects typed transient failures only — defects
     /// and interruption are structurally out of its reach.
-    let fetchRate (url: string) (pair: string) : Flow<'env, RateError, Rate> when 'env :> IHasHttp and 'env :> IHasClock =
+    let fetchRate (url: string) (pair: string) : Flow<'env, RateError, Rate> when 'env :> IHasHttp =
         let request =
             flow {
                 let! response = Http.get url |> Http.send |> Bind.mapError (HttpError.describe >> Transport)

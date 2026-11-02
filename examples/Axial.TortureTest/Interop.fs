@@ -12,10 +12,11 @@ type private Kind =
     | Thrown
 
 // <snippet:torture-interop>
-let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
+let run (round: Round) : Flow<unit, Never, Check list> =
     let calls = round.Size 120
 
     flow {
+        let! clock = Axial.Clock.service
         let interruptionsSeen = ref 0
 
         // The operation waits a little, observing its cancellation token, then produces its kind of outcome.
@@ -32,19 +33,19 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let asyncOperation kind : Async<int> =
             async {
                 let! token = Async.CancellationToken
-                do! Async.Sleep(round.Next 3)
+                do! clock.Sleep(TimeSpan.FromMilliseconds(float (round.Next 3)), token) |> Async.AwaitTask
 
                 if token.IsCancellationRequested then
                     increment interruptionsSeen |> ignore
 
                 match kind with
                 // The scenario checks that an exception thrown by foreign code becomes a defect.
-                | Thrown -> return raise (InvalidOperationException "thrown") // axial-allow-raise
+                | Thrown -> return raise (InvalidOperationException "thrown") // axial-allow-AXG003: foreign API communicates failure by exception
                 | _ -> return 7
             }
 
         // Each call adapts a random kind of foreign operation, and is interrupted a third of the time.
-        let adapted index : Flow<Axial.ClockEnvironment, string, int> =
+        let adapted index : Flow<unit, string, int> =
             let kind = [| Value; Failure; Thrown |].[round.Next 3]
 
             let result value : Result<int, string> =
@@ -56,7 +57,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
 
             let produce () =
                 match kind with
-                | Thrown -> raise (InvalidOperationException "thrown") // axial-allow-raise
+                | Thrown -> raise (InvalidOperationException "thrown") // axial-allow-AXG003: foreign API communicates failure by exception
                 | _ -> 7
 
             match index % 7 with
@@ -83,7 +84,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
 #endif
 
         let! fibers = [ 1..calls ] |> Flow.traverse (adapted >> Flow.fork)
-        let! exits = fibers |> Flow.traverse (fun fiber -> if round.Chance 33 then Fiber.interrupt fiber else Fiber.await fiber)
+        let! exits = fibers |> Flow.traverse (fun fiber -> if round.Chance 33 then Fiber.interrupt fiber else Fiber.awaitExit fiber)
 
         // Every outcome is a value, a typed failure, a defect from a thrown exception, or an interruption.
         let wellFormed =
@@ -96,7 +97,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
                 | Exit.Failure cause -> not (Cause.failures cause).IsEmpty || not (Cause.defects cause).IsEmpty)
 
         // A flow run as a task or an async gives the same exit as running it inside a flow.
-        let sample : Flow<Axial.ClockEnvironment, string, int> = Flow.ok 5 |> Flow.bind (fun value -> if value > 3 then Flow.fail "big" else Flow.ok value)
+        let sample : Flow<unit, string, int> = Flow.ok 5 |> Flow.bind (fun value -> if value > 3 then Flow.fail "big" else Flow.ok value)
         let! direct = sample |> exitOf
         let! viaAsync = Flow.fromAsync (Flow.toAsync clockEnvironment sample)
 #if FABLE_COMPILER
@@ -124,14 +125,63 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let coldAsExpected = startedBeforeBinding = 0 && coldValues = [ 1..6 ] && runValue = 1 && startedCold.Value = 5
 
         // startTask runs the flow to completion by itself, so there is no token to pass on.
-        let! viaTask = Flow.fromTask (fun _ -> Flow.startTask clockEnvironment sample) // axial-allow-discarded-cancellation
+        let! viaTask = Flow.fromTask (fun _ -> Flow.startTask clockEnvironment sample) // axial-allow-AXG005: wrapped operation has no cancellation-token overload
 #endif
+
+
+
+        // Adapter shutdown: a callback can signal before the owning fiber starts, and abandoning a wait
+        // must not cancel the cleanup that is still running behind it.
+        let! shutdownChecks =
+            [ 1 .. round.Size 20 ]
+            |> Flow.traverse (fun _ -> flow {
+                let! stop = Deferred.make ()
+                let! started = Deferred.make ()
+                let! finalizing = Deferred.make ()
+                let! release = Deferred.make ()
+                let! finished = Deferred.make ()
+                let! stopped = Deferred.make ()
+                let early = round.Chance 50
+                if early then Deferred.succeedNow () stop |> ignore
+                let! owner = Flow.fork (flow {
+                    let! child = Flow.fork (flow {
+                        do! Flow.scopeFinalizer (flow {
+                            do! Deferred.succeed () finalizing |> Flow.ignore
+                            do! Deferred.await release
+                            do! Deferred.succeed () finished |> Flow.ignore
+                        })
+                        do! Deferred.succeed () started |> Flow.ignore
+                        return! Flow.never
+                    })
+                    do! Deferred.await started
+                    do! Deferred.await stop
+                    let! _ = Fiber.interrupt child
+                    do! Deferred.succeed () stopped |> Flow.ignore
+                })
+                if not early then
+                    do! Deferred.await started
+                    Deferred.succeedNow () stop |> ignore
+                do! Deferred.await finalizing
+                let! abandoned = Deferred.make ()
+                Deferred.succeedNow () abandoned |> ignore
+                let! completedFirst =
+                    Flow.race
+                        (Deferred.await stopped |> Flow.map (fun () -> true))
+                        (Deferred.await abandoned |> Flow.map (fun () -> false))
+                let! pending = Fiber.poll owner
+                do! Deferred.succeed () release |> Flow.ignore
+                let! exit = Fiber.awaitExit owner
+                do! Deferred.await finished
+                return check "callback shutdown survives early signals and abandoned waits without losing cleanup"
+                    (not completedFirst && pending.IsNone && exit = Exit.Success ())
+            })
 
         // A flow that checks the runtime's token stops when interrupted, even while it never suspends.
         let spins = ref 0
-        let spinnerToken = ref CancellationToken.None
+        let! parentToken = Flow.cancellationToken
+        let spinnerToken = ref parentToken
 
-        let spinner : Flow<Axial.ClockEnvironment, Never, unit> =
+        let spinner : Flow<unit, Never, unit> =
             flow {
                 let! token = Flow.cancellationToken
                 spinnerToken.Value <- token
@@ -143,11 +193,12 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
                     do! Flow.sleep TimeSpan.Zero
             }
 
-        let! spinning = Flow.fork spinner
+        let! spinning = Flow.forkNamed "interop-token-spinner" spinner
         do! Flow.sleep (TimeSpan.FromMilliseconds 2.0)
         let! spinExit = Fiber.interrupt spinning
 
         return
+            shutdownChecks @
             [ check "every adapted call produced a value, a typed failure, a defect, or an interruption" wellFormed
               check "a flow run as a task or an async has the same exit" (viaAsync = direct && viaTask = direct && viaRun = direct)
               check "cold tasks started only when bound, once per binding" coldAsExpected

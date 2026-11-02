@@ -17,12 +17,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Layers\Axial.Layers.fsproj" />
     <ProjectReference Include="..\..\src\Axial.HttpClient\Axial.HttpClient.fsproj" />
     <ProjectReference Include="..\..\src\Axial.FileSystem\Axial.FileSystem.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Console\Axial.Console.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Process\Axial.Process.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Telemetry\Axial.Telemetry.fsproj" />
   </ItemGroup>
 

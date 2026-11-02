@@ -90,11 +90,11 @@ let run () =
         (acceptLine (raw quantity)).RunSynchronously(environment)
 
     printfn "Policy examples"
-    printfn "  accepted:            %A" (accept "3")
-    printfn "  rejected (not int):  %A" (accept "many")
-    printfn "  rejected (zero):     %A" (accept "0")
-    printfn "  rejected (over cap): %A" (accept "50")
+    printfn "  accepted:            %s" ((accept "3").ToString())
+    printfn "  rejected (not int):  %s" ((accept "many").ToString())
+    printfn "  rejected (zero):     %s" ((accept "0").ToString())
+    printfn "  rejected (over cap): %s" ((accept "50").ToString())
 
     // With the cap disabled, the same workflow admits the same line.
     let relaxed = { environment with EnforceQuantityCap = false }
-    printfn "  cap disabled:        %A" ((acceptLine (raw "50")).RunSynchronously(relaxed))
+    printfn "  cap disabled:        %s" (((acceptLine (raw "50")).RunSynchronously(relaxed)).ToString())

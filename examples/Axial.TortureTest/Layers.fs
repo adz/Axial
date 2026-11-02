@@ -5,7 +5,6 @@ module Axial.TortureTest.Layers
 open System
 open System.Threading
 open Axial
-open Axial.Layers
 open Axial.TortureTest.Scenario
 
 type private Services =
@@ -14,12 +13,11 @@ type private Services =
       Workers: Pool<int>
       Region: string
       Clock: IClock }
-    interface IHasClock with member this.Clock = this.Clock
 
 // <snippet:torture-layers>
-let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
+let run (round: Round) : Flow<unit, Never, Check list> =
     flow {
-        let! clock = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock)
+        let! clock = Axial.Clock.service
         let gate = obj ()
         let acquired = ResizeArray<string>()
         let released = ResizeArray<string>()
@@ -78,10 +76,31 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
                 return $"{services.Primary},{services.Secondary},{region}", first + second + services.Workers.Count + Seq.length services.Workers.Instances
             }
 
-        let! runner = work |> Layer.provide services |> Flow.localEnv (fun (_: ClockEnvironment) -> "eu") |> Flow.fork
+        let! runner = work |> Layer.provide services |> Flow.localEnv (fun (_: unit) -> "eu") |> Flow.fork
         if round.Chance 30 then do! Flow.sleep (TimeSpan.FromMilliseconds(float (round.Next 3)))
-        let! outcome = if round.Chance 30 then Fiber.interrupt runner else Fiber.await runner
-        let! length = Flow.ok () |> Flow.map (fun () -> 0) |> Layer.provide (applied |> Layer.map id) |> Flow.localEnv (fun (_: ClockEnvironment) -> "eu") |> exitOf
+        let! outcome = if round.Chance 30 then Fiber.interrupt runner else Fiber.awaitExit runner
+        let! length = Flow.ok () |> Flow.map (fun () -> 0) |> Layer.provide (applied |> Layer.map id) |> Flow.localEnv (fun (_: unit) -> "eu") |> exitOf
+
+        // A failed provision must cancel a suspended sibling before returning, on .NET and JavaScript.
+        let! (ready: Queue<unit>) = Queue.unbounded ()
+        let parallelReleases = ResizeArray<int>()
+        let acquire index =
+            Flow.scopeAcquireRelease (Flow.succeed index)
+                (fun value -> finalizer (fun () -> parallelReleases.Add value))
+        let failing = Layer.fromFlow (flow {
+            let! _ = acquire 1
+            let! _ = Dequeue.take ready
+            return! Flow.fail "provision failed"
+        })
+        let suspended = Layer.fromFlow (flow {
+            let! _ = acquire 2
+            let! _ = Queue.offer () ready
+            return! Flow.never
+        })
+        let! parallelExit =
+            Flow.env<int * int, string>
+            |> Layer.provide (Layer.zipPar failing suspended)
+            |> exitOf
 
         let acquiredNames, releasedNames = lock gate (fun () -> List.ofSeq acquired, List.ofSeq released)
 
@@ -93,7 +112,9 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         return
             [ check "every provisioned resource was released exactly once" (List.sort acquiredNames = List.sort releasedNames)
               check "the provisioned environment was built from its layers" outcomeValid
-              check "a layer provided to a flow ran it" (length = Exit.Success 0) ]
+              check "a layer provided to a flow ran it" (length = Exit.Success 0)
+              check "failed parallel provisioning cancels its sibling and releases in reverse acquisition order"
+                  (parallelExit = Exit.Failure(Cause.Fail "provision failed") && List.ofSeq parallelReleases = [2; 1]) ]
     }
 // </snippet:torture-layers>
 

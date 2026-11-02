@@ -19,6 +19,8 @@ let application : Flow<string array, AppError, string> =
 [<EntryPoint>]
 let main arguments =
     // App owns the root scope; this process edge only renders the final Exit and chooses a code.
+    // executable host boundary performs this effect.
+    // axial-allow-AXG001: intentional blocking host or live-service boundary
     match App.run arguments application |> Async.RunSynchronously with
     | Exit.Success message ->
         printfn "%s" message

@@ -69,9 +69,9 @@ let run () =
         publishResponse
         |> fun workflow -> workflow.RunSynchronously(environment)
 
-    printfn "Flow result: %A" syncResult
-    printfn "Flow result: %A" asyncResult
-    printfn "Flow result: %A" taskResult
+    printfn "Flow result: %s" (syncResult.ToString())
+    printfn "Flow result: %s" (asyncResult.ToString())
+    printfn "Flow result: %s" (taskResult.ToString())
     // Flow result: Ok { Id = 42; Name = "Ada" }
     // Flow result: Ok "Hello [11111111-1111-1111-1111-111111111111] Ada"
     // Flow result: Ok "Hello [11111111-1111-1111-1111-111111111111] Ada!"
