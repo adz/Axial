@@ -1,0 +1,18 @@
+
+
+<ROOT>/experiments/flow-errors/snippets/non-flow.fsx(6,18): error FS0041: No overloads match for method 'Source'.
+
+Known type of argument: int
+
+Available overloads:
+ - member FlowBuilder.Source: flow: Flow<'env,'error,'value> -> Flow<'env,'error,'value> // Argument 'flow' doesn't match
+ - member FlowBuilder.Source: operation: Async<'value> -> Flow<'env,'error,'value> // Argument 'operation' doesn't match
+ - member FlowBuilder.Source: operation: Async<Result<'value,'error>> -> Flow<'env,'error,'value> // Argument 'operation' doesn't match
+ - member FlowBuilder.Source: operation: ColdTask<'value> -> Flow<'env,'error,'value> // Argument 'operation' doesn't match
+ - member FlowBuilder.Source: operation: ColdTask<Result<'value,'error>> -> Flow<'env,'error,'value> // Argument 'operation' doesn't match
+ - member FlowBuilder.Source: option: 'value option -> Flow<'env,unit,'value> // Argument 'option' doesn't match
+ - member FlowBuilder.Source: option: 'value voption -> Flow<'env,unit,'value> // Argument 'option' doesn't match
+ - member FlowBuilder.Source: result: Result<'value,'error> -> Flow<'env,'error,'value> // Argument 'result' doesn't match
+ - member FlowBuilder.Source: sequence: 'a -> 'a when 'a :> 'value seq // Argument 'sequence' doesn't match
+ - member FlowBuilder.Source: source: BindError<'env,'error,'value> -> Flow<'env,'error,'value> // Argument 'source' doesn't match
+

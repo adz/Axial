@@ -1,0 +1,8 @@
+
+
+<ROOT>/experiments/flow-errors/snippets/mixed-envs.fsx(9,18): error FS0193: Type constraint mismatch. The type 
+    'Flow<CheckoutEnv,string,string>'    
+is not compatible with type
+    'Flow<PricingEnv,string,'a>'    
+
+

@@ -1,0 +1,22 @@
+
+
+<ROOT>/experiments/flow-errors/snippets/non-flow.fsx(7,12): error FS0001: No overloads match for method 'Convert'.
+
+Known return type: Flow<PricingEnv,string,int>
+
+Known type parameters: < FlowBindable , int >
+
+Available overloads:
+ - static member FlowBindable.Convert: FlowBindable * source: 'value array -> 'value seq // Argument 'source' doesn't match
+ - static member FlowBindable.Convert: FlowBindable * source: 'value list -> 'value seq // Argument 'source' doesn't match
+ - static member FlowBindable.Convert: FlowBindable * source: 'value option -> Flow<'env,unit,'value> // Argument 'source' doesn't match
+ - static member FlowBindable.Convert: FlowBindable * source: 'value seq -> 'value seq // Argument 'source' doesn't match
+ - static member FlowBindable.Convert: FlowBindable * source: 'value voption -> Flow<'env,unit,'value> // Argument 'source' doesn't match
+ - static member FlowBindable.Convert: FlowBindable * source: Async<'value> -> Flow<'env,'error,'value> // Argument 'source' doesn't match
+ - static member FlowBindable.Convert: FlowBindable * source: Async<Result<'value,'error>> -> Flow<'env,'error,'value> // Argument 'source' doesn't match
+ - static member FlowBindable.Convert: FlowBindable * source: BindError<'env,'error,'value> -> Flow<'env,'error,'value> // Argument 'source' doesn't match
+ - static member FlowBindable.Convert: FlowBindable * source: ColdTask<'value> -> Flow<'env,'error,'value> // Argument 'source' doesn't match
+ - static member FlowBindable.Convert: FlowBindable * source: ColdTask<Result<'value,'error>> -> Flow<'env,'error,'value> // Argument 'source' doesn't match
+ - static member FlowBindable.Convert: FlowBindable * source: Flow<'env,'error,'value> -> Flow<'env,'error,'value> // Argument 'source' doesn't match
+ - static member FlowBindable.Convert: FlowBindable * source: Result<'value,'error> -> Flow<'env,'error,'value> // Argument 'source' doesn't match
+

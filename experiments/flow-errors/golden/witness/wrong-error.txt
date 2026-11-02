@@ -1,0 +1,8 @@
+
+
+<ROOT>/experiments/flow-errors/snippets/wrong-error.fsx(7,18): error FS0001: Type mismatch. Expecting a
+    'Flow<PricingEnv,string,'a>'    
+but given a
+    'Flow<PricingEnv,int,int>'    
+The type 'string' does not match the type 'int'
+

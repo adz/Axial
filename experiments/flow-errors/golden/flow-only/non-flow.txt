@@ -1,0 +1,7 @@
+
+
+<ROOT>/experiments/flow-errors/snippets/non-flow.fsx(6,18): error FS0001: This expression was expected to have type
+    'Flow<PricingEnv,string,'a>'    
+but here has type
+    'int'    
+

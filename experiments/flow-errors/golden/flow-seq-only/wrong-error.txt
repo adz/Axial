@@ -1,0 +1,8 @@
+
+
+<ROOT>/experiments/flow-errors/snippets/wrong-error.fsx(7,18): error FS0193: Type constraint mismatch. The type 
+    'Flow<PricingEnv,int,int>'    
+is not compatible with type
+    'Flow<PricingEnv,string,'a>'    
+
+
