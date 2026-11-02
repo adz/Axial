@@ -9,8 +9,6 @@ tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
 find src tests -name '*.fsproj' \
-  ! -path 'src/Axial.Hosting.AspNetCore/*' \
-  ! -path 'src/Axial.Hosting.GenHttp/*' \
   ! -path 'tests/Axial.Hosting.Http.Tests/*' \
   -print | sort > "$tmp_dir/projects.actual"
 grep -o 'Path="[^"]*\.fsproj"' Axial.slnx \
@@ -19,8 +17,6 @@ grep -o 'Path="[^"]*\.fsproj"' Axial.slnx \
   | sort > "$tmp_dir/projects.expected"
 
 find src tests -name '*.fs' \
-  ! -path 'src/Axial.Hosting.AspNetCore/*' \
-  ! -path 'src/Axial.Hosting.GenHttp/*' \
   ! -path 'tests/Axial.Hosting.Http.Tests/*' \
   -print | sort > "$tmp_dir/sources.actual"
 
@@ -31,6 +27,8 @@ while IFS= read -r project; do
   { grep -o '<Compile Include="[^"]*\.fs"' "$project" || true; } \
     | sed 's/^<Compile Include="//; s/"$//' \
     | while IFS= read -r include_path; do
+        # MSBuild accepts either separator, including linked files on Unix.
+        include_path="${include_path//\\//}"
         if [[ "$include_path" == ..* ]]; then
           realpath --relative-to="$root_dir" "$project_dir/$include_path"
         else

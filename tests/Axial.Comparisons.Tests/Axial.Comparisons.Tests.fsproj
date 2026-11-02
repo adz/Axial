@@ -4,6 +4,8 @@
     <OutputType>Library</OutputType>
     <IsPackable>false</IsPackable>
     <GenerateProgramFile>false</GenerateProgramFile>
+    <!-- F# emits FS0988 for this xUnit library despite OutputType=Library; there is intentionally no entry point. -->
+    <NoWarn>$(NoWarn);FS0988</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />

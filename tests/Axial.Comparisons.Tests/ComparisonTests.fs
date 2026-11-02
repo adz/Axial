@@ -6,7 +6,7 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.PlatformService
+open Axial
 open Axial.Comparisons
 open Swensen.Unquote
 open Xunit
@@ -106,8 +106,6 @@ module RetryTests =
 
         interface IHasHttp with
             member this.Http = this.Http
-        interface IHasClock with
-            member this.Clock = this.Clock
 
     [<Fact>]
     let ``transient transport failures are retried within the budget`` () =
@@ -267,7 +265,7 @@ module WiringTests =
     open ReportWiring
     open Axial.Console
     open Axial.FileSystem
-    open Axial.PlatformService
+    open Axial
 
     /// A capture-only console; everything except output raises, keeping the double honest.
     type private CaptureConsole() =
@@ -321,13 +319,13 @@ module WiringTests =
         let sourcePath = Path.GetTempFileName()
         File.WriteAllText(sourcePath, "42 widgets")
 
+        let clock = Clock.fromValue (DateTimeOffset(2026, 7, 17, 8, 0, 0, TimeSpan.Zero))
         let env: WithFlow.ReportEnv =
-            { Clock = Clock.fromValue (DateTimeOffset(2026, 7, 17, 8, 0, 0, TimeSpan.Zero))
-              FileSystem = FileSystem.live
+            { FileSystem = FileSystem.live
               Console = console
               Store = store }
 
-        let exit = Flow.runSync env (WithFlow.writeDailyReport sourcePath)
+        let exit = Flow.runSync env (WithFlow.writeDailyReport sourcePath |> Flow.withClock clock)
 
         test <@ exit = Exit.Success "daily-2026-07-17.txt" @>
         test <@ saved["daily-2026-07-17.txt"] = "42 widgets" @>
@@ -339,14 +337,14 @@ module WiringTests =
             { new IReportStore with
                 member _.Save(_, _) = Error "quota exceeded" }
 
+        let clock = Clock.fromValue DateTimeOffset.UnixEpoch
         let env: WithFlow.ReportEnv =
-            { Clock = Clock.fromValue DateTimeOffset.UnixEpoch
-              FileSystem = FileSystem.live
+            { FileSystem = FileSystem.live
               Console = CaptureConsole()
               Store = store }
 
         let sourcePath = Path.GetTempFileName()
-        let exit = Flow.runSync env (WithFlow.writeDailyReport sourcePath)
+        let exit = Flow.runSync env (WithFlow.writeDailyReport sourcePath |> Flow.withClock clock)
 
         test <@ exit = Exit.Failure(Cause.Fail(StoreRejected "quota exceeded")) @>
 
@@ -421,7 +419,7 @@ module StmTests =
                 return warehouseA, warehouseB, localLeft, regionalLeft, reservations
             }
 
-        match Flow.runSync (ClockEnvironment(Clock.live)) program with
+        match Flow.runSync () program with
         | Exit.Success(warehouseA, warehouseB, localLeft, regionalLeft, reservations) ->
             // One reservation takes Local, the other falls back to Regional — never both Local.
             test <@ List.sort [ warehouseA; warehouseB ] = [ Local; Regional ] @>
@@ -434,16 +432,25 @@ module StmTests =
             flow {
                 let! inventory = WithFlow.createInventory 0 0
 
+                let before = Axial.State.STM.pendingRetries ()
                 let! waiting = Flow.fork (WithFlow.reserve inventory)
-                do! Flow.sleep (System.TimeSpan.FromMilliseconds 50.0)
+                // Replenish only once the reservation has really suspended on STM.retry.
+                let rec untilSuspended remaining =
+                    flow {
+                        if Axial.State.STM.pendingRetries () = before && remaining > 0 then
+                            do! Flow.sleep (System.TimeSpan.FromMilliseconds 1.0)
+                            return! untilSuspended (remaining - 1)
+                    }
+                do! untilSuspended 5000
+                let suspended = Axial.State.STM.pendingRetries () > before
                 do! WithFlow.replenish Regional 1 inventory
 
                 let! warehouse = Fiber.join waiting
                 let! (_, regionalLeft, reservations) = WithFlow.snapshot inventory
-                return warehouse, regionalLeft, reservations
+                return suspended, warehouse, regionalLeft, reservations
             }
 
-        test <@ Flow.runSync (ClockEnvironment(Clock.live)) program = Exit.Success(Regional, 0, 1) @>
+        test <@ Flow.runSync () program = Exit.Success(true, Regional, 0, 1) @>
 
     [<Fact>]
     let ``ordinary lock-based inventory also works but each guarantee is hand-maintained`` () =

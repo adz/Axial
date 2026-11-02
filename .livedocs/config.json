@@ -1,19 +1,18 @@
 {
   "projects": [
     "src/Axial/Axial.fsproj",
-    "src/Axial.Layers/Axial.Layers.fsproj",
-    "src/Axial.PlatformService/Axial.PlatformService.fsproj",
+    "src/Axial.Configuration/Axial.Configuration.fsproj",
     "src/Axial.ElmishFlows/Axial.ElmishFlows.fsproj",
     "src/Axial.Console/Axial.Console.fsproj",
     "src/Axial.FileSystem/Axial.FileSystem.fsproj",
-    "src/Axial.Files/Axial.Files.fsproj",
     "src/Axial.HttpClient/Axial.HttpClient.fsproj",
     "src/Axial.Process/Axial.Process.fsproj",
     "src/Axial.Hosting/Axial.Hosting.fsproj",
     "src/Axial.Hosting.Node/Axial.Hosting.Node.fsproj",
     "src/Axial.Hosting.Browser/Axial.Hosting.Browser.fsproj",
     "src/Axial.Telemetry/Axial.Telemetry.fsproj",
-    "src/Axial.Telemetry.JavaScript/Axial.Telemetry.JavaScript.fsproj"
+    "src/Axial.Telemetry.JavaScript/Axial.Telemetry.JavaScript.fsproj",
+    "src/Axial.WebSocket/Axial.WebSocket.fsproj"
   ],
   "repoUrl": "https://github.com/adz/Axial",
   "siteName": "Axial",
@@ -22,13 +21,25 @@
   "logoDarkPath": "content/img/hero-lockup-dark.png",
   "showSiteName": false,
   "stylesheet": "content/axial-docs.css",
-  "themes": ["light", "dark"],
-  "navigation": [
-    { "label": "Docs", "href": "/" },
-    { "label": "Packages", "href": "/packages/" },
-    { "label": "GitHub", "href": "https://github.com/adz/Axial" }
+  "themes": [
+    "light",
+    "dark"
   ],
-  "fSharpPrelude": "open System\nopen System.IO\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.Layers\nopen Axial.Console\nopen Axial.FileSystem\nopen Axial.Hosting\nopen Axial.Hosting.Browser\nopen Axial.Hosting.Node\nopen Axial.PlatformService\nopen Axial.State\nopen Axial.Telemetry\nopen Axial.Telemetry.JavaScript",
+  "navigation": [
+    {
+      "label": "Docs",
+      "href": "/"
+    },
+    {
+      "label": "Packages",
+      "href": "/packages/"
+    },
+    {
+      "label": "GitHub",
+      "href": "https://github.com/adz/Axial"
+    }
+  ],
+  "fSharpPrelude": "open System\nopen System.IO\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.Console\nopen Axial.FileSystem\nopen Axial.Hosting\nopen Axial.Hosting.Browser\nopen Axial.Hosting.Node\nopen Axial.State\nopen Axial.Telemetry\nopen Axial.Telemetry.JavaScript",
   "docsSets": [
     {
       "id": "core",
@@ -38,12 +49,10 @@
       "default": true,
       "projects": [
         "src/Axial/Axial.fsproj",
-        "src/Axial.Layers/Axial.Layers.fsproj",
-        "src/Axial.PlatformService/Axial.PlatformService.fsproj",
+        "src/Axial.Configuration/Axial.Configuration.fsproj",
         "src/Axial.ElmishFlows/Axial.ElmishFlows.fsproj",
         "src/Axial.Console/Axial.Console.fsproj",
         "src/Axial.FileSystem/Axial.FileSystem.fsproj",
-        "src/Axial.Files/Axial.Files.fsproj",
         "src/Axial.Hosting/Axial.Hosting.fsproj",
         "src/Axial.Hosting.Node/Axial.Hosting.Node.fsproj",
         "src/Axial.Hosting.Browser/Axial.Hosting.Browser.fsproj",
@@ -56,16 +65,106 @@
       "title": "Axial.Process",
       "source": "docs/process",
       "path": "process",
-      "projects": ["src/Axial.Process/Axial.Process.fsproj"],
-      "fSharpPrelude": "open System\nopen System.IO\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.Console\nopen Axial.FileSystem\nopen Axial.PlatformService\nopen Axial.Process"
+      "projects": [
+        "src/Axial.Process/Axial.Process.fsproj"
+      ],
+      "fSharpPrelude": "open System\nopen System.IO\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.Console\nopen Axial.FileSystem\nopen Axial.Process"
     },
     {
       "id": "http",
       "title": "Axial.HttpClient",
       "source": "docs/http",
       "path": "http",
-      "projects": ["src/Axial.HttpClient/Axial.HttpClient.fsproj"],
-      "fSharpPrelude": "open System\nopen System.Net.Http\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.HttpClient\nopen Axial.PlatformService"
+      "projects": [
+        "src/Axial.HttpClient/Axial.HttpClient.fsproj"
+      ],
+      "fSharpPrelude": "open System\nopen System.Net.Http\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.HttpClient"
+    },
+    {
+      "id": "filesystem",
+      "title": "Axial.FileSystem",
+      "source": "docs/filesystem",
+      "path": "filesystem",
+      "projects": [
+        "src/Axial.FileSystem/Axial.FileSystem.fsproj"
+      ],
+      "fSharpPrelude": "open System\nopen System.IO\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.Console\nopen Axial.FileSystem\nopen Axial.Hosting\nopen Axial.Hosting.Browser\nopen Axial.Hosting.Node\nopen Axial.State\nopen Axial.Telemetry\nopen Axial.Telemetry.JavaScript"
+    },
+    {
+      "id": "console",
+      "title": "Axial.Console",
+      "source": "docs/console",
+      "path": "console",
+      "projects": [
+        "src/Axial.Console/Axial.Console.fsproj"
+      ],
+      "fSharpPrelude": "open System\nopen System.IO\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.Console\nopen Axial.FileSystem\nopen Axial.Hosting\nopen Axial.Hosting.Browser\nopen Axial.Hosting.Node\nopen Axial.State\nopen Axial.Telemetry\nopen Axial.Telemetry.JavaScript"
+    },
+    {
+      "id": "configuration",
+      "title": "Axial.Configuration",
+      "source": "docs/configuration",
+      "path": "configuration",
+      "projects": [
+        "src/Axial.Configuration/Axial.Configuration.fsproj"
+      ],
+      "fSharpPrelude": "open System\nopen System.IO\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.Console\nopen Axial.FileSystem\nopen Axial.Hosting\nopen Axial.Hosting.Browser\nopen Axial.Hosting.Node\nopen Axial.State\nopen Axial.Telemetry\nopen Axial.Telemetry.JavaScript\nopen Axial.Configuration\nopen Reified\nopen Reified.SchemaDSL"
+    },
+    {
+      "id": "websocket",
+      "title": "Axial.WebSocket",
+      "source": "docs/websocket",
+      "path": "websocket",
+      "projects": [
+        "src/Axial.WebSocket/Axial.WebSocket.fsproj"
+      ],
+      "fSharpPrelude": "open System\nopen System.IO\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.Console\nopen Axial.FileSystem\nopen Axial.Hosting\nopen Axial.Hosting.Browser\nopen Axial.Hosting.Node\nopen Axial.State\nopen Axial.Telemetry\nopen Axial.Telemetry.JavaScript\nopen Axial.WebSocket"
+    },
+    {
+      "id": "hosting",
+      "title": "Axial.Hosting",
+      "source": "docs/hosting",
+      "path": "hosting",
+      "projects": [
+        "src/Axial.Hosting/Axial.Hosting.fsproj",
+        "src/Axial.Hosting.Node/Axial.Hosting.Node.fsproj",
+        "src/Axial.Hosting.Browser/Axial.Hosting.Browser.fsproj",
+        "src/Axial.Hosting.GenHttp/Axial.Hosting.GenHttp.fsproj",
+        "src/Axial.Hosting.AspNetCore/Axial.Hosting.AspNetCore.fsproj"
+      ],
+      "fSharpPrelude": "open System\nopen System.IO\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.Console\nopen Axial.FileSystem\nopen Axial.Hosting\nopen Axial.Hosting.Browser\nopen Axial.Hosting.Node\nopen Axial.State\nopen Axial.Telemetry\nopen Axial.Telemetry.JavaScript\nopen Axial.Hosting.GenHttp\nopen Axial.Hosting.AspNetCore"
+    },
+    {
+      "id": "elmish",
+      "title": "Axial.ElmishFlows",
+      "source": "docs/elmish",
+      "path": "elmish",
+      "projects": [
+        "src/Axial.ElmishFlows/Axial.ElmishFlows.fsproj"
+      ],
+      "fSharpPrelude": "open System\nopen System.IO\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.Console\nopen Axial.FileSystem\nopen Axial.Hosting\nopen Axial.Hosting.Browser\nopen Axial.Hosting.Node\nopen Axial.State\nopen Axial.Telemetry\nopen Axial.Telemetry.JavaScript\nopen Axial.ElmishFlows"
+    },
+    {
+      "id": "telemetry",
+      "title": "Axial.Telemetry",
+      "source": "docs/telemetry",
+      "path": "telemetry",
+      "projects": [
+        "src/Axial.Telemetry/Axial.Telemetry.fsproj",
+        "src/Axial.Telemetry.JavaScript/Axial.Telemetry.JavaScript.fsproj"
+      ],
+      "fSharpPrelude": "open System\nopen System.IO\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.Console\nopen Axial.FileSystem\nopen Axial.Hosting\nopen Axial.Hosting.Browser\nopen Axial.Hosting.Node\nopen Axial.State\nopen Axial.Telemetry\nopen Axial.Telemetry.JavaScript"
+    },
+    {
+      "id": "guardrails",
+      "title": "Axial.Guardrails",
+      "source": "docs/guardrails",
+      "path": "guardrails",
+      "projects": [
+        "src/Axial.Guardrails/Axial.Guardrails.fsproj",
+        "src/Axial.Tool/Axial.Tool.fsproj"
+      ],
+      "fSharpPrelude": "open System\nopen System.IO\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.Console\nopen Axial.FileSystem\nopen Axial.Hosting\nopen Axial.Hosting.Browser\nopen Axial.Hosting.Node\nopen Axial.State\nopen Axial.Telemetry\nopen Axial.Telemetry.JavaScript\nopen Axial.Guardrails\nopen Axial.Tool"
     },
     {
       "id": "packages",

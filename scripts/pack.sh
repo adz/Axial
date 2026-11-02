@@ -7,6 +7,8 @@ cd "$root_dir"
 
 output_dir="artifacts/package"
 
+bash scripts/ensure-guardrails-built.sh Release
+
 mkdir -p "$output_dir"
 find "$output_dir" -maxdepth 1 -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -delete
 
@@ -27,13 +29,11 @@ projects=(
   "src/Axial/Axial.fsproj"
   "src/Axial.Console/Axial.Console.fsproj"
   "src/Axial.ElmishFlows/Axial.ElmishFlows.fsproj"
-  "src/Axial.Layers/Axial.Layers.fsproj"
   "src/Axial.FileSystem/Axial.FileSystem.fsproj"
-  "src/Axial.Files/Axial.Files.fsproj"
   "src/Axial.HttpClient/Axial.HttpClient.fsproj"
   "src/Axial.WebSocket/Axial.WebSocket.fsproj"
   "src/Axial.Process/Axial.Process.fsproj"
-  "src/Axial.PlatformService/Axial.PlatformService.fsproj"
+  "src/Axial.Configuration/Axial.Configuration.fsproj"
   "src/Axial.Hosting/Axial.Hosting.fsproj"
   "src/Axial.Hosting.AspNetCore/Axial.Hosting.AspNetCore.fsproj"
   "src/Axial.Hosting.GenHttp/Axial.Hosting.GenHttp.fsproj"
@@ -42,6 +42,7 @@ projects=(
   "src/Axial.Telemetry/Axial.Telemetry.fsproj"
   "src/Axial.Telemetry.JavaScript/Axial.Telemetry.JavaScript.fsproj"
   "src/Axial.Guardrails/Axial.Guardrails.fsproj"
+  "src/Axial.Tool/Axial.Tool.fsproj"
 )
 
 echo "Packing projects to $output_dir..."
