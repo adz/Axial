@@ -106,6 +106,38 @@ module PolicyReviewTests =
             Assert.Contains("cannot evaluate Broken.fsproj:", document.RootElement.GetProperty("loosened").ToString()))
 
     [<Fact>]
+    let ``unchanged restored test project has no project settings finding`` () =
+        repository (fun root write git cli ->
+            // A restored SDK import exists only in the working copy, not the historical temp copy.
+            write "obj/test-sdk.props" "<Project><PropertyGroup><IsTestProject>true</IsTestProject></PropertyGroup></Project>"
+            let project = File.ReadAllText(Path.Combine(root, "App.fsproj"))
+            write "App.fsproj" (project.Replace("<IsTestProject>false</IsTestProject>", "").Replace("</Project>", "<Import Project=\"obj/test-sdk.props\" Condition=\"Exists('obj/test-sdk.props')\"/></Project>"))
+            write ".gitignore" "obj/\n"
+            File.AppendAllText(Path.Combine(root, ConfigName), "\n[projects]\ntest = [\"App.fsproj\"]\n")
+            git ["add"; "."] |> ignore
+            git ["commit"; "-qm"; "test project"] |> ignore
+            let code, output = cli ["policy"; "review"; "--since"; "HEAD"; "--check"]
+            Assert.True(code = 0, output)
+            Assert.DoesNotContain("project settings", output))
+
+    [<Theory>]
+    [<InlineData(false, ".github/workflows/x.yml")>]
+    [<InlineData(true, "scripts/check.sh")>]
+    [<InlineData(true, ".gitlab-ci.yml")>]
+    let ``automation is tracked only by declared repository globs`` declared path =
+        repository (fun root write git cli ->
+            if declared then
+                File.AppendAllText(Path.Combine(root, ConfigName), $"\n[review]\nautomation = [\"{path}\"]\n")
+            write path "original\n"
+            git ["add"; "."] |> ignore
+            git ["commit"; "-qm"; "automation"] |> ignore
+            write path "changed\n"
+            let code, output = cli ["policy"; "review"; "--since"; "HEAD"; "--check"]
+            Assert.Equal(declared, code <> 0)
+            if declared then Assert.Contains("automation: " + path, output)
+            else Assert.DoesNotContain(path, output))
+
+    [<Fact>]
     let ``first review requires since and explicit tag works`` () =
         repository (fun _ _ _ cli ->
             let code, output = cli ["policy"; "review"]
@@ -156,7 +188,6 @@ module PolicyReviewTests =
     [<InlineData("enabled")>]
     [<InlineData("project-role")>]
     [<InlineData("guardrail")>]
-    [<InlineData("test-project")>]
     [<InlineData("verify")>]
     [<InlineData("workflow")>]
     [<InlineData("package")>]
@@ -174,9 +205,10 @@ module PolicyReviewTests =
             | "enabled" -> write "App.fsproj" (project.Replace("Enabled>true", "Enabled>false"))
             | "project-role" -> write "App.fsproj" (project.Replace("Role>domain", "Role>host"))
             | "guardrail" -> write "App.fsproj" (project.Replace("</ItemGroup>", "<AxialGuardrail Remove=\"Axial.Configuration\"/></ItemGroup>"))
-            | "test-project" -> write "App.fsproj" (project.Replace("IsTestProject>false", "IsTestProject>true"))
-            | "verify" -> write "scripts/verify.sh" "echo skipped\n"
-            | "workflow" -> write ".github/workflows/release.yml" "jobs: {}\n"
+            | "verify" | "workflow" ->
+                write ConfigName (config + "\n[review]\nautomation = [\"scripts/verify.sh\", \".github/workflows/**\"]\n")
+                if kind = "verify" then write "scripts/verify.sh" "echo skipped\n"
+                else write ".github/workflows/release.yml" "jobs: {}\n"
             | _ -> write "Directory.Packages.props" "<Project><ItemGroup><PackageVersion Include=\"Axial.Guardrails\" Version=\"0.12.0\"/></ItemGroup></Project>"
             let code, output = cli ["policy"; "review"; "--since"; "v0.11.3"; "--check"]
             Assert.NotEqual(0, code)
@@ -234,6 +266,8 @@ module PolicyReviewTests =
         repository (fun root write git cli ->
             let text = if path.EndsWith(".props") then "<Project><ItemGroup><PackageVersion Include=\"Axial.Guardrails\" Version=\"0.12.0\"/></ItemGroup></Project>" else "original\n"
             write path text
+            if not (path.EndsWith(".props")) then
+                File.AppendAllText(Path.Combine(root, ConfigName), $"\n[review]\nautomation = [\"{path}\"]\n")
             git ["add"; "."] |> ignore
             git ["commit"; "-qm"; "enforcement"] |> ignore
             File.Delete(Path.Combine(root, path))

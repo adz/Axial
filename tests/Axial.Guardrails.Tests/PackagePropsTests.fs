@@ -431,6 +431,24 @@ module PackagePropsTests =
         Assert.True(openDrift.ExitCode = 0, openDrift.Output)
         Assert.Contains("axial policy review", openDrift.Output)
 
+    [<Theory>]
+    [<InlineData("test", false, false, false)>]
+    [<InlineData("domain", true, false, true)>]
+    [<InlineData("test", false, true, true)>]
+    let ``declared project role chooses test analyzer set independently of test SDK`` role isTest all expectsAmbient =
+        let result =
+            buildConsumerInTemp (fun dir ->
+                writeConsumerProject dir
+                    ($"<TargetFramework>net10.0</TargetFramework><IsTestProject>{isTest.ToString().ToLowerInvariant()}</IsTestProject>" +
+                     (if all then "<AxialGuardrailsInTests>all</AxialGuardrailsInTests>" else ""))
+                    "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n"
+                writeV2Policy dir "domain" "deny"
+                File.AppendAllText(Path.Combine(dir, "Axial.Guardrails.toml"), $"\n[projects]\n{role} = [\"Consumer.fsproj\"]\n")
+                writeFixtureLock dir)
+        Assert.Equal(expectsAmbient, result.ExitCode <> 0)
+        if expectsAmbient then Assert.Contains("AXG001", result.Output)
+        else Assert.DoesNotContain("AXG001", result.Output)
+
     [<Fact>]
     let ``default test builds report guessed waits without enabling ambient effect rules`` () =
         let build source =

@@ -41,6 +41,34 @@ module InitTests =
 
     let private defaultToml = "version = 2\nbaseline = \"Axial.Guardrails.baseline\"\n[default]\nrole = \"domain\"\n"
 
+    [<Theory>]
+    [<InlineData("github", "[\".github/workflows/**\"]")>]
+    [<InlineData("gitlab", "[\".gitlab-ci.yml\", \".gitlab/ci/**\"]")>]
+    [<InlineData("bitbucket", "[\"bitbucket-pipelines.yml\"]")>]
+    [<InlineData("other", "[]")>]
+    let ``init declares CI automation and explains policy settings`` host expected =
+        let root = tempRepo ignore
+        try
+            let code, _, errors = run root ["init"; "--ci"; host]
+            Assert.True(code = 0, errors)
+            let config = read root "Axial.Guardrails.toml"
+            Assert.Contains("[review]", config)
+            Assert.Contains("automation = " + expected, config)
+            for explanation in ["# Roles"; "# Test role"; "# Baseline"; "# Automation"; "verification script"] do
+                Assert.Contains(explanation, config)
+            Assert.Contains("# [projects]", config)
+        finally Directory.Delete(root, true)
+
+    [<Fact>]
+    let ``noninteractive init defaults to Other and reports it`` () =
+        let root = tempRepo ignore
+        try
+            let code, output, errors = run root ["init"]
+            Assert.True(code = 0, errors)
+            Assert.Contains("Other", output)
+            Assert.Contains("automation = []", read root "Axial.Guardrails.toml")
+        finally Directory.Delete(root, true)
+
     [<Fact>]
     let ``existing nondefault toml bootstraps configured baseline and lock`` () =
         let root = tempRepo (fun root ->
