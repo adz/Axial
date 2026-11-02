@@ -212,7 +212,8 @@ module PolicyReview =
                     if introduced then
                         let historicalFiles = files historicalRoot false
                         // A pre-policy ref has no v2 role semantics to reconstruct. Introduction is
-                        // one review item; source directives and automation still have real history.
+                        // one review item; source directives and analyzer versions still have real history.
+                        // Without a policy there was no declared automation inventory.
                         let projects, errors = inspectProjects historicalRoot historicalFiles
                         { after with Projects = projects; EvaluationErrors = errors
                                      Entries = after.Entries
