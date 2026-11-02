@@ -4,13 +4,12 @@ open System.Collections.Generic
 open System.Diagnostics
 open System.Diagnostics.Metrics
 open Axial
-open Axial.PlatformService
+open Axial
 open Axial.Telemetry
 open Swensen.Unquote
 open Xunit
 
 module FiberMetricsTests =
-    let private clockEnv () = ClockEnvironment(Clock.live)
     /// Collects measurements from the Axial meter for the duration of a test.
     type private MetricCapture() =
         let gate = obj()
@@ -50,7 +49,7 @@ module FiberMetricsTests =
         interface System.IDisposable with
             member _.Dispose() = listener.Dispose()
 
-    let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<ClockEnvironment, 'testError, unit> =
+    let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<unit, 'testError, unit> =
         flow {
             if fiber.Metadata.Status = FiberStatus.Running then
                 do! Flow.sleep (System.TimeSpan.FromMilliseconds 5.0)
@@ -58,11 +57,7 @@ module FiberMetricsTests =
         }
 
     let private waitUntil (condition: unit -> bool) =
-        let mutable remaining = 500
-
-        while not (condition ()) && remaining > 0 do
-            remaining <- remaining - 1
-            System.Threading.Thread.Sleep 10
+        TestSupport.waitUntil condition (System.TimeSpan.FromSeconds 5.) |> ignore
 
     [<Fact>]
     let ``fiber metrics count starts, settles with status, and net live fibers`` () =
@@ -71,7 +66,7 @@ module FiberMetricsTests =
         let result =
             flow {
                 let! succeeding = Flow.fork (Flow.succeed 1)
-                let! failing = Flow.forkDetached (Flow.fail "boom" : Flow<ClockEnvironment, string, int>)
+                let! failing = Flow.forkDetached (Flow.fail "boom" : Flow<unit, string, int>)
                 let! sleeper = Flow.fork (Flow.sleep (System.TimeSpan.FromSeconds 30.0))
                 let! _ = Fiber.join succeeding
                 do! waitForSettled failing
@@ -79,7 +74,7 @@ module FiberMetricsTests =
                 return ()
             }
             |> FiberMetrics.observe
-            |> Flow.runSync (clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success() @>
         waitUntil (fun () -> capture.Total "axial.flow.fibers.settled" = 3L)

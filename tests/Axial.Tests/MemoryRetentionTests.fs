@@ -16,20 +16,20 @@ type ProcessWideMeasurements() = class end
 [<Collection("Process-wide measurements")>]
 module MemoryRetentionTests =
     let private liveBytes () =
-        GC.Collect()
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true)
         GC.WaitForPendingFinalizers()
-        GC.Collect()
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true)
         GC.GetTotalMemory true
 
     /// One step that genuinely suspends, so each loop iteration completes asynchronously.
-    let private suspend () : Flow<ClockEnvironment, Never, unit> =
+    let private suspend () : Flow<unit, Never, unit> =
         Flow.fromTask (fun _ -> task { do! Task.Yield() })
 
     /// Returns growth in live managed memory between two iterations. The builder receives the callback to invoke
     /// after each step, while the loop is still running.
     let private retainedBetweenUnder early late
         (cancellationToken: CancellationToken)
-        (build: (int -> unit) -> Flow<ClockEnvironment, Never, unit>)
+        (build: (int -> unit) -> Flow<unit, Never, unit>)
         : int64 =
         let mutable earlyBytes = 0L
         let mutable lateBytes = 0L
@@ -38,7 +38,7 @@ module MemoryRetentionTests =
             if index = early then earlyBytes <- liveBytes ()
             elif index = late then lateBytes <- liveBytes ()
 
-        let exit = build observe |> Flow.runSyncWithToken (TestSupport.clockEnv ()) cancellationToken
+        let exit = build observe |> Flow.runSyncWithToken () cancellationToken
         test <@ exit = Exit.Success () @>
         lateBytes - earlyBytes
 
@@ -52,24 +52,57 @@ module MemoryRetentionTests =
     // the 40,000 measured iterations. The bound leaves room for allocator noise.
     let private bound () = 4L * 1024L * 1024L
 
+    // A synchronous loop can outrun canceled timers' queued continuations on one CPU. GC cannot reclaim queued
+    // work. A global FIFO marker yields to that work without guessing a settling duration; repeat if it queued more.
+    let private settleWork () : Flow<unit, Never, unit> =
+        Flow.fromTask (fun token -> task {
+            let mutable pending = true
+            while pending do
+                let marker = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+                ThreadPool.QueueUserWorkItem((fun (_: obj) -> marker.SetResult()), null) |> ignore
+                do! marker.Task.WaitAsync(token)
+                pending <- ThreadPool.PendingWorkItemCount > 0L
+        })
+
+    let private parallelGrowth token afterStep =
+        let samples = ResizeArray<int64>()
+        let workflow =
+            flow {
+                for index in 0..82_000 do
+                    let! _ = Flow.zipPar (Flow.ok 1) (Flow.ok 2)
+                    let! _ = Flow.race (Flow.ok 1) (Flow.ok 2)
+                    let! _ = Flow.sequencePar [ Flow.ok 1; Flow.ok 2; Flow.ok 3 ]
+                    let! _ = Flow.ok 1 |> Flow.timeoutToOk (TimeSpan.FromSeconds 30.0) 0
+                    afterStep index
+                    if index = 2_000 || index = 42_000 || index = 82_000 then
+                        do! settleWork ()
+                        samples.Add(liveBytes ())
+            }
+        let exit = workflow |> Flow.runSyncWithToken () token
+        test <@ exit = Exit.Success () @>
+        samples |> Seq.pairwise |> Seq.map (fun (early, late) -> late - early) |> Seq.toList
+
     [<Fact>]
     let ``Parallel combinators under a cancellable token run in constant memory`` () =
         // Each combinator links its own cancellation to the caller's token; a link left behind after it settles stays
         // reachable from that token for as long as the token lives, about 140 bytes per call.
         use source = new CancellationTokenSource()
 
-        let retained =
-            retainedDuringLoopUnder source.Token (fun observe ->
-                flow {
-                    for index in 0..42_000 do
-                        let! _ = Flow.zipPar (Flow.ok 1) (Flow.ok 2)
-                        let! _ = Flow.race (Flow.ok 1) (Flow.ok 2)
-                        let! _ = Flow.sequencePar [ Flow.ok 1; Flow.ok 2; Flow.ok 3 ]
-                        let! _ = Flow.ok 1 |> Flow.timeoutToOk (TimeSpan.FromSeconds 30.0) 0
-                        observe index
-                })
+        let growth = parallelGrowth source.Token ignore
+        for retained in growth do
+            test <@ retained < bound () @>
+        GC.KeepAlive source
 
-        test <@ retained < bound () @>
+    [<Fact>]
+    let ``Parallel retention measurement detects links retained by the caller`` () =
+        use source = new CancellationTokenSource()
+        let retainLink _ =
+            // A known leak stays reachable from the same live caller token, even after queued work has drained.
+            source.Token.Register((fun (_: obj) -> ()), Array.zeroCreate<byte> 256) |> ignore
+        let growth = parallelGrowth source.Token retainLink
+        for retained in growth do
+            test <@ retained > bound () @>
+        GC.KeepAlive source
 
     [<Fact>]
     let ``A recursive flow that suspends each iteration runs in constant memory`` () =
@@ -188,7 +221,7 @@ module MemoryRetentionTests =
 
     [<Fact>]
     let ``STM: an interrupted retry withdraws its wake-up`` () =
-        let workflow : Flow<ClockEnvironment, Never, int * int> =
+        let workflow : Flow<unit, Never, int * int> =
             flow {
                 let! gate = TRef.make false |> STM.atomically
                 let before = STM.pendingRetries ()
@@ -214,4 +247,4 @@ module MemoryRetentionTests =
                 return waiting, STM.pendingRetries () - before
             }
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(1, 0) @>
+        test <@ Flow.runSync () workflow = Exit.Success(1, 0) @>

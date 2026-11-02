@@ -4,16 +4,14 @@ module Axial.Fable.Tests.Harness
 
 open System
 open Axial
-open Axial.PlatformService
+open Axial
 open Fable.Core
 
 /// One named expectation inside a test.
 type Check = { Label: string; Passed: bool; Detail: string }
 
 /// A named test: a flow that returns its checks. A typed failure, defect, or interruption fails the test.
-type Test = { Name: string; Body: Flow<Axial.ClockEnvironment, Never, Check list> }
-
-let clockEnvironment = ClockEnvironment(Clock.live)
+type Test = { Name: string; Body: Flow<unit, Never, Check list> }
 
 let equal (label: string) (expected: 'value) (actual: 'value) : Check =
     let passed = (actual = expected)
@@ -22,7 +20,7 @@ let equal (label: string) (expected: 'value) (actual: 'value) : Check =
       Passed = passed
       // Rendered only on failure: structured formatting of large values is slow under JavaScript.
       // Fable renders %A with its own JavaScript formatter; this project is never compiled trimmed or AOT.
-      // axial-allow-reflection-format
+      // axial-allow-AXG006: test-only diagnostic formatting never runs trimmed
       Detail = if passed then "" else $"expected %A{expected}, got %A{actual}" }
 
 let isTrue (label: string) (condition: bool) : Check =
@@ -30,11 +28,11 @@ let isTrue (label: string) (condition: bool) : Check =
       Passed = condition
       Detail = "expected true" }
 
-let test (name: string) (body: Flow<Axial.ClockEnvironment, Never, Check list>) : Test = { Name = name; Body = body }
+let test (name: string) (body: Flow<unit, Never, Check list>) : Test = { Name = name; Body = body }
 
 /// Runs a flow and returns its outcome as a value, so a test can check failures and interruptions.
 let exitOf (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error>> =
-    flow |> Flow.fold (fun value -> Flow.ok (Exit.Success value)) (fun cause -> Flow.ok (Exit.Failure cause))
+    flow |> Flow.foldCause (fun value -> Flow.ok (Exit.Success value)) (fun cause -> Flow.ok (Exit.Failure cause))
 
 /// Milliseconds on the JavaScript monotonic clock, for coarse timing checks.
 [<Emit("performance.now()")>]
@@ -72,7 +70,7 @@ let run (allTests: Test list) : unit =
 
         for current in tests do
             let watchdog = startWatchdog current.Name
-            let! exit = current.Body |> Flow.timeoutToOk testTimeout timedOut |> Flow.toAsync clockEnvironment
+            let! exit = current.Body |> Flow.timeoutToOk testTimeout timedOut |> Flow.toAsync ()
 
             stopWatchdog watchdog
 

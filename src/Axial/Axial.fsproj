@@ -9,7 +9,7 @@
     <RootNamespace>Axial</RootNamespace>
     <Authors>Adam Davies</Authors>
     <PackageMaturity>Incubating</PackageMaturity>
-    <Description>Effectful workflow execution for sync, Async, Task, and explicit environment code.</Description>
+    <Description>Effectful workflow execution with scoped runtime platform services for sync, Async, Task, and explicit environment code.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
@@ -37,6 +37,7 @@
     <Compile Include="Outcome.fs" />
     <Compile Include="Platform.fs" />
     <Compile Include="TelemetryTypes.fs" />
+    <Compile Include="PlatformTypes.fs" />
     <Compile Include="Core.fs" />
     <Compile Include="Interop.fs" />
     <Compile Include="Foundation.fs" />
@@ -45,6 +46,8 @@
     <Compile Include="Schedule.fs" />
     <Compile Include="Parallelism.fs" />
     <Compile Include="Flow.fs" />
+    <Compile Include="Layer.fs" />
+    <Compile Include="LayerBuilder.fs" />
     <Compile Include="FiberLocal.fs" />
     <Compile Include="Cache.fs" />
     <Compile Include="App.fs" />
@@ -59,6 +62,9 @@
     <Compile Include="FlowBuilder.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Builders.fs" />
+    <Compile Include="Culture.fs" />
+    <Compile Include="PlatformOperations.fs" />
+    <Compile Include="TestPlatform.fs" />
   </ItemGroup>
 
 </Project>

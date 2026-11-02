@@ -1,6 +1,7 @@
 namespace Axial.Tests
 
 open System
+open System.Threading.Tasks
 open Axial
 open Swensen.Unquote
 open Xunit
@@ -9,13 +10,13 @@ open Xunit
 /// On .NET, branches that have already settled are combined without a task, so these pin that path to the same
 /// outcomes as the asynchronous one.
 module ParallelSettlementTests =
-    let private later (value: Flow<ClockEnvironment, string, 'value>) : Flow<ClockEnvironment, string, 'value> =
+    let private later (value: Flow<unit, string, 'value>) : Flow<unit, string, 'value> =
         Flow.sleep (TimeSpan.FromMilliseconds 20.0) |> Flow.bind (fun () -> value)
 
-    let private run (workflow: Flow<ClockEnvironment, string, 'value>) =
-        Flow.runSync (TestSupport.clockEnv ()) workflow
+    let private run (workflow: Flow<unit, string, 'value>) =
+        Flow.runSync () workflow
 
-    let private throwing () : Flow<ClockEnvironment, string, int> =
+    let private throwing () : Flow<unit, string, int> =
         Flow(fun _ _ -> raise (InvalidOperationException "thrown while starting"))
 
     let private isDefect (exit: Exit<'value, string>) =
@@ -70,6 +71,70 @@ module ParallelSettlementTests =
         test <@ isDefect (run (Flow.zipPar (throwing ()) right)) @>
         test <@ not rightStarted.Value @>
         test <@ isDefect (run (Flow.zipPar (Flow.ok 1) (throwing ()))) @>
+
+    // T30 review fix: the right branch throws while starting, after the left one has started and holds a resource.
+    let private holdingLeft (release: TaskCompletionSource<unit>) (released: bool ref) (defect: exn option) : Flow<unit, string, unit> =
+        // Ignores cancellation until the test releases it, as a branch in the middle of a release would.
+        Flow(fun _ _ ->
+            ValueTask<Exit<unit, string>>(
+                task {
+                    do! release.Task
+                    released.Value <- true
+
+                    return
+                        match defect with
+                        | Some error -> Exit.Failure(Cause.Die error)
+                        | None -> Exit.Success()
+                }))
+
+    let private throwingUnit (started: TaskCompletionSource<unit>) : Flow<unit, string, unit> =
+        Flow(fun _ _ ->
+            started.SetResult()
+            raise (InvalidOperationException "thrown while starting"))
+
+    let private rec' (cause: Cause<string>) =
+        let rec dies c =
+            match c with
+            | Cause.Die e -> [ e ]
+            | Cause.Both(a, b) -> dies a @ dies b
+            | _ -> []
+        dies cause
+
+    let private settledAfterRelease
+        (combinator: Flow<unit, string, unit> -> Flow<unit, string, unit> -> Flow<unit, string, unit>)
+        (defect: exn option)
+        : bool * Exit<unit, string>
+        =
+        let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let rightStarted = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let released = ref false
+        let running = (combinator (holdingLeft release released defect) (throwingUnit rightStarted)).StartAsTask(())
+        Assert.True(rightStarted.Task.Wait(TimeSpan.FromSeconds 10.0))
+
+        release.SetResult()
+        let outcome = running.WaitAsync(TimeSpan.FromSeconds 10.0).GetAwaiter().GetResult()
+        released.Value, outcome
+
+    [<Fact>]
+    let ``a synchronously throwing right branch settles the started left branch before the outcome`` () =
+        for combinator in
+            [ (fun l r -> Flow.zipPar l r |> Flow.map ignore)
+              (fun l r -> Flow.sequencePar [ l; r ] |> Flow.map ignore) ] do
+            let released, outcome = settledAfterRelease combinator None
+            test <@ released @>
+            test <@ (match outcome with Exit.Failure(Cause.Die _) -> true | _ -> false) @>
+
+    [<Fact>]
+    let ``a synchronously throwing right branch combines the started left branch defect`` () =
+        for combinator in
+            [ (fun l r -> Flow.zipPar l r |> Flow.map ignore)
+              (fun l r -> Flow.sequencePar [ l; r ] |> Flow.map ignore) ] do
+            let leftBoom = InvalidOperationException "left finalizer"
+            let released, outcome = settledAfterRelease combinator (Some leftBoom)
+            test <@ released @>
+            match outcome with
+            | Exit.Failure cause -> test <@ rec' cause |> List.exists (fun e -> obj.ReferenceEquals(e, leftBoom)) @>
+            | _ -> failwith "expected failure"
 
     [<Fact>]
     let ``race returns the left exit when both settle synchronously`` () =

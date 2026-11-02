@@ -2,13 +2,62 @@ namespace Axial.Tests
 
 open System.Diagnostics
 open Axial
-open Axial.PlatformService
+open Axial
 open Axial.Telemetry
 open Swensen.Unquote
 open Xunit
 
 module TelemetryTests =
-    let private clockEnv () = ClockEnvironment(Clock.live)
+    let private clockEnv () = ()
+
+    [<Fact>]
+    let ``Activity adapter tees installed telemetry and preserves scoped log sinks in forks`` () =
+        use source = new ActivitySource("Axial.Tests.HostSinkTee")
+        use listener = new ActivityListener()
+        listener.ShouldListenTo <- (fun candidate -> candidate.Name = source.Name)
+        listener.Sample <- (fun _ -> ActivitySamplingResult.AllData)
+        let mutable tags = Map.empty
+        listener.ActivityStopped <- (fun activity ->
+            tags <- activity.TagObjects |> Seq.map (fun pair -> pair.Key, pair.Value) |> Map.ofSeq)
+        ActivitySource.AddActivityListener listener
+        let annotations = System.Collections.Concurrent.ConcurrentQueue<string * string>()
+        let attributes = System.Collections.Concurrent.ConcurrentQueue<Axial.Telemetry.Attribute>()
+        let telemetry =
+            { new ITelemetry with
+                member _.Annotate(name, value) = annotations.Enqueue(name, value)
+                member _.Attribute attribute = attributes.Enqueue attribute }
+        let log = Log.memory ()
+        let sink = LogSink.minLevel LogLevel.Information log
+        let local = FiberLocal.named "job" "unset"
+        let key = AttributeKey.string "tee.attribute"
+        let error = System.InvalidOperationException("tee-error")
+        let sourceFlow: Flow<unit, string, unit> = flow {
+            do! Log.debug "disabled"
+            do! Log.info "root" |> Flow.annotate "tee.annotation" "root" |> Context.withAttribute (Context.attribute key "root")
+            let! child = Log.errorExn error "child"
+                         |> Flow.annotate "tee.annotation" "child"
+                         |> Context.withAttribute (Context.attribute key "child")
+                         |> Flow.forkNamed "telemetry-log-child"
+            do! Fiber.join child
+        }
+        let result =
+            sourceFlow
+            |> Activity.traceOn source "tee-span"
+            |> Flow.withTelemetry telemetry
+            |> Flow.withLogSink sink
+            |> FiberLocal.locally "tee-job" local
+            |> Flow.runSync ()
+        Assert.Equal(Exit.Success (), result)
+        Assert.Contains(("tee.annotation", "root"), annotations)
+        Assert.Contains(("tee.annotation", "child"), annotations)
+        Assert.Equal(2, attributes.Count)
+        Assert.Equal(box "child", tags.["tee.attribute"])
+        Assert.Equal(box "child", tags.["axial.flow.annotation.tee.annotation"])
+        Assert.Equal(2, log.Entries.Count)
+        Assert.Equal("root", log.Entries.[0].Message)
+        Assert.Same(error, log.Entries.[1].Error.Value)
+        for entry in log.Entries do Assert.Contains(("job", box "tee-job"), entry.Locals)
+
     // The name of the application source used to exercise the ambient Activity.trace/Activity.traceWith, which now
     // require a tracer installed via Activity.withTracer rather than defaulting to Axial's own source. Each test
     // creates its own ActivitySource/ActivityTracer instance from this name so construction cannot race other
@@ -18,7 +67,7 @@ module TelemetryTests =
 
     /// Waits for a fiber to settle without consuming its outcome, so it stays unobserved.
     /// Deterministic replacement for fixed sleeps, which race the thread pool under load.
-    let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<ClockEnvironment, 'testError, unit> =
+    let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<unit, 'testError, unit> =
         flow {
             if fiber.Metadata.Status = FiberStatus.Running then
                 do! Flow.sleep (System.TimeSpan.FromMilliseconds 5.0)
@@ -160,19 +209,19 @@ module TelemetryTests =
 
         let spans =
             captureSpans (fun () ->
-                (Flow.fail "domain error" : Flow<ClockEnvironment, string, int>)
+                (Flow.fail "domain error" : Flow<unit, string, int>)
                 |> Activity.trace "fail-op"
                 |> Activity.withTracer appTracer
                 |> Flow.runSync (clockEnv ())
                 |> ignore
 
-                (Flow.die (System.InvalidOperationException "defect") : Flow<ClockEnvironment, string, int>)
+                (Flow.die (System.InvalidOperationException "defect") : Flow<unit, string, int>)
                 |> Activity.trace "die-op"
                 |> Activity.withTracer appTracer
                 |> Flow.runSync (clockEnv ())
                 |> ignore
 
-                (Flow.ofExit (Exit.Failure Cause.Interrupt) : Flow<ClockEnvironment, string, int>)
+                (Flow.ofExit (Exit.Failure Cause.Interrupt) : Flow<unit, string, int>)
                 |> Activity.trace "interrupt-op"
                 |> Activity.withTracer appTracer
                 |> Flow.runSync (clockEnv ())
@@ -205,7 +254,7 @@ module TelemetryTests =
 
         let spans =
             captureSpans (fun () ->
-                (Flow.ofExit composite : Flow<ClockEnvironment, string, int>)
+                (Flow.ofExit composite : Flow<unit, string, int>)
                 |> Activity.trace "composite-op"
                 |> Activity.withTracer appTracer
                 |> Flow.runSync (clockEnv ())
@@ -236,7 +285,7 @@ module TelemetryTests =
                 |> Seq.tryPick (fun pair -> if pair.Key = "app.retry.count" then Some pair.Value else None))
         ActivitySource.AddActivityListener(listener)
 
-        (Flow.succeed 1 : Flow<ClockEnvironment, string, int>)
+        (Flow.succeed 1 : Flow<unit, string, int>)
         |> Context.withAttribute (Context.attribute retryCount 3L)
         |> Activity.trace "tagged-op"
         |> Activity.withTracer appTracer
@@ -300,7 +349,7 @@ module TelemetryTests =
         let spans =
             captureSpansWithIds (fun () ->
                 flow {
-                    let! fiber = Flow.fork (Flow.sleep (System.TimeSpan.FromMilliseconds 80.0) : Flow<ClockEnvironment, string, unit>)
+                    let! fiber = Flow.fork (Flow.sleep (System.TimeSpan.FromMilliseconds 80.0) : Flow<unit, string, unit>)
                     do! Fiber.join fiber
                     return "done"
                 }
@@ -326,7 +375,7 @@ module TelemetryTests =
         let spans =
             captureSpansWithIds (fun () ->
                 flow {
-                    let! fiber = Flow.fork (Flow.die (System.InvalidOperationException "fiber defect") : Flow<ClockEnvironment, string, int>)
+                    let! fiber = Flow.fork (Flow.die (System.InvalidOperationException "fiber defect") : Flow<unit, string, int>)
                     // Wait for the fiber to settle without letting the defect fail this workflow;
                     // interrupting before it dies would flip the outcome to interrupt.
                     do! waitForSettled fiber
@@ -362,7 +411,7 @@ module TelemetryTests =
 
         let result =
             flow {
-                let! fiber = Flow.fork (Flow.die (System.InvalidOperationException "background crash") : Flow<ClockEnvironment, string, int>)
+                let! fiber = Flow.fork (Flow.die (System.InvalidOperationException "background crash") : Flow<unit, string, int>)
                 do! waitForSettled fiber
                 return "done"
             }

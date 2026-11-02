@@ -4,7 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.PlatformService
+open Axial
 open Swensen.Unquote
 open Xunit
 

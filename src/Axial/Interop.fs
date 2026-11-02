@@ -7,11 +7,14 @@ open System.Threading
 /// when the runtime's own token asked for it; a library that cancels for its own reasons (an internal timeout, a
 /// disposed client) has failed, and reporting that as an interruption nobody requested would hide it.
 module internal ForeignCancellation =
-    let isOurs (cancellationToken: CancellationToken) (error: exn) =
-        error :? OperationCanceledException && cancellationToken.IsCancellationRequested
+#if FABLE_COMPILER
+    let runtimeCancellationException () : exn = Platform.runtimeCancellationException ()
+#endif
+
+    let isOurs (cancellationToken: CancellationToken) (error: exn) = Platform.isOwnCancellation cancellationToken error
 
     let causeOf (cancellationToken: CancellationToken) (error: exn) : Cause<'error> =
-        if isOurs cancellationToken error then Cause.Interrupt else Cause.Die error
+        Platform.causeOfThrown cancellationToken error
 
 module internal AsyncInterop =
     let from (mapExit: 'source -> Exit<'value, 'error>) (operation: Async<'source>) : Flow<'env, 'error, 'value> =

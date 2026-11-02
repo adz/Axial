@@ -7,7 +7,7 @@ open System.Threading
 open System.Threading.Tasks
 open System.Threading.Tasks.Sources
 open Axial
-open Axial.PlatformService
+open Axial
 
 [<AutoOpen>]
 module TestExtensions =
@@ -19,7 +19,24 @@ module TestExtensions =
             flow.RunSynchronously(environment, cancellationToken = cancellationToken)
 
 module TestSupport =
-    let clockEnv () = ClockEnvironment(Clock.live)
+    /// Polls a fact for at most the supplied duration; false means the failure deadline expired.
+    let waitUntil (condition: unit -> bool) (deadline: TimeSpan) =
+        if deadline < TimeSpan.Zero then
+            invalidArg (nameof deadline) "A polling deadline must be finite and non-negative."
+
+        let elapsed = Stopwatch.StartNew()
+        let mutable ready = condition ()
+
+        while not ready && elapsed.Elapsed < deadline do
+            Thread.Sleep 1
+            ready <- condition ()
+
+        ready
+
+    /// Blocks the calling thread for the duration to simulate work (a slow sample, a loaded pool).
+    /// The one allowed Thread.Sleep for simulated work; never use it to wait for a fact.
+    let occupyThread (duration: TimeSpan) = Thread.Sleep duration
+
     type Address =
         { City: string }
 
@@ -178,39 +195,52 @@ module TestSupport =
         else
             124, output + $"{Environment.NewLine}Timed out waiting for {scriptPath}."
 
-    /// Runs a flow on manual time. Whenever the fibers have all settled into waiting on time, time jumps to the next
-    /// deadline, so timed behaviour is exact and the sleeps take no wall-clock time.
-    let runOnManualTime (workflow: Flow<ClockEnvironment, 'error, 'value>) : Exit<'value, 'error> =
-        let time = ManualClock(DateTimeOffset.UnixEpoch)
-        let running = Task.Run(fun () -> Flow.runSync (ClockEnvironment(time :> IClock)) workflow)
-        let mutable lastCount = -1
-        let mutable stablePolls = 0
+    /// Every step names a cumulative sleep-registration fact and an explicit clock advance.
+    /// Registration is signalled by a latch, never inferred from idle time or thread-pool counters.
+    let runWithCheckpoints (steps: (int * TimeSpan * Flow<unit, 'error, unit>) list) (workflow: Flow<unit, 'error, 'value>) : Exit<'value, 'error> =
+        let clock = ManualClock(DateTimeOffset.UnixEpoch)
+        use registered = new SemaphoreSlim(0)
+        let mutable registrations = 0
+        let notifying =
+            { new IClock with
+                member _.UtcNow() = (clock :> IClock).UtcNow()
+                member _.Elapsed() = (clock :> IClock).Elapsed()
+                member _.Sleep(delay, token) =
+                    let pending = (clock :> IClock).Sleep(delay, token)
+                    if delay > TimeSpan.Zero then
+                        Interlocked.Increment(&registrations) |> ignore
+                        registered.Release() |> ignore
+                    pending }
+        let driven = flow {
+            let! fiber = workflow |> Flow.withClock notifying |> Flow.fork
+            for required, duration, checkpoint in steps do
+                do! Flow.fromTask (fun token -> task {
+                    while Volatile.Read(&registrations) < required do
+                        let! signalled = registered.WaitAsync(TimeSpan.FromSeconds 10., token)
+                        if not signalled then failwithf "Expected sleep registration %d, observed %d" required registrations
+                    return ()
+                })
+                do! TestClock.advance duration
+                do! checkpoint
+            return! Fiber.join fiber
+        }
+        driven |> Flow.withClock clock |> Flow.runSync ()
 
-        while not running.IsCompleted do
-            let count = time.Sleepers
+    let runWithSteps steps workflow =
+        workflow |> runWithCheckpoints (steps |> List.map (fun (required, duration) -> required, duration, Flow.ok ()))
 
-            if count > 0 && count = lastCount then
-                stablePolls <- stablePolls + 1
-            else
-                stablePolls <- 0
+    let awaitSignal (signal: SemaphoreSlim) : Flow<unit, 'error, unit> =
+        Flow.fromTask (fun token -> task {
+            let! signalled = signal.WaitAsync(TimeSpan.FromSeconds 10., token)
+            if not signalled then failwith "Expected stream observation was not signalled."
+            return ()
+        })
 
-            lastCount <- count
+    /// A serial timed flow registers exactly one positive delay before each explicit advance.
+    let serialSteps (durations: TimeSpan list) =
+        durations |> List.mapi (fun index duration -> index + 1, duration)
 
-            // Unchanged polls with no queued thread-pool work mean no fiber is still running towards a new, possibly
-            // earlier, deadline. Other tests running in parallel keep the pool busy, so a long enough stable stretch
-            // also counts.
-            if stablePolls >= 15 && (ThreadPool.PendingWorkItemCount = 0L || stablePolls >= 200) then
-                time.AdvanceToNextDeadline() |> ignore
-                lastCount <- -1
-                stablePolls <- 0
-            else
-                Thread.Sleep 1
-
-        running.Result
-
-    /// The runtime's current time, for tests that record when things happen on manual time.
-    let runtimeNow () : Flow<ClockEnvironment, 'error, TimeSpan> =
-        Flow.envWith (fun (env: ClockEnvironment) -> env.Clock.Elapsed())
+    let runtimeNow () : Flow<unit, 'error, TimeSpan> = Clock.elapsed
 
     let runBashScript (scriptPath: string) (environment: (string * string) list) =
         runBashScriptWithArguments scriptPath [] environment

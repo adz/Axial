@@ -122,7 +122,7 @@ module AppTests =
 
     [<Fact>]
     let ``startWith keeps cache lookups alive after publishing`` () =
-        let environment = TestSupport.clockEnv ()
+        let environment = ()
         let build = Cache.make (fun key -> Flow.succeed (key + 1))
         let running, cache =
             match App.startWith environment build |> Async.RunSynchronously with
@@ -179,7 +179,7 @@ module AppTests =
         let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let finalized = ResizeArray<bool>()
 
-        let application : Flow<ClockEnvironment, string, unit> =
+        let application : Flow<unit, string, unit> =
             flow {
                 do!
                     Flow.scopeFinalizer (
@@ -190,7 +190,7 @@ module AppTests =
                 do! Flow.sleep(TimeSpan.FromSeconds 30.0)
             }
 
-        let running = App.start (TestSupport.clockEnv ()) application
+        let running = App.start () application
         test <@ started.Task.Wait(TimeSpan.FromSeconds 2.0) @>
 
         let first = running.Stop() |> Async.StartAsTask
@@ -208,8 +208,8 @@ module AppTests =
         use cancellationSource = new CancellationTokenSource()
 
         let running =
-            (Flow.sleep(TimeSpan.FromSeconds 30.0) : Flow<ClockEnvironment, string, unit>)
-            |> App.startWithCancellation cancellationSource.Token (TestSupport.clockEnv ())
+            (Flow.sleep(TimeSpan.FromSeconds 30.0) : Flow<unit, string, unit>)
+            |> App.startWithCancellation cancellationSource.Token ()
 
         cancellationSource.Cancel()
         let exit = running.Completion |> Async.RunSynchronously

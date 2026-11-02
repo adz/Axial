@@ -10,6 +10,62 @@ open Swensen.Unquote
 open Xunit
 
 module WorkflowErrorTests =
+    type private DomainError =
+        | MissingValue
+        | UpstreamError of string
+
+    [<Fact>]
+    let ``fold lets interruption pass through without running the typed error handler`` () =
+        let mutable handlerRan = false
+
+        let workflow =
+            flow {
+                let! started = Deferred.make<unit, string, unit> ()
+
+                let source : Flow<unit, string, int> =
+                    flow {
+                        let! _ = Deferred.succeed () started
+                        do! Flow.sleep (TimeSpan.FromSeconds 30.0)
+                        return 42
+                    }
+
+                let folded : Flow<unit, Never, int> =
+                    source
+                    |> Flow.fold Flow.ok (fun _ ->
+                        handlerRan <- true
+                        Flow.ok 0)
+
+                let! fiber = Flow.fork folded
+                do! Deferred.await started
+                let! exit = Fiber.interrupt fiber
+                return exit, handlerRan
+            }
+
+        let result = Flow.runSync () workflow
+        test <@ result = Exit.Success(Exit.Failure Cause.Interrupt, false) @>
+
+    [<Fact>]
+    let ``fold lets a defect pass through without running the typed error handler`` () =
+        let defect = InvalidOperationException "broken"
+        let mutable handlerRan = false
+        let source : Flow<unit, string, int> = Flow.die defect
+
+        let result : Exit<int, Never> =
+            source
+            |> Flow.fold Flow.ok (fun _ ->
+                handlerRan <- true
+                Flow.ok 0)
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure(Cause.Die defect) @>
+        test <@ not handlerRan @>
+
+    [<Fact>]
+    let ``fold sends a typed failure to the error handler`` () =
+        let source : Flow<unit, string, int> = Flow.fail "missing"
+        let result = source |> Flow.fold (string >> Flow.ok) (fun error -> Flow.ok $"error: {error}") |> Flow.runSync ()
+        test <@ result = Exit.Success "error: missing" @>
+
     [<Fact>]
     let ``recover changes error type on a traced typed failure`` () =
         let source : Flow<unit, string, int> = Flow.fail "missing" |> Flow.tracedError "load"
@@ -100,14 +156,14 @@ module WorkflowErrorTests =
             |> Flow.tapError (fun error ->
                 tappedErrors.Add error
                 Flow.succeed ())
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let tapSkipsSuccess =
             Flow.succeed 42
             |> Flow.tapError (fun error ->
                 tappedErrors.Add $"unexpected:{error}"
                 Flow.succeed ())
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let recovered =
             Flow.fail "missing"
@@ -117,7 +173,7 @@ module WorkflowErrorTests =
         let bypassesFallback =
             Flow.succeed 10
             |> Flow.orElse (Flow.succeed 99)
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let zipped =
             Flow.zip (Flow.envWith (fun env -> env + 1)) (Flow.envWith (fun env -> env * 2))
@@ -141,7 +197,7 @@ module WorkflowErrorTests =
 
         let result =
             Flow.die defect
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         match result with
         | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, defect) @>
@@ -156,27 +212,27 @@ module WorkflowErrorTests =
         let fromTaskResult =
             Task.FromException<int>(taskDefect)
             |> Flow.awaitStartedTask
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let attemptTaskResult =
             Task.FromException<int>(taskDefect)
             |> Flow.attemptStartedTask
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let attemptValueTaskResult =
             ValueTask<int>(Task.FromException<int>(valueTaskDefect))
             |> Flow.attemptStartedValueTask
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let attemptAsyncResult =
             async { return raise asyncDefect }
             |> Flow.attemptAsync
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let attemptCancellationResult =
             Task.FromCanceled<int>(CancellationToken(true))
             |> Flow.attemptStartedTask
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         match fromTaskResult with
         | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, taskDefect) @>
@@ -204,9 +260,164 @@ module WorkflowErrorTests =
 
         let requestedCancellation =
             Flow.attemptTask (fun token -> task { do! Task.Delay(Timeout.Infinite, token) })
-            |> Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token
+            |> Flow.runSyncWithToken () cts.Token
 
         test <@ requestedCancellation = Exit.Failure Cause.Interrupt @>
+
+    // T28: foldCause and mapBoth must observe an exception thrown by the source flow, as Flow.catch does.
+    let private dieHandler (defect: exn) (cause: Cause<string>) : Flow<unit, string, int> =
+        match Cause.untraced cause with
+        | Cause.Die error when obj.ReferenceEquals(error, defect) -> Flow.succeed -1
+        | other -> Flow.succeed -2
+
+    [<Fact>]
+    let ``Flow foldCause sends a synchronously thrown exception to the failure handler as Die`` () =
+        let defect = InvalidOperationException "boom"
+
+        let thrownByBuilder : Exit<int, string> =
+            flow { return raise defect }
+            |> Flow.foldCause Flow.succeed (dieHandler defect)
+            |> Flow.runSync ()
+
+        let thrownByInvoke : Exit<int, string> =
+            Flow(fun (_: unit) _ -> raise defect)
+            |> Flow.foldCause Flow.succeed (dieHandler defect)
+            |> Flow.runSync ()
+
+        test <@ thrownByBuilder = Exit.Success -1 @>
+        test <@ thrownByInvoke = Exit.Success -1 @>
+
+    [<Fact>]
+    let ``Flow foldCause sends an exception thrown after an async hop to the failure handler as Die`` () =
+        let defect = InvalidOperationException "boom after hop"
+
+        let afterSleep : Exit<int, string> =
+            Flow.sleep (TimeSpan.FromMilliseconds 5.0)
+            |> Flow.bind (fun () -> raise defect)
+            |> Flow.foldCause Flow.succeed (dieHandler defect)
+            |> Flow.runSync ()
+
+        let afterTask : Exit<int, string> =
+            flow {
+                do! Flow.fromTask (fun _ -> task { do! Task.Yield() })
+                return raise defect
+            }
+            |> Flow.foldCause Flow.succeed (dieHandler defect)
+            |> Flow.runSync ()
+
+        test <@ afterSleep = Exit.Success -1 @>
+        test <@ afterTask = Exit.Success -1 @>
+
+    [<Fact>]
+    let ``Flow foldCause keeps a throw from the success handler out of the failure handler`` () =
+        let defect = InvalidOperationException "success handler"
+        let mutable failureHandlerRan = false
+
+        let result : Exit<int, string> =
+            Flow.succeed 1
+            |> Flow.foldCause
+                (fun _ -> raise defect)
+                (fun _ ->
+                    failureHandlerRan <- true
+                    Flow.succeed -1)
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure(Cause.Die defect) @>
+        test <@ not failureHandlerRan @>
+
+    [<Fact>]
+    let ``Flow foldCause reports a runtime cancellation thrown by the source as Interrupt`` () =
+        use cancellation = new CancellationTokenSource()
+
+        let result : Exit<string, string> =
+            Flow(fun (_: unit) _ ->
+                cancellation.Cancel()
+                raise (OperationCanceledException cancellation.Token))
+            |> Flow.foldCause
+                (fun _ -> Flow.succeed "success")
+                (fun cause ->
+                    match Cause.untraced cause with
+                    | Cause.Interrupt -> Flow.succeed "interrupt"
+                    | other -> Flow.succeed $"other: %A{other}")
+            |> Flow.runSyncWithToken () cancellation.Token
+
+        test <@ result = Exit.Success "interrupt" @>
+
+    [<Fact>]
+    let ``Flow mapBoth maps an exception thrown by the source as Die`` () =
+        let defect = InvalidOperationException "boom"
+
+        let result : Exit<int, string> =
+            flow { return raise defect }
+            |> Flow.mapBoth id (fun cause ->
+                match Cause.untraced cause with
+                | Cause.Die error when obj.ReferenceEquals(error, defect) -> Cause.Fail "mapped"
+                | other -> Cause.Fail "unmapped")
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure(Cause.Fail "mapped") @>
+
+    [<Fact>]
+    let ``flow try finally runs the compensation when the body throws`` () =
+        let defect = InvalidOperationException "body threw"
+        let mutable synchronousRuns = 0
+        let mutable asyncRuns = 0
+
+        let synchronous : Exit<int, string> =
+            flow {
+                try
+                    return raise defect
+                finally
+                    synchronousRuns <- synchronousRuns + 1
+            }
+            |> Flow.runSync ()
+
+        let afterHop : Exit<int, string> =
+            flow {
+                try
+                    do! Flow.fromTask (fun _ -> task { do! Task.Yield() })
+                    return raise defect
+                finally
+                    asyncRuns <- asyncRuns + 1
+            }
+            |> Flow.runSync ()
+
+        test <@ synchronous = Exit.Failure(Cause.Die defect) @>
+        test <@ afterHop = Exit.Failure(Cause.Die defect) @>
+        test <@ synchronousRuns = 1 @>
+        test <@ asyncRuns = 1 @>
+
+    [<Fact>]
+    let ``flow use disposes the resource when the body throws`` () =
+        let defect = InvalidOperationException "body threw"
+        let mutable disposed = 0
+        let resource () = { new IDisposable with member _.Dispose() = disposed <- disposed + 1 }
+
+        let result : Exit<int, string> =
+            flow {
+                use _ = resource ()
+                return raise defect
+            }
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure(Cause.Die defect) @>
+        test <@ disposed = 1 @>
+
+    [<Fact>]
+    let ``flow try with catches an exception thrown after an async hop`` () =
+        let defect = InvalidOperationException "after hop"
+
+        let result : Exit<string, string> =
+            flow {
+                try
+                    do! Flow.fromTask (fun _ -> task { do! Task.Yield() })
+                    return raise defect
+                with error ->
+                    return $"caught {error.Message}"
+            }
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Success "caught after hop" @>
 
     [<Fact>]
     let ``Flow catch converts simple defects and preserves typed failures and interruptions`` () =
@@ -216,22 +427,22 @@ module WorkflowErrorTests =
         let caughtDefect =
             Flow.die defect
             |> Flow.catch mapper
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let typedFailure =
             Flow.fail "domain"
             |> Flow.catch mapper
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let interrupted =
             Flow.ofExit (Exit.Failure Cause.Interrupt)
             |> Flow.catch mapper
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let compound =
             Flow.ofExit (Exit.Failure (Cause.Then(Cause.Die defect, Cause.Fail "domain")))
             |> Flow.catch mapper
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ caughtDefect = Exit.Failure (Cause.Fail "caught:boom") @>
         test <@ typedFailure = Exit.Failure (Cause.Fail "domain") @>
@@ -248,45 +459,49 @@ module WorkflowErrorTests =
 
         let flowDefect =
             Flow.delay (fun () -> raise defect)
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let flowCanceled =
             Flow.delay (fun () -> raise canceled)
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let asyncDefect =
             flow {
-                let! value = async { return raise defect }
+                let! value = (async { return raise defect } : Async<int>)
                 return value
             }
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let asyncCanceled =
             flow {
-                let! value = async { return raise canceled }
+                let! value = (async { return raise canceled } : Async<int>)
                 return value
             }
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let taskDefect =
             flow {
                 let! value = Task.FromException<int>(defect) |> Flow.awaitStartedTask
                 return value
             }
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let taskCanceled =
             flow {
                 let! value = Task.FromCanceled<int>(CancellationToken(true)) |> Flow.awaitStartedTask
                 return value
             }
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         match flowDefect with
         | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, defect) @>
         | other -> failwithf "Expected defect cause, got %A" other
 
-        test <@ flowCanceled = Exit.Failure Cause.Interrupt @>
+        // T28b: an OperationCanceledException the runtime's token did not ask for is a defect here too, as for the
+        // async and task boundaries below.
+        match flowCanceled with
+        | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, canceled) @>
+        | other -> failwithf "Expected a cancellation defect, got %A" other
 
         match asyncDefect with
         | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, defect) @>
@@ -309,7 +524,7 @@ module WorkflowErrorTests =
 
         let requestedCancellation : Exit<unit, string> =
             Flow.fromTask (fun token -> task { do! Task.Delay(Timeout.Infinite, token) })
-            |> Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token
+            |> Flow.runSyncWithToken () cts.Token
 
         test <@ requestedCancellation = Exit.Failure Cause.Interrupt @>
 
@@ -320,44 +535,44 @@ module WorkflowErrorTests =
         let mapErrorResult =
             Flow.die defect
             |> Flow.mapError String.length
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let orElseResult =
             Flow.die defect
             |> Flow.orElse (Flow.succeed 99)
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let zipResult =
             Flow.zip (Flow.die defect) (Flow.succeed 42)
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let asyncBoundaryResult =
             flow {
-                let! value = async { return raise defect }
+                let! value = (async { return raise defect } : Async<int>)
                 return value
             }
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let taskBoundaryResult =
             flow {
                 let! value = Task.FromException<int>(defect) |> Flow.awaitStartedTask
                 return value
             }
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let retryAttempts = ref 0
 
         let retryResult =
-            let workflow : Flow<ClockEnvironment, string, int> =
+            let workflow : Flow<unit, string, int> =
                 Flow.delay (fun () ->
                     retryAttempts.Value <- retryAttempts.Value + 1
                     raise defect)
 
-            let retried : Flow<ClockEnvironment, string, int> =
+            let retried : Flow<unit, string, int> =
                 workflow |> Flow.retry (Schedule.recurs 5)
 
             retried
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         match mapErrorResult with
         | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, defect) @>
@@ -439,7 +654,7 @@ module WorkflowErrorTests =
                 return extra * 2
             }
 
-        let asyncReturnFromNone : Flow<ClockEnvironment, unit, int> =
+        let asyncReturnFromNone : Flow<unit, unit, int> =
             flow { return! None }
 
         let taskWorkflow : Flow<int, unit, int> =
@@ -450,7 +665,7 @@ module WorkflowErrorTests =
                 return extra * 2
             }
 
-        let taskReturnFromValueNone : Flow<ClockEnvironment, unit, int> =
+        let taskReturnFromValueNone : Flow<unit, unit, int> =
             flow { return! ValueNone }
 
         test <@ Flow.runSync 20 syncSome = Exit.Success 42 @>
@@ -458,9 +673,9 @@ module WorkflowErrorTests =
         test <@ Flow.runSync 20 syncValueSome = Exit.Success 42 @>
         test <@ Flow.runSync 20 syncValueNone = Exit.Failure (Cause.Fail ()) @>
         test <@ Flow.runSync 19 asyncWorkflow = Exit.Success 42 @>
-        test <@ Flow.runSync (TestSupport.clockEnv ()) asyncReturnFromNone = Exit.Failure (Cause.Fail ()) @>
+        test <@ Flow.runSync () asyncReturnFromNone = Exit.Failure (Cause.Fail ()) @>
         test <@ Flow.runSync 19 taskWorkflow = Exit.Success 42 @>
-        test <@ Flow.runSync (TestSupport.clockEnv ()) taskReturnFromValueNone = Exit.Failure (Cause.Fail ()) @>
+        test <@ Flow.runSync () taskReturnFromValueNone = Exit.Failure (Cause.Fail ()) @>
 
     [<Fact>]
     let ``explicit option adapters support custom workflow errors across modules`` () =
@@ -468,23 +683,23 @@ module WorkflowErrorTests =
             Some 21
             |> Flow.fromOption "missing value"
             |> Flow.map ((*) 2)
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let syncNone =
             None
             |> Flow.fromOption "missing value"
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let syncValueSome =
             ValueSome 21
             |> Flow.fromValueOption "missing value"
             |> Flow.map ((*) 2)
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         let syncValueNone =
             ValueNone
             |> Flow.fromValueOption "missing value"
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ syncSome = Exit.Success 42 @>
         test <@ syncNone = Exit.Failure (Cause.Fail "missing value") @>
@@ -534,13 +749,36 @@ module WorkflowErrorTests =
                 return x + y + z + w
             }
 
-        let flowResult = Flow.runSync (TestSupport.clockEnv ()) flowTest
-        let asyncFlowResult = Flow.runSync (TestSupport.clockEnv ()) asyncFlowTest
-        let taskFlowResult = Flow.runSync (TestSupport.clockEnv ()) taskFlowTest
+        let flowResult = Flow.runSync () flowTest
+        let asyncFlowResult = Flow.runSync () asyncFlowTest
+        let taskFlowResult = Flow.runSync () taskFlowTest
 
         test <@ flowResult = Exit.Success 52 @>
         test <@ asyncFlowResult = Exit.Success 52 @>
         test <@ taskFlowResult = Exit.Success 60 @>
+
+    [<Fact>]
+    let ``Bind adapters retain their public BindError type and route errors`` () =
+        let requireValue (source: int option) : BindError<unit, DomainError, int> =
+            source |> Bind.error MissingValue
+
+        let mapFailure (source: Result<int, string>) : BindError<unit, DomainError, int> =
+            source |> Bind.mapError UpstreamError
+
+        let missingWorkflow : Flow<unit, DomainError, int> =
+            flow {
+                let! value = requireValue None
+                return value
+            }
+
+        let upstreamWorkflow : Flow<unit, DomainError, int> =
+            flow {
+                let! value = mapFailure (Error "denied")
+                return value
+            }
+
+        test <@ Flow.runSync () missingWorkflow = Exit.Failure(Cause.Fail MissingValue) @>
+        test <@ Flow.runSync () upstreamWorkflow = Exit.Failure(Cause.Fail(UpstreamError "denied")) @>
 
     [<Fact>]
     let ``Flow async syntax uses Bind assignment and mapping`` () =
@@ -568,13 +806,64 @@ module WorkflowErrorTests =
                     |> Bind.mapError TokenErr
             }
 
-        let success = Flow.runSync (TestSupport.clockEnv ()) (login "alice" "alice-pwd")
-        let authFailure = Flow.runSync (TestSupport.clockEnv ()) (login "blocked" "blocked-pwd")
-        let tokenFailure = Flow.runSync (TestSupport.clockEnv ()) (login "expired" "expired-pwd")
+        let success = Flow.runSync () (login "alice" "alice-pwd")
+        let authFailure = Flow.runSync () (login "blocked" "blocked-pwd")
+        let tokenFailure = Flow.runSync () (login "expired" "expired-pwd")
 
         test <@ success = Exit.Success "token-alice" @>
         test <@ authFailure = Exit.Failure (Cause.Fail (Unauthorized "denied")) @>
         test <@ tokenFailure = Exit.Failure (Cause.Fail (TokenErr "token-expired")) @>
+
+    [<Fact>]
+    let ``Nested carrier results enter the typed error channel`` () =
+        let hasNestedConversion (carrier: Type) =
+            typeof<FlowBindable>.GetMethods()
+            |> Array.exists (fun methodInfo ->
+                let parameters = methodInfo.GetParameters()
+
+                if methodInfo.Name <> "Convert" || parameters.Length <> 2 then
+                    false
+                else
+                    let sourceType = parameters.[1].ParameterType
+
+                    if sourceType.IsGenericType && sourceType.GetGenericTypeDefinition() = carrier then
+                        let innerType = sourceType.GetGenericArguments().[0]
+                        innerType.IsGenericType
+                        && innerType.GetGenericTypeDefinition() = typedefof<Result<_, _>>
+                    else
+                        false)
+
+        let sourceCount =
+            typeof<FlowBuilder>.GetMethods()
+            |> Array.filter (fun methodInfo -> methodInfo.Name = "Source")
+            |> Array.length
+
+        test <@ sourceCount = 1 @>
+        test <@ hasNestedConversion typedefof<Async<_>> @>
+        test <@ hasNestedConversion typedefof<ColdTask<_>> @>
+
+        let asyncSource : Async<Result<int, string>> = async { return Error "async-error" }
+
+        let coldTaskSource : ColdTask<Result<int, string>> =
+            ColdTask(fun _ -> Task.FromResult(Error "cold-task-error"))
+
+        let asyncWorkflow : Flow<unit, string, int> =
+            flow {
+                let! value = asyncSource |> Flow.fromAsyncResult
+                return value
+            }
+
+        let coldTaskWorkflow : Flow<unit, string, int> =
+            flow {
+                let! value = coldTaskSource |> Flow.fromColdTaskResult
+                return value
+            }
+
+        let asyncResult = Flow.runSync () asyncWorkflow
+        let coldTaskResult = Flow.runSync () coldTaskWorkflow
+
+        test <@ asyncResult = Exit.Failure (Cause.Fail "async-error") @>
+        test <@ coldTaskResult = Exit.Failure (Cause.Fail "cold-task-error") @>
 
     [<Fact>]
     let ``Bind mapError stays symmetric across flow families`` () =
@@ -604,8 +893,8 @@ module WorkflowErrorTests =
                 return asyncValue + taskValue
             }
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) asyncMapped = Exit.Failure (Cause.Fail "mapped-async-source") @>
-        test <@ Flow.runSync (TestSupport.clockEnv ()) taskMapped = Exit.Failure (Cause.Fail "mapped-task-source") @>
+        test <@ Flow.runSync () asyncMapped = Exit.Failure (Cause.Fail "mapped-async-source") @>
+        test <@ Flow.runSync () taskMapped = Exit.Failure (Cause.Fail "mapped-task-source") @>
 
     [<Fact>]
     let ``Bind error fails correctly for check-like sources`` () =
@@ -635,9 +924,9 @@ module WorkflowErrorTests =
             return value
         }
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) flowFail = Exit.Failure (Cause.Fail "failed") @>
-        test <@ Flow.runSync (TestSupport.clockEnv ()) asyncFlowFail = Exit.Failure (Cause.Fail "failed") @>
-        test <@ Flow.runSync (TestSupport.clockEnv ()) taskFlowFail = Exit.Failure (Cause.Fail "failed") @>
+        test <@ Flow.runSync () flowFail = Exit.Failure (Cause.Fail "failed") @>
+        test <@ Flow.runSync () asyncFlowFail = Exit.Failure (Cause.Fail "failed") @>
+        test <@ Flow.runSync () taskFlowFail = Exit.Failure (Cause.Fail "failed") @>
 
     [<Fact>]
     let ``ToValueTask catches synchronous exception and returns Exit.Failure`` () =
@@ -651,30 +940,91 @@ module WorkflowErrorTests =
 
     [<Fact>]
     let ``Recovery combinators see a typed failure or defect through its trace`` () =
-        let traced : Flow<ClockEnvironment, string, int> = Flow.fail "boom" |> Flow.tracedError "while loading"
-        let tracedDefect : Flow<ClockEnvironment, string, int> = Flow.die (InvalidOperationException "defect") |> Flow.tracedError "while loading"
+        let traced : Flow<unit, string, int> = Flow.fail "boom" |> Flow.tracedError "while loading"
+        let tracedDefect : Flow<unit, string, int> = Flow.die (InvalidOperationException "defect") |> Flow.tracedError "while loading"
         let tapped = ref None
         let attempts = ref 0
 
-        let retried : Flow<ClockEnvironment, string, int> =
+        let retried : Flow<unit, string, int> =
             Flow.delay (fun () ->
                 attempts.Value <- attempts.Value + 1
                 if attempts.Value < 3 then Flow.fail "transient" |> Flow.tracedError "attempt" else Flow.ok attempts.Value)
             |> Flow.retry (Schedule.recurs 5)
 
-        test <@ traced |> Flow.orElseWith (fun error -> Flow.ok error.Length) |> Flow.runSync (TestSupport.clockEnv ()) = Exit.Success 4 @>
-        test <@ traced |> Flow.orElse (Flow.ok 0) |> Flow.runSync (TestSupport.clockEnv ()) = Exit.Success 0 @>
-        test <@ tracedDefect |> Flow.catch (fun error -> error.Message) |> Flow.orElseWith (fun error -> Flow.ok error.Length) |> Flow.runSync (TestSupport.clockEnv ()) = Exit.Success 6 @>
-        test <@ traced |> Flow.tapError (fun error -> Flow.delay (fun () -> tapped.Value <- Some error; Flow.ok ())) |> Flow.runSync (TestSupport.clockEnv ()) |> Exit.map ignore <> Exit.Success () && tapped.Value = Some "boom" @>
-        test <@ retried |> Flow.runSync (TestSupport.clockEnv ()) = Exit.Success 3 @>
+        test <@ traced |> Flow.orElseWith (fun error -> Flow.ok error.Length) |> Flow.runSync () = Exit.Success 4 @>
+        test <@ traced |> Flow.orElse (Flow.ok 0) |> Flow.runSync () = Exit.Success 0 @>
+        test <@ tracedDefect |> Flow.catch (fun error -> error.Message) |> Flow.orElseWith (fun error -> Flow.ok error.Length) |> Flow.runSync () = Exit.Success 6 @>
+        test <@ traced |> Flow.tapError (fun error -> Flow.delay (fun () -> tapped.Value <- Some error; Flow.ok ())) |> Flow.runSync () |> Exit.map ignore <> Exit.Success () && tapped.Value = Some "boom" @>
+        test <@ retried |> Flow.runSync () = Exit.Success 3 @>
         test <@ Cause.untraced (Cause.traced "a" (Cause.traced "b" (Cause.Fail 1))) = Cause.Fail 1 @>
 
     [<Fact>]
     let ``A flow that cannot fail widens to any error type and keeps defects`` () =
-        let succeeds : Flow<ClockEnvironment, string, int> = Flow.ok 1 |> Flow.widenError
-        let dies : Flow<ClockEnvironment, string, int> = Flow.die (InvalidOperationException "defect") |> Flow.widenError
+        let succeeds : Flow<unit, string, int> = Flow.ok 1 |> Flow.widenError
+        let dies : Flow<unit, string, int> = Flow.die (InvalidOperationException "defect") |> Flow.widenError
 
-        test <@ succeeds |> Flow.orElse (Flow.ok 0) |> Flow.runSync (TestSupport.clockEnv ()) = Exit.Success 1 @>
-        test <@ match Flow.runSync (TestSupport.clockEnv ()) dies with Exit.Failure(Cause.Die error) -> error.Message = "defect" | _ -> false @>
+        test <@ succeeds |> Flow.orElse (Flow.ok 0) |> Flow.runSync () = Exit.Success 1 @>
+        test <@ match Flow.runSync () dies with Exit.Failure(Cause.Die error) -> error.Message = "defect" | _ -> false @>
         test <@ Exit.Success 2 |> Exit.mapError Never.absurd = (Exit.Success 2 : Exit<int, string>) @>
 
+
+    // T28b: the runtime's own cancellation is not an exception a builder try/with can turn into a value. A catch-all
+    // handler must leave an interrupted body interrupted, whether the cancellation is thrown synchronously while the
+    // body is invoked or after an async hop, as Flow.catch does.
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
+    let ``flow try with does not turn the runtime's own cancellation into a value`` (afterHop: bool) =
+        use started = new SemaphoreSlim(0)
+        let hop () = Flow.fromTask (fun _ -> task { do! Task.Yield() })
+
+        let blockUntilInterrupted (ct: CancellationToken) =
+            started.Release() |> ignore
+            ct.WaitHandle.WaitOne() |> ignore
+            ct.ThrowIfCancellationRequested()
+
+        let guarded : Flow<unit, string, string> =
+            flow {
+                let! ct = Flow.cancellationToken
+                // Outside the try, so the synchronous variant's body throws while TryWith invokes it.
+                do! hop ()
+
+                try
+                    if afterHop then do! hop ()
+                    blockUntilInterrupted ct
+                    return "body"
+                with _ ->
+                    return "fallback"
+            }
+
+        let workflow : Flow<unit, string, Exit<string, string>> =
+            flow {
+                let! fiber = Flow.fork guarded
+                do! Flow.fromTask (fun _ -> task { do! started.WaitAsync() })
+                return! Fiber.interrupt fiber
+            }
+
+        let running = Task.Run(fun () -> Flow.runSync () workflow)
+        Assert.True(running.Wait(TimeSpan.FromSeconds 10.0), "The interrupted fiber did not settle.")
+        test <@ running.Result = Exit.Success(Exit.Failure Cause.Interrupt) @>
+
+    // T28b: a Flow.catch handler that throws is not called again with its own exception.
+    [<Fact>]
+    let ``Flow catch calls a throwing handler once`` () =
+        let defect = InvalidOperationException "defect"
+        let handlerError = InvalidOperationException "handler threw"
+        let mutable calls = 0
+
+        let handler (_: exn) : string =
+            calls <- calls + 1
+            raise handlerError
+
+        let fromCause : Exit<int, string> = Flow.die defect |> Flow.catch handler |> Flow.runSync ()
+        let callsFromCause = calls
+        calls <- 0
+        let fromThrow : Exit<int, string> = Flow.delay (fun () -> raise defect) |> Flow.catch handler |> Flow.runSync ()
+
+        test <@ callsFromCause = 1 @>
+        test <@ calls = 1 @>
+        test <@ fromCause = Exit.Failure(Cause.Die handlerError) @>
+        test <@ fromThrow = Exit.Failure(Cause.Die handlerError) @>

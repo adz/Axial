@@ -1,7 +1,6 @@
 <Project>
   <!-- Referencing Axial turns on its Axial.Guardrails guardrail; its rules ship in Axial.Guardrails.
-       Remove it with <AxialGuardrail Remove="Axial" />, or set its severity with
-       <AxialGuardrail Update="Axial" Severity="warning" />. -->
+       Remove it with <AxialGuardrail Remove="Axial" /> to opt out of that package-specific rule set. -->
   <ItemGroup>
     <AxialGuardrail Include="Axial" />
   </ItemGroup>

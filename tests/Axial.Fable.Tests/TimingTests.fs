@@ -3,7 +3,7 @@ module Axial.Fable.Tests.TimingTests
 
 open System
 open Axial
-open Axial.PlatformService
+open Axial
 open Axial.Fable.Tests.Harness
 
 let private ms (value: float) = TimeSpan.FromMilliseconds value
@@ -11,29 +11,24 @@ let private ms (value: float) = TimeSpan.FromMilliseconds value
 let private elapsedSince started = nowMilliseconds () - started
 
 let tests : Test list =
-    [ test "BaseRuntime record dispatches same-named services" (flow {
+    [ test "scoped platform values remain independent of application authority" (flow {
           let logged = ResizeArray<string>()
-          let runtime =
-              { BaseRuntime.liveValue with
-                  Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))
-                  Log = Log.fromSink (fun _ message -> logged.Add message)
-                  Random = Random.fromValue 7
-                  Guid = Guid.fromValue global.System.Guid.Empty
-                  EnvironmentVariables = EnvironmentVariables.fromPairs [ "REGION", "eu" ] }
-
-          let services : Flow<BaseRuntime, Never, int * int * global.System.Guid * string option> =
+          let services : Flow<unit, Never, int * int * global.System.Guid> =
               flow {
                   let! now = Clock.now
                   let! number = Random.next
                   let! id = Guid.newGuid
-                  let! region = EnvironmentVariables.tryGet "REGION"
                   do! Log.info "seen"
-                  return now.Year, number, id, region
+                  return now.Year, number, id
               }
 
-          let! actual = services |> Flow.localEnv (fun (_: ClockEnvironment) -> runtime)
+          let! actual = services
+                        |> Flow.withClock (Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)))
+                        |> Flow.withLogSink (LogSink.fromFunction (fun entry -> logged.Add entry.Message))
+                        |> Flow.withRandom (Random.fromValue 7)
+                        |> Flow.withGuid (Guid.fromValue global.System.Guid.Empty)
           return
-              [ equal "services" (2026, 7, global.System.Guid.Empty, Some "eu") actual
+              [ equal "services" (2026, 7, global.System.Guid.Empty) actual
                 equal "log" [ "seen" ] (List.ofSeq logged) ]
       })
 

@@ -1,27 +1,15 @@
 namespace Axial
 
-open System.Threading
-
 /// A value scoped to the current fiber and inherited by fibers forked within its scope.
 type FiberLocal<'a> = internal { Id: int64; Initial: 'a; Name: string option }
 
 [<RequireQualifiedAccess>]
 module FiberLocal =
-    let mutable private nextId = 0L
-
-    let private freshId () =
-#if FABLE_COMPILER
-        nextId <- nextId + 1L
-        nextId
-#else
-        Interlocked.Increment(&nextId)
-#endif
-
     let make (initial: 'a) : FiberLocal<'a> =
-        { Id = freshId (); Initial = initial; Name = None }
+        { Id = RuntimeIds.next (); Initial = initial; Name = None }
 
     let named (name: string) (initial: 'a) : FiberLocal<'a> =
-        { Id = freshId (); Initial = initial; Name = Some name }
+        { Id = RuntimeIds.next (); Initial = initial; Name = Some name }
 
     /// Reads explicitly scoped named values on the current fiber; unnamed and unset locals are omitted.
     let current () : (string * obj) list =

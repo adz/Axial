@@ -9,6 +9,7 @@ open Axial.Tests.TestSupport
 open Swensen.Unquote
 open Xunit
 
+[<Collection("Process-wide measurements")>]
 module WorkflowSchedulingTests =
     [<Fact>]
     let ``ManualClock drains a due sleep continuation before advance returns`` () =
@@ -28,9 +29,24 @@ module WorkflowSchedulingTests =
         sleeping.GetAwaiter().GetResult()
 
     [<Fact>]
+    let ``explicit manual stepping does not wait for unrelated thread-pool work`` () =
+        use started = new ManualResetEventSlim(false)
+        use release = new ManualResetEventSlim(false)
+        let unrelated = Task.Run(fun () -> started.Set(); release.Wait())
+        try
+            Assert.True(started.Wait(TimeSpan.FromSeconds 5.))
+            let result = Flow.sleep (TimeSpan.FromMilliseconds 1.)
+                         |> runWithSteps [1, TimeSpan.FromMilliseconds 1.]
+            test <@ result = Exit.Success () @>
+            Assert.False unrelated.IsCompleted
+        finally
+            release.Set()
+            unrelated.GetAwaiter().GetResult()
+
+    [<Fact>]
     let ``Scheduling: retry failing flow`` () =
         let mutable attempts = 0
-        let workflow : Flow<ClockEnvironment, string, string> =
+        let workflow : Flow<unit, string, string> =
             flow {
                 attempts <- attempts + 1
                 if attempts < 3 then
@@ -39,10 +55,10 @@ module WorkflowSchedulingTests =
                     return "success"
             }
 
-        let retried : Flow<ClockEnvironment, string, string> =
+        let retried : Flow<unit, string, string> =
             workflow |> Flow.retry (Schedule.recurs 5)
 
-        let result = Flow.runSync (TestSupport.clockEnv ()) retried
+        let result = Flow.runSync () retried
         
         test <@ result = Exit.Success "success" @>
         test <@ attempts = 3 @>
@@ -50,16 +66,16 @@ module WorkflowSchedulingTests =
     [<Fact>]
     let ``Scheduling: repeat successful flow`` () =
         let mutable count = 0
-        let workflow : Flow<ClockEnvironment, unit, int> =
+        let workflow : Flow<unit, unit, int> =
             flow {
                 count <- count + 1
                 return count
             }
 
-        let repeated : Flow<ClockEnvironment, unit, int> =
+        let repeated : Flow<unit, unit, int> =
             workflow |> Flow.repeat (Schedule.recurs 3)
 
-        let result = Flow.runSync (TestSupport.clockEnv ()) repeated
+        let result = Flow.runSync () repeated
         
         test <@ result = Exit.Success 4 @>
         test <@ count = 4 @>
@@ -67,13 +83,13 @@ module WorkflowSchedulingTests =
     [<Fact>]
     let ``Scheduling: recurs n means n additional attempts, not n total`` () =
         let mutable retryAttempts = 0
-        let retryWorkflow : Flow<ClockEnvironment, string, string> =
+        let retryWorkflow : Flow<unit, string, string> =
             flow {
                 retryAttempts <- retryAttempts + 1
                 return! Flow.fail "always fails"
             }
 
-        let retryResult = retryWorkflow |> Flow.retry (Schedule.recurs 3) |> Flow.runSync (TestSupport.clockEnv ())
+        let retryResult = retryWorkflow |> Flow.retry (Schedule.recurs 3) |> Flow.runSync ()
 
         // recurs 3 permits the schedule to fire at attempt 0, 1, 2 (three retries), after the
         // one initial try that retry/repeat always perform for free: 1 + 3 = 4 executions.
@@ -81,25 +97,25 @@ module WorkflowSchedulingTests =
         test <@ retryResult = Exit.Failure(Cause.Fail "always fails") @>
 
         let mutable repeatCount = 0
-        let repeatWorkflow : Flow<ClockEnvironment, unit, int> =
+        let repeatWorkflow : Flow<unit, unit, int> =
             flow {
                 repeatCount <- repeatCount + 1
                 return repeatCount
             }
 
-        let repeatResult = repeatWorkflow |> Flow.repeat (Schedule.recurs 3) |> Flow.runSync (TestSupport.clockEnv ())
+        let repeatResult = repeatWorkflow |> Flow.repeat (Schedule.recurs 3) |> Flow.runSync ()
 
         test <@ repeatCount = 4 @>
         test <@ repeatResult = Exit.Success 4 @>
 
         let mutable zeroRecursAttempts = 0
-        let zeroRecursWorkflow : Flow<ClockEnvironment, string, string> =
+        let zeroRecursWorkflow : Flow<unit, string, string> =
             flow {
                 zeroRecursAttempts <- zeroRecursAttempts + 1
                 return! Flow.fail "fails"
             }
 
-        zeroRecursWorkflow |> Flow.retry (Schedule.recurs 0) |> Flow.runSync (TestSupport.clockEnv ()) |> ignore
+        zeroRecursWorkflow |> Flow.retry (Schedule.recurs 0) |> Flow.runSync () |> ignore
 
         // recurs 0 permits no retries at all: only the one initial, unretried try runs.
         test <@ zeroRecursAttempts = 1 @>
@@ -110,13 +126,13 @@ module WorkflowSchedulingTests =
 
         let run () =
             let mutable attempts = 0
-            let workflow : Flow<ClockEnvironment, string, string> =
+            let workflow : Flow<unit, string, string> =
                 flow {
                     attempts <- attempts + 1
                     return! Flow.fail "always fails"
                 }
 
-            workflow |> Flow.retry schedule |> Flow.runSync (TestSupport.clockEnv ()) |> ignore
+            workflow |> Flow.retry schedule |> Flow.runSync () |> ignore
             attempts
 
         // Reusing the same Schedule value across separate retry runs must not leak attempt
@@ -134,7 +150,7 @@ module WorkflowSchedulingTests =
                 return! Flow.die (InvalidOperationException "boom")
             }
             |> Flow.retry (Schedule.recurs 5)
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ defectAttempts = 1 @>
         match defectResult with
@@ -148,20 +164,20 @@ module WorkflowSchedulingTests =
                 return! Flow.ofExit (Exit.Failure Cause.Interrupt)
             }
             |> Flow.retry (Schedule.recurs 5)
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ interruptAttempts = 1 @>
         test <@ interruptResult = Exit.Failure Cause.Interrupt @>
 
     [<Fact>]
     let ``Scheduling: repeat surfaces schedule evaluation failure as a defect`` () =
-        let failingSchedule : Schedule<ClockEnvironment, int, int> =
+        let failingSchedule : Schedule<unit, int, int> =
             Schedule(fun _ _ -> Flow.fail ())
 
         let result : Exit<int, string> =
             Flow.ok 1
             |> Flow.repeat failingSchedule
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         match result with
         | Exit.Failure (Cause.Die error) -> test <@ error.Message = "Schedule evaluation failed." @>
@@ -175,7 +191,7 @@ module WorkflowSchedulingTests =
         let repeatResult : Exit<int, string> =
             Flow.ok 1
             |> Flow.repeat (Schedule.spaced (TimeSpan.FromSeconds 30.0))
-            |> Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token
+            |> Flow.runSyncWithToken () cts.Token
 
         test <@ repeatResult = Exit.Failure Cause.Interrupt @>
 
@@ -185,7 +201,7 @@ module WorkflowSchedulingTests =
         let retryResult : Exit<int, string> =
             Flow.fail "transient"
             |> Flow.retry (Schedule.spaced (TimeSpan.FromSeconds 30.0))
-            |> Flow.runSyncWithToken (TestSupport.clockEnv ()) retryCts.Token
+            |> Flow.runSyncWithToken () retryCts.Token
 
         test <@ retryResult = Exit.Failure Cause.Interrupt @>
 
@@ -194,7 +210,7 @@ module WorkflowSchedulingTests =
         let (Schedule op) = Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
 
         let delayAt attempt =
-            match Flow.runSync (TestSupport.clockEnv ()) (op 0 (ScheduleContext.ofAttempt attempt)) with
+            match Flow.runSync () (op 0 (ScheduleContext.ofAttempt attempt)) with
             | Exit.Success (_, delay) -> delay
             | other -> failwithf "Expected a delay decision, got %A" other
 
@@ -212,7 +228,7 @@ module WorkflowSchedulingTests =
             |> Schedule.jitteredWith (fun () -> 0.25)
 
         let delayAt attempt =
-            match Flow.runSync (TestSupport.clockEnv ()) (op 0 (ScheduleContext.ofAttempt attempt)) with
+            match Flow.runSync () (op 0 (ScheduleContext.ofAttempt attempt)) with
             | Exit.Success (_, delay) -> delay
             | other -> failwithf "Expected a delay decision, got %A" other
 
@@ -224,7 +240,7 @@ module WorkflowSchedulingTests =
             |> Schedule.jitteredWith (fun () -> 0.999)
 
         let cappedDelay =
-            match Flow.runSync (TestSupport.clockEnv ()) (cappedOp TimeSpan.Zero (ScheduleContext.ofAttempt 100)) with
+            match Flow.runSync () (cappedOp TimeSpan.Zero (ScheduleContext.ofAttempt 100)) with
             | Exit.Success (_, delay) -> delay
             | other -> failwithf "Expected a delay decision, got %A" other
 
@@ -238,7 +254,7 @@ module WorkflowSchedulingTests =
         let delayWithSample baseDelay sample =
             let (Schedule op) = Schedule.spaced baseDelay |> Schedule.jitteredWith sample
 
-            match Flow.runSync (TestSupport.clockEnv ()) (op 0 (ScheduleContext.ofAttempt 0)) with
+            match Flow.runSync () (op 0 (ScheduleContext.ofAttempt 0)) with
             | Exit.Success(_, delay) -> delay
             | other -> failwithf "Expected a delay decision, got %A" other
 
@@ -250,7 +266,7 @@ module WorkflowSchedulingTests =
         let timeoutResult =
             Flow.sleep (TimeSpan.FromSeconds 30.0)
             |> Flow.timeout (TimeSpan.FromMilliseconds 100.0) "timed out"
-            |> runOnManualTime
+            |> runWithSteps [2, TimeSpan.FromMilliseconds 100.]
 
         let retryRuns = ref 0
 
@@ -273,7 +289,7 @@ module WorkflowSchedulingTests =
 
         let retryResult =
             retryWorkflow
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ timeoutResult = Exit.Failure (Cause.Fail "timed out") @>
         test <@ retryResult = Exit.Success 42 @>
@@ -290,7 +306,7 @@ module WorkflowSchedulingTests =
                 retryRuns.Value <- retryRuns.Value + 1
                 Flow.die (InvalidOperationException "boom"))
             |> Flow.retry policy
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ retryRuns.Value = 1 @>
         match defectResult with
@@ -302,30 +318,31 @@ module WorkflowSchedulingTests =
         let okResult = 
             Flow.sleep (TimeSpan.FromSeconds 30.0)
             |> Flow.timeoutToOk (TimeSpan.FromMilliseconds 100.0) ()
-            |> runOnManualTime
+            |> runWithSteps [2, TimeSpan.FromMilliseconds 100.]
         test <@ okResult = Exit.Success () @>
 
         let errorResult =
             Flow.sleep (TimeSpan.FromSeconds 30.0)
             |> Flow.timeoutToError (TimeSpan.FromMilliseconds 100.0) "timed out"
-            |> runOnManualTime
+            |> runWithSteps [2, TimeSpan.FromMilliseconds 100.]
         test <@ errorResult = Exit.Failure (Cause.Fail "timed out") @>
 
         let withResult =
             Flow.sleep (TimeSpan.FromSeconds 30.0)
             |> Flow.timeoutWith (TimeSpan.FromMilliseconds 100.0) (fun () -> Flow.succeed ())
-            |> runOnManualTime
+            |> runWithSteps [2, TimeSpan.FromMilliseconds 100.]
         test <@ withResult = Exit.Success () @>
 
     [<Fact>]
     let ``Flow timeout interrupts and awaits losing workflow cleanup`` () =
         let cleanedUp = ref false
-        let operation : Flow<ClockEnvironment, string, unit> =
+        let operation : Flow<unit, string, unit> =
             flow {
                 do!
                     Flow.scopeFinalizer (
                         Flow.fromAsync (
                             async {
+                                // axial-note AXG013: suspend inside cleanup to prove scope shutdown awaits asynchronous finalizers.
                                 do! Async.Sleep 10
                                 cleanedUp.Value <- true
                             }
@@ -337,7 +354,7 @@ module WorkflowSchedulingTests =
         let result =
             operation
             |> Flow.timeout (TimeSpan.FromMilliseconds 100.0) "timed out"
-            |> runOnManualTime
+            |> runWithSteps [2, TimeSpan.FromMilliseconds 100.]
 
         test <@ result = Exit.Failure(Cause.Fail "timed out") @>
         test <@ cleanedUp.Value @>
@@ -350,20 +367,20 @@ module WorkflowSchedulingTests =
         let tokenResult =
             Flow.cancellationToken
             |> Flow.map (fun token -> token.IsCancellationRequested)
-            |> Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token
+            |> Flow.runSyncWithToken () cts.Token
 
         let ensureResult : Exit<unit, string> =
             Flow.ensureNotCanceled
-            |> Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token
+            |> Flow.runSyncWithToken () cts.Token
 
-        let liveResult : Exit<unit, string> = Flow.ensureNotCanceled |> Flow.runSync (TestSupport.clockEnv ())
+        let liveResult : Exit<unit, string> = Flow.ensureNotCanceled |> Flow.runSync ()
 
         test <@ tokenResult = Exit.Success true @>
         test <@ ensureResult = Exit.Failure Cause.Interrupt @>
         test <@ liveResult = Exit.Success () @>
 
-    let private decide (Schedule op: Schedule<ClockEnvironment, int, 'output>) attempt =
-        match Flow.runSync (TestSupport.clockEnv ()) (op 0 (ScheduleContext.ofAttempt attempt)) with
+    let private decide (Schedule op: Schedule<unit, int, 'output>) attempt =
+        match Flow.runSync () (op 0 (ScheduleContext.ofAttempt attempt)) with
         | Exit.Success decision -> decision
         | other -> failwithf "Expected a decision, got %A" other
 
@@ -399,7 +416,7 @@ module WorkflowSchedulingTests =
                 executions.Value <- executions.Value + 1
                 Flow.fail "transient")
             |> Flow.retry (Schedule.recurs 10 |> Schedule.intersect (Schedule.exponential (TimeSpan.FromTicks 1L)))
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Failure(Cause.Fail "transient") @>
         test <@ executions.Value = 11 @>
@@ -447,14 +464,15 @@ module WorkflowSchedulingTests =
     let ``Scheduling: repeat with fixedRate does not drift`` () =
         let starts = ResizeArray<TimeSpan>()
 
-        let run : Flow<ClockEnvironment, Never, unit> =
+        let run : Flow<unit, Never, unit> =
             flow {
                 let! now = runtimeNow ()
                 starts.Add now
                 do! Flow.sleep (ms 15.0)
             }
 
-        let result = run |> Flow.repeat (Schedule.fixedRate (ms 40.0) |> Schedule.intersect (Schedule.recurs 4)) |> runOnManualTime
+        let result = run |> Flow.repeat (Schedule.fixedRate (ms 40.0) |> Schedule.intersect (Schedule.recurs 4))
+                         |> runWithSteps (serialSteps ([for _ in 1..4 do yield ms 15.; yield ms 25.] @ [ms 15.]))
         test <@ result = Exit.Success () @>
 
         // Runs start on the 40 ms grid from the first start; drifting by the 15 ms run time would give 55 ms steps.
@@ -465,14 +483,15 @@ module WorkflowSchedulingTests =
         let starts = ResizeArray<TimeSpan>()
         let durations = Collections.Generic.Queue<float>([ 130.0; 5.0; 5.0; 5.0 ])
 
-        let run : Flow<ClockEnvironment, Never, unit> =
+        let run : Flow<unit, Never, unit> =
             flow {
                 let! now = runtimeNow ()
                 starts.Add now
                 do! Flow.sleep (ms (if durations.Count > 0 then durations.Dequeue() else 5.0))
             }
 
-        let result = run |> Flow.repeat (Schedule.fixedRate (ms 50.0) |> Schedule.intersect (Schedule.recurs 3)) |> runOnManualTime
+        let result = run |> Flow.repeat (Schedule.fixedRate (ms 50.0) |> Schedule.intersect (Schedule.recurs 3))
+                         |> runWithSteps (serialSteps [ms 130.; ms 5.; ms 15.; ms 5.; ms 45.; ms 5.])
         test <@ result = Exit.Success () @>
 
         // The first run overran two ticks (50, 100): the next starts at once (130), with no burst for the missed
@@ -488,7 +507,7 @@ module WorkflowSchedulingTests =
                 let! after = runtimeNow ()
                 return after - before
             }
-            |> runOnManualTime
+            |> runWithSteps [1, TimeSpan.FromHours 1.]
 
         test <@ elapsed = Exit.Success(TimeSpan.FromHours 1.0) @>
 
@@ -496,14 +515,15 @@ module WorkflowSchedulingTests =
     let ``Flow.retry waits each exponential delay before the next attempt`` () =
         let attempts = ResizeArray<TimeSpan>()
 
-        let failing : Flow<ClockEnvironment, string, unit> =
+        let failing : Flow<unit, string, unit> =
             flow {
                 let! now = runtimeNow ()
                 attempts.Add now
                 return! Flow.fail "transient"
             }
 
-        let result = failing |> Flow.retry (Schedule.exponential (ms 100.0) |> Schedule.intersect (Schedule.recurs 3)) |> runOnManualTime
+        let result = failing |> Flow.retry (Schedule.exponential (ms 100.0) |> Schedule.intersect (Schedule.recurs 3))
+                             |> runWithSteps (serialSteps [ms 100.; ms 200.; ms 400.])
         test <@ result = Exit.Failure(Cause.Fail "transient") @>
         test <@ attempts |> Seq.map (fun at -> (at - attempts[0]).TotalMilliseconds) |> List.ofSeq = [ 0.0; 100.0; 300.0; 700.0 ] @>
 
@@ -511,28 +531,29 @@ module WorkflowSchedulingTests =
     let ``Flow.repeat with spaced waits after each run`` () =
         let starts = ResizeArray<TimeSpan>()
 
-        let run : Flow<ClockEnvironment, Never, unit> =
+        let run : Flow<unit, Never, unit> =
             flow {
                 let! now = runtimeNow ()
                 starts.Add now
                 do! Flow.sleep (ms 250.0)
             }
 
-        let result = run |> Flow.repeat (Schedule.spaced (TimeSpan.FromSeconds 1.0) |> Schedule.intersect (Schedule.recurs 2)) |> runOnManualTime
+        let result = run |> Flow.repeat (Schedule.spaced (TimeSpan.FromSeconds 1.0) |> Schedule.intersect (Schedule.recurs 2))
+                         |> runWithSteps (serialSteps [ms 250.; ms 1000.; ms 250.; ms 1000.; ms 250.])
         test <@ result = Exit.Success () @>
         // spaced waits after the run ends, so each start is run time plus spacing after the previous one.
         test <@ starts |> Seq.map (fun start -> (start - starts[0]).TotalMilliseconds) |> List.ofSeq = [ 0.0; 1250.0; 2500.0 ] @>
 
     [<Fact>]
     let ``Flow.timeout fires on the runtime time source`` () =
-        let slow : Flow<ClockEnvironment, string, string> =
+        let slow : Flow<unit, string, string> =
             flow {
                 do! Flow.sleep (TimeSpan.FromHours 1.0)
                 return "finished"
             }
 
-        let timedOut = slow |> Flow.timeout (TimeSpan.FromSeconds 5.0) "timed out" |> runOnManualTime
-        let inTime = slow |> Flow.timeout (TimeSpan.FromHours 2.0) "timed out" |> runOnManualTime
+        let timedOut = slow |> Flow.timeout (TimeSpan.FromSeconds 5.0) "timed out" |> runWithSteps [2, TimeSpan.FromSeconds 5.]
+        let inTime = slow |> Flow.timeout (TimeSpan.FromHours 2.0) "timed out" |> runWithSteps [2, TimeSpan.FromHours 1.]
         test <@ timedOut = Exit.Failure(Cause.Fail "timed out") @>
         test <@ inTime = Exit.Success "finished" @>
 
@@ -545,7 +566,7 @@ module WorkflowSchedulingTests =
                 runs.Value <- runs.Value + 1
                 Flow.fail (if runs.Value < 3 then "transient" else "permanent"))
             |> Flow.retry (Schedule.recurs 10 |> Schedule.whileInput (fun error -> error = "transient"))
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Failure (Cause.Fail "permanent") @>
         test <@ runs.Value = 3 @>
@@ -559,7 +580,7 @@ module WorkflowSchedulingTests =
                 runs.Value <- runs.Value + 1
                 Flow.ok runs.Value)
             |> Flow.repeat (Schedule.recurs 10 |> Schedule.untilInput (fun value -> value >= 4))
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success 4 @>
 
@@ -572,7 +593,7 @@ module WorkflowSchedulingTests =
                 runs.Value <- runs.Value + 1
                 Flow.fail "boom")
             |> Flow.retry (Schedule.spaced TimeSpan.Zero |> Schedule.recursAtMost 2)
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Failure (Cause.Fail "boom") @>
         test <@ runs.Value = 3 @>
@@ -586,7 +607,7 @@ module WorkflowSchedulingTests =
                 runs.Value <- runs.Value + 1
                 Flow.fail "boom")
             |> Flow.retry (Retry.schedule { Retry.defaults with Retries = 2; Backoff = Backoff.NoDelay })
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ retried = Exit.Failure (Cause.Fail "boom") @>
         test <@ runs.Value = 3 @>
@@ -598,7 +619,7 @@ module WorkflowSchedulingTests =
                 filteredRuns.Value <- filteredRuns.Value + 1
                 Flow.fail "fatal")
             |> Flow.retry (Retry.schedule { Retry.defaults with Backoff = Backoff.NoDelay; When = fun error -> error <> "fatal" })
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ filtered = Exit.Failure (Cause.Fail "fatal") @>
         test <@ filteredRuns.Value = 1 @>
@@ -610,10 +631,10 @@ module WorkflowSchedulingTests =
                 { Retry.defaults with
                     Retries = 10
                     Backoff = Backoff.Exponential(TimeSpan.FromMilliseconds 100.0, TimeSpan.FromMilliseconds 350.0) }
-            : Schedule<ClockEnvironment, string, int>
+            : Schedule<unit, string, int>
 
         let delayAt attempt =
-            match Flow.runSync (TestSupport.clockEnv ()) (op "e" (ScheduleContext.ofAttempt attempt)) with
+            match Flow.runSync () (op "e" (ScheduleContext.ofAttempt attempt)) with
             | Exit.Success(_, delay) -> delay
             | other -> failwithf "Expected a decision, got %A" other
 
@@ -643,14 +664,14 @@ module WorkflowSchedulingTests =
                 releasedWhenReturned.Value <- lock released (fun () -> released.ToArray())
                 return value
             }
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success 3 @>
         test <@ releasedWhenReturned.Value = [| 1; 2 |] @>
         test <@ lock released (fun () -> released.ToArray()) = [| 1; 2; 3 |] @>
 
     // Records when each attempt of a failing flow starts, relative to the first, on manual time.
-    let private recordAttempts (attempts: ResizeArray<TimeSpan>) (work: TimeSpan) : Flow<ClockEnvironment, string, unit> =
+    let private recordAttempts (attempts: ResizeArray<TimeSpan>) (work: TimeSpan) : Flow<unit, string, unit> =
         flow {
             let! now = runtimeNow ()
             attempts.Add now
@@ -670,7 +691,8 @@ module WorkflowSchedulingTests =
             |> Schedule.recursAtMost 2
             |> Schedule.andThen (Schedule.exponential (ms 100.0) |> Schedule.recursAtMost 2)
 
-        let result = recordAttempts attempts TimeSpan.Zero |> Flow.retry schedule |> runOnManualTime
+        let result = recordAttempts attempts TimeSpan.Zero |> Flow.retry schedule
+                                            |> runWithSteps (serialSteps [ms 10.; ms 10.; ms 100.; ms 200.])
 
         test <@ result = Exit.Failure(Cause.Fail "transient") @>
         // Two quick retries 10 ms apart, then the exponential schedule from its own start: 100 ms, then 200 ms.
@@ -682,7 +704,7 @@ module WorkflowSchedulingTests =
         let runState = ScheduleContext.newRunState ()
 
         let decide attempt =
-            match Flow.runSync (TestSupport.clockEnv ()) (op 0 { ScheduleContext.ofAttempt attempt with RunState = runState }) with
+            match Flow.runSync () (op 0 { ScheduleContext.ofAttempt attempt with RunState = runState }) with
             | Exit.Success(decision, _) -> decision
             | other -> failwithf "Expected a decision, got %A" other
 
@@ -698,7 +720,8 @@ module WorkflowSchedulingTests =
             Schedule.exponential (ms 100.0)
             |> Schedule.whileOutput (fun delay -> delay < ms 500.0)
 
-        let result = recordAttempts attempts TimeSpan.Zero |> Flow.retry schedule |> runOnManualTime
+        let result = recordAttempts attempts TimeSpan.Zero |> Flow.retry schedule
+                                            |> runWithSteps (serialSteps [ms 100.; ms 200.; ms 400.])
         test <@ result = Exit.Failure(Cause.Fail "transient") @>
         // Delays 100, 200, 400; the next (800) is not below 500, so the retry stops.
         test <@ offsets attempts = [ 0.0; 100.0; 300.0; 700.0 ] @>
@@ -709,7 +732,7 @@ module WorkflowSchedulingTests =
         let repeated =
             Flow.delay (fun () -> counted.Value <- counted.Value + 1; Flow.ok ())
             |> Flow.repeat untilThird
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ repeated = Exit.Success () @>
         test <@ counted.Value = 3 @>
@@ -719,7 +742,8 @@ module WorkflowSchedulingTests =
         let attempts = ResizeArray<TimeSpan>()
         let schedule = Schedule.spaced (ms 300.0) |> Schedule.upTo (TimeSpan.FromSeconds 1.0)
 
-        let result = recordAttempts attempts (ms 50.0) |> Flow.retry schedule |> runOnManualTime
+        let result = recordAttempts attempts (ms 50.0) |> Flow.retry schedule
+                                            |> runWithSteps (serialSteps [ms 50.; ms 300.; ms 50.; ms 300.; ms 50.; ms 300.; ms 50.])
         test <@ result = Exit.Failure(Cause.Fail "transient") @>
         // Each attempt takes 50 ms and waits 300 ms: starts at 0, 350, 700, 1050. The fourth ends at 1100, past 1 s,
         // so no fifth attempt is scheduled.
@@ -734,8 +758,8 @@ module WorkflowSchedulingTests =
             |> Schedule.map (fun elapsed -> seen.Add elapsed.TotalMilliseconds; elapsed)
             |> Schedule.whileOutput (fun elapsed -> elapsed < ms 250.0)
 
-        let work : Flow<ClockEnvironment, string, unit> = Flow.sleep (ms 100.0)
-        let result = work |> Flow.repeat schedule |> runOnManualTime
+        let work : Flow<unit, string, unit> = Flow.sleep (ms 100.0)
+        let result = work |> Flow.repeat schedule |> runWithSteps (serialSteps [ms 100.; ms 100.; ms 100.])
 
         test <@ result = Exit.Success () @>
         test <@ List.ofSeq seen = [ 100.0; 200.0; 300.0 ] @>
@@ -746,7 +770,7 @@ module WorkflowSchedulingTests =
         let runs = ref 0
 
         // Crashes quickly twice, then runs for an hour before crashing, then crashes quickly until the budget ends.
-        let worker : Flow<ClockEnvironment, string, unit> =
+        let worker : Flow<unit, string, unit> =
             flow {
                 let! now = runtimeNow ()
                 starts.Add now
@@ -756,7 +780,7 @@ module WorkflowSchedulingTests =
             }
 
         let schedule = Schedule.recurs 2 |> Schedule.resetAfter (TimeSpan.FromMinutes 10.0)
-        let result = worker |> Flow.supervise schedule |> runOnManualTime
+        let result = worker |> Flow.supervise schedule |> runWithSteps [1, TimeSpan.FromHours 1.]
 
         test <@ match result with Exit.Failure(Cause.Die _) -> true | _ -> false @>
         // Without the reset the budget of 2 restarts ends after run 3; the healthy hour earns two more.
@@ -768,7 +792,7 @@ module WorkflowSchedulingTests =
         let shortest =
             [ for _ in 1..40 ->
                   let stopwatch = Diagnostics.Stopwatch.StartNew()
-                  Flow.sleep (TimeSpan.FromMilliseconds 1.5) |> Flow.runSync (TestSupport.clockEnv ()) |> ignore
+                  Flow.sleep (TimeSpan.FromMilliseconds 1.5) |> Flow.runSync () |> ignore
                   stopwatch.Elapsed.TotalMilliseconds ]
             |> List.min
 

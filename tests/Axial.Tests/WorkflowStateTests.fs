@@ -23,7 +23,7 @@ module WorkflowStateTests =
                 return v1, v2, v3
             }
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success (11, "result", 22) @>
+        test <@ Flow.runSync () workflow = Exit.Success (11, "result", 22) @>
 
     [<Fact>]
     let ``Ref: atomic family returns distinct previous/updated values`` () =
@@ -37,7 +37,7 @@ module WorkflowStateTests =
                 return previousOnSet, previousOnUpdate, updated, final
             }
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success (10, 20, 42, 42) @>
+        test <@ Flow.runSync () workflow = Exit.Success (10, 20, 42, 42) @>
 
     [<Fact>]
     let ``STM: atomic transactional updates`` () =
@@ -60,7 +60,7 @@ module WorkflowStateTests =
                 return v1, v2
             }
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success (15, 15) @>
+        test <@ Flow.runSync () workflow = Exit.Success (15, 15) @>
 
     [<Fact>]
     let ``STM: orElse falls back when the first branch retries`` () =
@@ -85,7 +85,7 @@ module WorkflowStateTests =
                 return value
             }
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 99 @>
+        test <@ Flow.runSync () workflow = Exit.Success 99 @>
 
     [<Fact>]
     let ``STM: writes made inside orElse branches are committed`` () =
@@ -109,32 +109,50 @@ module WorkflowStateTests =
                 return fromLeft, fromRight, final
             }
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(1, 2, 2) @>
+        test <@ Flow.runSync () workflow = Exit.Success(1, 2, 2) @>
 
     [<Fact>]
     let ``STM: retry waits until a committed update changes state`` () =
         let gate =
             TRef.make 0
             |> STM.atomically
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
             |> Exit.toResult
             |> function
                 | Ok value -> value
                 | Error error -> failwithf "Expected TRef creation to succeed, got %A" error
 
+        // The retrying transaction holds the STM lock while its body runs. The hook therefore proves that this
+        // transaction reached its retry branch before the test allows it to return, without sampling the global
+        // retry count that parallel STM tests also change.
+        use reachedRetry = new ManualResetEventSlim(false)
+        use releaseRetry = new ManualResetEventSlim(false)
+
         let waiter =
             Task.Run(fun () ->
-                Flow.runSync (TestSupport.clockEnv ()) (
+                Flow.runSync () (
                     stm {
                         let! current = TRef.get gate
                         if current = 0 then
+                            reachedRetry.Set()
+                            releaseRetry.Wait()
                             do! STM.retry
                         return current
                     }
                     |> STM.atomically))
 
-        Thread.Sleep 50
-        test <@ waiter.IsCompleted = false @>
+        try
+            test <@ reachedRetry.Wait(TimeSpan.FromSeconds 30.0) @>
+            test <@ waiter.IsCompleted = false @>
+        finally
+            // Releasing the body lets the transaction register its retry; the setter below cannot commit until the
+            // waiter has done so, because the body still owns the STM lock.
+            releaseRetry.Set()
+
+        let completedWithoutCommit =
+            SpinWait.SpinUntil((fun () -> waiter.IsCompleted), TimeSpan.FromMilliseconds 250.0)
+
+        test <@ completedWithoutCommit = false @>
 
         let setter =
             stm {
@@ -142,7 +160,7 @@ module WorkflowStateTests =
             }
             |> STM.atomically
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) setter = Exit.Success () @>
+        test <@ Flow.runSync () setter = Exit.Success () @>
 
         let exit = waiter.GetAwaiter().GetResult()
         test <@ exit = Exit.Success 1 @>
@@ -151,7 +169,7 @@ module WorkflowStateTests =
     let ``Ref: each run of make creates a new cell`` () =
         let make = Ref.make 0
 
-        let workflow : Flow<ClockEnvironment, Never, int> =
+        let workflow : Flow<unit, Never, int> =
             flow {
                 let! first = make
                 let! second = make
@@ -159,5 +177,5 @@ module WorkflowStateTests =
                 return! Ref.get second
             }
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 0 @>
+        test <@ Flow.runSync () workflow = Exit.Success 0 @>
 

@@ -8,6 +8,28 @@ module internal FlowBuilderRuntime =
     let run environment cancellationToken source =
         FlowInternal.invoke source environment cancellationToken
 
+    // Rethrows an exception caught earlier, keeping its original stack trace where the platform can.
+    let rethrow (error: exn) : 'value =
+#if FABLE_COMPILER
+        raise error
+#else
+        System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw()
+        Unchecked.defaultof<'value>
+#endif
+
+    // The `with` branch of a builder try/with: the runtime's own cancellation stays an interruption, as in
+    // Flow.catch; any other exception goes to the user's handler.
+    let handleThrown
+        (environment: 'env)
+        (cancellationToken: System.Threading.CancellationToken)
+        (handler: exn -> Flow<'env, 'error, 'value>)
+        (error: exn)
+        : Execution<'value, 'error> =
+        if Platform.isOwnCancellation cancellationToken error then
+            Platform.ofExit (Exit.Failure Cause.Interrupt)
+        else
+            run environment cancellationToken (handler error)
+
     let fromResult<'env, 'error, 'value> (result: Result<'value, 'error>) : Flow<'env, 'error, 'value> =
         Flow(fun _ _ -> Execution.ofResult result)
 
@@ -29,8 +51,52 @@ module internal FlowBuilderRuntime =
         TaskInterop.from Exit.fromResult operation
 #endif
 
+/// <exclude/>
+[<EditorBrowsable(EditorBrowsableState.Never)>]
+type FlowBindable =
+    | FlowBindable
+
+    static member inline Convert(_: FlowBindable, source: Flow<'env, 'error, 'value>) = source
+
+    static member inline Convert(_: FlowBindable, source: Result<'value, 'error>) : Flow<'env, 'error, 'value> =
+        Flow.fromResult source
+
+    static member inline Convert(_: FlowBindable, source: 'value option) : Flow<'env, unit, 'value> =
+        Flow.fromOption () source
+
+    static member inline Convert(_: FlowBindable, source: 'value voption) : Flow<'env, unit, 'value> =
+        Flow.fromValueOption () source
+
+    static member inline Convert(_: FlowBindable, source: BindError<'env, 'error, 'value>) =
+        Bind.toFlow source
+
+    static member inline Convert(_: FlowBindable, source: Async<'value>) : Flow<'env, 'error, 'value> =
+        Flow.fromAsync source
+
+    static member inline Convert(_: FlowBindable, source: Async<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
+        Flow.fromAsyncResult source
+
+#if !FABLE_COMPILER
+    static member inline Convert(_: FlowBindable, source: ColdTask<'value>) : Flow<'env, 'error, 'value> =
+        Flow.fromColdTask source
+
+    static member inline Convert(_: FlowBindable, source: ColdTask<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
+        Flow.fromColdTaskResult source
+#endif
+
+    static member inline Convert(_: FlowBindable, source: seq<'value>) : seq<'value> = source
+    static member inline Convert(_: FlowBindable, source: 'value list) : seq<'value> = source
+    static member inline Convert(_: FlowBindable, source: 'value array) : seq<'value> = source
+
+/// <exclude/>
+[<EditorBrowsable(EditorBrowsableState.Never)>]
+module FlowBuilderSource =
+    let inline toFlow (witness: ^witness) (source: ^source) : ^result =
+        ((^witness or ^source) : (static member Convert: ^witness * ^source -> ^result) (witness, source))
+
 type FlowBuilder() =
-    member _.Source(flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> = flow
+    member inline _.Source(source) =
+        FlowBuilderSource.toFlow FlowBindable source
 
     member _.Return(value: 'value) : Flow<'env, 'error, 'value> =
         Flow.ok value
@@ -67,18 +133,42 @@ type FlowBuilder() =
             flow: Flow<'env, 'error, 'value>,
             handler: exn -> Flow<'env, 'error, 'value>
         ) : Flow<'env, 'error, 'value> =
+        // The handler sees an exception the body throws while it is invoked and one its execution faults with
+        // after an async hop, as `try/with` around `return!` in a task would. Typed failures and `Cause.Die`
+        // values are outcomes, not exceptions, and pass through. The runtime's own cancellation is not handed to
+        // the handler: it stays an interruption, as in Flow.catch, so a catch-all handler cannot turn an interrupt
+        // into a success. A completed body allocates nothing extra.
         Flow(fun environment cancellationToken ->
-            try
-                FlowBuilderRuntime.run environment cancellationToken flow
-            with error ->
-                FlowBuilderRuntime.run environment cancellationToken (handler error))
+            match Platform.tryInvoke (fun () -> FlowBuilderRuntime.run environment cancellationToken flow) with
+            | struct (thrown, _) when not (isNull thrown) ->
+                FlowBuilderRuntime.handleThrown environment cancellationToken handler thrown
+            | struct (_, body) ->
+                Platform.observeThrown
+                    (FlowBuilderRuntime.handleThrown environment cancellationToken handler)
+                    Platform.ofExit
+                    body
+        )
 
     member _.TryFinally(flow: Flow<'env, 'error, 'value>, compensation: unit -> unit) : Flow<'env, 'error, 'value> =
+        // The compensation runs exactly once however the body ends: with a value, a cause, a synchronous throw, or
+        // a faulted execution. A thrown exception is rethrown after it, so an enclosing `try/with` still sees it.
         Flow(fun environment cancellationToken ->
-            FlowBuilderRuntime.run environment cancellationToken flow
-            |> Execution.mapBoth
-                (fun value -> compensation (); value)
-                (fun cause -> compensation (); cause))
+            match Platform.tryInvoke (fun () -> FlowBuilderRuntime.run environment cancellationToken flow) with
+            | struct (thrown, _) when not (isNull thrown) ->
+                compensation ()
+                FlowBuilderRuntime.rethrow thrown
+            | struct (_, body) ->
+                // The completed path runs the compensation once and returns the settled execution without a state
+                // machine; a pending body compensates after the outcome or before a rethrow.
+                Platform.observeThrown
+                    (fun error ->
+                        compensation ()
+                        FlowBuilderRuntime.rethrow error)
+                    (fun exit ->
+                        compensation ()
+                        Platform.ofExit exit)
+                    body
+        )
 
     member this.Using
         (
@@ -86,12 +176,19 @@ type FlowBuilder() =
             binder: 'resource -> Flow<'env, 'error, 'value>
         ) : Flow<'env, 'error, 'value>
         when 'resource :> IDisposable =
-        this.TryFinally(
-            binder resource,
-            fun () ->
-                if not (isNull (box resource)) then
-                    resource.Dispose()
-        )
+        let dispose () =
+            if not (isNull (box resource)) then
+                resource.Dispose()
+
+        // The binder builds the body eagerly, so a body that throws before its first await throws here.
+        let body =
+            try
+                binder resource
+            with _ ->
+                dispose ()
+                reraise ()
+
+        this.TryFinally(body, dispose)
 
     member this.While
         (
@@ -112,42 +209,3 @@ type FlowBuilder() =
             sequence.GetEnumerator(),
             fun enumerator -> this.While(enumerator.MoveNext, this.Delay(fun () -> binder enumerator.Current))
         )
-
-
-/// <exclude/>
-[<AutoOpen; EditorBrowsable(EditorBrowsableState.Never)>]
-module FlowBuilderSources =
-    type FlowBuilder with
-        member _.Source(result: Result<'value, 'error>) : Flow<'env, 'error, 'value> =
-            FlowBuilderRuntime.fromResult result
-
-        member _.Source(option: 'value option) : Flow<'env, unit, 'value> =
-            option |> OptionFlow.toUnitResult |> FlowBuilderRuntime.fromResult
-
-        member _.Source(option: 'value voption) : Flow<'env, unit, 'value> =
-            option |> OptionFlow.toUnitResultValueOption |> FlowBuilderRuntime.fromResult
-
-        member _.Source(source: BindError<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
-            Bind.toFlow source
-
-        member _.Source(operation: Async<'value>) : Flow<'env, 'error, 'value> =
-            FlowBuilderRuntime.fromAsync operation
-
-#if !FABLE_COMPILER
-        member _.Source(operation: ColdTask<'value>) : Flow<'env, 'error, 'value> =
-            FlowBuilderRuntime.fromColdTask operation
-#endif
-
-        member _.Source(sequence: #seq<'value>) : #seq<'value> = sequence
-
-/// <exclude/>
-[<AutoOpen; EditorBrowsable(EditorBrowsableState.Never)>]
-module FlowBuilderResultSources =
-    type FlowBuilder with
-        member _.Source(operation: Async<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
-            FlowBuilderRuntime.fromAsyncResult operation
-
-#if !FABLE_COMPILER
-        member _.Source(operation: ColdTask<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
-            FlowBuilderRuntime.fromColdTaskResult operation
-#endif

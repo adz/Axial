@@ -11,18 +11,6 @@ type IClock =
     abstract Elapsed: unit -> TimeSpan
     abstract Sleep: delay: TimeSpan * cancellationToken: CancellationToken -> Task
 
-/// <summary>Declares the clock required by timed workflows and fiber diagnostics.</summary>
-#if FABLE_COMPILER
-[<Fable.Core.Mangle>]
-#endif
-type IHasClock =
-    abstract Clock: IClock
-
-/// <summary>An environment containing only a clock, for timed flows with no other services.</summary>
-type ClockEnvironment(clock: IClock) =
-    member _.Clock = clock
-    interface IHasClock with member _.Clock = clock
-
 /// Rendering of arbitrary payload values inside outcome types that stays safe under NativeAOT.
 module internal OutcomeText =
     /// A payload's own ToString, with null spelled out.
@@ -41,6 +29,7 @@ module internal OutcomeText =
             try
                 other.ToString()
             with _ ->
+                // axial-note AXG010: arbitrary payload ToString implementations can throw; cause rendering must retain the type-name fallback rather than fail while reporting the original cause.
                 "<" + other.GetType().Name + ">"
 #endif
 
@@ -81,17 +70,17 @@ type Cause<'error> =
     /// </summary>
     override this.ToString() =
         match this with
-        | Fail error -> $"Fail({OutcomeText.value (box error)})"
+        | Fail error -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Fail({0})", OutcomeText.value (box error)))
         | Die exn ->
 #if FABLE_COMPILER
-            $"Die({exn.Message})"
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Die({0})", exn.Message))
 #else
-            $"Die({exn.GetType().Name}: {exn.Message})"
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Die({0}: {1})", exn.GetType().Name, exn.Message))
 #endif
         | Interrupt -> "Interrupt"
-        | Then(left, right) -> $"Then({left.ToString()}, {right.ToString()})"
-        | Both(left, right) -> $"Both({left.ToString()}, {right.ToString()})"
-        | Traced(inner, trace) -> $"Traced({inner.ToString()}, {trace})"
+        | Then(left, right) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Then({0}, {1})", left.ToString(), right.ToString()))
+        | Both(left, right) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Both({0}, {1})", left.ToString(), right.ToString()))
+        | Traced(inner, trace) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Traced({0}, {1})", inner.ToString(), trace))
 
 /// <summary>
 /// Represents the final outcome of a workflow execution.
@@ -108,8 +97,8 @@ type Exit<'value, 'error> =
     /// <summary>Renders the exit without reflection. Values use their own <c>ToString</c>, or their type name when that ToString needs reflection the runtime removed.</summary>
     override this.ToString() =
         match this with
-        | Success value -> $"Success({OutcomeText.value (box value)})"
-        | Failure cause -> $"Failure({cause.ToString()})"
+        | Success value -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Success({0})", OutcomeText.value (box value)))
+        | Failure cause -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Failure({0})", cause.ToString()))
 
 /// <summary>Describes the current lifecycle state of a fiber.</summary>
 [<RequireQualifiedAccess>]

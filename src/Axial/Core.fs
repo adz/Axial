@@ -7,7 +7,9 @@ open System.Threading.Tasks
 
 #if !FABLE_COMPILER
 /// <summary>A clock that advances only when a test or simulator asks it to.</summary>
-/// <remarks>Both UTC timestamps and timed workflow operations use the same advance.</remarks>
+/// <remarks>Both UTC timestamps and timed workflow operations use the same advance. On .NET, due synchronous
+/// continuations run during advancement. On Fable, promise continuations run on a later microtask; await the
+/// released fiber or a registration signal before advancing again.</remarks>
 type ManualClock(initialUtc: DateTimeOffset) =
     let time = Platform.ManualTime()
 
@@ -16,6 +18,9 @@ type ManualClock(initialUtc: DateTimeOffset) =
 
     /// <summary>The next monotonic deadline, when a delay is waiting.</summary>
     member _.NextDeadline = time.NextDeadline
+
+    /// <summary>The latest currently registered deadline, for bounded explicit draining.</summary>
+    member _.LastDeadline = time.LastDeadline
 
     /// <summary>Advances wall and monotonic time together, running continuations released by due delays before returning.</summary>
     member _.AdvanceBy(duration: TimeSpan) =
@@ -34,8 +39,61 @@ type ManualClock(initialUtc: DateTimeOffset) =
                 match exit with
                 | Exit.Success() -> ()
                 | Exit.Failure Cause.Interrupt -> raise (OperationCanceledException(cancellationToken))
-                | Exit.Failure cause -> failwith $"Manual clock sleep failed: {cause}"
+                | Exit.Failure cause -> failwith (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Manual clock sleep failed: {0}", cause))
             } :> Task
+#else
+/// A single-threaded JavaScript manual clock; sleeps move only on explicit advancement.
+/// Released promise continuations run on a later microtask; await their fiber or a signal before advancing again.
+type ManualClock(initialUtc: DateTimeOffset) =
+    let mutable now = TimeSpan.Zero
+    let mutable sequence = 0L
+    let sleepers = System.Collections.Generic.Dictionary<int64, TimeSpan * (unit -> unit)>()
+    let advanceTo target =
+        now <- max now target
+        let ready =
+            sleepers
+            |> Seq.filter (fun entry -> fst entry.Value <= now)
+            |> Seq.sortBy (fun entry -> fst entry.Value, entry.Key)
+            |> Seq.toArray
+        for entry in ready do sleepers.Remove entry.Key |> ignore
+        for entry in ready do snd entry.Value ()
+    member _.Sleepers = sleepers.Count
+    member _.NextDeadline =
+        if sleepers.Count = 0 then None else Some(sleepers.Values |> Seq.map fst |> Seq.min)
+    member _.LastDeadline =
+        if sleepers.Count = 0 then None else Some(sleepers.Values |> Seq.map fst |> Seq.max)
+    member _.AdvanceBy(duration: TimeSpan) =
+        if duration < TimeSpan.Zero then invalidArg (nameof duration) "Clock cannot move backwards."
+        advanceTo (now + duration)
+    member this.AdvanceToNextDeadline() =
+        match this.NextDeadline with
+        | Some deadline -> advanceTo deadline; true
+        | None -> false
+    interface IClock with
+        member _.UtcNow() = initialUtc + now
+        member _.Elapsed() = now
+        member _.Sleep(delay, token) =
+            let pending =
+                Fable.Core.JS.Constructors.Promise.Create<unit>(fun resolve reject ->
+                    if token.IsCancellationRequested then reject (box (OperationCanceledException()))
+                    elif delay <= TimeSpan.Zero then resolve (box ())
+                    else
+                        let id = sequence
+                        sequence <- sequence + 1L
+                        let mutable registration: IDisposable option = None
+                        let mutable settled = false
+                        let finish canceled =
+                            if not settled then
+                                settled <- true
+                                sleepers.Remove id |> ignore
+                                registration |> Option.iter _.Dispose()
+                                if canceled then reject (box (OperationCanceledException())) else resolve (box ())
+                        sleepers.Add(id, (now + delay, fun () -> finish false))
+                        if not (isNull (box token)) then
+                            let registered = unbox<IDisposable> (box (token.Register(fun () -> finish true)))
+                            registration <- Some registered
+                            if settled then registered.Dispose())
+            unbox<Task> pending
 #endif
 
 [<RequireQualifiedAccess>]
@@ -119,16 +177,16 @@ module Cause =
             let padding = String.replicate indent " "
 
             match current with
-            | Cause.Fail error -> $"{padding}Fail({formatError error})"
+            | Cause.Fail error -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}Fail({1})", padding, formatError error))
             | Cause.Die error ->
-                $"{padding}Die({Platform.dieDescription error})"
-            | Cause.Interrupt -> $"{padding}Interrupt"
+                (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}Die({1})", padding, Platform.dieDescription error))
+            | Cause.Interrupt -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}Interrupt", padding))
             | Cause.Then(left, right) ->
-                $"{padding}Then\n{loop (indent + 2) left}\n{loop (indent + 2) right}"
+                (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}Then\n{1}\n{2}", padding, loop (indent + 2) left, loop (indent + 2) right))
             | Cause.Both(left, right) ->
-                $"{padding}Both\n{loop (indent + 2) left}\n{loop (indent + 2) right}"
+                (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}Both\n{1}\n{2}", padding, loop (indent + 2) left, loop (indent + 2) right))
             | Cause.Traced(inner, trace) ->
-                $"{padding}Traced({trace})\n{loop (indent + 2) inner}"
+                (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}Traced({1})\n{2}", padding, trace, loop (indent + 2) inner))
 
         loop 0 cause
 
@@ -199,7 +257,7 @@ module Exit =
                 raise (OperationCanceledException("Workflow was interrupted"))
             else
                 let rendered = Cause.prettyPrint (fun error -> OutcomeText.value (box error)) cause
-                raise (InvalidOperationException($"Workflow failed with a composite cause that cannot be represented as Result: {rendered}"))
+                raise (InvalidOperationException((System.String.Format(Globalization.CultureInfo.InvariantCulture, "Workflow failed with a composite cause that cannot be represented as Result: {0}", rendered))))
 
 /// <summary>Unique identifier for a running fiber.</summary>
 [<Struct>]
@@ -209,7 +267,7 @@ type FiberId =
     /// <summary>The id as <c>#n</c>, rendered without reflection.</summary>
     override this.ToString() =
         let (FiberId value) = this
-        $"#{value}"
+        (System.String.Format(Globalization.CultureInfo.InvariantCulture, "#{0}", value))
 
     /// <summary>The numeric fiber identifier.</summary>
     member this.Value =
@@ -266,24 +324,26 @@ type FiberDump =
     member internal dump.RenderAtTick(nowTick: TimeSpan) : string =
         let name =
             match dump.Name with
-            | Some name -> $" \"{name}\""
+            | Some name -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, " \"{0}\"", name))
             | None -> ""
 
         let lifetime =
             let settled = dump.SettledTick |> Option.defaultValue nowTick
             let elapsed = settled - dump.StartedTick
-            $"%.1f{max elapsed.TotalSeconds 0.0}s"
+            (max elapsed.TotalSeconds 0.0).ToString("F1", Globalization.CultureInfo.InvariantCulture) + "s"
 
         let annotations =
             if Map.isEmpty dump.Annotations then
                 ""
             else
-                dump.Annotations
-                |> Seq.map (fun (KeyValue(key, value)) -> $"{key}={value}")
-                |> String.concat " "
-                |> sprintf " [%s]"
+                " ["
+                + (dump.Annotations
+                   |> Seq.map (fun (KeyValue(key, value)) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}={1}", key, value)))
+                   |> String.concat " ")
+                + "]"
 
-        $"#{dump.Id.Value}{name} {dump.Status} {lifetime} (started {dump.StartedAt:o}){annotations}"
+        let startedAt = dump.StartedAt.ToString("o")
+        (System.String.Format(Globalization.CultureInfo.InvariantCulture, "#{0}{1} {2} {3} (started {4}){5}", dump.Id.Value, name, dump.Status, lifetime, startedAt, annotations))
 
     /// <summary>Renders the dump as a single line, measuring lifetime against <paramref name="clock" /> for live fibers.</summary>
     member dump.RenderAt(clock: IClock) : string =
@@ -291,16 +351,19 @@ type FiberDump =
 
     /// <summary>Renders the dump without reflection (safe under NativeAOT), measuring lifetime to when it settled.</summary>
     override dump.ToString() =
-        let name = dump.Name |> Option.map (fun value -> $" \"{value}\"") |> Option.defaultValue ""
+        let name = dump.Name |> Option.map (fun value -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, " \"{0}\"", value))) |> Option.defaultValue ""
         let lifetime = (dump.SettledTick |> Option.defaultValue dump.StartedTick) - dump.StartedTick
         let annotations =
             if Map.isEmpty dump.Annotations then ""
             else
-                dump.Annotations
-                |> Seq.map (fun (KeyValue(key, value)) -> $"{key}={value}")
-                |> String.concat " "
-                |> sprintf " [%s]"
-        $"#{dump.Id.Value}{name} {dump.Status} {max lifetime.TotalSeconds 0.0:F1}s (started {dump.StartedAt:o}){annotations}"
+                " ["
+                + (dump.Annotations
+                   |> Seq.map (fun (KeyValue(key, value)) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}={1}", key, value)))
+                   |> String.concat " ")
+                + "]"
+        let seconds = (max lifetime.TotalSeconds 0.0).ToString("F1", Globalization.CultureInfo.InvariantCulture)
+        let startedAt = dump.StartedAt.ToString("o")
+        (System.String.Format(Globalization.CultureInfo.InvariantCulture, "#{0}{1} {2} {3}s (started {4}){5}", dump.Id.Value, name, dump.Status, seconds, startedAt, annotations))
 
 /// <summary>Snapshot conversion and rendering for fiber dumps.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -426,9 +489,11 @@ module FiberObserver =
         }
 
     let internal notifyStart (observer: FiberObserver) (metadata: FiberMetadata) : unit =
+        // axial-note AXG010: an observer's OnStart failure must not prevent the observed fiber from starting.
         try observer.OnStart metadata with _ -> ()
 
     let internal notifyEnd (observer: FiberObserver) (metadata: FiberMetadata) (defect: exn option) : unit =
+        // axial-note AXG010: OnEnd is diagnostic; its failure must not replace the fiber's already settled exit.
         try observer.OnEnd metadata defect with _ -> ()
 
     let internal notifyUnobservedDefect
@@ -436,6 +501,7 @@ module FiberObserver =
         (metadata: FiberMetadata option)
         (defect: exn)
         : unit =
+        // axial-note AXG010: the unobserved-defect sink is the last reporting destination; recursively reporting its failure would call the same sink.
         try observer.OnUnobservedDefect metadata defect with _ -> ()
 
 /// <summary>A forked fiber that has settled, as recorded by a <see cref="T:Axial.FiberRegistry" />.</summary>
@@ -641,7 +707,8 @@ type FiberRegistry(historyCapacity: int) =
     member this.DumpAt(clock: IClock) : string =
         let snapshot = this.Snapshot()
         let now = clock.UtcNow()
-        let header = $"Fiber dump @ {now:o} — {snapshot.Length} live fiber(s)"
+        let renderedNow = now.ToString("o")
+        let header = (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Fiber dump @ {0} — {1} live fiber(s)", renderedNow, snapshot.Length))
 
         match snapshot with
         | [] -> header
@@ -661,7 +728,7 @@ type internal FiberDefectTracker(metadata: FiberMetadata, observer: FiberObserve
     static let sentinels = System.Runtime.CompilerServices.ConditionalWeakTable<obj, FiberDefectTracker>()
 #endif
 
-    /// Records that the fiber's outcome was consumed (<c>Fiber.join</c>, <c>Fiber.await</c>, <c>Fiber.interrupt</c>)
+    /// Records that the fiber's outcome was consumed (<c>Fiber.join</c>, <c>Fiber.awaitExit</c>, <c>Fiber.interrupt</c>)
     /// or deliberately detached at birth (<c>Flow.forkDetached</c>), so its defect is never reported as unobserved.
     member _.MarkObserved() =
         lock gate (fun () -> observed <- true)
@@ -696,6 +763,7 @@ type internal FiberDefectTracker(metadata: FiberMetadata, observer: FiberObserve
         sentinels.Add(fiberHandle, tracker)
 
     override this.Finalize() =
+        // axial-note AXG010: GC finalization must not terminate the process if the last-chance defect reporter fails.
         try this.TryReport() with _ -> ()
 #endif
 
@@ -704,7 +772,7 @@ type internal FiberDefectTracker(metadata: FiberMetadata, observer: FiberObserve
 /// </summary>
 /// <remarks>
 /// A fiber is the hot counterpart to a cold <c>Flow</c>, returned by <c>Flow.fork</c>. Wait for it with
-/// <c>Fiber.join</c> (its value, re-raising its failure) or <c>Fiber.await</c> (its <c>Exit</c>), check it with
+/// <c>Fiber.join</c> (its value, re-raising its failure) or <c>Fiber.awaitExit</c> (its <c>Exit</c>), check it with
 /// <c>Fiber.poll</c>, and stop it with <c>Fiber.interrupt</c>.
 /// </remarks>
 /// <typeparam name="error">The failure type of the running workflow.</typeparam>
@@ -731,6 +799,9 @@ type Fiber<'error, 'value>
     /// Marks the fiber's outcome as consumed; see <c>FiberDefectTracker.MarkObserved</c>.
     member internal _.MarkObserved() = tracker.MarkObserved()
 
+    /// Reports the fiber's settled defect if its outcome was not consumed.
+    member internal _.ReportUnobserved() = tracker.TryReport()
+
     /// The fiber's exit once it has settled.
     member internal _.Settled = settled.Value
 
@@ -740,7 +811,7 @@ type Fiber<'error, 'value>
 /// </summary>
 /// <remarks>
 /// Bind a cold task directly in <c>flow { }</c>. When the task produces <c>Result&lt;'value,'error&gt;</c>,
-/// the builder places <c>Error</c> in Flow's typed error channel for both <c>let!</c> and <c>return!</c>.
+/// use <c>Flow.fromColdTaskResult</c> to place <c>Error</c> in Flow's typed error channel.
 /// A raw, already-started <c>Task</c> is not a Flow builder source.
 /// </remarks>
 /// <typeparam name="value">The type of the produced task value.</typeparam>
@@ -809,6 +880,79 @@ module ColdTask =
 
 type internal Execution<'value, 'error> = Platform.Execution<'value, 'error>
 
+/// <summary>Options for adaptive flow placement.</summary>
+type AdaptiveRunOnOptions =
+    { /// <summary>The minimum sampled synchronous hold time above which later runs use the thread pool.</summary>
+      Threshold: TimeSpan
+      /// <summary>The positive number of invocation attempts sampled before placement is decided. Failed and interrupted attempts count as samples.</summary>
+      Samples: int }
+
+#if !FABLE_COMPILER
+type AdaptiveRunOnState internal (options: AdaptiveRunOnOptions) =
+    let gate = obj ()
+    let mutable decision = 0
+    let mutable samples = 0
+    let mutable minimum = TimeSpan.MaxValue
+
+    member internal _.Decision = System.Threading.Volatile.Read(&decision)
+
+    member internal _.Observe(duration: TimeSpan) =
+        if System.Threading.Volatile.Read(&decision) = 0 then
+            lock gate (fun () ->
+                if decision = 0 then
+                    samples <- samples + 1
+                    minimum <- min minimum duration
+                    if samples >= options.Samples then
+                        decision <- if minimum > options.Threshold then 2 else 1)
+#endif
+
+/// <summary>Specifies where a flow starts running.</summary>
+/// <remarks>JavaScript has one thread, so every placement runs inline there.</remarks>
+[<RequireQualifiedAccess>]
+type RunOn =
+    /// <summary>Starts work on the calling thread.</summary>
+    | Inline
+    /// <summary>Starts work on the .NET thread pool.</summary>
+    | ThreadPool
+    /// <summary>Starts work on a dedicated .NET thread.</summary>
+    | DedicatedThread
+#if !FABLE_COMPILER
+    /// <summary>Starts work on the supplied .NET task scheduler.</summary>
+    | Scheduler of TaskScheduler
+    /// <summary>An adaptive placement created by <c>RunOn.adaptive</c> or <c>RunOn.adaptiveWith</c>.</summary>
+    | Adaptive of AdaptiveRunOnState
+#else
+    /// <summary>An adaptive placement created by <c>RunOn.adaptive</c> or <c>RunOn.adaptiveWith</c>.</summary>
+    | Adaptive
+#endif
+
+/// <summary>Creates adaptive flow placements.</summary>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module RunOn =
+    /// <summary>Creates a placement that samples three invocation attempts, then permanently selects inline or thread-pool execution from their minimum synchronous hold time.</summary>
+    let adaptive () =
+#if FABLE_COMPILER
+        RunOn.Adaptive
+#else
+        RunOn.Adaptive(AdaptiveRunOnState { Threshold = TimeSpan.FromTicks 500L; Samples = 3 })
+#endif
+
+    /// <summary>Creates a placement that samples the requested number of invocation attempts before deciding once from their minimum synchronous hold time. Failed and interrupted attempts count as samples.</summary>
+    let adaptiveWith options =
+        if options.Threshold < TimeSpan.Zero then invalidArg (nameof options) "Threshold must not be negative."
+        if options.Samples <= 0 then invalidArg (nameof options) "Samples must be positive."
+#if FABLE_COMPILER
+        RunOn.Adaptive
+#else
+        RunOn.Adaptive(AdaptiveRunOnState options)
+#endif
+
+/// Process-wide identities for fiber-local handles, including handles of different value types.
+module internal RuntimeIds =
+    let private nextValue = ref 0L
+    let next () = Platform.nextId nextValue
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module internal FiberId =
@@ -816,6 +960,21 @@ module internal FiberId =
 
     let next () =
         FiberId(Platform.nextId nextValue)
+
+/// Starts synchronous work without inheriting the caller's dispatcher. A flow that suspends must not post its
+/// continuation back to a dispatcher whose owner is blocked in the synchronous runner.
+module internal CallerSynchronizationContext =
+#if FABLE_COMPILER
+    let inline suppress (run: unit -> 'value) = run ()
+#else
+    let suppress (run: unit -> 'value) =
+        let previous = System.Threading.SynchronizationContext.Current
+        try
+            System.Threading.SynchronizationContext.SetSynchronizationContext null
+            run ()
+        finally
+            System.Threading.SynchronizationContext.SetSynchronizationContext previous
+#endif
 
 /// <summary>
 /// Owns finalizers for resources acquired during provisioning or runtime execution.
@@ -994,11 +1153,12 @@ type Scope() =
 #if !FABLE_COMPILER
     interface IAsyncDisposable with
         member this.DisposeAsync() =
-            ValueTask(this.Close(CancellationToken.None))
+            ValueTask(Platform.Cancellation.uninterruptible this.Close)
 
     interface IDisposable with
         member this.Dispose() =
-            this.Close(CancellationToken.None).GetAwaiter().GetResult()  // axial-allow-effect: blocking (IDisposable.Dispose is synchronous by contract)
+            CallerSynchronizationContext.suppress (fun () ->
+                (Platform.Cancellation.uninterruptible this.Close).GetAwaiter().GetResult())  // axial-allow-AXG001: IDisposable.Dispose is synchronous by contract
 #endif
 
 type internal FiberContext =
@@ -1011,9 +1171,149 @@ type internal FiberContext =
 module internal FiberContext =
     let empty = { Annotations = Map.empty; Locals = Map.empty }
 
+/// Pure decorators for runtime log destinations. Observation failures never escape into the workflow.
+[<RequireQualifiedAccess>]
+module LogSink =
+    let internal enabled (sink: ILogSink) level =
+        // axial-note AXG010: a broken observation gate cannot fail the application.
+        try sink.IsEnabled level with _ -> false
+    let internal write (sink: ILogSink) entry =
+        // axial-note AXG010: log destinations are write-only observations.
+        try sink.Write entry with _ -> ()
+    let none : ILogSink =
+        { new ILogSink with
+            member _.IsEnabled _ = false
+            member _.Write _ = () }
+    let fromFunction (destination: LogEntry -> unit) : ILogSink =
+        { new ILogSink with
+            member _.IsEnabled _ = true
+            member _.Write entry = destination entry }
+    let console (minimum: LogLevel) : ILogSink =
+        { new ILogSink with
+            member _.IsEnabled level = level >= minimum
+            member _.Write entry =
+                // One write per entry, so concurrent branches cannot interleave another entry's exception into it.
+                let text =
+                    match entry.Error with
+                    | Some error -> entry.Level.ToString() + ": " + entry.Message + "\n" + error.ToString()
+                    | None -> entry.Level.ToString() + ": " + entry.Message
+                Platform.logError text }
+    let tee (first: ILogSink) (second: ILogSink) : ILogSink =
+        { new ILogSink with
+            member _.IsEnabled level = enabled first level || enabled second level
+            member _.Write entry =
+                if enabled first entry.Level then write first entry
+                if enabled second entry.Level then write second entry }
+    let minLevel (minimum: LogLevel) (sink: ILogSink) : ILogSink =
+        { new ILogSink with
+            member _.IsEnabled level = level >= minimum && enabled sink level
+            member _.Write entry = if entry.Level >= minimum && enabled sink entry.Level then write sink entry }
+    let filter (predicate: LogEntry -> bool) (sink: ILogSink) : ILogSink =
+        { new ILogSink with
+            member _.IsEnabled level = enabled sink level
+            member _.Write entry = if predicate entry then write sink entry }
+    let map (mapper: LogEntry -> LogEntry) (sink: ILogSink) : ILogSink =
+        { new ILogSink with
+            member _.IsEnabled level = enabled sink level
+            member _.Write entry =
+                let mapped = mapper entry
+                if enabled sink mapped.Level then write sink mapped }
+
+type internal PlatformServices =
+    { Clock: IClock; Random: IRandom; Guid: IGuid
+      /// Machine-default culture for <c>Culture.system</c>. A function keeps live reads current; TestPlatform installs a constant.
+      Culture: unit -> Culture
+      /// Machine-default time zone for <c>TimeZone.local</c>. A function keeps live reads current; TestPlatform installs a constant.
+      TimeZone: unit -> Axial.TimeZone
+      /// The executor's view of <c>Clock</c>, built once per installed clock so timed primitives do not allocate on every read.
+      Time: Platform.ITimeSource }
+    static member Create(clock: IClock, random: IRandom, guid: IGuid, culture: unit -> Culture, timeZone: unit -> Axial.TimeZone) =
+        { Clock = clock
+          Random = random
+          Guid = guid
+          Culture = culture
+          TimeZone = timeZone
+          Time = Platform.timeOfClock clock }
+
+module internal PlatformDefaults =
+    let clock : IClock =
+        { new IClock with
+            // axial-allow-AXG001: live runtime clock implementation.
+            member _.UtcNow() = DateTimeOffset.UtcNow
+            member _.Elapsed() = Platform.monotonicNow ()
+            member _.Sleep(delay, cancellationToken) =
+#if FABLE_COMPILER
+                let pending = Fable.Core.JS.Constructors.Promise.Create<unit>(fun resolve reject ->
+                    let settled = ref false
+                    let timer: obj ref = ref null
+                    let registration: IDisposable option ref = ref None
+                    let finish error =
+                        if not settled.Value then
+                            settled.Value <- true
+                            Platform.cancelTimer timer.Value
+                            registration.Value |> Option.iter _.Dispose()
+                            match error with
+                            | None -> resolve (box ())
+                            | Some (error: exn) -> reject (box error)
+                    let deadline = Platform.monotonicNow () + delay
+                    let rec wait () =
+                        let remaining = deadline - Platform.monotonicNow ()
+                        if remaining <= TimeSpan.Zero then finish None
+                        else timer.Value <- Platform.scheduleTimer wait (int (min 2147483647.0 (Math.Ceiling remaining.TotalMilliseconds)))
+                    if cancellationToken.IsCancellationRequested then finish (Some(OperationCanceledException()))
+                    else
+                        if not (isNull (box cancellationToken)) then
+                            let registered = unbox<IDisposable> (box (cancellationToken.Register(fun () -> finish (Some(OperationCanceledException())))))
+                            registration.Value <- Some registered
+                            if settled.Value then registered.Dispose()
+                        if not settled.Value then wait ())
+                unbox<Task> pending
+#else
+                task {
+                    let! exit = (Platform.sleepExecution delay cancellationToken : Platform.Execution<unit, unit>).AsTask()
+                    match exit with
+                    | Exit.Success () -> ()
+                    | Exit.Failure Cause.Interrupt -> raise (OperationCanceledException(cancellationToken))
+                    | Exit.Failure _ -> failwith "Live clock sleep failed."
+                } :> Task
+#endif
+        }
+    let random : IRandom =
+        // axial-allow-AXG001: live runtime random implementation.
+        let generator = System.Random()
+        let gate = obj()
+        { new IRandom with
+            member _.Next() = lock gate generator.Next
+            member _.NextMax maximum = lock gate (fun () -> generator.Next maximum)
+            member _.NextInt minimum maximum = lock gate (fun () -> generator.Next(minimum, maximum))
+            member _.NextDouble() = lock gate generator.NextDouble
+            member _.NextBytes buffer = lock gate (fun () -> generator.NextBytes buffer) }
+    let guid : IGuid =
+        { new IGuid with
+            // axial-allow-AXG001: live runtime GUID implementation.
+            member _.NewGuid() = System.Guid.NewGuid() }
+    let culture () = Culture(Platform.Bridge.currentCultureName())
+    let timeZone () =
+        let id = Platform.Bridge.currentTimeZoneId()
+#if FABLE_COMPILER
+        Axial.TimeZone(id, null)
+#else
+        try Axial.TimeZone(id, box (System.TimeZoneInfo.FindSystemTimeZoneById id))
+        with
+        | :? System.TimeZoneNotFoundException -> Axial.TimeZone("UTC", box System.TimeZoneInfo.Utc)
+        | :? InvalidTimeZoneException -> Axial.TimeZone("UTC", box System.TimeZoneInfo.Utc)
+#endif
+    let live = PlatformServices.Create(clock, random, guid, culture, timeZone)
+    let logSink = LogSink.console LogLevel.Information
+
 type internal RuntimeContext =
     {
+        Platform: PlatformServices
+        LogSink: ILogSink
         Scope: Scope
+        /// The scope of the root run (Flow.run, App). Work started with Flow.disconnect registers here: its caller
+        /// does not wait for it, but the root does, so nothing outlives the application unreported.
+        RootScope: Scope
         Context: FiberContext
         AnnotationSink: string -> string -> unit
         TelemetryContext: Axial.Telemetry.TelemetryContext
@@ -1038,7 +1338,10 @@ type internal RuntimeContext =
 module internal RuntimeContext =
     let create (scope: Scope) : RuntimeContext =
         {
+            Platform = PlatformDefaults.live
+            LogSink = PlatformDefaults.logSink
             Scope = scope
+            RootScope = scope
             Context = FiberContext.empty
             AnnotationSink = fun _ _ -> ()
             TelemetryContext = Axial.Telemetry.TelemetryContext Map.empty
@@ -1047,8 +1350,8 @@ module internal RuntimeContext =
             Observer = FiberObserver.none
             Registries = []
             Tracer = None
-            BranchToken = CancellationToken.None
-            OuterToken = CancellationToken.None
+            BranchToken = Platform.Cancellation.never
+            OuterToken = Platform.Cancellation.never
         }
 
     let detached : RuntimeContext =
@@ -1141,9 +1444,13 @@ module internal RuntimeState =
     let enter (runtime: RuntimeContext) : unit = currentRuntime.Current.Value <- runtime
 #endif
 
+/// The only accessor for platform and log reads. Keep carrier changes local to this function.
+module internal RuntimePlatform =
+    let current () = RuntimeState.current ()
+
 /// <summary>
 /// Represents a cold workflow that reads an environment, returns a typed result, and is executed
-/// explicitly through one of its execution members such as <c>ToTask</c>, <c>ToAsync</c>, or <c>RunSynchronously</c>.
+/// explicitly through one of its execution members such as <c>StartAsTask</c>, <c>ToAsync</c>, or <c>RunSynchronously</c>.
 /// </summary>
 /// <typeparam name="env">The type of the environment dependency.</typeparam>
 /// <typeparam name="error">The type of the failure value.</typeparam>
@@ -1254,8 +1561,9 @@ type Flow<'env, 'error, 'value> =
                     | :? AggregateException as aggregate when aggregate.InnerExceptions.Count > 0 ->
                         aggregate.InnerExceptions |> Seq.map causeOf |> Seq.reduce Cause.thenCause
 #endif
-                    | :? OperationCanceledException -> Cause.Interrupt
-                    | _ -> Cause.Die error
+                    // An OperationCanceledException is an interruption only when this run's token asked for it,
+                    // as everywhere else (Platform.causeOfThrown); a foreign one is a defect.
+                    | _ -> Platform.causeOfThrown cancellationToken error
 
                 let primary =
                     match executionError, exit with
@@ -1294,32 +1602,34 @@ type Flow<'env, 'error, 'value> =
     /// <summary>Starts the workflow immediately and returns a value-task handle for its final exit.</summary>
     /// <remarks>The work is already in flight when this returns. Use <c>ToAsync</c> for a cold handle.</remarks>
     /// <param name="environment">The environment used by the workflow.</param>
-    /// <param name="cancellationToken">The optional cancellation token. Defaults to <see cref="F:System.Threading.CancellationToken.None" />.</param>
+    /// <param name="cancellationToken">The optional cancellation token. Defaults to a non-cancelable token.</param>
     /// <returns>A value task that completes with the workflow exit.</returns>
     /// <platforms>.NET only</platforms>
     member this.StartAsValueTask(environment: 'env, ?cancellationToken: CancellationToken) : ValueTask<Exit<'value, 'error>> =
-        this.ToExecution(environment, defaultArg cancellationToken CancellationToken.None)
+        this.ToExecution(environment, defaultArg cancellationToken Platform.Cancellation.never)
 
     /// <summary>Starts the workflow immediately and returns a task handle for its final exit.</summary>
     /// <remarks>The work is already in flight when this returns. Use <c>ToAsync</c> for a cold handle.</remarks>
     /// <param name="environment">The environment used by the workflow.</param>
-    /// <param name="cancellationToken">The optional cancellation token. Defaults to <see cref="F:System.Threading.CancellationToken.None" />.</param>
+    /// <param name="cancellationToken">The optional cancellation token. Defaults to a non-cancelable token.</param>
     /// <returns>A task that completes with the workflow exit.</returns>
     /// <platforms>.NET only</platforms>
     member this.StartAsTask(environment: 'env, ?cancellationToken: CancellationToken) : Task<Exit<'value, 'error>> =
-        this.ToExecution(environment, defaultArg cancellationToken CancellationToken.None).AsTask()
+        this.ToExecution(environment, defaultArg cancellationToken Platform.Cancellation.never).AsTask()
 
     /// <summary>Starts the workflow and blocks until the final exit is available.</summary>
     /// <remarks>To bound how long the workflow may run, apply <c>Flow.timeout</c> to it: that interrupts the work
     /// and waits for its cleanup, where abandoning a blocked wait would leave it running.</remarks>
     /// <param name="environment">The environment used by the workflow.</param>
-    /// <param name="cancellationToken">The optional cancellation token. Defaults to <see cref="F:System.Threading.CancellationToken.None" />.</param>
+    /// <param name="cancellationToken">The optional cancellation token. Defaults to a non-cancelable token.</param>
     /// <returns>The final workflow exit.</returns>
     /// <platforms>.NET only</platforms>
     member this.RunSynchronously(environment: 'env, ?cancellationToken: CancellationToken) : Exit<'value, 'error> =
-        let pending = this.StartAsValueTask(environment, ?cancellationToken = cancellationToken)
+        let pending =
+            CallerSynchronizationContext.suppress (fun () ->
+                this.StartAsValueTask(environment, ?cancellationToken = cancellationToken))
         if pending.IsCompletedSuccessfully then pending.Result
-        else pending.AsTask().GetAwaiter().GetResult()  // axial-allow-effect: blocking (RunSynchronously is the documented blocking runner)
+        else pending.AsTask().GetAwaiter().GetResult()  // axial-allow-AXG001: RunSynchronously is the documented blocking runner
 #endif
 
 #if !FABLE_COMPILER
@@ -1349,28 +1659,6 @@ module internal FlowInternal =
         (operation: 'env -> CancellationToken -> Execution<'value, 'error>)
         : Flow<'env, 'error, 'value> =
         Flow operation
-
-/// <summary>
-/// Log levels used by runtime logging helpers and environment-provided logging functions.
-/// </summary>
-[<RequireQualifiedAccess>]
-type LogLevel =
-    | Trace
-    | Debug
-    | Information
-    | Warning
-    | Error
-    | Critical
-
-    /// <summary>The level name, rendered without reflection so it stays safe under NativeAOT.</summary>
-    override this.ToString() =
-        match this with
-        | Trace -> "Trace"
-        | Debug -> "Debug"
-        | Information -> "Information"
-        | Warning -> "Warning"
-        | Error -> "Error"
-        | Critical -> "Critical"
 
 /// <summary>
 /// Represents an error channel that cannot occur.

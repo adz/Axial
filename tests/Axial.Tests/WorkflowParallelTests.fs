@@ -23,7 +23,7 @@ module WorkflowParallelTests =
                     return 2 
                 })
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success (1, 2) @>
+        test <@ Flow.runSync () workflow = Exit.Success (1, 2) @>
 
     [<Fact>]
     let ``Flow: zipPar interrupts on failure`` () =
@@ -37,28 +37,29 @@ module WorkflowParallelTests =
                 })
                 (Flow.fail "boom")
 
-        let outcome = Flow.runSync (TestSupport.clockEnv ()) workflow
+        let outcome = Flow.runSync () workflow
         test <@ outcome = Exit.Failure (Cause.Fail "boom") @>
         test <@ executed = false @>
 
     [<Fact>]
     let ``Flow: race returns first result and interrupts loser`` () =
+        let loserStarted = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let mutable loserExecuted = false
         let workflow =
             Flow.race
-                (flow { 
-                    do! Flow.sleep (TimeSpan.FromMilliseconds 100.0)
-                    return 1 
+                (flow {
+                    do! Flow.fromTask (fun _ -> loserStarted.Task)
+                    return 1
                 })
-                (flow { 
-                    do! Flow.sleep (TimeSpan.FromMilliseconds 500.0)
+                (flow {
+                    loserStarted.TrySetResult(()) |> ignore
+                    do! Flow.fromTask (fun token -> task { do! Task.Delay(Timeout.Infinite, token) })
                     loserExecuted <- true
-                    return 2 
+                    return 2
                 })
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 1 @>
-        // Give it a bit more time to potentially execute (though it shouldn't)
-        Thread.Sleep(500)
+        test <@ Flow.runSync () workflow = Exit.Success 1 @>
+        test <@ loserStarted.Task.IsCompletedSuccessfully @>
         test <@ loserExecuted = false @>
 
     [<Fact>]
@@ -67,7 +68,7 @@ module WorkflowParallelTests =
         let peak = ref 0
         let gate = obj ()
 
-        let work (value: int) : Flow<ClockEnvironment, string, int> =
+        let work (value: int) : Flow<unit, string, int> =
             flow {
                 lock gate (fun () ->
                     active.Value <- active.Value + 1
@@ -80,17 +81,17 @@ module WorkflowParallelTests =
 
         let traversal = [ 1..20 ] |> Flow.traversePar (Parallelism.bounded 3) work
 
-        test <@ Flow.runSync (TestSupport.clockEnv ()) traversal = Exit.Success [ for value in 1..20 -> value * 10 ] @>
+        test <@ Flow.runSync () traversal = Exit.Success [ for value in 1..20 -> value * 10 ] @>
         test <@ peak.Value <= 3 && peak.Value >= 2 @>
         // The flow value is a description: running it again starts from the first item.
-        test <@ Flow.runSync (TestSupport.clockEnv ()) traversal = Exit.Success [ for value in 1..20 -> value * 10 ] @>
+        test <@ Flow.runSync () traversal = Exit.Success [ for value in 1..20 -> value * 10 ] @>
 
     [<Fact>]
     let ``traversePar fails fast and interrupts running siblings`` () =
         let interrupted = ref 0
         let started = ref 0
 
-        let work (value: int) : Flow<ClockEnvironment, string, int> =
+        let work (value: int) : Flow<unit, string, int> =
             flow {
                 System.Threading.Interlocked.Increment(&started.contents) |> ignore
 
@@ -100,7 +101,7 @@ module WorkflowParallelTests =
                 else
                     do!
                         Flow.sleep (TimeSpan.FromSeconds 30.0)
-                        |> Flow.fold Flow.ok (fun cause ->
+                        |> Flow.foldCause Flow.ok (fun cause ->
                             if Cause.isInterrupted cause then
                                 System.Threading.Interlocked.Increment(&interrupted.contents) |> ignore
 
@@ -110,7 +111,7 @@ module WorkflowParallelTests =
             }
 
         let stopwatch = Diagnostics.Stopwatch.StartNew()
-        let result = [ 1..10 ] |> Flow.traversePar (Parallelism.bounded 3) work |> Flow.runSync (TestSupport.clockEnv ())
+        let result = [ 1..10 ] |> Flow.traversePar (Parallelism.bounded 3) work |> Flow.runSync ()
 
         test <@ result = Exit.Failure(Cause.Fail "boom") @>
         test <@ stopwatch.Elapsed < TimeSpan.FromSeconds 10.0 @>
@@ -124,17 +125,64 @@ module WorkflowParallelTests =
         let result =
             [ 1..50 ]
             |> Flow.forEachPar (Parallelism.bounded 4) (fun value -> Flow.delay (fun () -> seen.Add value; Flow.ok ()))
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
-        let empty : Exit<unit, string> = [] |> Flow.forEachPar (Parallelism.bounded 4) (fun (_: int) -> Flow.ok ()) |> Flow.runSync (TestSupport.clockEnv ())
-        let emptyTraversal : Exit<int list, string> = [] |> Flow.traversePar (Parallelism.bounded 4) Flow.ok |> Flow.runSync (TestSupport.clockEnv ())
+        let empty : Exit<unit, string> = [] |> Flow.forEachPar (Parallelism.bounded 4) (fun (_: int) -> Flow.ok ()) |> Flow.runSync ()
+        let emptyTraversal : Exit<int list, string> = [] |> Flow.traversePar (Parallelism.bounded 4) Flow.ok |> Flow.runSync ()
 
         test <@ result = Exit.Success () @>
         test <@ seen |> Seq.sort |> List.ofSeq = [ 1..50 ] @>
         test <@ empty = Exit.Success () @>
         test <@ emptyTraversal = Exit.Success [] @>
 
-    let private countingResource (acquired: int ref) (released: int ref) : Resource<ClockEnvironment, string, int> =
+    [<Fact>]
+    let ``Parallelism adaptive creates a fresh learner for every traversal run`` () =
+        let caller = Thread.CurrentThread.ManagedThreadId
+        let inlineRuns = ref 0
+        let mapping value : Flow<unit, string, int> =
+            Flow.delay (fun () ->
+                if Thread.CurrentThread.ManagedThreadId = caller then
+                    Interlocked.Increment(&inlineRuns.contents) |> ignore
+                Thread.SpinWait 50_000
+                Flow.ok value)
+        let traversal = [ 1..4 ] |> Flow.traversePar (Parallelism.adaptive 1) mapping
+
+        test <@ traversal.RunSynchronously(()) = Exit.Success [ 1..4 ] @>
+        test <@ traversal.RunSynchronously(()) = Exit.Success [ 1..4 ] @>
+        test <@ inlineRuns.Value = 6 @>
+
+    [<Fact>]
+    let ``sequenceParWith bounds work and applies its placement`` () =
+        let active = ref 0
+        let peak = ref 0
+        let caller = Thread.CurrentThread.ManagedThreadId
+        let callerRuns = ref 0
+        let entered = ref 0
+        let total = 8
+        let operation value : Flow<unit, string, int> =
+            Flow.delay (fun () ->
+                if Thread.CurrentThread.ManagedThreadId = caller then
+                    Interlocked.Increment(&callerRuns.contents) |> ignore
+                let now = Interlocked.Increment(&active.contents)
+                let mutable seen = peak.Value
+                while now > seen && Interlocked.CompareExchange(&peak.contents, now, seen) <> seen do
+                    seen <- peak.Value
+                Interlocked.Increment(&entered.contents) |> ignore
+                // Hold the slot until overlap is observed: two were active at once (peak is monotonic), or too few operations remain to ever overlap.
+                TestSupport.waitUntil
+                    (fun () -> Volatile.Read(&peak.contents) >= 2 || Volatile.Read(&entered.contents) >= total)
+                    (TimeSpan.FromSeconds 10.)
+                |> ignore
+                Interlocked.Decrement(&active.contents) |> ignore
+                Flow.ok value)
+        let policy = Parallelism.bounded 2 |> Parallelism.runOn RunOn.ThreadPool
+        let result = [ 1..total ] |> List.map operation |> Flow.sequenceParWith policy |> Flow.runSync ()
+
+        test <@ result = Exit.Success [ 1..total ] @>
+        test <@ peak.Value = 2 @>
+        test <@ callerRuns.Value = 0 @>
+
+    let private countingResource (acquired: int ref) (released: int ref) : Resource<unit, string, int> =
         Resource.create
             (Flow.delay (fun () -> Flow.ok (Interlocked.Increment(&acquired.contents))))
             (fun _ -> Flow.delay (fun () -> Interlocked.Increment(&released.contents) |> ignore; Flow.succeed ()))
@@ -153,7 +201,7 @@ module WorkflowParallelTests =
                     do! Flow.sleep (TimeSpan.FromMilliseconds 2.0)
                     return value * 2
                 })
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Success [ for value in 1..30 -> value * 2 ] @>
         test <@ acquired.Value = 3 && released.Value = 3 @>
@@ -168,7 +216,7 @@ module WorkflowParallelTests =
             [ 1..20 ]
             |> Flow.forEachParUsing (Parallelism.bounded 4) (countingResource acquired released) (fun _ value ->
                 if value = 5 then Flow.fail "bad value" else Flow.sleep (TimeSpan.FromMilliseconds 5.0))
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ result = Exit.Failure(Cause.Fail "bad value") @>
         test <@ acquired.Value >= 1 && acquired.Value <= 4 @>
@@ -187,8 +235,31 @@ module WorkflowParallelTests =
                     return value
                 })
             |> FlowStream.runCollect
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.runSync ()
 
         test <@ match result with Exit.Success values -> List.sort values = [ 1..40 ] | _ -> false @>
         test <@ acquired.Value <= 3 && acquired.Value >= 1 @>
         test <@ released.Value = acquired.Value @>
+
+    [<Fact>]
+    let ``mapFlowParUsing returns a pooled resource when the mapper throws`` () =
+        let acquired = ref 0
+        let released = ref 0
+        let mapperError = InvalidOperationException("mapper threw")
+
+        let result =
+            FlowStream.fromSeq [ 1..8 ]
+            |> FlowStream.mapFlowParUsing (Parallelism.bounded 2) (countingResource acquired released) (fun _ value ->
+                if value = 3 then
+                    raise mapperError
+
+                flow {
+                    do! Flow.sleep (TimeSpan.FromMilliseconds 2.0)
+                    return value
+                })
+            |> FlowStream.runCollect
+            |> Flow.runSync ()
+
+        test <@ match result with Exit.Failure(Cause.Die thrown) -> obj.ReferenceEquals(thrown, mapperError) | _ -> false @>
+        test <@ released.Value = acquired.Value @>
+        test <@ acquired.Value >= 1 @>

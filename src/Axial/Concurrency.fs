@@ -309,7 +309,7 @@ module Deferred =
                         | [] -> tcs.SetException(Exception("Deferred failed."))
 
         task {
-            let! outer = (Platform.awaitSignal signal System.Threading.CancellationToken.None).AsTask()
+            let! outer = (Platform.awaitSignal signal Platform.Cancellation.never).AsTask()
 
             match outer with
             | Exit.Success exit -> complete exit

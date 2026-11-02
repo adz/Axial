@@ -10,8 +10,19 @@
 
   <ItemGroup>
     <Compile Include="TestSupport.fs" />
+    <Compile Include="..\Shared\DispatcherChild.fs" Link="DispatcherChild.fs" />
+    <Compile Include="PlatformPackagingTests.fs" />
+    <Compile Include="NamespaceSurfaceTests.fs" />
+    <Compile Include="PlatformScopeTests.fs" />
+    <Compile Include="CultureTests.fs" />
+    <Compile Include="TimeZoneInteropTests.fs" />
+    <Compile Include="RuntimeFoundationTests.fs" />
+    <Compile Include="ServiceRuntimePatternTests.fs" />
+    <Compile Include="TestRuntimeTests.fs" />
+    <Compile Include="TimeProviderTests.fs" />
     <Compile Include="FlowRuntimeMetadataTests.fs" />
     <Compile Include="RuntimeSemanticsTests.fs" />
+    <Compile Include="CoreCancellationClassificationTests.fs" />
     <Compile Include="ExecutionTests.fs" />
     <Compile Include="AppTests.fs" />
     <Compile Include="WorkflowBasicTests.fs" />
@@ -19,6 +30,8 @@
     <Compile Include="TrampolineTests.fs" />
     <Compile Include="WorkflowConcurrencyTests.fs" />
     <Compile Include="WorkflowParallelTests.fs" />
+    <Compile Include="RunOnTests.fs" />
+    <Compile Include="SynchronousRunnerContextTests.fs" />
     <Compile Include="CacheTests.fs" />
     <Compile Include="WorkflowErrorTests.fs" />
     <Compile Include="WorkflowSchedulingTests.fs" />
@@ -27,6 +40,7 @@
     <Compile Include="FiberDiagnosticsTests.fs" />
     <Compile Include="FiberLocalTests.fs" />
     <Compile Include="WorkflowResourceTests.fs" />
+    <Compile Include="UninterruptibleCleanupTests.fs" />
     <Compile Include="ScopedResourceOwnershipTests.fs" />
     <Compile Include="ScopeConcurrencyTests.fs" />
     <Compile Include="ParallelSettlementTests.fs" />
@@ -44,6 +58,7 @@
     <Compile Include="WorkflowCallbackStreamTests.fs" />
     <Compile Include="StreamInteropTests.fs" />
     <Compile Include="PolicyTests.fs" />
+    <Compile Include="ThrowSafetyMatrixTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -58,9 +73,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
+    <!-- The phased core migration can validate without the Process-dependent torture graph. -->
     <ProjectReference Include="..\..\examples\Axial.TortureTest\Axial.TortureTest.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Layers\Axial.Layers.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
   </ItemGroup>
 
 </Project>

@@ -54,7 +54,7 @@ type AppHandle<'error, 'value> internal
     /// <returns>True if the application settled before the timeout.</returns>
     member _.StopAndWait(timeout: TimeSpan) : bool =
         requestStop ()
-        settledTask.Wait(timeout)  // axial-allow-effect: blocking (StopAndWait is the documented synchronous boundary)
+        settledTask.Wait(timeout)  // axial-allow-AXG001: StopAndWait is the documented synchronous boundary
 #endif
 
     interface IDisposable with
@@ -233,13 +233,13 @@ module App =
                             (fun _ -> if won then finish (fun () -> cancelled (OperationCanceledException("startWith was cancelled", callerToken)))),
                             (fun error -> if won then finish (fun () -> failure error)),
                             (fun error -> if won then finish (fun () -> cancelled error)),
-                            cancellationToken = CancellationToken.None)))
+                            cancellationToken = Platform.Cancellation.never)))
                     Async.StartWithContinuations(
                         async { return! published.Task |> Async.AwaitTask },
                         (fun exit -> if not callerToken.IsCancellationRequested then finishOnce (fun () -> success exit)),
                         (fun error -> if not callerToken.IsCancellationRequested then finishOnce (fun () -> failure error)),
                         (fun error -> if not callerToken.IsCancellationRequested then finishOnce (fun () -> cancelled error)),
-                        cancellationToken = CancellationToken.None))
+                        cancellationToken = Platform.Cancellation.never))
             match outcome with
             | Exit.Success services -> return Ok(running, services)
             | exit ->

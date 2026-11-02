@@ -9,15 +9,22 @@
   <ItemGroup>
     <PackageReference Include="Fable.Core" Version="4.3.0" />
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Layers\Axial.Layers.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Configuration\Axial.Configuration.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Process\Axial.Process.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Hosting.Node\Axial.Hosting.Node.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Hosting.Browser\Axial.Hosting.Browser.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Telemetry.JavaScript\Axial.Telemetry.JavaScript.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Harness.fs" />
     <Compile Include="TimingTests.fs" />
     <Compile Include="FiberTests.fs" />
     <Compile Include="QueueTests.fs" />
+    <Compile Include="RunOnTests.fs" />
+    <Compile Include="ThrownDefectTests.fs" />
+    <Compile Include="ThrowSafetyMatrixTests.fs" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- The torture scenarios from examples/Axial.TortureTest, run at a reduced size on Node. -->
     <Compile Include="../../examples/Axial.TortureTest/Scenario.fs" Link="TortureTest/Scenario.fs" />
     <Compile Include="../../examples/Axial.TortureTest/Pipeline.fs" Link="TortureTest/Pipeline.fs" />
@@ -37,6 +44,14 @@
     <Compile Include="../../examples/Axial.TortureTest/Processes.fs" Link="TortureTest/Processes.fs" />
     <Compile Include="../../examples/Axial.TortureTest/Scenarios.fs" Link="TortureTest/Scenarios.fs" />
     <Compile Include="TortureTests.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="PlatformScopeTests.fs" />
+    <Compile Include="ConfigurationTests.fs" />
+    <Compile Include="CultureTests.fs" />
+    <Compile Include="CancellationClassificationTests.fs" />
+    <Compile Include="HostLoggingTests.fs" />
+    <Compile Include="TelemetryHostTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 </Project>

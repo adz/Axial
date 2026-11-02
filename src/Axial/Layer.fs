@@ -1,6 +1,5 @@
-namespace Axial.Layers
+namespace Axial
 
-open Axial
 
 open System.Threading
 open System.Threading.Tasks
@@ -19,7 +18,7 @@ type Layer<'input, 'error, 'output> =
 /// <remarks>
 /// Use for expensive, non-thread-safe-per-call resources such as compiler services or pinned
 /// clients: acquire a small fixed pool once, then spread concurrent work across instances instead
-/// of contending on one shared instance or reacquiring one per call. Build one with <see cref="M:Axial.Layers.Layer.pool``3" />.
+/// of contending on one shared instance or reacquiring one per call. Build one with <see cref="M:Axial.Layer.pool``3" />.
 /// </remarks>
 [<Sealed>]
 type Pool<'resource> internal (instances: 'resource array) =
@@ -113,11 +112,11 @@ module Layer =
     /// <summary>Provisions a fixed-size pool of resource instances, handed out round-robin.</summary>
     /// <param name="size">The number of instances to provision. Must be at least one.</param>
     /// <param name="acquire">Builds one instance, given its zero-based index in the pool.</param>
-    /// <returns>A layer that succeeds with a <see cref="T:Axial.Layers.Pool`1" />.</returns>
+    /// <returns>A layer that succeeds with a <see cref="T:Axial.Pool`1" />.</returns>
     /// <remarks>
     /// Instances are provisioned sequentially, in index order, inside the layer's scope, so finalizers
     /// registered by <paramref name="acquire" /> release in the reverse of that order when the scope
-    /// closes. Use <see cref="M:Axial.Layers.Layer.acquireRelease``2" /> inside <paramref name="acquire" />
+    /// closes. Use <see cref="M:Axial.Layer.acquireRelease``2" /> inside <paramref name="acquire" />
     /// when each instance owns a resource that needs an explicit release.
     /// </remarks>
     /// <example>
@@ -163,7 +162,7 @@ module Layer =
     /// <summary>Gives a layer that cannot fail with a typed error any error type.</summary>
     /// <remarks>
     /// <c>Layer.provide</c> and the layer combinators require one error type. Widen a layer that cannot fail, such
-    /// as <c>BaseRuntime.live</c>, to combine it with layers or workflows that can.
+    /// as <c>Layer.succeed value</c>, to combine it with layers or workflows that can.
     /// </remarks>
     /// <example>
     /// <code>
@@ -197,41 +196,22 @@ module Layer =
                 invoke right input scope cancellationToken
                 |> Execution.map (fun rightValue -> leftValue, rightValue)))
 
-    let private chooseParallelExit
-        (leftExit: Exit<'left, 'error>)
-        (rightExit: Exit<'right, 'error>)
-        : Exit<'left * 'right, 'error> =
-        match leftExit, rightExit with
-        | Exit.Success leftValue, Exit.Success rightValue ->
-            Exit.Success (leftValue, rightValue)
-        | Exit.Failure leftCause, Exit.Failure rightCause ->
-            Exit.Failure (Cause.both leftCause rightCause)
-        | Exit.Failure leftCause, Exit.Success _ ->
-            Exit.Failure leftCause
-        | Exit.Success _, Exit.Failure rightCause ->
-            Exit.Failure rightCause
-
     /// <summary>Builds two independent layers in parallel and returns both outputs.</summary>
     /// <remarks>
-    /// Each branch is provisioned in a parent-owned child scope. When the parent scope closes,
-    /// child scopes are closed in deterministic left-to-right order. If both branches fail,
-    /// both failures are returned as a parallel cause.
+    /// The first failure interrupts the other branch and waits for it to settle. Resources acquired by
+    /// either branch are released in reverse acquisition order before failure returns. On success they
+    /// remain open until the providing scope closes. Independent failures are combined as a parallel cause.
     /// </remarks>
     let zipPar
         (left: Layer<'input, 'error, 'left>)
         (right: Layer<'input, 'error, 'right>)
         : Layer<'input, 'error, 'left * 'right> =
-        Layer(fun (input, scope) cancellationToken ->
-            // Register right first because scopes close finalizers in reverse registration order.
-            let rightScope = scope.AddChild()
-            let leftScope = scope.AddChild()
+        let asFlow item =
+            Flow(fun input cancellationToken ->
+                invoke item input (RuntimeState.current().Scope) cancellationToken)
 
-            Platform.zipParAllExecution
-                (fun () -> invoke left input leftScope cancellationToken)
-                (fun () -> invoke right input rightScope cancellationToken)
-                Execution.causeOfException
-                chooseParallelExit
-        )
+        // Use the same shared acquisition scope and fail-fast settlement as workflow parallelism.
+        fromFlow (Flow.zipPar (asFlow left) (asFlow right))
 
     /// <summary>Merges two independent service layers in parallel.</summary>
     /// <remarks>

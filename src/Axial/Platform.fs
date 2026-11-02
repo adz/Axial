@@ -1,4 +1,4 @@
-// axial-allow-effect-file: blocking (runtime platform layer: reads results of tasks it has already checked are complete)
+// axial-allow-file-AXG001: this file implements the explicit blocking (runtime platform layer: reads results of tasks it has already checked are complete) boundary
 /// The package's platform-variant surface. This file holds the FABLE_COMPILER directives for every genuinely
 /// dual-bodied Flow primitive: each half declares the same names (and, where the shape itself differs between
 /// platforms, the same type aliases), so the rest of the code is platform-directive-free. (Fable 5's project
@@ -15,7 +15,7 @@
 /// This file also implements the executor mechanics behind timed flows. Timed operations receive the caller's
 /// IClock through their environment; this module adapts that clock to internal execution outcomes. The platform
 /// timer below is used by the named live clock implementation, not selected implicitly by a Flow.
-// axial-allow-effect-file: clock
+// axial-allow-file-AXG001: this file implements the explicit clock boundary
 ///
 /// <remarks>
 /// <b>Scope of the "Fable" half below: Fable's JavaScript target specifically, not Fable in general.</b> Fable
@@ -40,6 +40,24 @@ open System.Threading.Tasks
 #if FABLE_COMPILER
 open Fable.Core
 #endif
+
+#if FABLE_COMPILER
+[<Emit("console.error($0)")>]
+let logError (_message: string) : unit = jsNative
+#else
+let logError (message: string) : unit =
+    // axial-allow-AXG001: live runtime console log destination.
+    Console.Error.WriteLine message
+#endif
+
+module Cancellation =
+    // Roots without a parent and scheduling operations need an inert token, not a cleanup region.
+    let never: CancellationToken = CancellationToken.None
+
+    // Token substitution only: Flow finalizers must also retain their existing runtime masking.
+    [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)>]
+    let uninterruptible (cleanup: CancellationToken -> 'value) : 'value =
+        cleanup never
 
 // ---------------------------------------------------------------------------------------------
 // Execution<'value, 'error>: the workflow's core awaitable outcome type.
@@ -106,6 +124,24 @@ let ofExit (exit: Exit<'value, 'error>) : Execution<'value, 'error> =
 #else
     ValueTask<Exit<'value, 'error>>(exit)
 #endif
+
+/// True when the execution has already settled, so its result is available without awaiting. Fable's <c>Async</c>
+/// is always pending, so the answer there is <c>false</c>.
+let isCompletedSuccessfully (effect: Execution<'value, 'error>) : bool =
+#if FABLE_COMPILER
+    ignore effect
+    false
+#else
+    effect.IsCompletedSuccessfully
+#endif
+
+/// Invokes a thunk that produces an execution, capturing a synchronous throw instead of letting it escape.
+/// The first item is the thrown exception, or <c>null</c> when the thunk returned normally.
+let inline tryInvoke (thunk: unit -> Execution<'value, 'error>) : struct (exn * Execution<'value, 'error>) =
+    try
+        struct (null, thunk ())
+    with error ->
+        struct (error, Unchecked.defaultof<Execution<'value, 'error>>)
 
 // ---------------------------------------------------------------------------------------------
 // Stack safety. A flow is a chain of closures; when steps complete synchronously each bind, map, loop
@@ -309,6 +345,11 @@ let mapBoth
     (onFailure: Cause<'error> -> Cause<'nextError>)
     (effect: Execution<'value, 'error>)
     : Execution<'next, 'nextError> =
+#if !FABLE_COMPILER
+    if effect.IsCompletedSuccessfully then
+        guardStack (fun () -> ofExit (mapBothExit onSuccess onFailure effect.Result))
+    else
+#endif
     execution {
         let! exit = effect
         return mapBothExit onSuccess onFailure exit
@@ -330,6 +371,104 @@ let tryExecution
             return! onError error
     }
     |> ofAwaitable
+
+#if FABLE_COMPILER
+// Fable erases a directly constructed OperationCanceledException to Exception. Keep one private marker so
+// internal cancellation continuations retain identity without classifying any foreign exception as ours.
+let private runtimeCancellation = Exception "Axial runtime cancellation"
+let runtimeCancellationException () : exn = runtimeCancellation
+#endif
+
+/// True when <paramref name="error" /> is a cancellation the runtime's own token asked for. A library that cancels
+/// for its own reasons has failed, and reporting that as an interruption nobody requested would hide it.
+let isOwnCancellation (cancellationToken: CancellationToken) (error: exn) : bool =
+    let isCancellation =
+        error :? OperationCanceledException
+#if FABLE_COMPILER
+        || obj.ReferenceEquals(error, runtimeCancellation)
+#endif
+    isCancellation && cancellationToken.IsCancellationRequested
+
+/// The cause a thrown exception stands for: an interruption when the runtime's token asked for it, else a defect.
+let causeOfThrown (cancellationToken: CancellationToken) (error: exn) : Cause<'error> =
+    if isOwnCancellation cancellationToken error then Cause.Interrupt else Cause.Die error
+
+/// Awaits an execution and hands its outcome, or an exception it faults with, to the matching continuation.
+/// Exceptions from the continuations are not caught, so a throwing handler becomes the result rather than being
+/// re-dispatched. A completed execution continues directly; a pending one is awaited by a single state machine.
+let inline observeThrown
+    (onThrown: exn -> Execution<'value, 'error>)
+    (onExit: Exit<'value, 'error> -> Execution<'next, 'nextError>)
+    (effect: Execution<'value, 'error>)
+    : Execution<'next, 'nextError> =
+#if FABLE_COMPILER
+    async {
+        // Fable's Async only reliably observes a throw from after an await across `return!`, so the inner body
+        // delegates the effect rather than binding it. `onThrown` recovers into the same outcome type.
+        let! exit =
+            async {
+                try
+                    return! effect
+                with error ->
+                    return! onThrown error
+            }
+
+        return! onExit exit
+    }
+#else
+    if effect.IsCompletedSuccessfully then
+        guardStack (fun () -> onExit effect.Result)
+    else
+        execution {
+            let mutable exit = Unchecked.defaultof<Exit<'value, 'error>>
+            let mutable thrown: exn = null
+
+            try
+                let! settled = effect
+                exit <- settled
+            with error ->
+                thrown <- error
+
+            if isNull thrown then
+                return! onExit exit
+            else
+                let! recovered = onThrown thrown
+                return! onExit recovered
+        }
+        |> ofAwaitable
+#endif
+
+/// Like <c>fold</c>, but an exception the execution faults with reaches <paramref name="onFailure" /> as the cause
+/// <c>causeOfThrown</c> gives it, as <c>tryExecution</c> would. Exceptions from the continuations are not caught.
+let inline foldObserved
+    (cancellationToken: CancellationToken)
+    (onSuccess: 'value -> Execution<'next, 'nextError>)
+    (onFailure: Cause<'error> -> Execution<'next, 'nextError>)
+    (effect: Execution<'value, 'error>)
+    : Execution<'next, 'nextError> =
+    observeThrown
+        (fun error -> ofExit (Exit.Failure(causeOfThrown cancellationToken error)))
+        (fun exit ->
+            match exit with
+            | Exit.Success value -> onSuccess value
+            | Exit.Failure cause -> onFailure cause)
+        effect
+
+/// Like <c>mapBoth</c>, but an exception the execution faults with is mapped as the cause <c>causeOfThrown</c>
+/// gives it. Exceptions from the mapping functions are not caught.
+let inline mapBothObserved
+    (cancellationToken: CancellationToken)
+    (onSuccess: 'value -> 'next)
+    (onFailure: Cause<'error> -> Cause<'nextError>)
+    (effect: Execution<'value, 'error>)
+    : Execution<'next, 'nextError> =
+    observeThrown
+        (fun error -> ofExit (Exit.Failure(causeOfThrown cancellationToken error)))
+        (fun exit ->
+            match exit with
+            | Exit.Success value -> ofExit (Exit.Success(onSuccess value))
+            | Exit.Failure cause -> ofExit (Exit.Failure(onFailure cause)))
+        effect
 
 #if FABLE_COMPILER
 // ---------------------------------------------------------------------------------------------
@@ -573,7 +712,7 @@ let serviceResolutionUnavailable<'service, 'error> () : Execution<'service, 'err
         Exit.Failure(
             Cause.Die(
                 InvalidOperationException(
-                    $"Service {typeof<'service>.Name} was not registered in the IServiceProvider."
+                    (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Service {0} was not registered in the IServiceProvider.", typeof<'service>.Name))
                 )
             )
         )
@@ -613,9 +752,9 @@ let nextIndex (counter: int ref) : int =
 /// for exceptions, so it falls back to a fixed "Exception" label.
 let dieDescription (error: exn) : string =
 #if FABLE_COMPILER
-    $"Exception: {error.Message}"
+    (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Exception: {0}", error.Message))
 #else
-    $"{error.GetType().Name}: {error.Message}"
+    (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}: {1}", error.GetType().Name, error.Message))
 #endif
 
 // ---------------------------------------------------------------------------------------------
@@ -802,7 +941,7 @@ let monotonicNow () : TimeSpan =
     TimeSpan.FromMilliseconds(performanceNow ())
 #else
     // The runtime's own monotonic timer; applications measure durations through IClock.Elapsed.
-    let timestamp = System.Diagnostics.Stopwatch.GetTimestamp() // axial-allow-effect: clock
+    let timestamp = System.Diagnostics.Stopwatch.GetTimestamp() // axial-allow-AXG001: intentional clock host or live-service boundary
     TimeSpan.FromTicks(int64 (float timestamp * (float TimeSpan.TicksPerSecond / float System.Diagnostics.Stopwatch.Frequency)))
 #endif
 
@@ -952,7 +1091,8 @@ type private Branch<'value, 'error> =
     { Settled: unit -> Exit<'value, 'error> option
       OnSettled: (Exit<'value, 'error> -> unit) -> unit }
 
-/// Starts an execution at once. An exception it raises settles the branch as a defect.
+/// Starts an execution at once. An exception it raises settles the branch with the same token-aware cause as the
+/// other Fable boundaries: requested cancellation is an interruption, anything else is a defect.
 let private startBranch (operation: CancellationToken -> Execution<'value, 'error>) (token: CancellationToken) =
     let finished: Exit<'value, 'error> option ref = ref None
     let waiters: (Exit<'value, 'error> -> unit) list ref = ref []
@@ -964,7 +1104,7 @@ let private startBranch (operation: CancellationToken -> Execution<'value, 'erro
                     try
                         return! operation token
                     with error ->
-                        return Exit.Failure(Cause.Die error)
+                        return Exit.Failure(causeOfThrown token error)
                 }
 
             finished.Value <- Some exit
@@ -1008,7 +1148,8 @@ let private branchSource (parent: CancellationToken) =
 #endif
 
 /// Runs <paramref name="operation" />, racing it against a timeout of <paramref name="after" />. Falls back to
-/// <paramref name="onTimeout" /> if the timeout wins. This is the shared implementation behind
+/// <paramref name="onTimeout" /> if the timeout wins, after handing the interrupted operation's outcome to
+/// <paramref name="onDiscarded" />: its exit, or the exception its task escaped with. This is the shared implementation behind
 /// <c>Flow.timeout</c>, <c>timeoutToOk</c>, <c>timeoutToError</c>, and <c>timeoutWith</c>, which differ
 /// only in what they do when the timeout fires.
 let timeoutExecution
@@ -1016,7 +1157,7 @@ let timeoutExecution
     (after: TimeSpan)
     (operation: CancellationToken -> Execution<'value, 'error>)
     (cancellationToken: CancellationToken)
-    (onDiscardedExit: Exit<'value, 'error> -> unit)
+    (onDiscarded: Result<Exit<'value, 'error>, exn> -> unit)
     (onTimeout: unit -> Execution<'value, 'error>)
     : Execution<'value, 'error> =
 #if FABLE_COMPILER
@@ -1045,7 +1186,7 @@ let timeoutExecution
                 // so hand it to the caller for unobserved-defect reporting before discarding it.
                 let! discarded = awaitBranch operation
                 unlink ()
-                onDiscardedExit discarded
+                onDiscarded (Ok discarded)
                 return! onTimeout ()
             | Exit.Failure _, None ->
                 let! exit = awaitBranch operation
@@ -1070,8 +1211,11 @@ let timeoutExecution
                 // so hand it to the caller for unobserved-defect reporting before discarding it.
                 try
                     let! discarded = running
-                    onDiscardedExit discarded
-                with _ -> ()
+                    onDiscarded (Ok discarded)
+                with
+                // Cancellation of the raw task is the timeout's requested interruption, not a defect.
+                | :? OperationCanceledException when running.IsCanceled -> ()
+                | error -> onDiscarded (Error error)
                 return! onTimeout ()
             else
                 return! running
@@ -1112,8 +1256,49 @@ let private startOperation
 let private faultedExecution (error: exn) : Execution<'value, 'error> =
     ValueTask<Exit<'value, 'error>>(Task.FromException<Exit<'value, 'error>> error)
 
+/// The exit of a zipPar branch awaited after the other one failed and cancelled the shared source. An exception it
+/// faults with is classified against that source, so the cancellation zipPar requested stays an interruption.
+let private settleAfterCancel (cts: CancellationTokenSource) (branch: Task<Exit<'value, 'error>>) : Task<Exit<'value, 'error>> =
+    task {
+        try
+            return! branch
+        with error ->
+            return Exit.Failure(causeOfThrown cts.Token error)
+    }
+
+/// The outcome of a zipPar whose first settled branch faulted with an exception instead of settling with an exit:
+/// the other branch was cancelled and has settled with <paramref name="other" />. The exception keeps its channel
+/// (as when a branch throws synchronously), so an enclosing try/with still sees it, unless the other branch failed
+/// for a reason of its own: then both are returned as causes, the exception as Die, so neither is lost.
+let private faultedAfterCancel
+    (requestedCancellation: bool)
+    (leftFirst: bool)
+    (faulted: Task<Exit<'first, 'error>>)
+    (other: Exit<'other, 'error>)
+    : Exit<'value, 'error> =
+    match other with
+    | Exit.Success _
+    | Exit.Failure Cause.Interrupt ->
+        // The task has completed; this rethrows its fault with the original stack trace.
+        faulted.GetAwaiter().GetResult() |> ignore
+        Unchecked.defaultof<Exit<'value, 'error>>
+    | Exit.Failure otherCause ->
+        if faulted.IsCanceled && requestedCancellation then
+            // The shared source was already cancelled before this branch settled: the cancellation was requested.
+            Exit.Failure otherCause
+        else
+            let error =
+                match faulted.Exception with
+                | null -> OperationCanceledException() :> exn
+                | aggregate when aggregate.InnerExceptions.Count = 1 -> aggregate.InnerExceptions[0]
+                | aggregate -> aggregate :> exn
+
+            let first = Cause.Die error
+            Exit.Failure(if leftFirst then Cause.Both(first, otherCause) else Cause.Both(otherCause, first))
+
 /// The asynchronous half of <c>zipParExecution</c>: waits for the first branch to settle, cancels the other on
-/// failure, and combines the exits.
+/// failure, and combines the exits. A branch that faults (user code threw after an await) counts as a failure too:
+/// the other branch is cancelled and awaited before the fault is passed on, so it is never left running.
 let private awaitBoth
     (cts: CancellationTokenSource)
     (leftRun: Execution<'left, 'error>)
@@ -1127,23 +1312,34 @@ let private awaitBoth
             let! completed = Task.WhenAny(leftFiberTask, rightFiberTask)
 
             if obj.ReferenceEquals(completed, leftFiberTask) then
-                match leftFiberTask.GetAwaiter().GetResult() with
-                | Exit.Failure cause ->
+                if not leftFiberTask.IsCompletedSuccessfully then
+                    let requestedCancellation = cts.IsCancellationRequested
                     cts.Cancel()
-                    let! rightExit = rightFiberTask
-                    return failedAfterCancel true cause rightExit
-                | Exit.Success leftValue ->
-                    let! rightExit = rightFiberTask
+                    let! rightExit = settleAfterCancel cts rightFiberTask
+                    return faultedAfterCancel requestedCancellation true leftFiberTask rightExit
+                else
+                    match leftFiberTask.Result with
+                    | Exit.Failure cause ->
+                        cts.Cancel()
+                        let! rightExit = settleAfterCancel cts rightFiberTask
+                        return failedAfterCancel true cause rightExit
+                    | Exit.Success leftValue ->
+                        let! rightExit = rightFiberTask
 
-                    return
-                        match rightExit with
-                        | Exit.Success rightValue -> Exit.Success(leftValue, rightValue)
-                        | Exit.Failure cause -> Exit.Failure cause
+                        return
+                            match rightExit with
+                            | Exit.Success rightValue -> Exit.Success(leftValue, rightValue)
+                            | Exit.Failure cause -> Exit.Failure cause
+            else if not rightFiberTask.IsCompletedSuccessfully then
+                let requestedCancellation = cts.IsCancellationRequested
+                cts.Cancel()
+                let! leftExit = settleAfterCancel cts leftFiberTask
+                return faultedAfterCancel requestedCancellation false rightFiberTask leftExit
             else
-                match rightFiberTask.GetAwaiter().GetResult() with
+                match rightFiberTask.Result with
                 | Exit.Failure cause ->
                     cts.Cancel()
-                    let! leftExit = leftFiberTask
+                    let! leftExit = settleAfterCancel cts leftFiberTask
                     return failedAfterCancel false cause leftExit
                 | Exit.Success rightValue ->
                     let! leftExit = leftFiberTask
@@ -1152,6 +1348,23 @@ let private awaitBoth
                         match leftExit with
                         | Exit.Success leftValue -> Exit.Success(leftValue, rightValue)
                         | Exit.Failure cause -> Exit.Failure cause
+        })
+
+#endif
+#if !FABLE_COMPILER
+/// The right operation threw while starting, after the left one had started: cancels, awaits the left branch (so it
+/// is interrupted and has released before the outcome is observed, and its defect is combined) and faults.
+let private rightStartFaulted
+    (cts: CancellationTokenSource)
+    (leftRun: Execution<'left, 'error>)
+    (error: exn)
+    : Execution<'left * 'right, 'error> =
+    cts.Cancel()
+
+    ValueTask<Exit<'left * 'right, 'error>>(
+        task {
+            let! leftExit = settleAfterCancel cts (leftRun.AsTask())
+            return faultedAfterCancel false false (Task.FromException<Exit<'right, 'error>>(error)) leftExit
         })
 
 #endif
@@ -1200,9 +1413,7 @@ let zipParExecution
         faultedExecution error
     | Ok leftRun ->
         match startOperation rightOp cts.Token with
-        | Error error ->
-            cts.Cancel()
-            faultedExecution error
+        | Error error -> rightStartFaulted cts leftRun error
         | Ok rightRun when leftRun.IsCompletedSuccessfully && rightRun.IsCompletedSuccessfully ->
             // Both settled: the left exit counts as the first, as Task.WhenAny would report it.
             let exit =
@@ -1215,6 +1426,49 @@ let zipParExecution
 
             ValueTask<Exit<'left * 'right, 'error>>(exit)
         | Ok rightRun -> awaitBoth cts leftRun rightRun
+#endif
+
+/// Unit-specialized parallel composition. Synchronously successful branches avoid constructing a tuple exit and a
+/// mapping continuation at every internal node of sequencePar's balanced tree.
+let zipParUnitExecution
+    (leftOp: CancellationToken -> Execution<unit, 'error>)
+    (rightOp: CancellationToken -> Execution<unit, 'error>)
+    (source: CancellationTokenSource)
+    (chooseParallel: Exit<unit, 'error> -> Exit<unit, 'error> -> Exit<unit * unit, 'error>)
+    : Execution<unit, 'error> =
+#if FABLE_COMPILER
+    async {
+        let! exit = zipParExecution leftOp rightOp source chooseParallel
+        return match exit with Exit.Success _ -> Exit.Success() | Exit.Failure cause -> Exit.Failure cause
+    }
+#else
+    match startOperation leftOp source.Token with
+    | Error error ->
+        source.Cancel()
+        faultedExecution error
+    | Ok leftRun ->
+        match startOperation rightOp source.Token with
+        | Error error ->
+            ValueTask<Exit<unit, 'error>>(
+                task {
+                    let! exit = rightStartFaulted source leftRun error
+                    return match exit with Exit.Success _ -> Exit.Success() | Exit.Failure cause -> Exit.Failure cause
+                })
+        | Ok rightRun when leftRun.IsCompletedSuccessfully && rightRun.IsCompletedSuccessfully ->
+            match leftRun.Result, rightRun.Result with
+            | Exit.Failure cause, rightExit ->
+                source.Cancel()
+                match failedAfterCancel true cause rightExit with
+                | Exit.Failure combined -> ValueTask<Exit<unit, 'error>>(Exit.Failure combined)
+                | Exit.Success _ -> ValueTask<Exit<unit, 'error>>(Exit.Success())
+            | Exit.Success _, Exit.Success _ -> ValueTask<Exit<unit, 'error>>(Exit.Success())
+            | Exit.Success _, Exit.Failure cause -> ValueTask<Exit<unit, 'error>>(Exit.Failure cause)
+        | Ok rightRun ->
+            ValueTask<Exit<unit, 'error>>(
+                task {
+                    let! exit = zipParExecution (fun _ -> leftRun) (fun _ -> rightRun) source chooseParallel
+                    return match exit with Exit.Success _ -> Exit.Success() | Exit.Failure cause -> Exit.Failure cause
+                })
 #endif
 
 /// Runs two operations concurrently, waits for both regardless of failure (catching any exception either one
@@ -1273,22 +1527,22 @@ let zipParAllExecution
 #endif
 
 #if !FABLE_COMPILER
-/// Hands the race loser's exit to <paramref name="onLoserSettled" /> once it settles, or <c>None</c> when it faulted
-/// or was cancelled without producing one.
-let private reportLoser
+/// Awaits a race loser and reports its outcome without allowing a faulted task to bypass structured settlement.
+let private awaitRaceLoser
     (losing: Task<Exit<'value, 'error>>)
-    (onLoserSettled: Exit<'value, 'error> option -> unit)
-    : unit =
-    losing.ContinueWith(
-        (fun (settled: Task<Exit<'value, 'error>>) ->
-            if settled.IsCompletedSuccessfully then
-                onLoserSettled (Some settled.Result)
-            else
-                onLoserSettled None),
-        TaskContinuationOptions.ExecuteSynchronously)
-    |> ignore
+    (onLoserSettled: Result<Exit<'value, 'error> option, exn> -> unit)
+    : Task =
+    task {
+        try
+            let! exit = losing
+            onLoserSettled (Ok(Some exit))
+        with
+        | :? OperationCanceledException when losing.IsCanceled -> onLoserSettled (Ok None)
+        // Report a raw losing task fault separately from its Exit so settlement retains the selected winner.
+        | error -> onLoserSettled (Error error)
+    }
 
-/// Settles a race whose winner has already completed: cancels the loser and returns the winner's exit.
+/// Settles a race whose winner has already completed: cancels and awaits the loser before returning the winner.
 let private decideRace
     (cts: CancellationTokenSource)
     (unlink: unit -> unit)
@@ -1296,18 +1550,21 @@ let private decideRace
     (winner: Execution<'value, 'error>)
     (loser: Execution<'value, 'error>)
     (onDecided: bool -> unit)
-    (onLoserSettled: Exit<'value, 'error> option -> unit)
+    (onLoserSettled: Result<Exit<'value, 'error> option, exn> -> unit)
     : Execution<'value, 'error> =
     cts.Cancel()
     unlink ()
     onDecided leftWon
 
     if loser.IsCompletedSuccessfully then
-        onLoserSettled (Some loser.Result)
+        onLoserSettled (Ok(Some loser.Result))
+        ValueTask<Exit<'value, 'error>>(winner.Result)
     else
-        reportLoser (loser.AsTask()) onLoserSettled
-
-    ValueTask<Exit<'value, 'error>>(winner.Result)
+        ValueTask<Exit<'value, 'error>>(
+            task {
+                do! awaitRaceLoser (loser.AsTask()) onLoserSettled
+                return winner.Result
+            })
 
 /// The asynchronous half of <c>raceExecution</c>: waits for the first operation to settle, then cancels the other.
 let private awaitRace
@@ -1316,7 +1573,7 @@ let private awaitRace
     (leftRun: Execution<'value, 'error>)
     (rightRun: Execution<'value, 'error>)
     (onDecided: bool -> unit)
-    (onLoserSettled: Exit<'value, 'error> option -> unit)
+    (onLoserSettled: Result<Exit<'value, 'error> option, exn> -> unit)
     : Execution<'value, 'error> =
     ValueTask<Exit<'value, 'error>>(
         task {
@@ -1327,26 +1584,24 @@ let private awaitRace
             cts.Cancel()
             unlink ()
 
-            // The loser's exit is dropped without ever being awaited, so hand it to the caller once the loser
-            // settles.
             let leftWon = obj.ReferenceEquals(completed, leftFiberTask)
             onDecided leftWon
-            reportLoser (if leftWon then rightFiberTask else leftFiberTask) onLoserSettled
+            do! awaitRaceLoser (if leftWon then rightFiberTask else leftFiberTask) onLoserSettled
 
             return completed.GetAwaiter().GetResult()
         })
 
 #endif
-/// Runs two operations concurrently and returns whichever settles first, cancelling the loser.
-/// <paramref name="onDecided" /> is told whether the left operation won before the winner's exit is returned.
-/// <paramref name="onLoserSettled" /> is called once the loser settles, which may be after the race has returned,
-/// with its exit, or with <c>None</c> when the loser faulted or was cancelled without producing one.
+/// Runs two operations concurrently and returns whichever settles first, cancelling and awaiting the loser.
+/// <paramref name="onDecided" /> is told whether the left operation won before the loser is awaited.
+/// <paramref name="onLoserSettled" /> is called before the race returns, with the loser's exit (None for a canceled
+/// raw task) or an escaped task fault; faults are reported as unobserved without replacing the selected winner.
 let raceExecution
     (leftOp: CancellationToken -> Execution<'value, 'error>)
     (rightOp: CancellationToken -> Execution<'value, 'error>)
     (cancellationToken: CancellationToken)
     (onDecided: bool -> unit)
-    (onLoserSettled: Exit<'value, 'error> option -> unit)
+    (onLoserSettled: Result<Exit<'value, 'error> option, exn> -> unit)
     : Execution<'value, 'error> =
 #if FABLE_COMPILER
     async {
@@ -1359,17 +1614,18 @@ let raceExecution
         unlinkLeft ()
         unlinkRight ()
 
-        // The loser is cancelled and not awaited; its exit goes to the caller once it settles.
         match first with
         | Choice1Of2 exit ->
             rightSource.Cancel()
             onDecided true
-            right.OnSettled(Some >> onLoserSettled)
+            let! loserExit = awaitBranch right
+            onLoserSettled (Ok(Some loserExit))
             return exit
         | Choice2Of2 exit ->
             leftSource.Cancel()
             onDecided false
-            left.OnSettled(Some >> onLoserSettled)
+            let! loserExit = awaitBranch left
+            onLoserSettled (Ok(Some loserExit))
             return exit
     }
 #else
@@ -1390,7 +1646,13 @@ let raceExecution
         | Error error ->
             cts.Cancel()
             unlink ()
-            faultedExecution error
+            onDecided false
+
+            ValueTask<Exit<'value, 'error>>(
+                task {
+                    do! awaitRaceLoser (leftRun.AsTask()) onLoserSettled
+                    return raise error
+                })
         | Ok rightRun when leftRun.IsCompletedSuccessfully ->
             decideRace cts unlink true leftRun rightRun onDecided onLoserSettled
         | Ok rightRun when not leftRun.IsCompleted && rightRun.IsCompletedSuccessfully ->
@@ -1436,12 +1698,6 @@ let startFiber
         | Exit.Failure cause when isInterruptedCause cause -> FiberStatus.Interrupted
         | Exit.Failure _ -> FiberStatus.Failed
 
-    let causeOfException (error: exn) : Cause<'error> =
-        if error :? OperationCanceledException then
-            Cause.Interrupt
-        else
-            Cause.Die error
-
 #if FABLE_COMPILER
     // Fable has no cooperative CancellationTokenSource linking, so a forked fiber gets an independent source.
     // Fable does not support Async.RunSynchronously, so the fiber's completion is published through a
@@ -1467,7 +1723,7 @@ let startFiber
                 onSettled (statusFromExit exit) exit
                 settle exit
             with error ->
-                let exit = Exit.Failure(causeOfException error)
+                let exit = Exit.Failure(causeOfThrown cts.Token error)
                 onSettled (statusFromExit exit) exit
                 settle exit
         })
@@ -1507,7 +1763,7 @@ let startFiber
                     settle (statusFromExit exit) exit
                     return exit
                 with error ->
-                    let exit = Exit.Failure(causeOfException error)
+                    let exit = Exit.Failure(causeOfThrown cts.Token error)
                     settle (statusFromExit exit) exit
                     return exit
             })
@@ -1531,6 +1787,24 @@ let awaitExitTaskAsSuccess (exitTask: ExitTask<'value, 'error>) : Execution<Exit
         return Exit.Success exit
     }
     |> ofAwaitable
+
+/// Invokes a callback when a fiber settles without consuming its outcome.
+let observeExitTask (exitTask: ExitTask<'value, 'error>) (observer: Exit<'value, 'error> -> unit) : unit =
+#if FABLE_COMPILER
+    startImmediate
+        (async {
+            let! exit = exitTask
+            observer exit
+        })
+        None
+#else
+    exitTask.ContinueWith(
+        (fun (completed: Task<Exit<'value, 'error>>) -> observer completed.Result),
+        Cancellation.never,
+        TaskContinuationOptions.ExecuteSynchronously,
+        TaskScheduler.Default)
+    |> ignore
+#endif
 
 // ---------------------------------------------------------------------------------------------
 // Signal: a single-assignment async rendezvous cell shared by Concurrency.fs (Deferred, Semaphore)
@@ -1790,8 +2064,15 @@ type ManualTime() =
             else
                 Some(sleepers |> Seq.map (fun (deadline, _, _) -> deadline) |> Seq.min))
 
+    /// The last deadline currently registered; later registrations do not extend it.
+    member _.LastDeadline =
+        lock gate (fun () ->
+            if sleepers.Count = 0 then None
+            else Some(sleepers |> Seq.map (fun (deadline, _, _) -> deadline) |> Seq.max))
+
     /// Moves time forward and wakes every sleep whose deadline has been reached, earliest first.
     member _.Advance(by: TimeSpan) =
+        if by < TimeSpan.Zero then invalidArg (nameof by) "Clock cannot move backwards."
         let due =
             lock gate (fun () ->
                 now <- now + by
@@ -1811,12 +2092,25 @@ type ManualTime() =
             resolveSignal signal () |> ignore
 
     /// Moves time to the earliest waiting deadline. Returns <c>false</c> when nothing is waiting.
-    member this.AdvanceToNextDeadline() =
-        match this.NextDeadline with
-        | Some deadline ->
-            this.Advance(deadline - lock gate (fun () -> now))
-            true
+    member _.AdvanceToNextDeadline() =
+        let due =
+            lock gate (fun () ->
+                if sleepers.Count = 0 then None
+                else
+                    let deadline = sleepers |> Seq.map (fun (deadline, _, _) -> deadline) |> Seq.min
+                    now <- max now deadline
+                    let ready =
+                        sleepers
+                        |> Seq.filter (fun (deadline, _, _) -> deadline <= now)
+                        |> Seq.sortBy (fun (deadline, sequence, _) -> deadline, sequence)
+                        |> Seq.toArray
+                    for entry in ready do sleepers.Remove entry |> ignore
+                    Some ready)
+        match due with
         | None -> false
+        | Some ready ->
+            for _, _, signal in ready do resolveSignal signal () |> ignore
+            true
 
     interface ITimeSource with
         member _.Now() = lock gate (fun () -> now)
@@ -1840,4 +2134,169 @@ type ManualTime() =
                 |> ignore
 
                 awaitSignal signal cancellationToken
+#endif
+
+/// Raw platform constructs that the platform-operation modules expose through a tested service. Keeping them here
+/// means the concrete service modules stay free of unsuppressed ambient effects while behaviour is unchanged.
+module internal Bridge =
+#if !FABLE_COMPILER && !NETSTANDARD2_1
+    let timeProviderDelay (provider: TimeProvider) (delay: TimeSpan) (cancellationToken: CancellationToken) : Task =
+        Task.Delay(delay, provider, cancellationToken)
+#endif
+
+    let newCancellationSource () : CancellationTokenSource =
+        new CancellationTokenSource()
+
+    let seededRandom (seed: int) : Random =
+        System.Random(seed)
+
+#if FABLE_COMPILER
+    [<Emit("(typeof navigator !== 'undefined' && navigator.language) ? navigator.language : (Intl.DateTimeFormat().resolvedOptions().locale || 'en-US')")>]
+    let private jsCurrentCultureName () : string = jsNative
+
+    [<Emit("(function (name) { if (name === '') return ''; try { return Intl.getCanonicalLocales(name)[0]; } catch (error) { return null; } })($0)")>]
+    let private jsCanonicalCultureName (_name: string) : string = jsNative
+
+    [<Emit("Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'")>]
+    let private jsCurrentTimeZoneId () : string = jsNative
+
+    [<Emit("(function (id) { try { new Intl.DateTimeFormat('en-US', { timeZone: id }); return id; } catch (error) { return null; } })($0)")>]
+    let private jsCanonicalTimeZoneId (_id: string) : string = jsNative
+
+    [<Emit("(function (culture, value) { return new Intl.NumberFormat(culture === '' ? 'en-US' : culture, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value); })($0, $1)")>]
+    let private jsFormatNumber (_culture: string) (_value: float) : string = jsNative
+
+    [<Emit("(function (culture, region, value) { var currencies = { US: 'USD', GB: 'GBP', DE: 'EUR', FR: 'EUR', ES: 'EUR', IT: 'EUR', NL: 'EUR', PT: 'EUR', IE: 'EUR', AT: 'EUR', BE: 'EUR', FI: 'EUR', GR: 'EUR', JP: 'JPY', CN: 'CNY', AU: 'AUD', CA: 'CAD', CH: 'CHF', IN: 'INR', BR: 'BRL', RU: 'RUB', KR: 'KRW', MX: 'MXN', NZ: 'NZD', SE: 'SEK', NO: 'NOK', DK: 'DKK', PL: 'PLN', TR: 'TRY', ZA: 'ZAR', SG: 'SGD', HK: 'HKD', TW: 'TWD' }; var currency = currencies[region] || 'USD'; return new Intl.NumberFormat(culture === '' ? 'en-US' : culture, { style: 'currency', currency: currency }).format(value); })($0, $1, $2)")>]
+    let private jsFormatCurrency (_culture: string) (_region: string) (_value: float) : string = jsNative
+
+    [<Emit("(function (culture, milliseconds) { return new Intl.DateTimeFormat(culture === '' ? 'en-US' : culture, { timeZone: 'UTC', year: 'numeric', month: 'numeric', day: 'numeric' }).format(new Date(milliseconds)); })($0, $1)")>]
+    let private jsFormatDate (_culture: string) (_milliseconds: float) : string = jsNative
+
+    [<Emit("(function (culture, milliseconds) { return new Intl.DateTimeFormat(culture === '' ? 'en-US' : culture, { timeZone: 'UTC', hour: 'numeric', minute: 'numeric' }).format(new Date(milliseconds)); })($0, $1)")>]
+    let private jsFormatTime (_culture: string) (_milliseconds: float) : string = jsNative
+
+    [<Emit("(function (culture) { try { return new Intl.Locale(culture === '' ? 'en-US' : culture).maximize().region || 'US'; } catch (error) { return 'US'; } })($0)")>]
+    let private jsRegionOf (_culture: string) : string = jsNative
+
+    [<Emit("""(function (zoneId, milliseconds) {
+        var date = new Date(milliseconds);
+        var parts = new Intl.DateTimeFormat('en-US', { timeZone: zoneId, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(date);
+        var value = function (type) { var part = parts.find(function (candidate) { return candidate.type === type; }); return part ? parseInt(part.value, 10) : 0; };
+        var wall = Date.UTC(value('year'), value('month') - 1, value('day'), value('hour'), value('minute'), value('second'), date.getUTCMilliseconds());
+        return wall - date.getTime();
+    })($0, $1)""")>]
+    let private jsOffsetMilliseconds (_zoneId: string) (_milliseconds: float) : float = jsNative
+#endif
+
+    let currentCultureName () : string =
+#if FABLE_COMPILER
+        jsCurrentCultureName ()
+#else
+        System.Globalization.CultureInfo.CurrentCulture.Name
+#endif
+
+    let currentTimeZoneId () : string =
+#if FABLE_COMPILER
+        jsCurrentTimeZoneId ()
+#else
+        System.TimeZoneInfo.Local.Id
+#endif
+
+    let canonicalCultureName (name: string) : string option =
+#if FABLE_COMPILER
+        Option.ofObj (jsCanonicalCultureName name)
+#else
+        if String.IsNullOrEmpty name then Some ""
+        else
+            try
+                Some((System.Globalization.CultureInfo.GetCultureInfo name).Name)
+            with
+            | :? System.Globalization.CultureNotFoundException -> None
+            | :? ArgumentException -> None
+#endif
+
+    let canonicalTimeZoneId (id: string) : string option =
+#if FABLE_COMPILER
+        Option.ofObj (jsCanonicalTimeZoneId id)
+#else
+        try
+            Some((System.TimeZoneInfo.FindSystemTimeZoneById id).Id)
+        with
+        | :? System.TimeZoneNotFoundException -> None
+        | :? InvalidTimeZoneException -> None
+        | :? ArgumentException -> None
+#endif
+
+    let setProcessCulture (name: string) : unit =
+#if FABLE_COMPILER
+        ignore name
+#else
+        let culture =
+            if String.IsNullOrEmpty name then System.Globalization.CultureInfo.InvariantCulture
+            else System.Globalization.CultureInfo.GetCultureInfo name
+
+        System.Globalization.CultureInfo.DefaultThreadCurrentCulture <- culture
+        System.Globalization.CultureInfo.DefaultThreadCurrentUICulture <- culture
+        System.Globalization.CultureInfo.CurrentCulture <- culture
+        System.Globalization.CultureInfo.CurrentUICulture <- culture
+#endif
+
+    let formatNumber (cultureName: string) (value: float) : string =
+#if FABLE_COMPILER
+        jsFormatNumber cultureName value
+#else
+        let culture =
+            if String.IsNullOrEmpty cultureName then System.Globalization.CultureInfo.InvariantCulture
+            else System.Globalization.CultureInfo.GetCultureInfo cultureName
+
+        value.ToString("N2", culture)
+#endif
+
+    let formatCurrency (cultureName: string) (value: decimal) : string =
+#if FABLE_COMPILER
+        let region = jsRegionOf cultureName
+        jsFormatCurrency cultureName region (float value)
+#else
+        let culture =
+            if String.IsNullOrEmpty cultureName then System.Globalization.CultureInfo.InvariantCulture
+            else System.Globalization.CultureInfo.GetCultureInfo cultureName
+
+        value.ToString("C", culture)
+#endif
+
+    let formatDate (cultureName: string) (instant: DateTimeOffset) : string =
+#if FABLE_COMPILER
+        jsFormatDate cultureName (float (instant.ToUnixTimeMilliseconds() + int64 instant.Offset.TotalMilliseconds))
+#else
+        let culture =
+            if String.IsNullOrEmpty cultureName then System.Globalization.CultureInfo.InvariantCulture
+            else System.Globalization.CultureInfo.GetCultureInfo cultureName
+
+        instant.ToString("d", culture)
+#endif
+
+    let formatTime (cultureName: string) (instant: DateTimeOffset) : string =
+#if FABLE_COMPILER
+        jsFormatTime cultureName (float (instant.ToUnixTimeMilliseconds() + int64 instant.Offset.TotalMilliseconds))
+#else
+        let culture =
+            if String.IsNullOrEmpty cultureName then System.Globalization.CultureInfo.InvariantCulture
+            else System.Globalization.CultureInfo.GetCultureInfo cultureName
+
+        instant.ToString("t", culture)
+#endif
+
+    let toLocal (zoneId: string) (instant: DateTimeOffset) : DateTimeOffset =
+#if FABLE_COMPILER
+        if String.Equals(zoneId, "UTC", StringComparison.OrdinalIgnoreCase) then
+            instant.ToUniversalTime()
+        else
+            let offset = TimeSpan.FromMilliseconds(jsOffsetMilliseconds zoneId (float (instant.ToUnixTimeMilliseconds())))
+            DateTimeOffset(instant.UtcDateTime.Ticks + offset.Ticks, offset)
+#else
+        let zone =
+            if String.Equals(zoneId, "UTC", StringComparison.OrdinalIgnoreCase) then System.TimeZoneInfo.Utc
+            else System.TimeZoneInfo.FindSystemTimeZoneById zoneId
+
+        System.TimeZoneInfo.ConvertTime(instant, zone)
 #endif

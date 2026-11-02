@@ -1,6 +1,5 @@
-namespace Axial.Layers
+namespace Axial
 
-open Axial
 
 /// <summary>
 /// Computation expression builder for composing service layers.

@@ -20,11 +20,18 @@ module TortureCoverageTests =
           "Axial.CacheModule"; "Axial.FlowStreamModule"; "Axial.ScheduleModule"; "Axial.RetryModule"
           "Axial.ParallelismModule"; "Axial.ResourceModule"; "Axial.Exit"; "Axial.Cause"; "Axial.PolicyModule"
           "Axial.FiberObserverModule"; "Axial.FiberDumpModule"; "Axial.BindModule"; "Axial.ColdTaskModule"
-          "Axial.Layers.LayerModule"; "Axial.Process.ProcessStream" ]
+          "Axial.LayerModule"; "Axial.Process.ProcessStream" ]
 
     /// Members deliberately left out, each with the reason.
     let private excluded () : Map<string, string> =
-        [ "Deferred.fromTask", "BCL interop bridge, covered by BclInteropTests."
+        [ "Flow.withRandom", "Runtime service override; fork/branch inheritance is covered by PlatformScopeTests (C1 torture waiver)."
+          "Flow.withGuid", "Runtime service override; fork/branch inheritance is covered by PlatformScopeTests (C1 torture waiver)."
+          "Flow.mapLogSink", "Observation decorator; scoped composition is covered by PlatformScopeTests (C1 torture waiver)."
+          "Flow.withTelemetry", "Observation slots; replacement and guarded callbacks are covered by PlatformScopeTests (C1 torture waiver)."
+          "Bind.toFlow", "Compiler-facing helper used by the inline Bind adapters."
+          "Flow.fromColdTask", "Compiler-facing helper used by the inline Source adapter."
+          "Flow.fromColdTaskResult", "Compiler-facing helper; also resolves nested Result overload ambiguity."
+          "Deferred.fromTask", "BCL interop bridge, covered by BclInteropTests."
           "Deferred.toTask", "BCL interop bridge, covered by BclInteropTests." ]
         |> Map.ofList
 
@@ -48,7 +55,7 @@ module TortureCoverageTests =
 
     /// Every public member of the covered modules, as the source spells it: "Queue.offer", "Flow.(>>=)".
     let private publicMembers () : string list =
-        let assemblies = [ typeof<Axial.Never>.Assembly; typeof<Axial.Layers.Pool<int>>.Assembly; typeof<Axial.Process.ProcessSpec>.Assembly ]
+        let assemblies = [ typeof<Axial.Never>.Assembly; typeof<Axial.Pool<int>>.Assembly; typeof<Axial.Process.ProcessSpec>.Assembly ]
 
         [ for assembly in assemblies do
               for moduleType in assembly.GetExportedTypes() do

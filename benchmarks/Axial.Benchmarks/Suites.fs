@@ -1,9 +1,94 @@
 namespace Axial.Benchmarks
 
+open System
 open System.Threading
+open System.Threading.Tasks
 open BenchmarkDotNet.Attributes
 open BenchmarkDotNet.Order
 open Axial
+open Axial.Console
+open Axial.FileSystem
+open Axial
+open Axial.Process
+open Axial.Process.DSL
+
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(3)>]
+[<IterationCount(3)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
+type PlatformReadBenchmarks() =
+    let environment = ()
+    let clock = ManualClock(DateTimeOffset.UnixEpoch)
+    let completed : Flow<unit, string, int> = Flow.ok 1
+
+    [<Benchmark>]
+    member _.TimeoutX1000() =
+        for _ in 1 .. 1000 do
+            completed |> Flow.timeout (TimeSpan.FromSeconds 1.) "timed out" |> fun workflow -> workflow.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.ClockNowX1000() =
+        let workflow = flow {
+            for _ in 1 .. 1000 do
+                let! _ = Clock.now
+                ()
+        }
+        (workflow |> Flow.withClock clock).RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.RetrySuccessX1000() =
+        for _ in 1 .. 1000 do
+            completed |> Flow.retry (Schedule.recurs 3) |> fun workflow -> workflow.RunSynchronously(environment) |> ignore
+
+// T28: foldCause and mapBoth observe a thrown source; the non-throwing paths must stay as cheap as before.
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(3)>]
+[<IterationCount(3)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
+type FoldCauseBenchmarks() =
+    let environment = ()
+    let completed : Flow<unit, string, int> = Flow.ok 1
+    let failed : Flow<unit, string, int> = Flow.fail "failed"
+    let hop : Flow<unit, string, int> =
+        Flow.fromTask (fun _ ->
+            task {
+                do! Task.Yield()
+                return 1
+            })
+    let onSuccess (value: int) : Flow<unit, string, int> = Flow.ok (value + 1)
+    let onFailure (_: Cause<string>) : Flow<unit, string, int> = Flow.ok 0
+    let successX1000 = flow { for _ in 1 .. 1000 do let! _ = completed |> Flow.foldCause onSuccess onFailure in () }
+    let failureX1000 = flow { for _ in 1 .. 1000 do let! _ = failed |> Flow.foldCause onSuccess onFailure in () }
+    let mapBothX1000 = flow { for _ in 1 .. 1000 do let! _ = completed |> Flow.mapBoth id id in () }
+    let asyncX100 = flow { for _ in 1 .. 100 do let! _ = hop |> Flow.foldCause onSuccess onFailure in () }
+    let noop =
+        { new IDisposable with
+            member _.Dispose() = () }
+    // The builder `use` case goes through TryFinally; the completed body should not build a state machine.
+    let useInLoopX1000 =
+        flow {
+            for _ in 1 .. 1000 do
+                use _lease = noop
+                let! _ = completed
+                ()
+        }
+
+    [<Benchmark>]
+    member _.FoldCauseSuccessX1000() = successX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.FoldCauseFailureX1000() = failureX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.MapBothSuccessX1000() = mapBothX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.FoldCauseAsyncX100() = asyncX100.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.UseInLoopX1000() = useInLoopX1000.RunSynchronously(environment) |> ignore
 
 [<MemoryDiagnoser>]
 [<InProcess>]
@@ -23,12 +108,14 @@ type ReaderOverheadBenchmarks() =
     [<Benchmark(Description = "Manual env passing x10")>]
     member _.ManualEnvPassingX10() =
         manualLocalEnv 0 Shared.noCancellation
+        // benchmark measurement requires a synchronous host boundary.
         |> fun operation -> operation.GetAwaiter().GetResult()
         |> Shared.consumeResult
 
     [<Benchmark(Description = "AsyncLocal updates x10")>]
     member _.AsyncLocalUpdatesX10() =
         asyncLocalReader 0 Shared.noCancellation
+        // benchmark measurement requires a synchronous host boundary.
         |> fun operation -> operation.GetAwaiter().GetResult()
         |> Shared.consumeResult
 
@@ -220,7 +307,7 @@ type SynchronousCompletionBenchmarks() =
     [<Benchmark(Description = "Candidate ValueTaskFlow")>]
     member _.CandidateValueTaskFlow() =
         valueTaskFlow
-        |> CandidateValueTaskFlow.run 0 CancellationToken.None
+        |> CandidateValueTaskFlow.run 0 Platform.Cancellation.never
         |> fun operation -> operation.GetAwaiter().GetResult()
         |> Shared.consumeValueTaskResult
 
@@ -291,6 +378,152 @@ type ParallelCompositionBenchmarks() =
     [<Benchmark(Description = "race x1000")>]
     member _.Race() =
         races.RunSynchronously(()) |> Shared.consumeExit
+
+/// Eight CPU-bound slices, comparing inline composition with the explicit scheduling choices.
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(2)>]
+[<IterationCount(3)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
+type RunOnCpuBenchmarks() =
+    let sliceCount = 8
+    let iterations = 2_000_000
+
+    let work seed =
+        let mutable value = seed
+        for index in 1..iterations do
+            value <- (value + index) % 1_000_003
+        value
+
+    let environment = ()
+
+    let branches () : Flow<unit, string, int> list =
+        [ for seed in 1..sliceCount -> Flow.delay (fun () -> Flow.ok (work seed)) ]
+
+    let run source = source |> Flow.map List.sum |> fun current -> current.RunSynchronously(environment) |> Shared.consumeExit
+
+    [<Benchmark(Baseline = true, Description = "sequencePar CPU x8, inline")>]
+    member _.SequenceParInline() = branches () |> Flow.sequencePar |> run
+
+    [<Benchmark(Description = "sequencePar CPU x8, runOn ThreadPool")>]
+    member _.SequenceParThreadPool() = branches () |> List.map (Flow.runOn RunOn.ThreadPool) |> Flow.sequencePar |> run
+
+    [<Benchmark(Description = "Flow.fork/join CPU x8")>]
+    member _.ForkJoin() =
+        flow {
+            let! fibers = branches () |> List.map Flow.fork |> Flow.sequence
+            let! values = fibers |> List.map Fiber.join |> Flow.sequence
+            return List.sum values
+        }
+        |> fun source -> source.RunSynchronously(environment)
+        |> Shared.consumeExit
+
+    [<Benchmark(Description = "Task.Run/WhenAll CPU x8")>]
+    member _.TaskRunWhenAll() =
+        [| for seed in 1..sliceCount -> Task.Run(fun () -> work seed) |]
+        |> Task.WhenAll
+        |> fun pending -> pending.GetAwaiter().GetResult()
+        |> Array.sum
+
+/// Bounded traversal worker placement: completed and yielding I/O-sized operations plus synchronous CPU work.
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(3)>]
+[<IterationCount(5)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
+type BoundedTraversalBenchmarks() =
+    let ten = [ 1..10 ]
+    let eight = [ 1..8 ]
+    let inlinePolicy = Parallelism.bounded 4
+    let threadPoolPolicy = inlinePolicy |> Parallelism.runOn RunOn.ThreadPool
+    let adaptivePolicy = Parallelism.adaptive 4
+
+    let consumeUnit (exit: Exit<unit, string>) =
+        match exit with
+        | Exit.Success() -> 1
+        | Exit.Failure _ -> -1
+
+    let completed value : Flow<unit, string, int> = Flow.ok (value + 1)
+    let completedUnit _ : Flow<unit, string, unit> = Flow.ok ()
+
+    let yielding value : Flow<unit, string, int> =
+        Flow.fromTask (fun _ ->
+            task {
+                do! Task.Yield()
+                return value + 1
+            })
+
+    let yieldingUnit _ : Flow<unit, string, unit> =
+        Flow.fromTask (fun _ ->
+            task {
+                do! Task.Yield()
+            })
+
+    let cpu value =
+        Flow.delay (fun () ->
+            let mutable result = value
+            for index in 1..350_000 do
+                result <- (result + index) % 1_000_003
+            Flow.ok result)
+
+    let run policy values mapping =
+        values |> Flow.traversePar policy mapping |> Flow.map List.sum |> fun source -> source.RunSynchronously(()) |> Shared.consumeExit
+
+    [<Benchmark(Baseline = true, Description = "traversePar cheap x10, Inline")>]
+    member _.CheapInline() = run inlinePolicy ten completed
+    [<Benchmark(Description = "traversePar cheap x10, ThreadPool")>]
+    member _.CheapThreadPool() = run threadPoolPolicy ten completed
+    [<Benchmark(Description = "traversePar cheap x10, adaptive")>]
+    member _.CheapAdaptive() = run adaptivePolicy ten completed
+
+    [<Benchmark(Description = "traversePar waiting x10, Inline")>]
+    member _.WaitingInline() = run inlinePolicy ten yielding
+    [<Benchmark(Description = "traversePar waiting x10, ThreadPool")>]
+    member _.WaitingThreadPool() = run threadPoolPolicy ten yielding
+    [<Benchmark(Description = "traversePar waiting x10, adaptive")>]
+    member _.WaitingAdaptive() = run adaptivePolicy ten yielding
+
+    [<Benchmark(Description = "traversePar CPU x8, Inline")>]
+    member _.CpuInline() = run inlinePolicy eight cpu
+    [<Benchmark(Description = "traversePar CPU x8, ThreadPool")>]
+    member _.CpuThreadPool() = run threadPoolPolicy eight cpu
+    [<Benchmark(Description = "traversePar CPU x8, adaptive")>]
+    member _.CpuAdaptive() = run adaptivePolicy eight cpu
+
+/// Scheduling overhead on a trivial successful operation.
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(3)>]
+[<IterationCount(5)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
+type RunOnOverheadBenchmarks() =
+    let environment = ()
+    let trivial : Flow<unit, string, int> = Flow.ok 1
+    let onPool = trivial |> Flow.runOn RunOn.ThreadPool
+    let adaptiveInline =
+        trivial
+        |> Flow.runOn (RunOn.adaptiveWith { Threshold = TimeSpan.MaxValue; Samples = 1 })
+    let forkJoin : Flow<unit, string, int> =
+        flow {
+            let! fiber = Flow.fork trivial
+            return! Fiber.join fiber
+        }
+
+    [<Benchmark(Baseline = true, Description = "plain trivial Flow")>]
+    member _.PlainFlow() = trivial.RunSynchronously(environment) |> Shared.consumeExit
+
+    [<Benchmark(Description = "runOn ThreadPool, trivial Flow")>]
+    member _.RunOnThreadPool() = onPool.RunSynchronously(environment) |> Shared.consumeExit
+
+    [<Benchmark(Description = "runOn adaptive decided Inline, trivial Flow")>]
+    member _.RunOnAdaptiveInline() = adaptiveInline.RunSynchronously(environment) |> Shared.consumeExit
+
+    [<Benchmark(Description = "Flow.fork/join, trivial Flow")>]
+    member _.ForkJoin() = forkJoin.RunSynchronously(environment) |> Shared.consumeExit
+
+    [<Benchmark(Description = "Task.Run, trivial function")>]
+    member _.TaskRun() =
+        Task.Run(fun () -> 1).GetAwaiter().GetResult()
 
 /// The cost of closing a scope: an empty scope (the allocation-free fast path in the runtime) and scopes that release
 /// registered resources.
@@ -442,6 +675,7 @@ type InteropCompletionBenchmarks() =
                     let! next = this.Step value
                     return! consume (remaining - 1) next
             }
+        // benchmark measurement requires a synchronous host boundary.
         consume 20 0 |> fun pending -> pending.GetAwaiter().GetResult() |> Shared.consumeResult
 
     [<Benchmark(Description = "Async<Result> x20")>]
@@ -453,6 +687,7 @@ type InteropCompletionBenchmarks() =
                     let! next = this.AsyncStep value
                     return! consume (remaining - 1) next
             }
+        // benchmark measurement requires a synchronous host boundary.
         consume 20 0 |> Async.RunSynchronously |> Shared.consumeResult
 
     [<Benchmark(Description = "Flow Task interop x20")>]
@@ -488,12 +723,75 @@ type InteropCompletionBenchmarks() =
             }
         (consume 20 0).RunSynchronously(()) |> Shared.consumeExit
 
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(3)>]
+[<IterationCount(3)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
+type ProcessExecutionBenchmarks() =
+    let environment =
+        { new IHasProcess with
+            member _.Process = Process.live FileSystem.live Console.live }
+
+    let start workflow = Flow.startTask environment workflow
+
+    let trueWorkflow = cmd $"true" |> Process.toFlow
+
+    let capture50MbWorkflow =
+        shText "head -c 52428800 /dev/zero"
+        |> Process.captureAll
+        |> Process.toFlow
+
+    let threeStagesWorkflow =
+        (shText "printf axial") => (cmd $"cat") => (cmd $"cat")
+        |> Process.toFlow
+
+    [<Benchmark(Baseline = true, Description = "Raw Process true start to exit")>]
+    member _.RawTrueStartToExit() =
+        task {
+            use child = new System.Diagnostics.Process()
+            child.StartInfo.FileName <- "true"
+            child.StartInfo.UseShellExecute <- false
+            if not (child.Start()) then failwith "Could not start true."
+            do! child.WaitForExitAsync()
+            return child.ExitCode
+        }
+
+    [<Benchmark(Description = "Raw redirected Process true")>]
+    member _.RawRedirectedTrue() =
+        task {
+            use child = new System.Diagnostics.Process()
+            child.StartInfo.FileName <- "true"
+            child.StartInfo.UseShellExecute <- false
+            child.StartInfo.RedirectStandardInput <- true
+            child.StartInfo.RedirectStandardOutput <- true
+            child.StartInfo.RedirectStandardError <- true
+            if not (child.Start()) then failwith "Could not start true."
+            child.StandardInput.Close()
+            let stdout = child.StandardOutput.ReadToEndAsync()
+            let stderr = child.StandardError.ReadToEndAsync()
+            do! child.WaitForExitAsync()
+            let! _ = stdout
+            let! _ = stderr
+            return child.ExitCode
+        }
+
+    [<Benchmark(Description = "Axial Process true start to exit")>]
+    member _.TrueStartToExit() = start trueWorkflow
+
+    [<Benchmark(Description = "Process capture 50 MB")>]
+    member _.Capture50Mb() = start capture50MbWorkflow
+
+    [<Benchmark(Description = "Process pipeline, three stages")>]
+    member _.ThreeStagePipeline() = start threeStagesWorkflow
+
 /// Left-nested chains can cross the runtime's stack-guard boundary; measure both sides instead of inferring a
 /// constant per-bind cost from a single depth. Direct Task recursion supplies a control with the same arithmetic.
 [<MemoryDiagnoser>]
 [<InProcess>]
 [<WarmupCount(3)>]
 [<IterationCount(5)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
 type CompositionDepthBenchmarks() =
     let mutable workflow : Flow<int, string, int> = Flow.ok 0
     let mutable direct = Shared.buildDirectTaskResultBindChain 20 None

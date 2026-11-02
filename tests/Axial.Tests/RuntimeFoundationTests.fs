@@ -4,8 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
-open Axial.PlatformService
+open Axial
 open Swensen.Unquote
 open Xunit
 
@@ -138,11 +137,12 @@ module RuntimeFoundationTests =
         test <@ List.ofSeq calls = [ "left"; "right" ] @>
 
     [<Fact>]
-    let ``layer zipPar starts independent branches and cleans child scopes left then right`` () =
+    let ``layer zipPar starts independent branches and releases in reverse acquisition order`` () =
         let calls = ResizeArray<string>()
         let mutable started = 0
         let bothStarted = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let leftAcquired = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
         let makeLayer name value =
 
@@ -160,7 +160,10 @@ module RuntimeFoundationTests =
                                 do! release.Task
                             })
 
+                    if name = "right" then
+                        do! Flow.fromTask (fun _ -> leftAcquired.Task)
                     do! Flow.scopeFinalizer (Flow.delay (fun () -> calls.Add($"{name}-cleanup"); Flow.succeed ()))
+                    if name = "left" then leftAcquired.SetResult ()
                     return value
                 }
             )
@@ -182,7 +185,7 @@ module RuntimeFoundationTests =
 
         test <@ result = Exit.Success (1, 2) @>
         test <@ starts = Set.ofList [ "left-start"; "right-start" ] @>
-        test <@ cleanups = [ "left-cleanup"; "right-cleanup" ] @>
+        test <@ cleanups = [ "right-cleanup"; "left-cleanup" ] @>
 
     [<Fact>]
     let ``layer merge has zipPar semantics`` () =
@@ -385,71 +388,30 @@ module RuntimeFoundationTests =
         test <@ starts = Set.ofList [ "left-start"; "middle-start"; "right-start" ] @>
 
     [<Fact>]
-    let ``base runtime layer provisions explicit services from IServiceProvider`` () =
+    let ``platform services install explicitly at the host boundary`` () =
         let clock = Clock.fromValue (DateTimeOffset(2026, 5, 15, 10, 0, 0, TimeSpan.Zero))
-        let logMessages = ResizeArray<LogLevel * string>()
-        let logger =
-            Log.fromSink (fun level message -> logMessages.Add(level, message))
-        let random = Random.fromValue 42
-        let guid = Guid.fromValue (Guid.Parse "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
-        let envVars = EnvironmentVariables.fromPairs [ "AXIAL_TEST", "value" ]
-
-        let provider =
-            { new IServiceProvider with
-                member _.GetService(serviceType) =
-                    if serviceType = typeof<IClock> then clock :> obj
-                    elif serviceType = typeof<ILog> then logger :> obj
-                    elif serviceType = typeof<IRandom> then random :> obj
-                    elif serviceType = typeof<IGuid> then guid :> obj
-                    elif serviceType = typeof<IEnvironmentVariables> then envVars :> obj
-                    else null }
-
-        let workflow : Flow<BaseRuntime, BaseRuntimeError, string> =
-            flow {
-                let! now = Clock.now<BaseRuntime, BaseRuntimeError>
-                let formattedNow = now.ToString("HH:mm")
-                do! Log.info<BaseRuntime, BaseRuntimeError> $"now={formattedNow}"
-                let! next = Random.nextInt<BaseRuntime, BaseRuntimeError> 1 10
-                let! id = Guid.newGuid<BaseRuntime, BaseRuntimeError>
-                let! value = EnvironmentVariables.tryGet<BaseRuntime, BaseRuntimeError> "AXIAL_TEST"
-                let envValue = defaultArg value "<missing>"
-                return $"{next}:{id}:{envValue}"
-            }
-
-        let result =
-            workflow
-            |> Layer.provide BaseRuntime.fromServiceProvider
-            |> Flow.runSync provider
-
-        test <@ result = Exit.Success "42:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa:value" @>
-        test <@ List.ofSeq logMessages = [ LogLevel.Information, "now=10:00" ] @>
+        let entries = Log.memory ()
+        let workflow = flow {
+            let! now = Clock.now
+            do! Log.info ("now=" + now.ToString("HH:mm"))
+            let! number = Random.nextInt 1 10
+            let! id = Guid.newGuid
+            return number, id
+        }
+        let id = System.Guid.Parse "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        let result = workflow |> Flow.withClock clock |> Flow.withLogSink entries
+                              |> Flow.withRandom (Random.fromValue 42) |> Flow.withGuid (Guid.fromValue id)
+                              |> Flow.runSync ()
+        test <@ result = Exit.Success(42, id) @>
+        test <@ entries.Entries |> Seq.map _.Message |> Seq.toList = ["now=10:00"] @>
 
     [<Fact>]
-    let ``base runtime layer reports missing provider services as typed failures`` () =
-        let provider =
-            { new IServiceProvider with
-                member _.GetService(serviceType) =
-                    if serviceType = typeof<IClock> then Clock.live :> obj else null }
-
-        let result =
-            Flow.env<BaseRuntime, BaseRuntimeError>
-            |> Layer.provide BaseRuntime.fromServiceProvider
-            |> Flow.runSync provider
-
-        test <@ result = Exit.Failure (Cause.Fail (BaseRuntimeError.MissingService "ILog")) @>
+    let ``missing platform registrations need no service provider`` () =
+        let provider = { new IServiceProvider with member _.GetService _ = failwith "must not consult provider" }
+        let result = Clock.now |> Flow.withClock (Clock.fromValue DateTimeOffset.UnixEpoch) |> Flow.runSync provider
+        test <@ result = Exit.Success DateTimeOffset.UnixEpoch @>
 
     [<Fact>]
-    let ``base runtime remains a record of explicit services`` () =
-        let runtime =
-            { Clock = Clock.fromValue (DateTimeOffset(2026, 5, 15, 11, 0, 0, TimeSpan.Zero))
-              Log = Log.live
-              Random = Random.fromValue 7
-              Guid = Guid.fromValue (Guid.Parse "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
-              EnvironmentVariables = EnvironmentVariables.fromPairs [ "AXIAL_RUNTIME", "ok" ] }
-
-        test <@ runtime.Clock.UtcNow() = DateTimeOffset(2026, 5, 15, 11, 0, 0, TimeSpan.Zero) @>
-        test <@ runtime.Random.Next() = 7 @>
-        test <@ runtime.Random.NextMax 10 = 7 @>
-        test <@ runtime.Random.NextInt 0 10 = 7 @>
-        test <@ runtime.Guid.NewGuid() = Guid.Parse "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" @>
-        test <@ runtime.EnvironmentVariables.TryGet "AXIAL_RUNTIME" = Some "ok" @>
+    let ``platform scopes do not replace application environment values`` () =
+        let result = Flow.env<string, Never> |> Flow.withRandom (Random.fromValue 7) |> Flow.runSync "application"
+        test <@ result = Exit.Success "application" @>

@@ -22,7 +22,7 @@ module internal Shared =
     [<Literal>]
     let CancellationCheckpoints = 5
 
-    let noCancellation = CancellationToken.None
+    let noCancellation = Platform.Cancellation.never
 
     let consumeResult (result: Result<int, string>) =
         match result with
@@ -52,16 +52,19 @@ module internal Shared =
 
     let runTaskResult (workflow: unit -> Task<Result<int, string>>) =
         workflow ()
+        // benchmark measurement requires a synchronous host boundary.
         |> fun operation -> operation.GetAwaiter().GetResult()
         |> consumeResult
 
     let runAsyncResult (workflow: unit -> Async<Result<int, string>>) =
         workflow ()
+        // benchmark measurement requires a synchronous host boundary.
         |> Async.RunSynchronously
         |> consumeResult
 
     let runTask (workflow: unit -> Task<int>) =
         workflow ()
+        // benchmark measurement requires a synchronous host boundary.
         |> fun operation -> operation.GetAwaiter().GetResult()
 
     let runValueTask (workflow: unit -> ValueTask<int>) =
@@ -75,11 +78,13 @@ module internal Shared =
 
     let runCancellableTaskResult (workflow: CancellationToken -> Task<Result<int, string>>) =
         workflow noCancellation
+        // benchmark measurement requires a synchronous host boundary.
         |> fun operation -> operation.GetAwaiter().GetResult()
         |> consumeResult
 
     let runCancellableTask (workflow: CancellationToken -> Task<int>) =
         workflow noCancellation
+        // benchmark measurement requires a synchronous host boundary.
         |> fun operation -> operation.GetAwaiter().GetResult()
 
     let buildFlowBindChain (depth: int) =

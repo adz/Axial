@@ -4,7 +4,6 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Swensen.Unquote
 open Xunit
 
@@ -65,6 +64,29 @@ module RuntimeSemanticsTests =
         test <@ result = Exit.Failure(Cause.Both(Cause.Fail "left", Cause.Fail "right")) @>
 
     [<Fact>]
+    let ``Layer zipPar interrupts and releases both branches in reverse acquisition order`` () =
+        let released = ResizeArray<int>()
+        let ready = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let acquire n =
+            Flow.scopeAcquireRelease (Flow.succeed n) (fun value -> Flow.delay (fun () -> released.Add value; Flow.succeed ()))
+        let left = Layer.fromFlow (flow {
+            let! _ = acquire 1
+            do! Flow.fromTask (fun _ -> ready.Task)
+            return! Flow.fail "failed"
+        })
+        let right = Layer.fromFlow (flow {
+            let! _ = acquire 2
+            ready.SetResult ()
+            return! Flow.never
+        })
+        let result =
+            Flow.env<int * int, string>
+            |> Layer.provide (Layer.zipPar left right)
+            |> Flow.runSync ()
+        test <@ result = Exit.Failure(Cause.Fail "failed") @>
+        test <@ Seq.toList released = [2; 1] @>
+
+    [<Fact>]
     let ``Flow scoped resource sequences use failure before release defect`` () =
         let releaseDefect = InvalidOperationException "release failed"
 
@@ -75,7 +97,7 @@ module RuntimeSemanticsTests =
             |> Flow.bind (fun _ -> Flow.fail "use failed")
             |> Flow.scoped
 
-        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
+        let result = Flow.runSync () workflow
 
         test <@ result = Exit.Failure(Cause.Then(Cause.Fail "use failed", Cause.Die releaseDefect)) @>
 
@@ -89,28 +111,30 @@ module RuntimeSemanticsTests =
                 return! Flow.fail "workflow failed"
             }
 
-        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
+        let result = Flow.runSync () workflow
 
         test <@ result = Exit.Failure(Cause.Then(Cause.Fail "workflow failed", Cause.Die finalizerDefect)) @>
 
     [<Fact>]
     let ``Fiber metadata records identity parent and lifecycle status`` () =
+        let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let workflow =
             flow {
                 let! fiber =
                     flow {
-                        do! Flow.sleep (TimeSpan.FromMilliseconds 20.0)
+                        do! Flow.fromTask (fun _ -> release.Task)
                         return 42
                     }
                     |> Flow.fork
 
                 let initial = Fiber.dump fiber
+                release.SetResult(())
                 let! value = Fiber.join fiber
                 let completed = Fiber.dump fiber
                 return initial, completed, value
             }
 
-        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
+        let result = Flow.runSync () workflow
 
         match result with
         | Exit.Success(initial, completed, value) ->
@@ -138,7 +162,7 @@ module RuntimeSemanticsTests =
                 return Fiber.dump fiber, interrupted
             }
 
-        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
+        let result = Flow.runSync () workflow
 
         match result with
         | Exit.Success(dump, Exit.Failure Cause.Interrupt) ->
@@ -156,14 +180,14 @@ module RuntimeSemanticsTests =
 
                 let! joined =
                     Fiber.join fiber
-                    |> Flow.fold
+                    |> Flow.foldCause
                         (Exit.Success >> Flow.succeed)
                         (Exit.Failure >> Flow.succeed)
 
                 return Fiber.dump fiber, joined
             }
 
-        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
+        let result = Flow.runSync () workflow
 
         match result with
         | Exit.Success(dump, Exit.Failure(Cause.Die error)) ->
@@ -195,7 +219,7 @@ module RuntimeSemanticsTests =
                 return childDump, grandchildDump, value
             }
 
-        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
+        let result = Flow.runSync () workflow
 
         match result with
         | Exit.Success(childDump, grandchildDump, value) ->
@@ -220,14 +244,14 @@ module RuntimeSemanticsTests =
 
                 let! joined =
                     Fiber.join fiber
-                    |> Flow.fold
+                    |> Flow.foldCause
                         (Exit.Success >> Flow.succeed)
                         (Exit.Failure >> Flow.succeed)
 
                 return interrupted, joined, Fiber.dump fiber
             }
 
-        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
+        let result = Flow.runSync () workflow
 
         match result with
         | Exit.Success(Exit.Failure Cause.Interrupt, Exit.Failure Cause.Interrupt, dump) ->
@@ -240,7 +264,7 @@ module RuntimeSemanticsTests =
         use cts = new CancellationTokenSource()
         let mutable capturedFiber : Fiber<string, int> option = None
 
-        let workflow : Flow<ClockEnvironment, string, unit> =
+        let workflow : Flow<unit, string, unit> =
             flow {
                 let! fiber =
                     flow {
@@ -254,7 +278,7 @@ module RuntimeSemanticsTests =
             }
 
         cts.CancelAfter(TimeSpan.FromMilliseconds 50.0)
-        let result = Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token workflow
+        let result = Flow.runSyncWithToken () cts.Token workflow
 
         match result, capturedFiber with
         | Exit.Failure Cause.Interrupt, Some fiber ->
@@ -269,7 +293,7 @@ module RuntimeSemanticsTests =
         use cts = new CancellationTokenSource()
         let calls = ResizeArray<string>()
 
-        let workflow : Flow<ClockEnvironment, string, unit> =
+        let workflow : Flow<unit, string, unit> =
             flow {
                 do!
                     Flow.scopeFinalizer (
@@ -287,7 +311,7 @@ module RuntimeSemanticsTests =
             }
 
         cts.CancelAfter(TimeSpan.FromMilliseconds 50.0)
-        let result = Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token workflow
+        let result = Flow.runSyncWithToken () cts.Token workflow
 
         test <@ result = Exit.Failure Cause.Interrupt @>
         // Releases run in reverse order and are not interrupted by the cancellation that closed the scope.
@@ -298,14 +322,14 @@ module RuntimeSemanticsTests =
         use cts = new CancellationTokenSource()
         let finalizerDefect = InvalidOperationException "cleanup failed"
 
-        let workflow : Flow<ClockEnvironment, string, unit> =
+        let workflow : Flow<unit, string, unit> =
             flow {
                 do! Flow.scopeFinalizer (Flow.die finalizerDefect)
                 do! Flow.sleep (TimeSpan.FromSeconds 5.0)
             }
 
         cts.CancelAfter(TimeSpan.FromMilliseconds 50.0)
-        let result = Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token workflow
+        let result = Flow.runSyncWithToken () cts.Token workflow
 
         test <@ result = Exit.Failure(Cause.Then(Cause.Interrupt, Cause.Die finalizerDefect)) @>
 
@@ -417,3 +441,46 @@ module RuntimeSemanticsTests =
                     test <@ exit = expected @>
                     test <@ closed = 1 @>
         }
+
+    // T28b: an OperationCanceledException the runtime did not ask for is a defect at every boundary, not an
+    // interruption nobody requested; foldCause already classifies it so, and the root, fork, retry and Layer.zipPar
+    // boundaries now agree. Each case throws it synchronously and after an await.
+    let private foreignCancellation () = OperationCanceledException "foreign"
+
+    let private throwsForeign (afterAwait: bool) (error: exn) : Flow<unit, string, int> =
+        if afterAwait then
+            Flow.fromTask (fun _ -> task { do! Task.Yield() })
+            |> Flow.bind (fun () -> Flow.delay (fun () -> raise error))
+        else
+            Flow.delay (fun () -> raise error)
+
+    let private boundaries (afterAwait: bool) (error: exn) : (string * Flow<unit, string, int>) list =
+        [ "root", throwsForeign afterAwait error
+          "foldCause",
+          throwsForeign afterAwait error |> Flow.foldCause Flow.ok (fun cause -> Flow.ofExit (Exit.Failure cause))
+          "fork",
+          flow {
+              let! fiber = Flow.fork (throwsForeign afterAwait error)
+              return! Fiber.join fiber
+          }
+          "retry", throwsForeign afterAwait error |> Flow.retry (Schedule.recurs 2)
+          "Layer.zipPar",
+          Flow.env<int * int, string>
+          |> Layer.provide (Layer.zipPar (Layer.fromFlow (throwsForeign afterAwait error)) (Layer.fromFlow (Flow.ok 2)))
+          |> Flow.map fst ]
+
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
+    let ``a foreign OperationCanceledException is a defect at every boundary`` (afterAwait: bool) =
+        let error = foreignCancellation ()
+
+        let outcomes =
+            boundaries afterAwait error
+            |> List.map (fun (name, source) ->
+                let running = Task.Run(fun () -> Flow.runSync () source)
+                Assert.True(running.Wait(TimeSpan.FromSeconds 10.0), $"{name} did not settle.")
+                name, running.Result)
+
+        let expected = boundaries afterAwait error |> List.map (fun (name, _) -> name, Exit.Failure(Cause.Die error))
+        test <@ outcomes = expected @>

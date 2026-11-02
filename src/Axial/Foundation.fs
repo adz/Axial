@@ -55,6 +55,9 @@ module internal Execution =
         : Execution<'next, 'nextError> =
         Platform.mapBoth onSuccess onFailure effect
 
+    // For exceptions observed where no run's token is in scope (finalizer and cleanup errors). Where a token is
+    // in scope use Platform.causeOfThrown, which counts an OperationCanceledException as an interruption only when
+    // that token asked for it.
     let causeOfException (exn: exn) : Cause<'error> =
         if exn :? OperationCanceledException then
             Cause.Interrupt
