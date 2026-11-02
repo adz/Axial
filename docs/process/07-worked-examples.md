@@ -21,7 +21,7 @@ open System.Threading.Tasks
 open Axial
 open Axial.Console
 open Axial.FileSystem
-open Axial.PlatformService
+open Axial
 open Axial.Process
 open Axial.Process.DSL
 

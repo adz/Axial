@@ -10,7 +10,7 @@ open System.Text
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.PlatformService
+open Axial
 open Axial.Console
 open Axial.FileSystem
 
@@ -18,7 +18,6 @@ open Axial.FileSystem
 type ProcessHostEnvironment = {
     Process: IProcess
     Console: IConsole
-    Clock: IClock
 } with
 
     interface IHasProcess with
@@ -27,14 +26,10 @@ type ProcessHostEnvironment = {
     interface IHasConsole with
         member this.Console = this.Console
 
-    interface IHasClock with
-        member this.Clock = this.Clock
-
 type TestProcessHostEnvironment = {
     Environment: ProcessHostEnvironment
     Process: TestProcess
     Console: TestConsole
-    Clock: ManualClock
 }
 #endif
 
@@ -47,6 +42,9 @@ type ProcessRunException<'error>(cause: Cause<'error>) =
 
 [<RequireQualifiedAccess>]
 module Process =
+    let internal classifyDeadlineWaitFailure (token: CancellationToken) (error: exn) : Cause<ProcessError> =
+        if ForeignCancellation.isOurs token error then Cause.Interrupt else Cause.Die error
+
     [<EditorBrowsable(EditorBrowsableState.Never)>]
     let inline toSpecification (source: ^source) : ProcessSpec =
         ((^source or ProcessInput): (static member ToSpecification: ^source -> ProcessSpec) source)
@@ -62,9 +60,13 @@ module Process =
         if isNull value then
             ""
         else
+#if FABLE_COMPILER
+            string value
+#else
             match value with
             | :? IFormattable as formattable -> formattable.ToString(format, CultureInfo.InvariantCulture)
             | _ -> string value
+#endif
 
     /// Creates a one-command process specification from an executable and already-separated arguments.
     /// Example: Process.commandArgs "git" [ "status"; "--short" ] |&gt; Process.toFlow
@@ -162,7 +164,11 @@ module Process =
                     else
                         descriptor.Substring(0, separator)
 
+#if FABLE_COMPILER
+                let valueIndex = Int32.Parse(indexText)
+#else
                 let valueIndex = Int32.Parse(indexText, CultureInfo.InvariantCulture)
+#endif
                 let colon = descriptor.IndexOf ':'
                 hole valueIndex (if colon < 0 then null else descriptor.Substring(colon + 1))
                 index <- closing + 1
@@ -395,6 +401,8 @@ module Process =
                 Defaults = Configuration.combine source.Defaults next.Defaults
                 OverallTimeout = next.OverallTimeout |> Option.orElse source.OverallTimeout
                 DrainTimeout = next.DrainTimeout |> Option.orElse source.DrainTimeout
+                OnStarted = next.OnStarted |> Option.orElse source.OnStarted
+                StopGracefully = if next.StopGracefully.IsEmpty then source.StopGracefully else next.StopGracefully
                 MergeStdErr = next.MergeStdErr
         }
         |> Configuration.validate
@@ -453,6 +461,45 @@ module Process =
     /// Bounds the topology from launch through drain and completion-aware consumer callbacks.
     let inline overallTimeout after source =
         ProcessInput.OverallTimeout(after, toSpecification source)
+
+    /// Invokes the handler once for every stage, immediately after it starts and before output is observed.
+    let inline onStarted (handler: ProcessStarted -> Flow<unit, Never, unit>) source =
+        let callback stage processId command startedAt close signal =
+            Flow.delay (fun () ->
+                let requestFlow send request =
+                    Flow.fromAsync (send request)
+                    |> Flow.bind (function
+                        | Ok () -> Flow.succeed ()
+                        | Error StopRequestError.Unsupported -> Flow.fail (ProcessError.StopUnsupported request)
+                        | Error (StopRequestError.Failed message) ->
+                            Flow.fail (ProcessError.StopFailed { Stage = stage; Request = request; Message = message }))
+
+                let started = {
+                    Stage = stage
+                    ProcessId = processId
+                    Command = command
+                    StartedAt = startedAt
+                    Close = requestFlow close
+                    Signal = requestFlow signal
+                }
+
+                handler started)
+
+        let observer =
+            { new IProcessStartedObserver with
+                member _.Invoke(stage, processId, command, startedAt, close, signal) =
+                    callback stage processId command startedAt close signal }
+
+        ProcessInput.OnStarted(observer, toSpecification source)
+
+    /// Sends each request to all live stages on Close, interruption or timeout, waiting its grace period before escalating.
+    /// A Close matching the first step reuses its initial delivery to that stage; the ladder runs once per execution.
+    /// ProcessStarted.Signal sends only one request and never starts this policy.
+    let inline stopGracefully (steps: (StopRequest * TimeSpan) list) source =
+        for _, grace in steps do
+            if grace < TimeSpan.Zero then invalidArg (nameof steps) "Grace periods cannot be negative."
+
+        ProcessInput.StopGracefully(steps, toSpecification source)
 
     /// Bounds remaining I/O and sink completion after every managed stage exits.
     let inline drainTimeout after source =
@@ -544,9 +591,9 @@ module Process =
         function
         | InputSource.Empty -> "empty"
         | InputSource.Inherit -> "inherited handle"
-        | InputSource.Text value -> $"text ({value.Length} characters)"
-        | InputSource.Bytes value -> $"bytes ({value.Length} bytes)"
-        | InputSource.File path -> $"file: {path}"
+        | InputSource.Text value -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "text ({0} characters)", value.Length))
+        | InputSource.Bytes value -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "bytes ({0} bytes)", value.Length))
+        | InputSource.File path -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "file: {0}", path))
         | InputSource.Stream _ -> "flow stream"
 
     let rec private describeTarget =
@@ -554,8 +601,8 @@ module Process =
         | OutputTarget.Console -> "console"
         | OutputTarget.Inherit -> "inherited handle"
         | OutputTarget.Discard -> "discard"
-        | OutputTarget.File path -> $"file: {path}"
-        | OutputTarget.AppendFile path -> $"append file: {path}"
+        | OutputTarget.File path -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "file: {0}", path))
+        | OutputTarget.AppendFile path -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "append file: {0}", path))
         | OutputTarget.Callback _ -> "callback"
         | OutputTarget.Sink _
         | OutputTarget.SinkFactory _ -> "sink"
@@ -700,9 +747,9 @@ module Process =
         let commands = String.concat " | " plan.Commands
 
         [
-            yield $"commands: {commands}"
+            yield (System.String.Format(Globalization.CultureInfo.InvariantCulture, "commands: {0}", commands))
             for stage in plan.Stages do
-                yield $"stage {stage.Stage}: in {stage.StdIn}, out {stage.StdOut}, err {stage.StdErr}"
+                yield (System.String.Format(Globalization.CultureInfo.InvariantCulture, "stage {0}: in {1}, out {2}, err {3}", stage.Stage, stage.StdIn, stage.StdOut, stage.StdErr))
         ]
 
     let service<'env, 'error when 'env :> IHasProcess> : Flow<'env, 'error, IProcess> =
@@ -731,7 +778,14 @@ module Process =
                 let! processes = service
 
                 return!
-                    processes.Execute(configured, fun _ -> async.Return())
+                    processes.Execute(
+                        configured,
+#if FABLE_COMPILER
+                        (fun _ -> async.Return())
+#else
+                        ProcessObserver.ignore
+#endif
+                    )
                     |> Flow.localEnv (fun _ -> ())
             })
 
@@ -739,7 +793,7 @@ module Process =
         toFlowSpecification (toSpecification source)
 
     [<EditorBrowsable(EditorBrowsableState.Never)>]
-    let createOutputStream<'env when 'env :> IHasProcess and 'env :> IHasClock>
+    let createOutputStream<'env when 'env :> IHasProcess>
         requestedChannel
         (specification: ProcessSpec)
         : ProcessStream<'env, ProcessOutput> =
@@ -830,7 +884,7 @@ module Process =
                                         )
                                         |> Flow.localEnv (fun (_: 'env) -> ())
                                 }
-                                |> Flow.fold (Exit.Success >> publish) (fun cause ->
+                                |> Flow.foldCause (Exit.Success >> publish) (fun cause ->
                                     match Cause.untraced cause with
                                     | Cause.Interrupt -> ()
                                     | _ -> pendingFailure <- Some cause
@@ -882,9 +936,14 @@ module Process =
             let guard =
                 flow {
                     let! token = Flow.cancellationToken
-                    let! cause = deadline.Wait token
-                    pendingFailure <- None
-                    return! Flow.ofExit (Exit.Failure cause)
+                    let! outcome = deadline.Wait token |> Async.Catch |> Flow.fromAsync
+
+                    match outcome with
+                    | Choice1Of2 cause ->
+                        pendingFailure <- None
+                        return! Flow.ofExit (Exit.Failure cause)
+                    | Choice2Of2 error ->
+                        return! Flow.ofExit (Exit.Failure(classifyDeadlineWaitFailure token error))
                 }
 
             selected, (fun () -> completion), guard, (fun () -> pendingFailure))
@@ -921,14 +980,16 @@ module Process =
     let inline streamStderrLines source =
         lineStream (Some OutputChannel.StdErr) (toSpecification source)
 #if !FABLE_COMPILER
-    let live = NativeProcess.live
+    let live (fileSystem: IFileSystem) (console: IConsole) =
+        { new IProcess with
+            member _.Execute(specification, observe) =
+                ProcessRun.execute fileSystem console specification observe }
 #endif
 #if !FABLE_COMPILER
     [<EditorBrowsable(EditorBrowsableState.Never)>]
     let createHost (console: IConsole) : ProcessHostEnvironment = {
-        Process = live Clock.live FileSystem.live console
+        Process = live FileSystem.live console
         Console = console
-        Clock = Clock.live
     }
 
     [<EditorBrowsable(EditorBrowsableState.Never)>]
@@ -938,7 +999,7 @@ module Process =
     let unwrapRun =
         function
         | Exit.Success value -> value
-        | Exit.Failure cause -> raise (ProcessRunException cause) // axial-allow-raise
+        | Exit.Failure cause -> raise (ProcessRunException cause)
 
     [<EditorBrowsable(EditorBrowsableState.Never)>]
     type Runner =
@@ -999,21 +1060,17 @@ module ProcessHostEnvironment =
     let live = Process.liveHost.Value
     let liveWithConsole console = Process.createHost console
 
-    let ofParts processes console clock : ProcessHostEnvironment = {
+    let ofParts processes console : ProcessHostEnvironment = {
         Process = processes
         Console = console
-        Clock = clock
     }
 
     let test () =
         let processes = Process.test ()
         let console = Console.test ()
-        let clock = ManualClock(DateTimeOffset.UnixEpoch)
-
         {
-            Environment = ofParts processes console clock
+            Environment = ofParts processes console
             Process = processes
             Console = console
-            Clock = clock
         }
 #endif

@@ -22,7 +22,7 @@ let workflow =
 
 An interpreter implements `IProcess.Execute`, returning a lazy `Flow<unit, ProcessError, ProcessResult>` and
 awaiting the supplied observer serially with backpressure. It must not start work while constructing the Flow.
-Streaming constructors additionally require an `IHasClock` environment for Axial's supervised producer.
+Streaming constructors need no clock member in the environment: the supervised producer reads the runtime clock.
 
 `workflow` above is construction-only: it builds a specification and a Flow that asks for `IProcess` when run, and
 nothing executes until then. Supply an interpreter that delegates execution to a worker or another host, for example:

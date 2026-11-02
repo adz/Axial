@@ -14,7 +14,7 @@ returns the result the test needs. The application code that builds the command 
 ## Put a process service in the application record
 
 [`Process.live`](xref:M:Axial.Process.Process.live) builds the real service. It is a function because it combines the
-services it needs. [`Clock.live`](xref:M:Axial.PlatformService.Clock.live), [`FileSystem.live`](xref:M:Axial.FileSystem.FileSystem.live), and [`Console.live`](xref:M:Axial.Console.Console.live) are already-created service values, so they are its arguments.
+services it needs. [`FileSystem.live`](xref:M:Axial.FileSystem.FileSystem.live) and [`Console.live`](xref:M:Axial.Console.Console.live) are already-created service values, so they are its arguments. The process run reads its clock from the executing flow.
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -25,7 +25,7 @@ open System.Threading.Tasks
 open Axial
 open Axial.Console
 open Axial.FileSystem
-open Axial.PlatformService
+open Axial
 open Axial.Process
 open Axial.Process.DSL
 
@@ -37,7 +37,7 @@ let shouldEqual expected actual =
 ```fsharp
 open Axial.Console
 open Axial.FileSystem
-open Axial.PlatformService
+open Axial
 open Axial.Process
 open Axial.Process.DSL
 
@@ -46,7 +46,7 @@ type AppEnvironment =
     interface IHasProcess with member this.Process = this.Processes
 
 let appEnvironment =
-    { Processes = Process.live Clock.live FileSystem.live Console.live }
+    { Processes = Process.live FileSystem.live Console.live }
 ```
 
 The clock timestamps execution. The filesystem opens file input and output targets. The console receives configured
@@ -76,7 +76,7 @@ match Flow.run appEnvironment readRevision with
 ```
 
 `Process.toFlow` preserves routing and capture policies. Batch execution captures all stdout and a separate
-64 KiB stderr tail by default. Streaming constructors require `IHasClock` in the application environment as well.
+64 KiB stderr tail by default. Streaming constructors and process timeout, stop-grace and drain timers read the runtime clock installed in the executing flow, so the application environment needs no clock member and `Process.live` takes no clock argument. External `ProcessStarted.Close` requests start the same graceful-stop ladder using that captured clock, even when submitted outside a flow or from a flow with a different clock. Unlike .NET process one-shot operations, `Close` owns shutdown and escalates. Use `ProcessStarted.Signal` for a single request that neither starts nor changes a stop ladder.
 
 ## Put a fake in the record for a unit test
 

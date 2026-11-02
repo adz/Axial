@@ -10,7 +10,7 @@ open System.Text
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.PlatformService
+open Axial
 open Axial.Console
 open Axial.FileSystem
 
@@ -75,7 +75,7 @@ type internal AsyncCell<'value>() =
                             if removed then
                                 finish (fun () ->
 #if FABLE_COMPILER
-                                    error (OperationCanceledException())
+                                    error (ForeignCancellation.runtimeCancellationException ())
 #else
                                     cancel (OperationCanceledException token)
 #endif
@@ -150,6 +150,9 @@ type internal AsyncRendezvous<'value>() =
 type TestProcess() =
     let specs = ResizeArray<ProcessSpec>()
     let mutable outputs: ProcessOutput list = []
+    let closeRequests = ResizeArray<int * StopRequest>()
+    let signalRequests = ResizeArray<int * StopRequest>()
+    let mutable processId = 4242
 
     let mutable resultHandler: ProcessSpec -> ProcessResult =
         fun _ -> invalidOp "Configure TestProcess.RunHandler."
@@ -159,6 +162,12 @@ type TestProcess() =
         None
 
     member _.RunSpecs: IReadOnlyList<ProcessSpec> = specs
+    member _.CloseRequests: IReadOnlyList<int * StopRequest> = closeRequests
+    member _.SignalRequests: IReadOnlyList<int * StopRequest> = signalRequests
+
+    member _.ProcessId
+        with get () = processId
+        and set value = processId <- value
 
     member _.Outputs
         with get () = outputs
@@ -172,7 +181,10 @@ type TestProcess() =
         with get () = executeHandler
         and set value = executeHandler <- value
 
-    member _.Clear() = specs.Clear()
+    member _.Clear() =
+        specs.Clear()
+        closeRequests.Clear()
+        signalRequests.Clear()
 
     static member Result(exitCode: int, stdOut: string, ?stdErr: string) : ProcessResult =
         let stdErr = defaultArg stdErr ""
@@ -205,6 +217,26 @@ type TestProcess() =
                 | Some handler -> handler specification observe
                 | None ->
                     flow {
+                        match specification.OnStarted with
+                        | Some handler ->
+                            for stage, command in specification.Commands |> List.indexed do
+                                do!
+                                    handler.Invoke(
+                                        stage,
+                                        processId + stage,
+                                        Configuration.renderCommand command,
+                                        DateTimeOffset.UnixEpoch,
+                                        (fun request -> async {
+                                            closeRequests.Add(stage, request)
+                                            return Ok ()
+                                        }),
+                                        (fun request -> async {
+                                            signalRequests.Add(stage, request)
+                                            return Ok ()
+                                        })
+                                    ) |> Flow.scoped |> Flow.widenError
+                        | None -> ()
+
                         for output in outputs do
                             do! observe output
 
@@ -212,29 +244,36 @@ type TestProcess() =
                     })
 
 #if !FABLE_COMPILER
-type private ProcessFailureException(error: ProcessError) =
+type internal ProcessFailureException(error: ProcessError) =
     inherit Exception(error.ToString())
     member _.Error = error
 
-type private ObserverDefectException(error: exn) =
+type internal ObserverDefectException(error: exn) =
     inherit Exception(error.Message, error)
+
+module internal ProcessObserver =
+    let ignore (_: ProcessOutput) = async.Return()
 
 type private StageExitException(stage: int) =
     inherit Exception("Stage exited unsuccessfully.")
     member _.Stage = stage
 
-type private CaptureBuffer(policy: OutputRetention, available: bool) =
+type internal CaptureBuffer(policy: OutputRetention, available: bool) =
     let gate = obj ()
     let mutable truncated = false
     let mutable tailBytes: byte array = [||]
-    let stream = new MemoryStream()
+    let stream =
+        match policy with
+        | OutputRetention.All -> Some(new MemoryStream())
+        | _ -> None
 
     member _.Append(chunk: byte array) =
         lock gate (fun () ->
-            match policy with
-            | OutputRetention.All -> stream.Write(chunk, 0, chunk.Length)
-            | OutputRetention.Nothing -> truncated <- truncated || chunk.Length > 0
-            | OutputRetention.Tail limit ->
+            match policy, stream with
+            | OutputRetention.All, Some output -> output.Write(chunk, 0, chunk.Length)
+            | OutputRetention.All, None -> ()
+            | OutputRetention.Nothing, _ -> truncated <- truncated || chunk.Length > 0
+            | OutputRetention.Tail limit, _ ->
                 if chunk.Length >= limit then
                     truncated <- truncated || tailBytes.Length + chunk.Length > limit
                     tailBytes <- if limit = 0 then [||] else chunk[chunk.Length - limit ..]
@@ -254,7 +293,7 @@ type private CaptureBuffer(policy: OutputRetention, available: bool) =
         lock gate (fun () ->
             let bytes =
                 match policy with
-                | OutputRetention.All -> stream.ToArray()
+                | OutputRetention.All -> stream.Value.ToArray()
                 | _ -> tailBytes
 
             {
@@ -265,7 +304,7 @@ type private CaptureBuffer(policy: OutputRetention, available: bool) =
             })
 
     interface IDisposable with
-        member _.Dispose() = stream.Dispose()
+        member _.Dispose() = stream |> Option.iter _.Dispose()
 #endif
 
 #endif

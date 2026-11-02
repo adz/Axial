@@ -1,7 +1,6 @@
 <Project>
   <!-- Referencing Axial.Process turns on its Axial.Guardrails guardrail; its rules ship in Axial.Guardrails.
-       Remove it with <AxialGuardrail Remove="Axial.Process" />, or set its severity with
-       <AxialGuardrail Update="Axial.Process" Severity="warning" />. -->
+       Remove it with <AxialGuardrail Remove="Axial.Process" /> to opt out of that package-specific rule set. -->
   <ItemGroup>
     <AxialGuardrail Include="Axial.Process" />
   </ItemGroup>

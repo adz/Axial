@@ -12,7 +12,7 @@ api:
       title: Configure execution
       order: 20
       summary: Set stage defaults, environment, working directory, timeouts, and success codes before running.
-      members: [workingDirectory, tryWorkingDirectory, environment, environmentVariables, removeEnvironment, encoding, successCodes, timeout, withoutTimeout, overallTimeout, drainTimeout, stageDefaults, mapFinalCommand]
+      members: [workingDirectory, tryWorkingDirectory, environment, environmentVariables, removeEnvironment, encoding, successCodes, timeout, withoutTimeout, overallTimeout, drainTimeout, onStarted, stopGracefully, stageDefaults, mapFinalCommand]
     - id: compose
       title: Compose commands
       order: 30
@@ -61,5 +61,12 @@ Output routing and retention are separate decisions. A destination controls wher
 bytes remain available in `ProcessResult`. Streaming constructors produce a `ProcessStream`, whose transforms and
 terminals are grouped on its companion module page.
 
+`stopGracefully` configures the once-only escalation ladder shared by accepted `ProcessStarted.Close` requests,
+timeout and interruption. `Close` acknowledges the initial request; await the process execution for termination and
+reap. A request matching the first policy step is not sent twice to its addressed stage.
+Unlike .NET's `System.Diagnostics.Process.CloseMainWindow` / `Kill` or sending one signal, `Close` owns shutdown
+and escalates after grace periods (immediately without a policy). Use `ProcessStarted.Signal` for one stage-local
+request with no escalation. Signal does not change an active ladder, and succeeds without sending after stage exit.
+
 See [Commands and composition](/process/composition.html), [output capture](/process/output-capture.html), and
-[streaming output](/process/streaming.html) for examples.
+[streaming output](/process/streaming.html), and [process identity and graceful stop](/process/process-lifecycle.html) for examples.

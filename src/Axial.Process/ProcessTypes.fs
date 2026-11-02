@@ -10,7 +10,7 @@ open System.Text
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.PlatformService
+open Axial
 open Axial.Console
 open Axial.FileSystem
 
@@ -40,9 +40,9 @@ type InputSource =
     override this.ToString() =
         match this with
         | Empty -> "Empty"
-        | Text text -> $"Text ({text.Length} chars)"
-        | Bytes bytes -> $"Bytes ({bytes.Length} bytes)"
-        | File path -> $"File {path}"
+        | Text text -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Text ({0} chars)", text.Length))
+        | Bytes bytes -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Bytes ({0} bytes)", bytes.Length))
+        | File path -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "File {0}", path))
         | Inherit -> "Inherit"
         | Stream _ -> "Stream"
 
@@ -65,8 +65,8 @@ type OutputTarget =
         | Console -> "Console"
         | Inherit -> "Inherit"
         | Discard -> "Discard"
-        | File path -> $"File {path}"
-        | AppendFile path -> $"AppendFile {path}"
+        | File path -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "File {0}", path))
+        | AppendFile path -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "AppendFile {0}", path))
         | Callback _ -> "Callback"
         | Sink _ -> "Sink"
         | SinkFactory _ -> "SinkFactory"
@@ -114,6 +114,54 @@ type internal CommandDefinition = {
 /// One immutable command; configure it before connecting stages.
 type ProcessCommand = internal ProcessCommand of CommandDefinition
 
+/// Requests a cooperative action from a running process stage.
+[<RequireQualifiedAccess>]
+type StopRequest =
+    /// Asks a Windows GUI process to close its main window.
+    | CloseMainWindow
+    /// Sends SIGINT on Unix or CTRL_C_EVENT on Windows.
+    | Interrupt
+    /// Sends SIGTERM on Unix or CTRL_BREAK_EVENT on Windows.
+    | Terminate
+    /// Sends SIGHUP on Unix.
+    | Hangup
+    /// Closes the stage's redirected standard-input pipe.
+    | CloseStdIn
+    /// Sends a raw numeric signal on Unix.
+    | Signal of int
+
+    override this.ToString() =
+        match this with
+        | CloseMainWindow -> "CloseMainWindow"
+        | Interrupt -> "Interrupt"
+        | Terminate -> "Terminate"
+        | Hangup -> "Hangup"
+        | CloseStdIn -> "CloseStdIn"
+        | Signal number -> "Signal " + number.ToString(CultureInfo.InvariantCulture)
+
+/// Why a stop request did not succeed: the platform or stage cannot support it, or it was attempted and failed.
+[<RequireQualifiedAccess>]
+type StopRequestError =
+    /// The request is not supported by the platform, or the stage does not own the handle the request needs.
+    | Unsupported
+    /// The request was attempted but did not succeed; the message carries the OS or runtime reason.
+    | Failed of message: string
+
+    override this.ToString() =
+        match this with
+        | Unsupported -> "Unsupported"
+        | Failed message -> "Failed: " + message
+
+[<EditorBrowsable(EditorBrowsableState.Never)>]
+type IProcessStartedObserver =
+    abstract Invoke:
+        stage: int *
+        processId: int *
+        command: string *
+        startedAt: DateTimeOffset *
+        close: (StopRequest -> Async<Result<unit, StopRequestError>>) *
+        signal: (StopRequest -> Async<Result<unit, StopRequestError>>) -> Flow<unit, Never, unit>
+
 [<RequireQualifiedAccess>]
 type internal ExecutionMode =
     | Batch
@@ -132,6 +180,8 @@ type ProcessSpec = internal {
     MaxOutputBytes: int64 option * int64 option
     OverallTimeout: TimeSpan option
     DrainTimeout: TimeSpan option
+    OnStarted: IProcessStartedObserver option
+    StopGracefully: (StopRequest * TimeSpan) list
     Mode: ExecutionMode
 }
 
@@ -155,6 +205,7 @@ type ProcessOutput = {
 /// Completion information and captured output for one stage.
 type StageResult = {
     Stage: int
+    ProcessId: int
     Command: string
     ExitCode: int
     Succeeded: bool
@@ -184,7 +235,8 @@ type ProcessResult = {
 
     override this.ToString() =
         let codes = this.ExitCodes |> List.map string |> String.concat ","
-        $"ProcessResult(exit {this.ExitCode} [{codes}], {this.Duration.TotalMilliseconds:F0} ms, stdout {this.StdOut.Length} chars, stderr {this.StdErr.Length} chars)"
+        let duration = this.Duration.TotalMilliseconds.ToString("F0", Globalization.CultureInfo.InvariantCulture)
+        (System.String.Format(Globalization.CultureInfo.InvariantCulture, "ProcessResult(exit {0} [{1}], {2} ms, stdout {3} chars, stderr {4} chars)", this.ExitCode, codes, duration, this.StdOut.Length, this.StdErr.Length))
 
 /// A resolved per-command plan, including fallback provenance.
 type ProcessStagePlan = {
@@ -246,6 +298,8 @@ type ProcessOutputFailure = { Stage: int; Channel: OutputChannel; Limit: int64; 
 
 type ProcessObservationFailure = { Stage: int; Channel: OutputChannel }
 
+type ProcessStopFailure = { Stage: int; Request: StopRequest; Message: string }
+
 /// Expected process errors. Runtime cancellation remains Cause.Interrupt.
 [<RequireQualifiedAccess>]
 type ProcessError =
@@ -259,13 +313,15 @@ type ProcessError =
     | LineTooLong of ProcessLineFailure
     | OutputTooLarge of ProcessOutputFailure
     | ObservationUnavailable of ProcessObservationFailure
+    | StopFailed of ProcessStopFailure
+    | StopUnsupported of StopRequest
 
     override this.ToString() =
         match this with
-        | StartFailed failure -> $"Could not start '{failure.Command}': {failure.Message}"
-        | StageTimedOut failure -> $"Stage {failure.Stage} ({failure.Command}) exceeded {failure.Timeout}."
+        | StartFailed failure -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Could not start '{0}': {1}", failure.Command, failure.Message))
+        | StageTimedOut failure -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Stage {0} ({1}) exceeded {2}.", failure.Stage, failure.Command, failure.Timeout))
         | OverallTimedOut failure ->
-            $"Process specification '{failure.Specification}' timed out after {failure.Timeout}."
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Process specification '{0}' timed out after {1}.", failure.Specification, failure.Timeout))
         | StageFailed failure ->
             let stage = failure.Stage
 
@@ -275,27 +331,50 @@ type ProcessError =
                 else
                     Environment.NewLine + stage.StdErrCapture.Text
 
-            $"Stage {stage.Stage} ({stage.Command}) exited with code {stage.ExitCode}.{diagnostic}"
-        | IoFailed failure -> $"Process I/O failed: {failure.Message}"
-        | InputFailed cause -> $"Process input failed: {cause}"
-        | OutputFailed cause -> $"Process output failed: {cause}"
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Stage {0} ({1}) exited with code {2}.{3}", stage.Stage, stage.Command, stage.ExitCode, diagnostic))
+        | IoFailed failure -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Process I/O failed: {0}", failure.Message))
+        | InputFailed cause -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Process input failed: {0}", cause))
+        | OutputFailed cause -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Process output failed: {0}", cause))
         | LineTooLong failure ->
             let channel =
                 match failure.OriginalChannel with
                 | OutputChannel.StdOut -> "stdout"
                 | OutputChannel.StdErr -> "stderr"
 
-            $"Stage {failure.Stage} {channel} exceeded {failure.Limit} UTF-16 code units per line."
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Stage {0} {1} exceeded {2} UTF-16 code units per line.", failure.Stage, channel, failure.Limit))
         | OutputTooLarge failure ->
             let channel = if failure.Channel = OutputChannel.StdOut then "stdout" else "stderr"
-            $"Stage {failure.Stage} ({failure.Command}) {channel} exceeded {failure.Limit} bytes."
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Stage {0} ({1}) {2} exceeded {3} bytes.", failure.Stage, failure.Command, channel, failure.Limit))
         | ObservationUnavailable failure ->
             let channel =
                 match failure.Channel with
                 | OutputChannel.StdOut -> "stdout"
                 | OutputChannel.StdErr -> "stderr"
 
-            $"Stage {failure.Stage} {channel} uses inherited handles and cannot be observed."
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Stage {0} {1} uses inherited handles and cannot be observed.", failure.Stage, channel))
+        | StopFailed failure ->
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Could not send {0} to stage {1}: {2}", failure.Request, failure.Stage, failure.Message))
+        | StopUnsupported request ->
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Stop request {0} is not supported by the platform or this stage.", request))
+
+/// A running stage that accepts one-shot requests or coordinated shutdown.
+type ProcessStarted = {
+    Stage: int
+    ProcessId: int
+    Command: string
+    StartedAt: DateTimeOffset
+    /// Sends the initial stage-local request and starts the execution's graceful-stop ladder.
+    /// Returns when accepted, not when the process is reaped. Repeated requests do not wait for an active ladder,
+    /// including timeout-owned shutdown. Repeated requests and requests after exit send nothing.
+    /// The run's captured clock drives grace periods; without a policy, shutdown immediately escalates to kill.
+    /// Unlike System.Diagnostics.Process.CloseMainWindow/Kill or sending one signal, Close owns shutdown
+    /// and escalates after grace periods. Use Signal to send only one request without escalation.
+    Close: StopRequest -> Flow<unit, ProcessError, unit>
+    /// Sends one stage-local request using the same platform mapping and typed errors as Close's initial request.
+    /// Does not start, restart, cancel or otherwise own a shutdown ladder, even while one is running.
+    /// Returns after delivery, not exit. CloseStdIn only half-closes owned stdin. After stage exit this is a no-op.
+    Signal: StopRequest -> Flow<unit, ProcessError, unit>
+}
 
 /// Executes lazily, awaiting each observation with backpressure.
 type IProcess =
@@ -426,6 +505,8 @@ type ProcessInput =
         MaxOutputBytes = None, None
         OverallTimeout = None
         DrainTimeout = None
+        OnStarted = None
+        StopGracefully = []
         Mode = ExecutionMode.Batch
     }
 
@@ -575,6 +656,10 @@ type ProcessInput with
             specification with
                 OverallTimeout = Some after
         }
+
+    static member OnStarted(handler, specification: ProcessSpec) = { specification with OnStarted = Some handler }
+
+    static member StopGracefully(steps, specification: ProcessSpec) = { specification with StopGracefully = steps }
 
     static member DrainTimeout(after, specification: ProcessSpec) =
         if after <= TimeSpan.Zero then

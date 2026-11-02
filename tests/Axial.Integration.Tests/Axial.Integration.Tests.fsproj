@@ -9,9 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Shared\DispatcherChild.fs" Link="DispatcherChild.fs" />
     <Compile Include="TestSupport.fs" />
+    <Compile Include="DispatcherAdapterTests.fs" />
     <Compile Include="UnifiedServiceTests.fs" />
     <Compile Include="ProcessServiceTests.fs" />
+    <Compile Include="ProcessRuntimeTests.fs" />
     <Compile Include="ProcessStreamingTests.fs" />
     <Compile Include="DependencyInjectionIntegrationTests.fs" />
     <Compile Include="TestDoubleTests.fs" />
@@ -29,11 +32,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Configuration\Axial.Configuration.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Console\Axial.Console.fsproj" />
     <ProjectReference Include="..\..\src\Axial.FileSystem\Axial.FileSystem.fsproj" />
     <ProjectReference Include="..\..\src\Axial.HttpClient\Axial.HttpClient.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Process\Axial.Process.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.WebSocket\Axial.WebSocket.fsproj" />
   </ItemGroup>
 
 </Project>

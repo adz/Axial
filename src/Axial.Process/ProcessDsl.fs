@@ -10,7 +10,7 @@ open System.Text
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.PlatformService
+open Axial
 open Axial.Console
 open Axial.FileSystem
 
@@ -19,9 +19,13 @@ module DSL =
         if isNull value then
             ""
         else
+#if FABLE_COMPILER
+            string value
+#else
             match value with
             | :? IFormattable as formattable -> formattable.ToString(format, CultureInfo.InvariantCulture)
             | _ -> string value
+#endif
 
 
     type EndpointConnector =
@@ -85,7 +89,11 @@ module DSL =
                     else
                         descriptor.Substring(0, separator)
 
+#if FABLE_COMPILER
+                let valueIndex = Int32.Parse(indexText)
+#else
                 let valueIndex = Int32.Parse(indexText, CultureInfo.InvariantCulture)
+#endif
 
                 if valueIndex < 0 || valueIndex >= values.Length then
                     invalidArg (nameof program) "Shell interpolation index is out of range."
@@ -145,7 +153,7 @@ module DSL =
         shellCommand
             "pwsh"
             (fun script -> [ "-NoProfile"; "-NonInteractive"; "-Command"; script ])
-            (fun index -> $"$args[{index}]")
+            (fun index -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "$args[{0}]", index)))
             program
 
     /// Builds an explicitly assembled Bash program. Values in the text are not escaped by Axial.
@@ -196,6 +204,8 @@ module DSL =
     let inline maxOutputBytes stdout stderr source = Process.maxOutputBytes stdout stderr source
     let inline stageDefaults value source = Process.stageDefaults value source
     let inline overallTimeout value source = Process.overallTimeout value source
+    let inline onStarted handler source = Process.onStarted handler source
+    let inline stopGracefully steps source = Process.stopGracefully steps source
     let inline drainTimeout value source = Process.drainTimeout value source
     /// Same as Process.captureAll. Retains final stdout completely.
     let inline captureAll source = Process.captureAll source

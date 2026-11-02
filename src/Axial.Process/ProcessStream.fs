@@ -10,7 +10,7 @@ open System.Text
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.PlatformService
+open Axial
 open Axial.Console
 open Axial.FileSystem
 
@@ -54,7 +54,7 @@ module ProcessStream =
 
             Flow.race consumer watcher
             |> Flow.scoped
-            |> Flow.fold (fun result ->
+            |> Flow.foldCause (fun result ->
                 failure () |> Option.iter Flow.reportUnobservedCause
                 Flow.succeed result) (fun cause ->
                 let combined =
@@ -94,7 +94,7 @@ module ProcessStream =
 
             Flow.race consumer watcher
             |> Flow.scoped
-            |> Flow.fold (fun result ->
+            |> Flow.foldCause (fun result ->
                 failure () |> Option.iter Flow.reportUnobservedCause
                 Flow.succeed result) (fun cause ->
                 let combined =

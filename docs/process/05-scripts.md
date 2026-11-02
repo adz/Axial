@@ -14,7 +14,7 @@ open System.Threading.Tasks
 open Axial
 open Axial.Console
 open Axial.FileSystem
-open Axial.PlatformService
+open Axial
 open Axial.Process
 open Axial.Process.DSL
 
@@ -118,7 +118,7 @@ type AppEnvironment =
 
 let reportingConsole = Console.test()
 let appEnvironment =
-    { Process = Process.live Clock.live FileSystem.live reportingConsole
+    { Process = Process.live FileSystem.live reportingConsole
       Console = reportingConsole
       Region = "eu" }
 ```

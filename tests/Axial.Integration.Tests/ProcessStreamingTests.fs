@@ -7,10 +7,23 @@ open System.Threading.Tasks
 open Axial
 open Axial.Process
 open Axial.Process.DSL
-open Axial.PlatformService
+open Axial
 open Xunit
 
 module ProcessStreamingTests =
+    [<Fact>]
+    let ``stream deadline guard preserves a defect that races runtime cancellation`` () =
+        use cancellation = new CancellationTokenSource()
+        cancellation.Cancel()
+        let defect = InvalidOperationException "deadline wait defect"
+
+        match Process.classifyDeadlineWaitFailure cancellation.Token defect with
+        | Cause.Die error -> Assert.Same(defect, error)
+        | other -> failwithf "Expected racing defect, got %A" other
+
+        let canceled = OperationCanceledException(cancellation.Token)
+        Assert.Equal(Cause.Interrupt, Process.classifyDeadlineWaitFailure cancellation.Token canceled)
+
     let private succeeded =
         function
         | Exit.Success value -> value
@@ -76,8 +89,7 @@ module ProcessStreamingTests =
             Diagnostics.Process.GetProcessesByName "yes"
             |> Array.filter (fun proc ->
                 try IO.File.ReadAllText($"/proc/{proc.Id}/cmdline").Contains marker with _ -> false)
-        let deadline = DateTime.UtcNow.AddSeconds 5.
-        while survivors().Length > 0 && DateTime.UtcNow < deadline do Threading.Thread.Sleep 50
+        Threading.SpinWait.SpinUntil((fun () -> survivors().Length = 0), TimeSpan.FromSeconds 5.) |> ignore
         Assert.Empty(survivors ())
 
     [<Fact>]
@@ -406,6 +418,7 @@ module ProcessStreamingTests =
                         entered.TrySetResult() |> ignore
 
                         try
+                            // axial-note AXG013: keep the consumer suspended after entered so interruption must run the stopped finalizer.
                             do! Async.Sleep 30000
                         finally
                             stopped.TrySetResult() |> ignore
@@ -442,6 +455,7 @@ module ProcessStreamingTests =
                 (fun values item ->
                     Flow.fromAsync (
                         async {
+                            // axial-note AXG013: simulate a slow fold consumer to exercise bounded output backpressure rather than wait for readiness.
                             do! Async.Sleep 250
                             return item :: values
                         }
@@ -585,6 +599,7 @@ module ProcessStreamingTests =
             |> streamStdoutLines
             |> ProcessStream.runForEachFlow (fun _ ->
                 flow {
+                    // axial-note AXG013: delay the consumer failure until after the child's nonzero exit to test preservation of both failures.
                     do! Flow.fromAsync (async { do! Async.Sleep 200 })
                     return! Flow.fail "consumer"
                 })
@@ -690,14 +705,15 @@ module ProcessStreamingTests =
             }
 
             let processService =
-                Process.live clock Axial.FileSystem.FileSystem.live Axial.Console.Console.live
+                Process.live Axial.FileSystem.FileSystem.live Axial.Console.Console.live
 
             let host =
-                ProcessHostEnvironment.ofParts processService Axial.Console.Console.live clock
+                ProcessHostEnvironment.ofParts processService Axial.Console.Console.live
 
             let running =
                 (cmd $"sleep 30" |> timeout (TimeSpan.FromSeconds 5.)) => cmd $"cat"
                 |> toFlow
+                |> Flow.withClock clock
                 |> fun workflow -> workflow.StartAsTask(host, cancellation.Token)
 
             try
@@ -727,3 +743,44 @@ module ProcessStreamingTests =
         match outcome with
         | Exit.Failure(Cause.Fail(ProcessError.IoFailed _)) -> ()
         | other -> failwithf "Expected route IO failure, got %A" other
+
+    // T28: a producer whose IProcess throws must publish its defect; before the fix the consumer waited forever.
+    let private completesWithin (run: unit -> Exit<'value, ProcessError>) : Exit<'value, ProcessError> =
+        let running = Task.Run(fun () -> run ())
+        Assert.True(running.Wait(TimeSpan.FromSeconds 20.0), "The process stream did not finish; the producer defect was not published.")
+        running.Result
+
+    let private expectDie (message: string) (outcome: Exit<'value, ProcessError>) =
+        match outcome with
+        | Exit.Failure cause ->
+            Assert.True(
+                Cause.defects cause |> List.exists (fun error -> error.Message = message),
+                $"Expected a defect with message {message}, got %A{cause}")
+        | other -> failwithf "Expected a producer defect, got %A" other
+
+    [<Fact>]
+    let ``process stream over a TestProcess without RunHandler fails with the RunHandler message`` () =
+        let host = ProcessHostEnvironment.test ()
+
+        completesWithin (fun () ->
+            shText "printf unused" |> streamStdoutLines |> ProcessStream.runDrain |> Process.tryRunWith host.Environment)
+        |> expectDie "Configure TestProcess.RunHandler."
+
+        completesWithin (fun () ->
+            shText "printf unused" |> streamStdoutLines |> ProcessStream.runCollect |> Process.tryRunWith host.Environment)
+        |> expectDie "Configure TestProcess.RunHandler."
+
+    [<Fact>]
+    let ``process stream over an IProcess whose Execute throws fails with that defect`` () =
+        let host = ProcessHostEnvironment.test ()
+        host.Process.ExecuteHandler <- Some(fun _ _ -> flow { return raise (InvalidOperationException "execute threw") })
+
+        completesWithin (fun () ->
+            shText "printf unused" |> streamStdoutLines |> ProcessStream.runDrain |> Process.tryRunWith host.Environment)
+        |> expectDie "execute threw"
+
+        host.Process.ExecuteHandler <- Some(fun _ _ -> Flow.delay (fun () -> raise (InvalidOperationException "execute threw")))
+
+        completesWithin (fun () ->
+            shText "printf unused" |> streamStdoutLines |> ProcessStream.runDrain |> Process.tryRunWith host.Environment)
+        |> expectDie "execute threw"
