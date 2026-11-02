@@ -14,6 +14,7 @@ Run `scripts/verify.sh` (all stages) or name stages: `scripts/verify.sh build te
 | `fable` | `scripts/run-fable-tests.sh`, then the compiled suite again until it has run `FABLE_RUNS` times (default 3) |
 | `aot` | `scripts/run-aot-probe.sh` |
 | `docs` | `scripts/check-docs-conventions.sh` and `scripts/check-source-inventory.sh` |
+| `livedocs` | `dotnet livedocs test --warn-as-error`, using the Release build from `build` |
 
 It writes `artifacts/verify/result.json` (commit, dirty flag, per-stage status, seconds, and summary) plus one log
 per stage. A task is verified when `"passed": true` for the stages it touches. Quote the summary lines in reports.
@@ -22,7 +23,9 @@ Do not treat "passed on rerun" as passing: a stage that needed a rerun is a flak
 On Linux with a user systemd session, run `scripts/check-systemd-watchdog.sh` manually. It verifies steady operation, SIGKILL restart, and watchdog timeout of a transient user unit; it is not run in CI. On machines without a user session it prints `skipped`.
 
 The Fable stage runs three times because a single pass hid a deterministic-under-load stall introduced by T1.
-`dotnet livedocs test --warn-as-error` stays a phase or release step (see AGENTS.md), not part of `verify.sh`.
+The `livedocs` stage compiles and runs every checked documentation example. It joined the default stages after a
+slice removed a `let!` overload while three docs pages still showed it, and every stage passed. While iterating on a
+small task, name the stages you need (`scripts/verify.sh build test`); a slice is not done until all stages pass.
 
 ## Build with the SDK CI uses
 
@@ -52,6 +55,14 @@ It restores `src/` from `<base>` in a temporary worktree, keeps the new tests, a
 compile there. Use it for bug fixes and behaviour changes; for new APIs, compiling against old `src/` fails trivially,
 so the review must check the assertions instead.
 
+## Bring a torture scenario with every concurrency fix
+
+The torture runs (`examples/Axial.TortureTest`, run by `TortureTests`) caught the structured-cancellation bugs; the
+analyzers did not. A slice that changes concurrency source (`src/Axial/{Core,Flow,Stream,Queue,Hub,Ref,Cache,App,
+Platform,Parallelism}.fs`, Process, Hosting, ElmishFlows, WebSocket, Files) adds or tightens a torture scenario
+invariant that would have caught the bug under interruption, failure, or shutdown. A slice with no behaviour change
+writes `artifacts/verify/torture-waiver.txt` saying why none applies; the coordinator's done-check fails otherwise.
+
 ## Size tasks so one run can finish
 
 Broad tasks ("make every async service member a flow") came back with no changes; the same work split into slices of
@@ -72,6 +83,7 @@ Record a test here the first time it fails and then passes unchanged; fix or del
 
 | Test | Seen | Symptom | Status |
 |---|---|---|---|
+| `RuntimeSemanticsTests.Fiber metadata records identity parent and lifecycle status` | Guardrails review phase 1 full verification | A 20 ms child could finish before the parent captured the initial Running status; failed once and passed unchanged on the required full retry | Fixed: child waits for an explicit release gate until after the initial dump; passed 20 consecutive filtered runs |
 | `WorkflowStreamTests.debounce keeps the last value of each burst` | T20 slice 2 verify run | Expected `[3; 5]`, got `[5]` under full-suite load | Fixed: burst gaps were too close to the debounce deadline under load; zero-gap bursts and a wide virtual-time boundary separate them |
 | `WorkflowStreamTests.throttle emits the first value then the latest per interval` | CI; reproduced under four full-suite runs pinned to one CPU | Expected `[1; 4; 5]`, got `[1; 3; 4; 5]` | Fixed: `ManualTime` had queued due-sleep continuations, allowing the driver to advance from 15 ms to 100 ms before the 15 ms producer continuation emitted `4`. Manual-time sleep signals now run their continuation chain inline during advance; regression test proves advance does not return first. |
 | `WorkflowSchedulingTests.Flow runtime helpers cover timeout and retry` | 2026-10-18, T4 full run | 20 ms sleep raced a 1 ms timeout under load | Fixed: manual time and a 30 s sleep separate the timeout deadlines |
@@ -84,3 +96,8 @@ Record a test here the first time it fails and then passes unchanged; fix or del
 | `TortureTests.A torture scenario keeps every invariant on every round(name: "schedules")`; a stream test | 2026-10-18, T17 run; schedules again in flaky sweep verify run 2 | Schedules failed in full suite (701 passed, 1 failed), and again on CI at 5b07db0c ("a fixed-rate repeat never started a run before its tick"); stream test failed once previously | Schedules: test-invariant bug, fixed 2026-10-19. The check measured the grid from the first run's own start, but `Flow.repeat` fixes `LoopStarted` before invoking that run, so a thread delay over the 2 ms tolerance flagged correct ticks as early. The origin is now read before the repeat starts. Not reproduced locally in ~3,850 rounds, so no failing-first test; watch for recurrence. Stream test: still unidentified |
 | `SubscriptionTests.manual clock search pipeline dispatches only the latest query` | 2026-10-18, T13 run | A fixed 50 ms sleep let the debounce arm on "a" before the burst drained | Fixed: waits for an empty inbox and an armed timer |
 | `CrashTests.atomic target is always a complete payload after process kills` | 0.11 dogfood verify run | `Probe did not write an atomic target`: the probe could be killed before its first `writeAtomic` completed | Fixed: the probe prints `wrote` after each write and the test waits for the first `wrote` line before the random kill |
+| `WorkflowConcurrencyTests.Blocking work runs to completion when interrupted and reports the interruption` | Guardrails review-fix verify run | A 20 ms cancellation could occur before the blocking delegate started, leaving the `finished` assertion false | Fixed: a start gate proves the delegate is running before the test cancels it |
+| `FiberObserverTests.Discarded fork defect is reported as unobserved when the scope closes` | Flow-errors witness verify run | The fiber handle became unreachable before scope close, so the GC net could win and finalizer scheduling determined when the observer event arrived | Fixed: the scope-reporting test retains the handle until `runSync` has closed the scope; passed 50 consecutive filtered runs |
+| `ProcessServiceTests.Unix close signals reach a trapped stage` (HUP, INT) | verify `ca5f31620`, under concurrent build/test load | Failed under heavy shared-machine load and passed unchanged with the machine to itself | Cause not yet identified |
+| `WatchTests.watch keeps the last valid value and publishes a later valid change` | CI run 41325508166 | A 600 ms sleep did not prove the invalid reload had completed; overwriting the file could prevent the expected error entirely | Fixed: fake watcher, manual debounce clock, timer-registration checks, and error/update settlement signals. The invalid read deliberately waits five virtual seconds. The other timed watch tests use the same clock and settlement checks. |
+| `MemoryRetentionTests.Parallel combinators under a cancellable token run in constant memory` | CI run 41325508166; reproduced pinned to one CPU | Sampling while canceled timers' continuations were queued counted transient work as retention; 42,003 pending items and 125.6 MB apparent growth on one CPU | Fixed: drain queued work using FIFO markers before compacting full GCs; check two successive 40,000-iteration growth windows against the unchanged 4 MiB bound. A deliberate caller-token registration leak verifies that settlement does not hide retained links. |
