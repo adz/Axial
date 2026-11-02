@@ -1,6 +1,7 @@
 ---
 title: "Tutorial: Creating Reusable Services"
 description: Define a named service contract, its IHasX marker, and a type-directed ExchangeRates.service accessor that workflows consume.
+project: src/Axial.Configuration/Axial.Configuration.fsproj
 ---
 
 # Tutorial: Creating Reusable Services
@@ -22,13 +23,12 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
 open Axial.Hosting.Browser
 open Axial.Hosting.Node
-open Axial.PlatformService
+open Axial
 open Axial.State
 open Axial.Telemetry
 open Axial.Telemetry.JavaScript
@@ -46,7 +46,7 @@ type IExchangeRates =
 ```
 
 Make it as narrow as the built-in ones. `IExchangeRates` exposes one conversion, not a general-purpose pricing
-client; a workflow that needs more asks for more, the same way `IHasClock` does not also expose scheduling.
+client; a workflow that needs more asks for more, the same way `IHasConsole` does not also expose the file system.
 
 ## Write a reusable helper
 
@@ -77,7 +77,7 @@ field. It only needs `IHasExchangeRates`, the same generic-constraint pattern `C
 
 `priceInAud` above lets a failed lookup surface as an unhandled `Task` exception, which is a defect, not something
 a caller can react to. For typed failures, compare
-[`FileSystemError`](/services/filesystem.html#typed-errors) or `HttpError`:
+[`FileSystemError`](/filesystem/filesystem.html#typed-errors) or `HttpError`:
 
 ```fsharp
 type ExchangeRateError =
@@ -129,17 +129,19 @@ priceInAudOrFail 10m |> Flow.run { Rates = unavailable; Region = "au" } |> shoul
 
 ## Combine it with the built-in services
 
-A custom service and `BaseRuntime` can share an environment: each contract gets its own interface member,
-delegating to the stored value. See
-[Tutorial: Composing Built-in Services](/services/existing-services.html) for the `BaseRuntime` half of this:
+A custom service and the built-in services with authority share an environment: each contract gets its own interface
+member, delegating to the stored value. Clock, random, GUID and log come from the runtime, so they need no member. See
+[Tutorial: Composing Built-in Services](/services/existing-services.html) for the built-in half of this:
 
 ```fsharp
+open Axial.Configuration
+
 type FullAppEnv =
-    { Runtime: BaseRuntime
+    { Config: IConfig
       Rates: IExchangeRates }
 
-    interface IHasClock with
-        member this.Clock = this.Runtime.Clock
+    interface IHasConfig with
+        member this.Config = this.Config
 
     interface IHasExchangeRates with
         member this.ExchangeRates = this.Rates

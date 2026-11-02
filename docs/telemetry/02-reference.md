@@ -27,4 +27,4 @@ and either call `.Trace` on the tracer or install it ambiently for a whole workf
 `FiberTelemetry.observe` once at the application edge when unjoined child defects must be visible. Use the
 span-per-fiber observer only when that extra span volume is useful.
 
-See [Telemetry](/observability/telemetry/index.html) for setup and complete examples.
+See [Telemetry](/telemetry/index.html) for setup and complete examples.

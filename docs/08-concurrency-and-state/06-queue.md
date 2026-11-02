@@ -56,7 +56,7 @@ suspend.
 ends normally once the queue is shut down and drained.
 
 ```fsharp transcript
-> open Axial.PlatformService;;
+> open Axial;;
 > (flow {
 -     let! (readings: Queue<int>) = Queue.bounded 2
 -     let! consumer =
@@ -68,8 +68,8 @@ ends normally once the queue is shut down and drained.
 -     do! readings |> Queue.offerAll [ 1..5 ] |> Flow.ignore
 -     do! Dequeue.shutdown readings
 -     return! Fiber.join consumer
-- } : Flow<ClockEnvironment, Never, int list list>)
-- |> Flow.run (ClockEnvironment Clock.live);;
+- } : Flow<unit, Never, int list list>)
+- |> Flow.run ();;
 val it: Exit<int list list,Never> = Success [[1; 2]; [3; 4]; [5]]
 ```
 
@@ -82,7 +82,7 @@ the queue down, so several producers can feed one queue. `FlowStream.mergePar` r
 emits their values as they arrive, which fits device readers feeding one control loop.
 
 ```fsharp transcript
-> open Axial.PlatformService;;
+> open Axial;;
 > (flow {
 -     let! (inputs: Queue<int>) = Queue.bounded 4
 -     let! loop = inputs |> FlowStream.fromDequeue |> FlowStream.runCollect |> Flow.fork
@@ -93,8 +93,8 @@ emits their values as they arrive, which fits device readers feeding one control
 -     do! Dequeue.shutdown inputs
 -     let! received = Fiber.join loop
 -     return List.sort received
-- } : Flow<ClockEnvironment, Never, int list>)
-- |> Flow.run (ClockEnvironment Clock.live);;
+- } : Flow<unit, Never, int list>)
+- |> Flow.run ();;
 val it: Exit<int list,Never> = Success [1; 2; 3; 10; 20]
 ```
 
@@ -161,7 +161,7 @@ val it: Exit<string,Never> = Success "size 2, accepted 5, evicted 3"
 ```
 
 To export these figures as metrics, register the queue with `QueueMetrics.observe`; see
-[watching queues and hub subscriptions](/observability/telemetry/index.html#watch-queues-and-hub-subscriptions).
+[watching queues and hub subscriptions](/telemetry/index.html#watch-queues-and-hub-subscriptions).
 
 ## Tying a queue to a scope
 

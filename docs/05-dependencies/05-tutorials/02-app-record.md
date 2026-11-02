@@ -27,13 +27,12 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
 open Axial.Hosting.Browser
 open Axial.Hosting.Node
-open Axial.PlatformService
+open Axial
 open Axial.State
 open Axial.Telemetry
 open Axial.Telemetry.JavaScript
@@ -262,7 +261,7 @@ Move beyond it when:
 - you want startup-time provisioning with failure handling
 - you want scope-owned resources and cleanup
 
-Continue with [Tutorial: Composing Built-in Services](/services/existing-services.html) to add `BaseRuntime`
+Continue with [Tutorial: Composing Built-in Services](/services/existing-services.html) to add runtime services
 alongside dependencies like this one, [Tutorial: Creating Reusable Services](/advanced/custom-services.html) to
 name a contract like `IOrderRepository` the way the built-in services are named, and then
 [Tutorial: Layers](/layers/tutorial.html).

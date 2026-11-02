@@ -18,13 +18,12 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
 open Axial.Hosting.Browser
 open Axial.Hosting.Node
-open Axial.PlatformService
+open Axial
 open Axial.State
 open Axial.Telemetry
 open Axial.Telemetry.JavaScript
@@ -35,7 +34,7 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp transcript
-> open Axial.PlatformService;;
+> open Axial;;
 > (flow {
 -     let! (hub: Hub<int>) = Hub.make ()
 -     let! historian = hub |> Hub.subscribe (QueueStrategy.BackPressure 2)
@@ -48,8 +47,8 @@ let shouldEqual expected actual =
 -     let! latest = Dequeue.takeAll display
 -     let! pending = Dequeue.takeAll alarms
 -     return [ history; latest; pending ]
-- } : Flow<ClockEnvironment, Never, int list list>)
-- |> Flow.run (ClockEnvironment Clock.live);;
+- } : Flow<unit, Never, int list list>)
+- |> Flow.run ();;
 val it: Exit<int list list,Never> = Success [[1; 2; 3; 4; 5]; [5]; [1]]
 ```
 
@@ -89,7 +88,7 @@ finish without waiting, and returns `None` without delivering anything otherwise
 the others missed.
 
 ```fsharp transcript
-> open Axial.PlatformService;;
+> open Axial;;
 > (flow {
 -     let! (hub: Hub<int>) = Hub.make ()
 -     let! historian = hub |> Hub.subscribe (QueueStrategy.BackPressure 1)
@@ -119,7 +118,7 @@ forked fiber has a scope of its own, so a consumer fiber's subscription ends whe
 also leave early with `Dequeue.shutdown`, which has the same effect.
 
 ```fsharp transcript
-> open Axial.PlatformService;;
+> open Axial;;
 > (flow {
 -     let! (hub: Hub<string>) = Hub.make ()
 -     let! received =
@@ -144,16 +143,16 @@ never leaves a subscription behind. `FlowStream.runIntoHub hub` publishes every 
 
 ```fsharp
 let shown = ResizeArray<float>()
-let render (reading: float) : Flow<ClockEnvironment, Never, unit> = Flow.delay (fun () -> shown.Add reading; Flow.ok ())
+let render (reading: float) : Flow<unit, Never, unit> = Flow.delay (fun () -> shown.Add reading; Flow.ok ())
 
 // A display that follows the latest reading for as long as it runs.
-let display (readings: Hub<float>) : Flow<ClockEnvironment, Never, unit> =
+let display (readings: Hub<float>) : Flow<unit, Never, unit> =
     readings
     |> FlowStream.fromHub (QueueStrategy.Sliding 1)
     |> FlowStream.runForEachFlow render
 
 // A sensor stream feeding the hub.
-let feed (readings: Hub<float>) : Flow<ClockEnvironment, Never, unit> =
+let feed (readings: Hub<float>) : Flow<unit, Never, unit> =
     FlowStream.fromSeq [ 20.5; 20.7; 21.0 ] |> FlowStream.runIntoHub readings
 ```
 
@@ -164,7 +163,7 @@ flow {
 
     // Wait until the display has subscribed, or until the fork settles or the deadline passes.
     let deadline = TimeSpan.FromSeconds 1.0
-    let! startedAt = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock.Elapsed())
+    let! startedAt = Clock.elapsed
 
     let mutable subscribers = 0
     let mutable endedEarly = false
@@ -178,7 +177,7 @@ flow {
             subscribers <- count
 
             if subscribers = 0 then
-                let! now = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock.Elapsed())
+                let! now = Clock.elapsed
                 timedOut <- now - startedAt >= deadline
 
                 if not timedOut then
@@ -196,7 +195,7 @@ flow {
     do! Hub.shutdown readings
     do! Fiber.join displaying
 }
-|> Flow.run (ClockEnvironment Clock.live)
+|> Flow.run ()
 |> shouldEqual (Exit.Success())
 
 shown |> Seq.last |> shouldEqual 21.0

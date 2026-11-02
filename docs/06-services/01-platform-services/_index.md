@@ -1,69 +1,89 @@
 ---
 title: Platform Services
-description: The clock, logging, randomness, GUID, and environment-variable services that make ambient state explicit.
+description: Runtime clock, random, GUID, culture and time-zone values, and observation sinks.
 ---
 
-`Axial.PlatformService` exposes five capabilities as dependencies instead of ambient state:
-`DateTimeOffset.UtcNow`, a logger, `Random`, `Guid.NewGuid()`, and `Environment.GetEnvironmentVariable`. Tests can then pin the time or generated identifier.
+Clock, random numbers and GUIDs come from the runtime, not the application environment. The runtime starts with
+live implementations; a scoped override applies to its flow and forked descendants, then restores the outer value.
+Application authority such as files, HTTP, process execution and configuration stays explicit in `'env`.
 
 ```fsharp
 open System
 open Axial
-open Axial.PlatformService
-```
+open Axial
 
-| Service | Replaces | Module |
-| --- | --- | --- |
-| `IClock` | `DateTimeOffset.UtcNow` | `Clock` |
-| `ILog` | An ambient logger | `Log` |
-| `IRandom` | `System.Random` | `Random` |
-| `IGuid` | `Guid.NewGuid()` | `Guid` |
-| `IEnvironmentVariables` | `Environment.GetEnvironmentVariable` | `EnvironmentVariables`, `EnvironmentVariable` |
-
-A function that declares `IHasClock` can be tested at a chosen instant:
-
-```fsharp
-let isExpired (expiry: DateTimeOffset) : Flow<#IHasClock, Never, bool> =
+let isExpired (expiry: DateTimeOffset) : Flow<'env, Never, bool> =
     Clock.now |> Flow.map (fun now -> now >= expiry)
 ```
 
-## The base runtime
+| Runtime value | Reader | Scoped override |
+| --- | --- | --- |
+| `IClock` | `Clock.now`, `Clock.elapsed`, timed Flow operations | `Flow.withClock` |
+| `IRandom` | `Random.next`, `nextInt`, `nextDouble`, `bytes` | `Flow.withRandom` |
+| `IGuid` | `Guid.newGuid` | `Flow.withGuid` |
 
-Applications usually need all five. `BaseRuntime` bundles them, and it
-implements one contract per service, so a workflow requiring any combination is satisfied by the single value:
+`IClock`, `IRandom`, `IGuid` and the platform modules are defined in `Axial`. Their reader modules keep the
+`Axial` namespace for 0.12, but the implementation ships in the `Axial` package. The
+`Axial` package is deleted; environment, argument and file configuration live in
+`Axial.Configuration`. There is no general runtime service registry. An environment remains an ordinary application record, and `Flow.envWith` selects its fields.
 
-```fsharp
-let liveRuntime : BaseRuntime = BaseRuntime.liveValue
+## Observation slots
+
+`Log.info` and the other logging helpers write to the current `ILogSink`. The default writes Information and above
+to stderr, leaving stdout available for application output. `Flow.withLogSink` replaces the sink for a subtree;
+`Flow.mapLogSink` decorates the sink already in force. `Flow.withTelemetry` similarly installs the two write-only
+`ITelemetry` callbacks for annotations and typed attributes. These slots inherit through forks too.
+
+## Deterministic runs
+
+```fsharp transcript
+> open System;;
+> open Axial;;
+> open Axial;;
+> (Clock.now : Flow<unit, Never, DateTimeOffset>) |> Flow.map _.Year |> Flow.runTest ();;
+val it: Exit<int,Never> = Success 1970
+
+> (Random.nextInt 1 10 : Flow<unit, Never, int>) |> Flow.withRandom (Random.fromValue 7) |> Flow.runTest ();;
+val it: Exit<int,Never> = Success 7
 ```
 
-`BaseRuntime.live : Layer<unit, Never, BaseRuntime>` provides the same bundle to a layer-composed runtime, and
-`BaseRuntime.fromServiceProvider : Layer<IServiceProvider, BaseRuntimeError, BaseRuntime>` builds it from a host
-container, turning missing registrations into typed startup errors.
+`Flow.runTest env` creates a fresh `TestPlatform`: an epoch `ManualClock`, seeded random, sequential GUIDs and a
+recording log. `Flow.runTestWith platform env` exposes those fakes for assertions. Neither runner advances time
+automatically. Timed tests fork, await a registration signal, explicitly advance, then join; see [clock](clock.html).
+The test runners are .NET APIs; Fable supports `ManualClock` and the same scoped per-service overrides.
 
-Most applications extend `BaseRuntime` rather than replacing it; see
-[Tutorial: Composing Built-in Services](/services/existing-services.html) for the composition, and
-[platform services getting started](/platforms-and-hosting/platform-services.html) for the shortest path to a
-running host.
+## Culture and time zone
 
-## Deterministic implementations
+`Culture` and `TimeZone` are plain sealed values, not runtime-context fields. Read a machine default as an explicit
+effect with `Culture.system` or `TimeZone.local`, keep the value in the application model, and pass it to pure
+functions. `Flow.runTest` supplies the invariant culture and UTC. `Culture.setProcessDefault` sets the .NET process
+culture once at startup; it is a no-op on Fable.
 
-Every module ships test doubles beside its `live` value, so a test rarely needs to write an object expression:
+`Format.number`, `Format.currency`, `Format.date` and `Format.time` take the culture first. `TimeZone.toLocal zone
+instant` converts a UTC instant to the zone's wall clock for presentation. On .NET formatting uses `CultureInfo`; on
+Fable it uses `Intl`. Both use the instant's wall clock, not the machine's local time.
 
-```fsharp
-let fixedRuntime : BaseRuntime =
-    { Clock = Clock.fromValue (DateTimeOffset.Parse "2026-01-01T00:00:00Z")
-      Log = Log.live
-      Random = Random.fromValue 7
-      Guid = Guid.fromValue (System.Guid.Parse "00000000-0000-0000-0000-000000000001")
-      EnvironmentVariables = EnvironmentVariables.fromPairs [ "AXIAL_ENV", "test" ] }
-```
+The targets agree on the common tested output but not on every format. Known differences:
 
-`Clock.fromValue`, `Guid.fromValue`, `Random.fromValue`, `Random.fromFixed`, `EnvironmentVariables.fromPairs`, and
-`Log.fromSink` each pin one service to a known answer.
+- `Format.number` uses the .NET `"N2"` pattern and `Intl.NumberFormat` with two fractional digits. They agree for
+  de-DE and en-US in the tests; other .NET number patterns are not exposed.
+- `Format.currency` on .NET uses the culture's currency symbol and pattern. On Fable it derives a currency from the
+  culture's region and falls back to USD for unmapped regions. The invariant culture therefore renders `¤1,234.50` on
+  .NET and `$1,234.50` on Fable.
+- `Format.date` and `Format.time` use the .NET short date/time patterns (`"d"` and `"t"`) with `CultureInfo`, while
+  Fable builds numeric `Intl.DateTimeFormat` fields. Zero padding and separators can differ: de-DE date is
+  `01.06.2025` on .NET and commonly `1.6.2025` on Fable. en-US time can differ in the non-breaking space before `PM`.
+- The invariant culture uses en-US as the Fable `Intl` baseline because `Intl` has no invariant locale. Use an explicit
+  culture for presentation and do not compare invariant `Format.currency`/date/time strings across targets.
+
+Configuration is different: environment variables, arguments, and files read external state. See the
+[Configuration set](/configuration/) for `ConfigSource`, `Config.load`, `Config.watch`, and `Config.processArg`.
+Cryptographic randomness belongs inside an explicit capability using `System.Security.Cryptography`, not the runtime's
+ordinary random generator.
 
 ## In this section
 
-1. [Clock](clock.html): the current instant, and why it belongs in the environment.
-2. [Logging](logging.html): `ILog` levels, sinks, and its relationship to telemetry.
-3. [Randomness and GUIDs](random-and-guid.html): non-determinism you can pin in a test.
-4. [Environment variables](environment-variables.html): typed reads with `EnvironmentVariableError`.
+1. [Clock](clock.html): timestamps, durations and explicit manual stepping.
+2. [Logging](logging.html): level gates, metadata, sink composition and host adapters.
+3. [Randomness and GUIDs](random-and-guid.html): fixed, seeded and scripted values.
+4. [Configuration set](/configuration/): layered external configuration and secrets.

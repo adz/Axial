@@ -23,13 +23,12 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
 open Axial.Hosting.Browser
 open Axial.Hosting.Node
-open Axial.PlatformService
+open Axial
 open Axial.State
 open Axial.Telemetry
 open Axial.Telemetry.JavaScript
@@ -44,7 +43,6 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 
 type IOrders =
     abstract Save : string -> Task<unit>

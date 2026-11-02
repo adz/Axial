@@ -44,6 +44,13 @@ App.run () application |> Async.RunSynchronously |> shouldEqual (Exit.Success "H
 to an ASP.NET Core or Node host. The `()` value is the environment because this workflow has no dependencies. An
 application with an `AppEnv` record passes its live value in the same position.
 
+A workflow with no application authority uses `()` as its environment. Its runtime clock, random, GUID and logging
+services come from the scope, not from an environment record:
+
+```fsharp run
+Flow.succeed 42 |> Flow.run () |> shouldEqual (Exit.Success 42)
+```
+
 Use `App.start` when a signal handler, desktop window, UI component, or external host will request shutdown later.
 
 The [Application Lifecycle](/platforms-and-hosting/application-lifecycle.html) guide covers start and stop ownership. Hosting
@@ -54,4 +61,4 @@ guides show the .NET, Node, and browser boundaries.
 - [Application Lifecycle](/platforms-and-hosting/application-lifecycle.html) covers `App.start`, coordinated stop, and lifecycle ownership.
 - [Scopes and Resources](/scopes/index.html) explains finalizers and
   acquisition/release safety.
-- [Hosting](/platforms-and-hosting/dotnet.html) connects the root application to .NET, Node, or browser hosts.
+- [Hosting](/hosting/dotnet.html) connects the root application to .NET, Node, or browser hosts.

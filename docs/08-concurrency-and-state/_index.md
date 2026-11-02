@@ -7,6 +7,7 @@ description: Fibers, atomic references, coordination primitives, scheduling, STM
 
 Structured concurrency with fibers, shared state with Ref and STM, coordination with Deferred and Semaphore, retry and repeat with Schedule, and incremental data with FlowStream.
 
+- [Guarantees](guarantees.html): what Axial promises about finished work, interruption, defects, and shutdown.
 - [Fibers](fibers.html): structured child fibers, fork/join, and interruption.
 - [Supervision](supervision.html): restart policies for failing workers.
 - [Ref](ref.html): atomic single-variable updates.

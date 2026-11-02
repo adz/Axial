@@ -21,14 +21,22 @@ Verify changes with `scripts/verify.sh` and report its `artifacts/verify/result.
 and prove new tests can fail; see [`dev-docs/VERIFICATION.md`](dev-docs/VERIFICATION.md). Coordinating delegated agents
 (Codex or Claude workers, quota, handoff across compaction) follows [`dev-docs/AGENT_WORKFLOW.md`](dev-docs/AGENT_WORKFLOW.md).
 
+## Policy review workflow
+
+Guardrails remain open day to day: agents may add valid suppressions or notes with a reason and report them to the
+human. Policy drift warns; analyzer errors still fail. Use `axial policy review` to inspect accumulated loosening
+(`--since <ref>` for a first review). The lock is tamper-evident; enforcement is the repository's choice.
+A human reads the review, runs `axial policy approve`, and commits the lock before release; agents must not run
+approval or baseline commands or edit the lock. Release automation runs `axial policy review --check`.
+
 ## Architecture Invariants
 
 ### EFFECT BOUNDARY — DO NOT HIDE AMBIENT EFFECTS IN SERVICE ADAPTERS
 
 - `Axial.Process` and `Axial.HttpClient` may perform only the effect named by their core, mockable service type (`IProcess` or `IHttp`). Any additional effect must be an explicit, mockable dependency visible in the implementation signature.
-- In particular, never call `DateTimeOffset.UtcNow`, `DateTime.Now`, or another ambient clock from Process or Http. Inject `Axial.IClock` into live implementations and use `clock.UtcNow()`.
-- Apply the same rule to randomness, GUID generation, environment variables, filesystem, console, and other operational effects: use the appropriate explicit service from `Axial.PlatformService` or another package whose core type is present in the signature.
-- `src/Axial.Guardrails` is an FSharp.Analyzers.SDK analyzer package. `Directory.Build.targets` wires it into every project in this repo the same way a consumer's `dotnet add package Axial.Guardrails` would, so `dotnet build`/`dotnet test` run it automatically — no separate script. Run `dotnet build Axial.slnx` before treating an effect-boundary change as done, and see `docs/15-notes/03-guardrails.md`. A finding at a genuine boundary (a `live` service implementation, a process entry point) is marked with `// axial-allow-effect: <category>` or a file-header `// axial-allow-effect-file: <category>`, never silenced by disabling the analyzer. Set `AXIAL_GUARDRAILS_SEVERITY=warning` in the environment to downgrade findings to non-failing during a migration, or `<AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>` in a project to opt it out entirely; neither is a substitute for reviewing the finding.
+- In particular, never call `DateTimeOffset.UtcNow`, `DateTime.Now`, or another ambient clock from Process or Http. A live Process/Http implementation reads the scoped runtime clock inside its Flow (`Clock.now`, `Clock.elapsed`) for the execution that is running; it does not capture a clock at service construction.
+- Apply the same rule to randomness, GUID generation, environment variables, filesystem, console, and other operational effects: use the appropriate explicit service from `Axial` or another package whose core type is present in the signature.
+- `src/Axial.Guardrails` is an FSharp.Analyzers.SDK analyzer package. `Directory.Build.targets` wires it into every project in this repo the same way a consumer's `dotnet add package Axial.Guardrails` would, so `dotnet build`/`dotnet test` run it automatically — no separate script. Run `dotnet build Axial.slnx` before treating an effect-boundary change as done, and see `docs/15-notes/03-guardrails.md`. First apply the diagnostic's recommended fix. A finding that must remain at a genuine boundary uses a rule-specific comment with a reason, such as `// axial-allow-AXG001: live clock implementation`, and the file must be listed in `@(AxialGuardrailsBoundary)`. Existing violations during adoption belong in `Axial.Guardrails.baseline`; never downgrade severity or disable the analyzer to get a green build.
 - Rules are grouped into guardrails named after the package whose service replaces the effect (`Axial.HttpClient` flags `new HttpClient`). Axial's own rules live in `src/Axial.Guardrails/EffectCatalog.fs`, tagged with their guardrail; each package's `buildTransitive/<Package>.props` turns its guardrail on for consumers, and `Directory.Build.props` turns all of them on in this repository. Add a rule to the catalog under the guardrail of the package that provides the replacement.
 
 ### CANCELLATION STAYS AN INTERRUPTION
@@ -37,8 +45,8 @@ and prove new tests can fail; see [`dev-docs/VERIFICATION.md`](dev-docs/VERIFICA
 - An `OperationCanceledException` that foreign code raises while the runtime's token is still live was not requested: task and async interop record it as a defect (or `Cause.Fail` for `attempt*`), never as `Cause.Interrupt`. Use `ForeignCancellation.isOurs` to classify.
 
 - `Flow<'env, 'error, 'value>` is the public workflow model. Do not reintroduce public `Effect`, `EffectFlow`, `AsyncFlow`, `TaskFlow`, or carrier-specific workflow concepts.
-- Core `Axial` and its operational packages must not depend on Reified. Only the explicit HTTP host adapters may reference Reified packages.
-- Model application and operational dependencies explicitly in `'env`. Timed flows require `IHasClock`; the executor adapts that supplied clock for its own scheduling. Ambient timers belong only inside named live implementations.
+- Core `Axial` has no Reified references; packages that need Reified data (the HTTP adapters, `Axial.Configuration`) may.
+- Model application and operational authority explicitly in `'env`. Clock, random and GUID values come from scoped runtime services; install test clocks with `Flow.withClock` / `Flow.runTest`. The executor adapts the installed clock for scheduling. Ambient timers belong only inside named live implementations. Elmish host options still receive an explicit clock because the host owns a pump started outside a running flow; a Process run captures the clock of the flow that starts it.
 - Use `BindError` only at a `flow { }` bind site when a source error must be assigned or mapped immediately before binding.
 - Prefer AOT- and trimming-safe designs. Do not introduce runtime reflection as the foundation for workflow or service-access APIs.
 
@@ -95,7 +103,7 @@ and prove new tests can fail; see [`dev-docs/VERIFICATION.md`](dev-docs/VERIFICA
 - When changing an API, update source comments and any `docs/api/{EntityId}.md` enrichment page, then rebuild with FsLiveDocs. Do not commit generated reference pages.
 - Use numbered task folders under `docs/`; FsLiveDocs strips ordering prefixes from generated URLs.
 - When documentation claims observable runtime output, use a `fsharp transcript` (or a `fsharp run` block when exact output is not part of the claim). Never type a separate illustrative output block that FsLiveDocs does not generate and verify. Run `dotnet livedocs test --warn-as-error`, not only `build`, after adding or changing executable examples.
-- For small checkbox tasks, defer `dotnet livedocs test --warn-as-error` until the phase end or a release/deploy checkpoint. `dev-docs/**` idea/planning notes do not require validation.
+- `scripts/verify.sh` runs `dotnet livedocs test --warn-as-error` as its `livedocs` stage. While iterating on a small task, run only the stages you need; a slice is not done until every stage passes. `dev-docs/**` idea/planning notes do not require validation.
 
 ## Versioning and Compatibility
 
@@ -107,7 +115,7 @@ and prove new tests can fail; see [`dev-docs/VERIFICATION.md`](dev-docs/VERIFICA
 
 ## Documentation Integrity
 
-- **Validate At Phase Or Release Boundaries:** For small checkbox tasks, defer `dotnet livedocs test --warn-as-error` until phase end or a release/deploy checkpoint, even after changes to user-facing docs, public API signatures, XML comments, examples, reference enrichment, `llms.txt`, or site content. `dev-docs/**` idea/planning notes and code-only changes with no public-doc impact do not require validation. Use `dotnet livedocs watch` only when a live server is needed for browser review or screenshots.
+- **Validate Before Merge:** `scripts/verify.sh` (all stages, including `livedocs`) must pass before a slice merges, including after changes to user-facing docs, public API signatures, XML comments, examples, reference enrichment, `llms.txt`, or site content. While iterating, run only the stages you need. `dev-docs/**` idea/planning notes do not require validation. Use `dotnet livedocs watch` only when a live server is needed for browser review or screenshots.
 - **Preview Lifecycle:** Stop `dotnet livedocs watch` with `SIGHUP`, `TERM`, or `INT`.
 - **Link Integrity:** Ensure that all cross-references between guides and reference pages are valid. Broken links degrade the experience for both humans and AI agents.
 - **Code Highlighting:** Ensure all code examples are wrapped in triple-backticks with the `fsharp` language hint for proper syntax highlighting.

@@ -142,7 +142,7 @@ flow {
     let! id = Guid.newGuid
     return { Id = id; PlacedAt = placedAt }
 }
-// needs: 'env :> IHasClock and IHasGuid
+// reads the runtime clock and GUID generator; no environment requirement
 ```
 
 </div>
@@ -220,7 +220,7 @@ poll
 <li>Resources are released in reverse order, however the scope ends.</li>
 <li>Axial.Guardrails flags direct clock and randomness calls, exceptions in <code>flow { }</code>, and dropped cancellation tokens.</li>
 </ul>
-<p class="why-link"><a href="notes/guardrails.html">Guardrails →</a></p>
+<p class="why-link"><a href="guardrails/guardrails.html">Guardrails →</a></p>
 </section>
 
 <p class="why-more"><a href="getting-started/why-flow.html">Read the full Why Flow page →</a></p>

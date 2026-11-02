@@ -22,4 +22,4 @@ import or configure the JavaScript SDK.
 
 Ambient attributes use `Axial.Telemetry.Context` from core on both platforms; `OtelContext` is only the opaque context object owned by `@opentelemetry/api`.
 
-See [JavaScript Telemetry](/observability/telemetry/javascript.html) for SDK setup, context propagation, and usage.
+See [JavaScript Telemetry](/telemetry/javascript.html) for SDK setup, context propagation, and usage.

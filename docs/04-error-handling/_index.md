@@ -49,8 +49,9 @@ Use an `attempt` constructor only when an exception from an interop API is an ex
 when the application deliberately translates a defect into a typed error.
 
 Use [`Flow.recover`](/api/Axial.Flow.html#Axial.Flow.recover) when a typed failure needs a fallback with a different
-error type, [`Flow.orElseWith`](/api/Axial.Flow.html#Axial.Flow.orElseWith) when it keeps the same error type, and
-[`Flow.fold`](/api/Axial.Flow.html#Axial.Flow.fold) to inspect every cause. See
+error type, [`Flow.orElseWith`](/api/Axial.Flow.html#Axial.Flow.orElseWith) when it keeps the same error type,
+[`Flow.fold`](/api/Axial.Flow.html#Axial.Flow.fold) to branch on success or a typed failure, and
+[`Flow.foldCause`](/api/Axial.Flow.html#Axial.Flow.foldCause) only to inspect every cause. See
 [Recovery and compound causes](recovery.html) for what happens when error types change and when a handler throws.
 
 ```fsharp
@@ -73,7 +74,7 @@ declined
 |> Flow.run ()
 |> shouldEqual (Exit.Success 0m : Exit<decimal, Never>)
 
-// Neither handles a defect; fold sees every cause, including defects.
+// Neither handles a defect; foldCause sees every cause, including defects.
 broken
 |> Flow.orElseWith (fun _ -> Flow.ok 0m)
 |> Flow.run ()
@@ -82,7 +83,7 @@ broken
 | other -> failwithf "expected a defect, got %A" other
 
 broken
-|> Flow.fold (fun value -> Flow.ok $"value {value}") (fun cause -> Flow.ok (Cause.prettyPrint string cause))
+|> Flow.foldCause (fun value -> Flow.ok $"value {value}") (fun cause -> Flow.ok (Cause.prettyPrint string cause))
 |> Flow.run ()
 |> shouldEqual (Exit.Success "Die(InvalidOperationException: boom)")
 ```

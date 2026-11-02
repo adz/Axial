@@ -59,7 +59,7 @@ interruption.
 Both examples open the file with `File.OpenText` to keep the focus on ownership and cleanup. That is an ambient
 .NET call, not the `IFileSystem` service: it is not interruptible, and I/O failures are not modeled as a typed
 `FileSystemError`. For the recommended pattern — an explicit filesystem dependency with a typed error channel — see
-[FileSystem](/services/filesystem.html).
+[FileSystem](/filesystem/filesystem.html).
 
 For reusable acquisition descriptions and direct registration of disposables or finalizers, see
 [scopes and resources](/scopes/index.html).
@@ -78,20 +78,20 @@ that defect; if the flow failed, the defect is appended to the original cause as
 cause first.
 
 ```fsharp transcript
-> open Axial.PlatformService;;
+> open Axial;;
 > (flow {
 -     let log = ResizeArray<string>()
--     let note text : Flow<ClockEnvironment, Never, unit> = Flow.delay (fun () -> log.Add text; Flow.ok ())
+-     let note text : Flow<unit, Never, unit> = Flow.delay (fun () -> log.Add text; Flow.ok ())
 -     let! worker =
--         Flow.never<ClockEnvironment, Never, unit>
+-         Flow.never<unit, Never, unit>
 -         |> Flow.onInterrupt (note "interrupted")
 -         |> Flow.ensuring (note "closed")
 -         |> Flow.fork
 -     let! _ = Fiber.interrupt worker
 -     let! _ = Flow.ok 1 |> Flow.onInterrupt (note "not logged") |> Flow.ensuring (note "closed")
 -     return List.ofSeq log
-- } : Flow<ClockEnvironment, Never, string list>)
-- |> Flow.run (ClockEnvironment Clock.live);;
+- } : Flow<unit, Never, string list>)
+- |> Flow.run ();;
 val it: Exit<string list,Never> = Success ["interrupted"; "closed"; "closed"]
 ```
 

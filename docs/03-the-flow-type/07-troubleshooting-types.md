@@ -18,13 +18,12 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
 open Axial.Hosting.Browser
 open Axial.Hosting.Node
-open Axial.PlatformService
+open Axial
 open Axial.State
 open Axial.Telemetry
 open Axial.Telemetry.JavaScript
@@ -58,39 +57,44 @@ loadSettings<IHasFileSystem> |> Flow.run env |> shouldEqual (Exit.Success { Name
 
 ## Error: A Unique Overload For Method `Bind` Could Not Be Determined
 
-The compiler cannot determine which wrapper shape a `let!` value should use.
+An underconstrained `Async` expression can match either `Async<'value>` or `Async<Result<'value,'error>>`. For example,
+the exception gives `raise` no inner result type from which the compiler can select an overload:
 
-Example:
-
-```fsharp
-let nested : Async<Async<Result<int, string>>> =
-    async {
-        return async { return Ok 42 }
-    }
-
-let workflow : Flow<unit, string, int> =
+```fsharp no-check reason="Intentionally demonstrates an ambiguous Flow builder source"
+let ambiguous : Flow<unit, string, int> =
     flow {
-        let! next = nested
-        let! value = next
+        let! value = async { return raise (InvalidOperationException "boom") }
         return value
     }
 ```
 
-The second `let!` is ambiguous.
-
-Fix it with a type annotation:
+Annotate the `Async` expression's inner type:
 
 ```fsharp
 let annotated : Flow<unit, string, int> =
     flow {
-        let! next = nested
-        let! (value: int) = next
+        let! value = (async { return 42 } : Async<int>)
         return value
     }
 ```
 
 ```fsharp run
 annotated |> Flow.run () |> shouldEqual (Exit.Success 42)
+```
+
+Use `Flow.fromAsyncResult` when an `Error` should enter the typed error channel:
+
+```fsharp
+let nestedError : Flow<unit, string, int> =
+    flow {
+        let source : Async<Result<int, string>> = async { return Error "not found" }
+        let! value = source |> Flow.fromAsyncResult
+        return value
+    }
+```
+
+```fsharp run
+nestedError |> Flow.run () |> shouldEqual (Exit.Failure (Cause.Fail "not found"))
 ```
 
 ## Error: The Flow Requires A Different Environment Type

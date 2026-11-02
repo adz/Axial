@@ -32,13 +32,12 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
 open Axial.Hosting.Browser
 open Axial.Hosting.Node
-open Axial.PlatformService
+open Axial
 open Axial.State
 open Axial.Telemetry
 open Axial.Telemetry.JavaScript
@@ -67,8 +66,12 @@ let checkout orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
     flow {
         let! findTotal = Flow.envWith _.FindTotal
         let! charge = Flow.envWith _.Charge
-        let! total = ColdTask(fun cancellationToken -> findTotal orderId cancellationToken)
-        let! reference = ColdTask(fun cancellationToken -> charge total cancellationToken)
+        let! total =
+            ColdTask(fun cancellationToken -> findTotal orderId cancellationToken)
+            |> Flow.fromColdTaskResult
+        let! reference =
+            ColdTask(fun cancellationToken -> charge total cancellationToken)
+            |> Flow.fromColdTaskResult
         return { OrderId = orderId; Total = total; Reference = reference }
     }
 
@@ -184,5 +187,5 @@ For installation and configuration, see
 - [Expected errors and defects](/error-handling/index.html) explains which failures belong in `'error` and which
   belong in the defect channel.
 - [Your first application](first-application.html) replaces the host entirely when a Flow is the application root.
-- [Effect-boundary guardrails](/notes/guardrails.html) covers what the analyzer checks and how to mark an
+- [Effect-boundary guardrails](/guardrails/guardrails.html) covers what the analyzer checks and how to mark an
   intended boundary.

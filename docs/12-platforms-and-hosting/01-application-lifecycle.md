@@ -17,13 +17,12 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
 open Axial.Hosting.Browser
 open Axial.Hosting.Node
-open Axial.PlatformService
+open Axial
 open Axial.State
 open Axial.Telemetry
 open Axial.Telemetry.JavaScript
@@ -46,9 +45,7 @@ type AppError =
 type IOrderRepository =
     abstract ProcessPending: unit -> Result<unit, AppError>
 
-type AppEnv =
-    { Orders: IOrderRepository
-      Log: ILog }
+type AppEnv = { Orders: IOrderRepository }
 
 type StartupInputs = { PendingOrders: int }
 
@@ -63,8 +60,7 @@ let appLayer : Layer<StartupInputs, AppError, AppEnv> =
         { Orders =
             { new IOrderRepository with
                 member _.ProcessPending() =
-                    if inputs.PendingOrders >= 0 then Ok() else Error(OrderError "negative backlog") }
-          Log = Log.live })
+                    if inputs.PendingOrders >= 0 then Ok() else Error(OrderError "negative backlog") } })
 
 let root : Flow<StartupInputs, AppError, unit> =
     program
@@ -166,9 +162,9 @@ interop boundaries. `App` adds ownership around a root workflow:
 | Run a finite root application | `App.run env application` |
 | Start and later stop a root application | `App.start env application` |
 | Publish services with a scoped lifetime | `App.startWith env build` |
-| Integrate with .NET Generic Host | [`Axial.Hosting`](./dotnet.html) |
-| Run under Node signals | [Node hosting](./node.html) |
-| Tie lifetime to a browser owner | [Browser hosting](./browser.html) |
+| Integrate with .NET Generic Host | [`Axial.Hosting`](/hosting/dotnet.html) |
+| Run under Node signals | [Node hosting](/hosting/node.html) |
+| Tie lifetime to a browser owner | [Browser hosting](/hosting/browser.html) |
 
 `App` does not render errors, choose process exit codes, or subscribe to platform lifecycle events. Those decisions
 belong to the application edge or one of the platform hosting packages.

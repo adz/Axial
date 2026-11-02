@@ -44,31 +44,23 @@ Install the analyzer package:
 dotnet add package Axial.Guardrails
 ```
 
-The package configures the analyzer automatically. Findings are warnings by default, so you can add it to an
-existing project without failing the build.
+The package configures the analyzer automatically. New findings are errors. Review each finding and replace
+accidental ambient access with an explicit service. For an existing codebase, generate and review a baseline so
+existing findings remain visible as warnings while later findings fail the build.
 
-Review each finding. Replace accidental ambient access with an explicit service. Add a category-specific
-suppression only when the call implements an intentional effect boundary.
+A category-specific suppression is valid only for an intentional effect boundary in an explicitly declared file.
+To omit a package-specific category entirely, remove its `AxialGuardrail` MSBuild item; this disables that rule set
+rather than changing finding severity. Guardrail selection, baseline adoption, and the local troubleshooting switch
+are documented in [Effect-boundary guardrails](/guardrails/guardrails.html).
 
-After resolving the initial findings, configure the analyzer to fail the build on new findings:
-
-```xml
-<PropertyGroup>
-  <AxialGuardrailsSeverity>error</AxialGuardrailsSeverity>
-</PropertyGroup>
-```
-
-To disable the analyzer for one project without removing the package, set
-`AxialGuardrailsEnabled` to `false`.
-
-See [Effect-boundary guardrails](/notes/guardrails.html) for the diagnostic list, configuration options, and
+See [Effect-boundary guardrails](/guardrails/guardrails.html) for the diagnostic list, configuration options, and
 suppression syntax.
 
 ## Related guides
 
-- [Hosting](/platforms-and-hosting/dotnet.html) chooses between standalone .NET, Generic Host, Node, and browser
+- [Hosting](/hosting/dotnet.html) chooses between standalone .NET, Generic Host, Node, and browser
   entry points.
-- [Platform services](/services/platform-services/index.html) introduces the explicit clock, logging, random,
-  GUID, and environment-variable contracts.
-- [Effect-boundary guardrails](/notes/guardrails.html) is the analyzer that enforces those contracts as a build
+- [Platform services](/services/platform-services/index.html) introduces the explicit clock, logging, random, GUID,
+  culture, time-zone, and formatting services. Configuration lives in the [Configuration set](/configuration/).
+- [Effect-boundary guardrails](/guardrails/guardrails.html) is the analyzer that enforces those contracts as a build
   check instead of a review convention.

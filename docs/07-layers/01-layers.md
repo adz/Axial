@@ -15,13 +15,12 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
 open Axial.Hosting.Browser
 open Axial.Hosting.Node
-open Axial.PlatformService
+open Axial
 open Axial.State
 open Axial.Telemetry
 open Axial.Telemetry.JavaScript
@@ -33,7 +32,6 @@ let shouldEqual expected actual =
 
 ```fsharp
 open Axial
-open Axial.Layers
 ```
 
 The examples on this page provision an orders repository from a settings map. Opening the repository is recorded in
@@ -135,7 +133,7 @@ countOrders
 ```
 
 Plain `let!` is sequential and dependent. Sibling `and!` bindings are independent and use `Layer.merge`, which provisions
-branches in parallel through child scopes. An `and!` sibling cannot depend on a value introduced by another sibling;
+branches in parallel through a shared acquisition scope. An `and!` sibling cannot depend on a value introduced by another sibling;
 that is an ordinary F# compile-time scope error, and the fix is to move it into a prior `let!`.
 
 ## Layer functions
@@ -143,11 +141,11 @@ that is an ordinary F# compile-time scope error, and the fix is to move it into 
 `layer { }` uses `let!` (via `Layer.bind`) and `and!` (via `Layer.merge`/`Layer.zipPar`) above; the full combinator
 inventory — `succeed`, `envWith`, `fromFlow`, `acquireRelease`, `addFinalizer`, `map`/`mapError`/`widenError`,
 `zip`, `zipPar`/`merge`, and `map2`/`map3` — is in the
-[Layer API reference](/api/Axial.Layers.LayerModule.html).
+[Layer API reference](/api/Axial.LayerModule.html).
 
 Layer error types must match the flow error type. When provisioning steps use different errors, map them into one
-startup error type with `Layer.mapError` before calling `Layer.provide`. A layer that cannot fail, such as
-`BaseRuntime.live` or `Clock.layer`, has error type `Never`; `Layer.widenError` gives it any error type.
+startup error type with `Layer.mapError` before calling `Layer.provide`. A layer that cannot fail, such as one built from
+`Layer.succeed`, has error type `Never`; `Layer.widenError` gives it any error type.
 
 ```fsharp
 type OrdersError = MissingOrders of string
@@ -224,9 +222,9 @@ Flow.ok 0
 List.ofSeq events |> shouldEqual [ "opened db://orders"; "closed db://orders" ]
 ```
 
-Parallel composition uses parent-owned child scopes, so the same holds when one parallel branch fails after another
-acquired resources. If both parallel branches fail, Axial preserves both failures as `Cause.Both (leftCause, rightCause)` rather than
-discarding one side.
+Parallel composition interrupts the other branch on the first failure and waits for it to settle. Both branches'
+resources are released in reverse acquisition order before failure returns; successful provisioning keeps them open
+until the providing scope closes. Independent failures are preserved as `Cause.Both (leftCause, rightCause)`.
 
 ```fsharp
 let failOrders : Layer<unit, ProvisionError, int> =

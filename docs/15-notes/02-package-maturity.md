@@ -15,15 +15,14 @@ A real application is in active use outside this repository. Currently gitkay an
 | Package | Maturity | Evidence |
 | --- | --- | --- |
 | `Axial` | Incubating | gitkay, Logs Digger |
-| `Axial.Layers` | Incubating | gitkay, Logs Digger |
-| `Axial.PlatformService` | Incubating | gitkay, Logs Digger |
+| `Axial.Configuration` | Experimental | No qualifying application |
 | `Axial.FileSystem` | Incubating | gitkay, Logs Digger |
 | `Axial.Guardrails` | Incubating | gitkay, Logs Digger |
+| `Axial.Tool` | Experimental | No qualifying application |
 | `Axial.ElmishFlows` | Incubating | gitkay, Logs Digger |
 | `Axial.Console` | Incubating | gitkay |
 | `Axial.HttpClient` | Incubating | gitkay |
 | `Axial.Process` | Incubating | gitkay |
-| `Axial.Files` | Incubating | Logs Digger |
 | `Axial.Hosting` | Experimental | No qualifying application |
 | `Axial.Hosting.Browser` | Experimental | No qualifying application |
 | `Axial.Hosting.Node` | Experimental | No qualifying application |

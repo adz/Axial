@@ -8,9 +8,9 @@ project: src/Axial.Telemetry/Axial.Telemetry.fsproj
 
 | Signal | Where it comes from | Consumed by |
 | --- | --- | --- |
-| **Traces** (spans) | [`Axial.Telemetry`](/observability/telemetry/index.html) emitting on the `Axial` `ActivitySource`; `Axial.Telemetry.JavaScript` on Fable targets | any `ActivityListener`, in practice the OpenTelemetry SDK; OpenTelemetry JS under Fable |
-| **Logs** | the explicit `ILog` service, bridged to `Microsoft.Extensions.Logging` by [`Axial.Hosting`](/platforms-and-hosting/dotnet.html) | your host's logging pipeline |
-| **Metrics** | [`Axial.Telemetry`](/observability/telemetry/index.html): `FiberMetrics` and `QueueMetrics` on the `Axial` `Meter` | OpenTelemetry's `.AddMeter("Axial")`, `dotnet-counters`, the Aspire dashboard |
+| **Traces** (spans) | [`Axial.Telemetry`](/telemetry/index.html) emitting on the `Axial` `ActivitySource`; `Axial.Telemetry.JavaScript` on Fable targets | any `ActivityListener`, in practice the OpenTelemetry SDK; OpenTelemetry JS under Fable |
+| **Logs** | the runtime log sink (`Log.info` and friends), bridged to `Microsoft.Extensions.Logging` by [`Axial.Hosting`](/hosting/dotnet.html) | your host's logging pipeline |
+| **Metrics** | [`Axial.Telemetry`](/telemetry/index.html): `FiberMetrics` and `QueueMetrics` on the `Axial` `Meter` | OpenTelemetry's `.AddMeter("Axial")`, `dotnet-counters`, the Aspire dashboard |
 | **Fiber dumps** | core `Axial`: `FiberRegistry` live-fiber snapshots, no telemetry dependency | `registry.DumpAt(Clock.live)` on demand; `FiberDumpTelemetry.record` to put dumps on traces |
 
 Two general-purpose channels feed those signals and are part of core `Axial`, not the telemetry
@@ -36,9 +36,9 @@ The host decides at the edge whether anything listens and where spans go; workfl
 
 ## Setup and recipes
 
-The [Telemetry guide](/observability/telemetry/index.html) covers the runnable setup that this overview only maps:
+The [Telemetry guide](/telemetry/index.html) covers the runnable setup that this overview only maps:
 span tag vocabulary and `Activity.traceOn`, OpenTelemetry wiring in ASP.NET Core and console hosts, the Aspire
-dashboard walkthrough, and fiber metrics and dumps. The [JavaScript guide](/observability/telemetry/javascript.html)
+dashboard walkthrough, and fiber metrics and dumps. The [JavaScript guide](/telemetry/javascript.html)
 covers the Fable bootstrap and cross-stack `traceparent` propagation.
 
 ## Correlation: how the signals join up
@@ -58,23 +58,23 @@ covers the Fable bootstrap and cross-stack `traceparent` propagation.
 
 ## Logs
 
-Unlike tracing, logging uses an explicit `ILog` environment service so applications can substitute the logger.
+Logging goes through the runtime log sink, so applications and tests substitute the destination with `Flow.withLogSink` and no environment member.
 
-- Workflows log through `Log.info`/`Log.error`/`Log.errorExn`/... against `IHasLog`.
-- [`Axial.Hosting`](/platforms-and-hosting/dotnet.html) bridges `ILog` to
+- Workflows log through `Log.info`/`Log.error`/`Log.errorExn`/... against the runtime's current `ILogSink`.
+- [`Axial.Hosting`](/hosting/dotnet.html) installs a Microsoft-backed log sink at the root of a hosted application, sending entries to
   `Microsoft.Extensions.Logging`, exceptions included, so entries flow into the host's providers.
 - `FiberLogging.observe logger` is the logging counterpart of `FiberTelemetry.observe`: fiber defects are
   logged as errors, unobserved defects as critical entries. Compose both from one edge install.
 
 OpenTelemetry can also export MEL logs (`builder.Logging.AddOpenTelemetry(...)`), which pairs naturally with
-the bridge: `ILog` → MEL → OTLP.
+the bridge: log sink → MEL → OTLP.
 
 ## Metrics
 
 `FiberMetrics.observe` (in `Axial.Telemetry`) records fiber starts, live counts, settlement, duration, and unobserved
 defects onto the `Axial` `Meter`. Subscribe with `.AddMeter("Axial")`: a climbing `fibers.live` with flat
 `fibers.settled` is a fiber leak, and a nonzero `unobserved_defects` rate is crashing background work nobody joins.
-The instrument-by-instrument table is in the [FiberMetrics reference](/api/Axial.Telemetry.FiberMetrics.html).
+The instrument-by-instrument table is in the [FiberMetrics reference](/telemetry/api/Axial.Telemetry.FiberMetrics.html).
 
 ## Fiber dumps
 
@@ -99,15 +99,15 @@ Hosting turns them into MEL logs.
 alike, with the same span semantics and `axial.flow.*` tag vocabulary. It never imports the npm module
 itself: the application registers the OpenTelemetry JS SDK (exporter and context manager) and hands the
 `@opentelemetry/api` object to `Otel.installNamed` once at the edge, the same host/library split as registering an
-application `ActivitySource` on .NET. See the [JavaScript guide](/observability/telemetry/javascript.html) for the
+application `ActivitySource` on .NET. See the [JavaScript guide](/telemetry/javascript.html) for the
 bootstrap and cross-stack propagation notes.
 
 ## Where to go deeper
 
-- [Telemetry](/observability/telemetry/index.html): span tag vocabulary, `Activity.traceWith`,
+- [Telemetry](/telemetry/index.html): span tag vocabulary, `Activity.traceWith`,
   span-per-fiber details, metrics, dumps, and the Aspire walkthrough.
 - [Supervision and fiber observability](/concurrency-and-state/supervision.html):
   `FiberObserver`, `Flow.supervise`, unobserved-defect semantics.
-- [Hosting](/platforms-and-hosting/dotnet.html): DI integration and the `ILog`/MEL bridge.
+- [Hosting](/hosting/dotnet.html): DI integration and the log-sink/MEL bridge.
 - [Runtime operations tutorial](/platforms-and-hosting/runtime-operations.html): annotations,
   timeout, retry, cancellation in practice.

@@ -18,7 +18,7 @@ api:
     - id: interrupt
       title: Interrupt fibers
       order: 30
-      members: ["interrupt"]
+      members: ["requestInterrupt", "interrupt"]
       facets:
         task: [interrupt]
 ---

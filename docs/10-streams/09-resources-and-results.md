@@ -17,13 +17,12 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
 open Axial.Hosting.Browser
 open Axial.Hosting.Node
-open Axial.PlatformService
+open Axial
 open Axial.State
 open Axial.Telemetry
 open Axial.Telemetry.JavaScript
@@ -64,7 +63,7 @@ File.Delete path
 The reader was closed after the full read and after `take 1` stopped the stream early. This example is about
 `using`'s release behavior only: it opens `File.OpenText` directly, so a missing file or failed read is a defect
 rather than a typed error. For a recommended read pattern, model the filesystem with `IFileSystem` and a typed
-`FileSystemError`; see [FileSystem](/services/filesystem.html).
+`FileSystemError`; see [FileSystem](/filesystem/filesystem.html).
 
 `FlowStream.repeatFlow` runs its flow once per pull, forever, so it never runs ahead of the consumer. Bound it with
 `take` or `takeWhile`, or pace it with `throttle`.

@@ -57,6 +57,10 @@ dotnet run --project examples/Axial.TortureTest -- all 100
 The program prints each invariant with a check mark and the number of rounds it held on. It exits with a non-zero code
 if any invariant was ever violated, so it can gate a CI job or run as a soak test on your own hardware.
 
+Each round runs under a `FiberRegistry`. A round still running after 10 seconds prints how many fibers are live, and a
+round still running after 60 seconds prints the live fiber tree, interrupts those fibers and fails. A hang therefore
+names the fibers that are still waiting instead of blocking the run.
+
 ## Rounds and seeds
 
 A scenario runs once per round, and each round has a seed. The seed fixes every random choice the scenario makes: which

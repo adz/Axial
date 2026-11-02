@@ -112,9 +112,9 @@ defects and interruption are never retried, because `Flow.retry` re-runs `Cause.
 tests pin all four behaviors: recovery within the budget, budget exhaustion, no retry of `Malformed`, and the
 timeout interrupting a hung request. ZIO correspondence: `timeoutFail`, typed `Schedule`, `retry`.
 
-- **Made visible by the type**: the transient/terminal error taxonomy and both required capabilities: `IHasHttp`
-  for the request and `IHasClock` for retry delays and the two-second timeout. The underlying request needs only
-  `IHasHttp`; the composed operation needs an environment implementing both interfaces.
+- **Made visible by the type**: the transient/terminal error taxonomy and the required capability `IHasHttp`
+  for the request. Retry delays and the two-second timeout read the runtime clock, so they add no environment
+  requirement and a test steps them with a `ManualClock` installed by `Flow.withClock`.
 - **Enforced by the runtime**: only predicate-accepted typed failures are retried; the timeout reaches sleeps and
   the in-flight request through the ambient cancellation token.
 - **Still the application's responsibility**: the operation must be safe to repeat, and the adapter must not hide a
@@ -145,7 +145,7 @@ ZIO correspondence: `zipPar`, typed `catchAll` (here `orElse`), `race`.
 
 ## 4. Scoped temporary workspace
 
-Create a temporary directory through [`Axial.FileSystem`](/services/filesystem.html), perform fallible
+Create a temporary directory through [`Axial.FileSystem`](/filesystem/filesystem.html), perform fallible
 steps, remove the directory exactly once on every exit shape.
 
 Read the [workspace comparison source](https://github.com/adz/Axial/blob/main/examples/Axial.Comparisons/ScopedWorkspace.fs).
@@ -177,8 +177,8 @@ Read the [report-wiring comparison source](https://github.com/adz/Axial/blob/mai
 
 The Flow version declares the capability set once as an environment record implementing one contract per
 capability, and business code names only what it uses through the package operations
-([`Clock.now`](/services/platform-services/clock.html), [`FileSystem.readAllText`](/services/filesystem.html),
-[`Console.writeLine`](/services/console.html)):
+([`Clock.now`](/services/platform-services/clock.html), [`FileSystem.readAllText`](/filesystem/filesystem.html),
+[`Console.writeLine`](/console/console.html)):
 
 {{< snippet id="compare-report" mode="no-check" reason="Excerpt from examples/Axial.Comparisons, whose tests compile and run it" >}}
 

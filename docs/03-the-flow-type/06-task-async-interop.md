@@ -14,9 +14,9 @@ channel.
 | Source | Use | Behavior |
 | --- | --- | --- |
 | `Async<'value>` | Bind directly in `flow { }` | Cold and rerunnable; the value is successful output |
-| `Async<Result<'value,'error>>` | Bind directly in `flow { }` | Cold and rerunnable; `Error` enters the typed error channel |
+| `Async<Result<'value,'error>>` | `Flow.fromAsyncResult` | Cold and rerunnable; `Error` enters the typed error channel |
 | `ColdTask<'value>` | Bind directly in `flow { }` | Cold task factory; receives Flow's cancellation token |
-| `ColdTask<Result<'value,'error>>` | Bind directly in `flow { }` | Cold task factory; `Error` enters the typed error channel |
+| `ColdTask<Result<'value,'error>>` | `Flow.fromColdTaskResult` | Cold task factory; `Error` enters the typed error channel |
 | `CancellationToken -> Task<'value>` | `Flow.fromTask` | Creates a cold Flow whose task value is successful output |
 | `CancellationToken -> Task<Result<'value,'error>>` | `Flow.fromTaskResult` | Creates a cold Flow whose `Error` enters the typed error channel |
 | Already-running `Task<'value>` | `Flow.awaitStartedTask` | Awaits the existing operation; Flow cannot retroactively supply its cancellation token |
@@ -37,13 +37,12 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
 open Axial.Hosting.Browser
 open Axial.Hosting.Node
-open Axial.PlatformService
+open Axial
 open Axial.State
 open Axial.Telemetry
 open Axial.Telemetry.JavaScript
@@ -98,11 +97,12 @@ let repository = UserRepository()
 
 let userName (id: int) : Flow<LoadUserError, string> =
     flow {
-        let! user = repository.LoadUser id
+        let! user = repository.LoadUser id |> Flow.fromAsyncResult
         return user.Name
     }
 
-let loadUser (id: int) : Flow<LoadUserError, User> = flow { return! repository.LoadUser id }
+let loadUser (id: int) : Flow<LoadUserError, User> =
+    flow { return! repository.LoadUser id |> Flow.fromAsyncResult }
 ```
 
 ```fsharp run
@@ -117,7 +117,7 @@ Use `Flow.fromAsync` or `Flow.fromAsyncResult` when composing without `flow { }`
 ## Bind cold Task work
 
 A `Task` starts when the method that returns it runs. Wrap the call in `ColdTask` so the method runs only when the Flow
-runs. `ColdTask<Result<_,_>>` lifts its outer `Result` for both `let!` and `return!`:
+runs. `Flow.fromColdTaskResult` lifts the outer `Result`:
 
 ```fsharp
 let loadUserCold (id: int) : ColdTask<Result<User, LoadUserError>> =
@@ -125,7 +125,7 @@ let loadUserCold (id: int) : ColdTask<Result<User, LoadUserError>> =
 
 let coldName (id: int) : Flow<LoadUserError, string> =
     flow {
-        let! user = loadUserCold id
+        let! user = loadUserCold id |> Flow.fromColdTaskResult
         return user.Name
     }
 ```
@@ -247,6 +247,40 @@ safely. The operation receives the runtime's cancellation token, so a call that 
 `Flow.fromBlockingResult` sends an `Error` to the typed error channel, and `Flow.attemptBlocking` treats thrown
 exceptions as `Cause.Fail exn`. On JavaScript the operation runs inline.
 
+When the synchronous reader already returns a typed `Result`, keep it cold with `Flow.delay` and move only the
+synchronous prefix off the caller with `RunOn.DedicatedThread`:
+
+```fsharp
+type ReadError = Missing of string
+
+let readExisting (path: string) : Result<string, ReadError> =
+    if IO.File.Exists path then Ok(IO.File.ReadAllText path) else Error(Missing path)
+
+let read (path: string) : Flow<ReadError, string> =
+    Flow.delay (fun () -> Flow.fromResult (readExisting path))
+    |> Flow.runOn RunOn.DedicatedThread
+
+let missing (path: string) : Flow<ReadError, string> =
+    Flow.delay (fun () -> Flow.fromResult (readExisting path))
+    |> Flow.runOn RunOn.DedicatedThread
+```
+
+```fsharp run
+let path = IO.Path.GetTempFileName()
+try
+    IO.File.WriteAllText(path, "cold")
+    read path |> Flow.run () |> shouldEqual (Exit.Success "cold")
+    missing (path + ".missing") |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail(Missing(path + ".missing"))))
+finally
+    IO.File.Delete path
+```
+
+`Flow.delay` keeps construction from reading. `RunOn.DedicatedThread` places the synchronous prefix—up to its first
+incomplete await—on a dedicated thread, not every continuation. Once blocking work has started, cancellation cannot
+forcibly stop it; it must finish or observe the token itself. Do not add an unused `CancellationToken` parameter just
+to satisfy a signature. `Flow.fromBlockingResult` is the right form when the operation genuinely accepts and observes
+a token.
+
 ## Keep a Result as the successful value
 
 The builder interprets one outer `Result` as Flow's error channel. Add another successful layer when a nested Result is
@@ -260,7 +294,8 @@ let inspect (id: int) : ColdTask<Result<Result<User, LoadUserError>, Never>> =
             return (Ok result: Result<_, Never>)
         })
 
-let lookup (id: int) : Flow<Result<User, LoadUserError>> = flow { return! inspect id }
+let lookup (id: int) : Flow<Result<User, LoadUserError>> =
+    flow { return! inspect id |> Flow.fromColdTaskResult }
 ```
 
 ```fsharp run

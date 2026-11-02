@@ -31,13 +31,12 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
 open Axial.Hosting.Browser
 open Axial.Hosting.Node
-open Axial.PlatformService
+open Axial
 open Axial.State
 open Axial.Telemetry
 open Axial.Telemetry.JavaScript
@@ -49,7 +48,7 @@ let shouldEqual expected actual =
 
 ```fsharp
 /// Crashes on its first two runs, as a worker does on a poison message, then succeeds.
-let pollQueue (polls: Ref<int>) : Flow<ClockEnvironment, string, int> =
+let pollQueue (polls: Ref<int>) : Flow<unit, string, int> =
     flow {
         let! run = polls |> Ref.updateAndGet ((+) 1)
         if run <= 2 then return! Flow.die (InvalidOperationException "poison message") else return run
@@ -61,7 +60,7 @@ let restartPolicy =
             Retries = 4
             Backoff = Backoff.Exponential(TimeSpan.FromMilliseconds 1.0, TimeSpan.FromMilliseconds 10.0) }
 
-let reliableWorker (polls: Ref<int>) : Flow<ClockEnvironment, string, int> = pollQueue polls |> Flow.supervise restartPolicy
+let reliableWorker (polls: Ref<int>) : Flow<unit, string, int> = pollQueue polls |> Flow.supervise restartPolicy
 ```
 
 ```fsharp run
@@ -70,7 +69,7 @@ flow {
     let! fiber = Flow.fork (reliableWorker polls)
     return! Fiber.join fiber
 }
-|> Flow.run (ClockEnvironment Clock.live)
+|> Flow.run ()
 |> shouldEqual (Exit.Success 3)
 ```
 
@@ -86,9 +85,9 @@ Two semantics worth knowing:
 If a background fiber's outcome genuinely does not matter, say so at the call site:
 
 ```fsharp
-let bestEffortCacheWarmup : Flow<ClockEnvironment, string, unit> = Flow.die (InvalidOperationException "cache warmup failed")
+let bestEffortCacheWarmup : Flow<unit, string, unit> = Flow.die (InvalidOperationException "cache warmup failed")
 
-let startWarmup : Flow<ClockEnvironment, string, unit> =
+let startWarmup : Flow<unit, string, unit> =
     flow {
         let! _fiber = Flow.forkDetached bestEffortCacheWarmup
         return ()
@@ -113,10 +112,10 @@ let defectStream (runApplication: FiberObserver -> Exit<unit, string>) =
             Flow.ok ({ new IDisposable with member _.Dispose() = () })))
 
 /// Detaches one failing fiber and discards the handle of another.
-let application : Flow<ClockEnvironment, string, unit> =
+let application : Flow<unit, string, unit> =
     flow {
         do! startWarmup
-        let! _ = Flow.fork (Flow.die (InvalidOperationException "lost order") : Flow<ClockEnvironment, string, unit>)
+        let! _ = Flow.fork (Flow.die (InvalidOperationException "lost order") : Flow<unit, string, unit>)
         do! Flow.sleep (TimeSpan.FromMilliseconds 20.0)
     }
     |> Flow.scoped
@@ -124,9 +123,9 @@ let application : Flow<ClockEnvironment, string, unit> =
 
 ```fsharp run
 defectStream (fun observer ->
-    application |> Flow.withFiberObserver observer |> Flow.run (ClockEnvironment Clock.live))
+    application |> Flow.withFiberObserver observer |> Flow.run ())
 |> FlowStream.runCollect
-|> Flow.run (ClockEnvironment Clock.live)
+|> Flow.run ()
 |> shouldEqual (Exit.Success [ "lost order" ])
 ```
 
@@ -136,7 +135,7 @@ The hooks:
 
 - `OnStart`: a fiber was forked; receives the child's `FiberMetadata`.
 - `OnEnd`: a fiber settled; `FiberMetadata.Status` distinguishes `Succeeded`/`Failed`/`Interrupted`, and the defect exception (if the fiber died of one) is passed alongside. This fires for *every* fiber, observed or not, so use it for metrics.
-- `OnUnobservedDefect`: a defect became **unobservable**: a forked fiber died and nobody ever consumed its outcome, or the runtime itself discarded a `Flow.race` / timeout loser's exit (those never had a handle at all, so their metadata is `None`).
+- `OnUnobservedDefect`: a defect became **unobservable**: a forked fiber died and nobody ever consumed its outcome, or a `Flow.race` / timeout loser's task escaped with an exception instead of settling with an exit (those never had a handle at all, so their metadata is `None`). A defect a race or timeout loser *settles* with, its cleanup's included, is not reported here: it becomes part of the race's or timeout's own failure.
 
 All hooks default to no-ops, receive diagnostic data only, and cannot alter any fiber's outcome; exceptions they throw are swallowed.
 
@@ -144,7 +143,7 @@ All hooks default to no-ops, receive diagnostic data only, and cannot alter any 
 
 Whether a fiber will ever be joined is only knowable retroactively, so the runtime reports at three moments:
 
-1. **Immediately**, for race/timeout losers: the runtime knows at the discard site that no one can ever see that exit.
+1. **Immediately**, for a race/timeout loser whose task escaped with an exception: the runtime knows at the discard site that no one can ever see it.
 2. **When the forking scope closes**, for fibers that settled with a defect and were never observed. Scope close is a fixed point in the program, so the report arrives at a predictable time.
 3. **When a discarded handle is garbage-collected**, as a best-effort net for forks made inside long-lived scopes (the same mechanism family as `UnobservedTaskException`; timing depends on GC).
 
@@ -157,7 +156,7 @@ Note the interaction with `supervise`: a supervised flow that exhausts its resta
 `Axial.Telemetry` ships a ready-made observer that records defects on the `Axial` activity source:
 
 ```fsharp
-let tracedApplication : Flow<ClockEnvironment, string, unit> =
+let tracedApplication : Flow<unit, string, unit> =
     application |> FiberTelemetry.observe // = Flow.withFiberObserver FiberTelemetry.observer
 ```
 
@@ -170,11 +169,11 @@ fiber defects as errors and unobserved defects as critical entries, with the exc
 compose, so telemetry and logging stack from one edge install:
 
 ```fsharp no-check reason="Needs Axial.Hosting for Microsoft.Extensions.Logging as well as Axial.Telemetry; this page checks against Axial.Telemetry"
-let observeWithLogging (logger: Microsoft.Extensions.Logging.ILogger) (workflow: Flow<ClockEnvironment, string, unit>) =
+let observeWithLogging (logger: Microsoft.Extensions.Logging.ILogger) (workflow: Flow<unit, string, unit>) =
     workflow
     |> Flow.withFiberObserver (FiberObserver.compose FiberTelemetry.observer (FiberLogging.observer logger))
 ```
 
 ## Platform notes
 
-Supervision and the observer hooks are pure F# and behave identically under Fable. The detection mechanisms differ slightly by platform: the scope-close sweep and timeout-loser reporting work everywhere, and the GC net is .NET-only.
+Supervision and the observer hooks are pure F# and behave identically under Fable. The detection mechanisms differ slightly by platform: the scope-close sweep and race/timeout loser handling work everywhere, and the GC net is .NET-only.

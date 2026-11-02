@@ -10,7 +10,7 @@ description: Composable atomic transactions across multiple variables in Axial.
 open System
 open System.Threading
 open Axial
-open Axial.PlatformService
+open Axial
 open Axial.State
 
 /// Fails the docs test when an example's result differs from the value shown.
@@ -116,7 +116,7 @@ let waitForFunds =
         return! Fiber.join withdrawer
     }
 
-(waitForFunds |> Flow.run (ClockEnvironment Clock.live) : Exit<decimal, unit>) |> shouldEqual (Exit.Success 0m)
+(waitForFunds |> Flow.run () : Exit<decimal, unit>) |> shouldEqual (Exit.Success 0m)
 ```
 
 ```fsharp run

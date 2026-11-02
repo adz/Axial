@@ -18,7 +18,7 @@
 - Declare a per-service contract (an interface `IHasFoo` exposing one member `Foo`) only when a package must ask
   for a service without knowing the caller's record type. Read it through the package's `service` accessor.
 - Run with `Flow.run`, `Flow.startTask`, or `Flow.toAsync`; `to*` starts nothing, `start*` begins immediately.
-- Use `Layer` plus `Layer.provide` from `Axial.Layers` when building the environment is
+- Use `Layer` plus `Layer.provide` from core `Axial` when building the environment is
   effectful. `Flow.scoped` and the `Flow.scope...` resource operations are core and work without layers.
 - Use `Flow.fromTask`/`fromAsync` when thrown exceptions are defects; use `attemptTask`/`attemptAsync` when expected
   exceptions belong in the typed failure channel. These take a cancellable factory; `awaitStartedTask` wraps work
@@ -77,11 +77,20 @@
 - Cap backoff with `Schedule.exponential d |> Schedule.union (Schedule.spaced cap)`; bound attempts with
   `Schedule.recurs n |> Schedule.intersect (Schedule.exponential d)`. Use `Schedule.fixedRate period` for drift-free
   periodic work; `Schedule.spaced` waits after each run instead.
+- When a flow returns, everything it started has finished and released its resources (`race` waits for the loser,
+  `forkReplacing` for the replaced fiber, Process runs for stdin feeders). `Flow.disconnect` is the one way to stop
+  waiting for interruption-insensitive work; the root run still waits for it. Every defect is returned or reported
+  once to the fiber observer. Rules: `/concurrency-and-state/guarantees.html`. In tests, wait on a `Deferred` or
+  `TaskCompletionSource`, never a sleep.
 - The torture tests (`/concurrency-and-state/torture-tests/index.html`, runnable from `examples/Axial.TortureTest`)
   are worked examples of every concurrency construct under interruption, failure, and shutdown. Each page lists the
   invariants the construct guarantees.
 
 ## Processes
+
+- `ProcessStarted.Close` owns shutdown and escalates after grace periods (immediately without a policy), unlike
+  .NET's Process.CloseMainWindow/Kill or sending one signal. `ProcessStarted.Signal` sends one stage-local request
+  with no escalation, does not change a running ladder, and is a no-op after stage exit.
 
 - Open `Axial.Process.DSL` for `cmd`, `cwd`, `env`, routing/capture helpers, and `=>`. Interpolation holes are
   individual native arguments; `bash`, `sh`, and `pwsh` explicitly opt into shell syntax with values passed separately.
@@ -96,7 +105,7 @@
 - `Process.tryRun`/`Process.tryRunWith` return `Exit` for commands, specs, or Flows; `Process.run`/`Process.runWith`
   return the successful value and raise `ProcessRunException` on failure. These boundary helpers are not DSL aliases.
   Direct commands retain batch output; existing Flows keep their policies. `toFlow` needs `IHasProcess`;
-  streaming additionally needs `IHasClock`.
+  streaming reads the runtime clock and needs no clock member.
 - `mergeStdout` fans in producer lines; `captureParallel` captures independent commands with bounded workflow
   concurrency and ordered results. Use `flow { }` for sequencing and `Flow.orElseWith` for typed recovery.
 - Guides: `/process/index.html`, `/process/scripts.html`, `/process/streaming.html`, and `/process/dsl-recipes.html`.
@@ -107,5 +116,8 @@
 - `Axial.Hosting.Node` is Fable JavaScript for Node only.
 - `Axial.Hosting.Browser` is Fable JavaScript for browsers only.
 - Core Flow is supported in Fable JavaScript on both Node and browsers.
+- Host guides: `/hosting/index.html`, `/hosting/dotnet.html`, `/hosting/aspnet-core.html`, `/hosting/genhttp.html`, `/hosting/node.html`, `/hosting/browser.html`, and `/hosting/running-as-a-service.html`.
+
+Package guides: `/configuration/`, `/console/`, `/filesystem/`, `/websocket/`, `/hosting/`, `/elmish/`, `/telemetry/`, and `/guardrails/`.
 
 See `/notes/packages-and-platforms.html` for the complete package matrix and `/notes/package-maturity.html` for ratings and application evidence.

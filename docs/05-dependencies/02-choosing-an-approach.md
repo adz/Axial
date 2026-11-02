@@ -26,13 +26,12 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
 open Axial.Hosting.Browser
 open Axial.Hosting.Node
-open Axial.PlatformService
+open Axial
 open Axial.State
 open Axial.Telemetry
 open Axial.Telemetry.JavaScript
@@ -138,23 +137,22 @@ Layers build explicit environments and own cleanup through `Scope`. Use `layer {
 combine several services into one environment.
 
 ```fsharp
-type AppEnv = { Runtime: BaseRuntime; Orders: IOrderRepo }
+type AppEnv = { Orders: IOrderRepo }
 
 let ordersLayer : Layer<unit, OrderError, IOrderRepo> = Layer.succeed (MemoryOrders())
 
 let appLayer : Layer<unit, OrderError, AppEnv> =
     layer {
-        let! runtime = BaseRuntime.live |> Layer.widenError
-        and! orders = ordersLayer
+        let! orders = ordersLayer
 
-        return { Runtime = runtime; Orders = orders }
+        return { Orders = orders }
     }
 ```
 
 `Layer.provide` builds the environment, runs the workflow in it, and releases whatever the layers acquired:
 
 ```fsharp run
-let saveInApp : Flow<AppEnv, OrderError, unit> = save { Id = 3 } |> Flow.localEnv (fun app -> { Orders = app.Orders })
+let saveInApp : Flow<AppEnv, OrderError, unit> = save { Id = 3 } |> Flow.localEnv (fun (app: AppEnv) -> ({ Orders = app.Orders }: CheckoutEnv))
 
 saveInApp |> Layer.provide appLayer |> Flow.run () |> shouldEqual (Exit.Success())
 ```

@@ -14,13 +14,12 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
 open Axial.Hosting.Browser
 open Axial.Hosting.Node
-open Axial.PlatformService
+open Axial
 open Axial.State
 open Axial.Telemetry
 open Axial.Telemetry.JavaScript
@@ -45,7 +44,7 @@ safely use the resource.
 `File.OpenText` and `ReadLineAsync` are ambient .NET filesystem calls, not the `IFileSystem` service, so this example is
 about lifetime only: a missing file or failed read throws instead of producing a typed error. For the recommended
 pattern — an explicit filesystem dependency with a typed error channel — see
-[FileSystem](/services/filesystem.html).
+[FileSystem](/filesystem/filesystem.html).
 
 A Flow scope is a runtime ownership boundary. It lets resources and child fibers live across function and subflow calls,
 then closes all of them together after success, failure, interruption, or defect.
@@ -292,16 +291,16 @@ combinator returns:
 
 ```fsharp
 /// Opens a connection, recording the open and the close in `log`.
-let connectionTo (log: Ref<string list>) (name: string) : Resource<ClockEnvironment, string, string> =
+let connectionTo (log: Ref<string list>) (name: string) : Resource<unit, string, string> =
     Resource.create
         (log |> Ref.update (fun entries -> entries @ [ $"open {name}" ]) |> Flow.map (fun () -> name))
         (fun _ -> log |> Ref.update (fun entries -> entries @ [ $"close {name}" ]))
 
-let closedIn (log: Ref<string list>) : Flow<ClockEnvironment, string, int> =
+let closedIn (log: Ref<string list>) : Flow<unit, string, int> =
     log |> Ref.get |> Flow.map (List.filter (fun (entry: string) -> entry.StartsWith "close") >> List.length)
 
 /// Opens two connections in parallel and counts the closed ones while they are in use and after their scope closes.
-let openBoth : Flow<ClockEnvironment, string, int * int> =
+let openBoth : Flow<unit, string, int * int> =
     flow {
         let! log = Ref.make []
 
@@ -320,7 +319,7 @@ let openBoth : Flow<ClockEnvironment, string, int * int> =
 ```
 
 ```fsharp run
-openBoth |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success(0, 2))
+openBoth |> Flow.run () |> shouldEqual (Exit.Success(0, 2))
 ```
 
 Both connections remain open while `openBoth` uses them and close with its scope.
@@ -333,7 +332,7 @@ runs in a fiber, but the release belongs to the caller's scope, so `Fiber.join` 
 
 ```fsharp
 /// A plain fork: the fiber owns the connection and releases it when it settles, before join returns it.
-let forkedConnectionClosedOnJoin : Flow<ClockEnvironment, string, bool> =
+let forkedConnectionClosedOnJoin : Flow<unit, string, bool> =
     flow {
         let! log = Ref.make []
         let! fiber = Flow.scopeResource (connectionTo log "audit") |> Flow.fork
@@ -344,7 +343,7 @@ let forkedConnectionClosedOnJoin : Flow<ClockEnvironment, string, bool> =
     |> Flow.scoped
 
 /// forkResource: the caller's scope owns the connection, so it is still open after join.
-let keptConnection : Flow<ClockEnvironment, string, bool * string list> =
+let keptConnection : Flow<unit, string, bool * string list> =
     flow {
         let! log = Ref.make []
 
@@ -363,12 +362,12 @@ let keptConnection : Flow<ClockEnvironment, string, bool * string list> =
 ```
 
 ```fsharp run
-forkedConnectionClosedOnJoin |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success true)
-keptConnection |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success(false, [ "open audit"; "close audit" ]))
+forkedConnectionClosedOnJoin |> Flow.run () |> shouldEqual (Exit.Success true)
+keptConnection |> Flow.run () |> shouldEqual (Exit.Success(false, [ "open audit"; "close audit" ]))
 ```
 
 If the caller's scope closes before the acquisition finishes, the fiber is interrupted, and a resource acquired anyway
-is released straight away. [`Axial.Guardrails`](/notes/guardrail-diagnostics.html#axg007-keep-resources-acquired-by-a-fiber)
+is released straight away. [`Axial.Guardrails`](/guardrails/diagnostics.html#axg007-keep-resources-acquired-by-a-fiber)
 reports a forked flow that returns its own scoped resource as `AXG007`.
 
 ### Coming from ZIO or Effect
@@ -378,8 +377,9 @@ returns a live resource. In Axial a forked fiber owns its scope, like `ZIO.scope
 `Flow.forkResource` for that pattern.
 
 `zipPar`, `race`, and the parallel traversals behave as in ZIO and Effect for values you receive. What a race loser or
-a failed branch acquired is released as soon as Axial discards that flow, not when the scope closes. If the flow
-stored the resource somewhere else first, such as in a `Ref`, that reference points at a released resource.
+a failed branch acquired is released as soon as Axial discards that flow, not when the caller's scope closes. A race
+interrupts and awaits its loser and closes the loser's branch scope before returning. If the flow stored the resource
+somewhere else first, such as in a `Ref`, that reference points at a released resource.
 
 ### Nested scopes
 
