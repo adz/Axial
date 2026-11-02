@@ -7,7 +7,7 @@ open Axial.Tool.PolicyLock
 
 module Program =
     let private workflow = """Axial policy workflow:
-  1. axial init
+  1. axial init [--ci github|gitlab|bitbucket|other]
   2. axial check
   3. axial policy review [--since <ref>] [--check] [--json]
   4. A human reads the review, then runs axial policy approve [--yes-i-reviewed].
@@ -82,14 +82,51 @@ Approval means a human read the review. The first review requires --since <ref>.
                     with error -> emit asJson false error.Message
                 else emit asJson false "Approval cancelled. Use --yes-i-reviewed for reviewed non-interactive changes."
 
-    let private defaultConfig = "version = 2\nbaseline = \"Axial.Guardrails.baseline\"\n\n[default]\nrole = \"domain\"\n"
+    let private ciHosts = ["github"; "gitlab"; "bitbucket"; "other"]
+
+    let private defaultConfig ci =
+        let automation =
+            match ci with
+            | "github" -> [".github/workflows/**"]
+            | "gitlab" -> [".gitlab-ci.yml"; ".gitlab/ci/**"]
+            | "bitbucket" -> ["bitbucket-pipelines.yml"]
+            | _ -> []
+        "version = 2\n" +
+        "# Baseline records reviewed existing findings, not new exceptions.\n" +
+        "baseline = \"Axial.Guardrails.baseline\"\n\n" +
+        "# Roles describe project authority; unmatched projects use the default role.\n" +
+        "[default]\nrole = \"domain\"\n\n" +
+        "# Assign repository-relative project globs under [projects], for example:\n" +
+        "# [projects]\n# test = [\"tests/**/*.fsproj\"]\n" +
+        "# Test role selects Fixture, WaitForFacts, RawConcurrency and SuppressionIntegrity.\n" +
+        "# AxialGuardrailsInTests=all enables the full analyzer set for test-role projects.\n\n" +
+        "[review]\n# Automation files enforce policy; globs are relative to the repository root.\n" +
+        "# Adding a verification script here lists its changes in axial policy review.\n" +
+        "# An absent or empty list disables automation tracking.\n" +
+        "automation = [" + (automation |> List.map (fun path -> "\"" + path + "\"") |> String.concat ", ") + "]\n"
     let private baselineHeader = "# Axial.Guardrails baseline: rule<TAB>file<TAB>fingerprint[ x<count>]\n"
 
-    let private init asJson =
+    let rec private promptCi () =
+        printf "CI host (GitHub, GitLab, Bitbucket, Other) [Other]: "
+        let answer = Console.ReadLine()
+        let host = if String.IsNullOrWhiteSpace answer then "other" else answer.Trim().ToLowerInvariant()
+        if List.contains host ciHosts then host
+        else
+            printfn "Choose GitHub, GitLab, Bitbucket, or Other."
+            promptCi ()
+
+    let private init asJson selectedCi =
         let repo = root()
         let config = Path.Combine(repo, ConfigName)
         let lock = Path.Combine(repo, LockName)
         let configExists = File.Exists config
+        let ci, notice =
+            match selectedCi with
+            | Some host -> host, ""
+            | None when configExists -> "other", ""
+            | None when not asJson && not Console.IsInputRedirected -> promptCi (), ""
+            | None -> "other", "Non-interactive init: using Other CI (automation = []). Use --ci to select a host.\n"
+        let defaultConfig = defaultConfig ci
         let plan =
             if not (Axial.Guardrails.Policy.isRepositorySource repo config) then
                 Error $"{ConfigName} resolves outside the repository root"
@@ -109,7 +146,7 @@ Approval means a human read the review. The first review requires --since <ref>.
             let finish ok message =
                 let createdText = if created.Count = 0 then "nothing" else String.concat ", " created
                 let reusedText = if reused.Count = 0 then "nothing" else String.concat ", " reused
-                emit asJson ok (message + Environment.NewLine + $"created: {createdText}; reused: {reusedText}")
+                emit asJson ok (notice + message + Environment.NewLine + $"created: {createdText}; reused: {reusedText}")
             try
                 match newConfig with
                 | Some text when not configExists ->
@@ -207,7 +244,28 @@ Approval means a human read the review. The first review requires --since <ref>.
         match args with
         | [] -> help asJson
         | ["check"] -> check asJson
-        | ["init"] -> init asJson
+        | ["init"] -> init asJson None
+        | ["init"; "--ci"; host] when List.contains host ciHosts -> init asJson (Some host)
+        | "init"::_ -> emit asJson false "Usage: axial init [--ci github|gitlab|bitbucket|other] [--json]"
+        // MSBuild reads only the declared project role; package-derived IsTestProject is not policy.
+        | ["policy"; "project-role"; project] ->
+            let policyPath = Path.Combine(root(), ConfigName)
+            match Axial.Guardrails.Policy.parse (root()) knownRules (File.ReadAllText policyPath) with
+            | Error errors -> emit asJson false (String.concat Environment.NewLine errors)
+            | Ok config ->
+                let relative = Path.GetRelativePath(root(), Path.GetFullPath project).Replace('\\', '/')
+                match Axial.Guardrails.Policy.projectRole config relative with
+                | Error error -> emit asJson false error
+                | Ok role ->
+                    let name =
+                        match role with
+                        | Axial.Guardrails.Policy.Domain -> "domain"
+                        | Axial.Guardrails.Policy.Capabilities -> "capabilities"
+                        | Axial.Guardrails.Policy.Services -> "services"
+                        | Axial.Guardrails.Policy.Host -> "host"
+                        | Axial.Guardrails.Policy.Test -> "test"
+                    printfn "%s" name
+                    0
         | "policy"::"review"::rest ->
             let rec options (since: string option) checkOnly = function
                 | [] -> Ok (since, checkOnly)

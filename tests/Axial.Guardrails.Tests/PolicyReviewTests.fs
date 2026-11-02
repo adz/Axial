@@ -134,7 +134,7 @@ module PolicyReviewTests =
             write path "changed\n"
             let code, output = cli ["policy"; "review"; "--since"; "HEAD"; "--check"]
             Assert.Equal(declared, code <> 0)
-            if declared then Assert.Contains("automation: " + path, output)
+            if declared then Assert.Contains("automation:\n  " + path, output)
             else Assert.DoesNotContain(path, output))
 
     [<Fact>]

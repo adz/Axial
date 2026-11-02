@@ -100,7 +100,7 @@ module PolicyReview =
         // Query mode validates glob exclusions even in inactive item groups. Supply the
         // same safe fallback as the targets, without overriding the project's enabled setting.
         let globRoot = Path.GetDirectoryName(Path.GetFullPath(Path.Combine(root, project)))
-        let output = command root "dotnet" (["msbuild"; project; "-nologo"; $"-p:_AxialGuardrailsPolicyGlobRoot={globRoot}"; "-getProperty:AxialGuardrailsEnabled,AxialGuardrailsRole,IsTestProject,TargetFrameworks"; "-getItem:AxialGuardrail,PackageReference,PackageVersion"] @ extraArgs)
+        let output = command root "dotnet" (["msbuild"; project; "-nologo"; $"-p:_AxialGuardrailsPolicyGlobRoot={globRoot}"; "-getProperty:AxialGuardrailsEnabled,AxialGuardrailsRole,TargetFrameworks"; "-getItem:AxialGuardrail,PackageReference,PackageVersion"] @ extraArgs)
         use json = JsonDocument.Parse output
         let properties = json.RootElement.GetProperty("Properties")
         let items = json.RootElement.GetProperty("Items")
@@ -142,8 +142,8 @@ module PolicyReview =
             |> List.collect (fun (text, count) -> [for occurrence in 1..count -> $"{path}\t#{occurrence} {text}"]))
         |> Set.ofList
 
-    let private automationInventory root allFiles =
-        allFiles |> List.filter (fun (path: string) -> path = "scripts/verify.sh" || path.StartsWith(".github/workflows/", StringComparison.Ordinal))
+    let private automationInventory root allFiles patterns =
+        allFiles |> List.filter (fun path -> patterns |> List.exists (fun pattern -> matchesGlob pattern path))
         |> List.map (fun path -> path + "\t" + (System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(Path.Combine(root, path))) |> Convert.ToHexString))
 
     let private versionInventory root allFiles =
@@ -172,7 +172,7 @@ module PolicyReview =
             entries |> List.collect (fun entry -> entry.Patterns |> List.map (fun pattern -> $"{kind}:{pattern} => {roleName entry.Role}"))
         let suppressions = suppressionInventory root allFiles config.SuppressionIgnores
         let baseline = snapshot.Baseline |> List.collect (fun entry -> [for occurrence in 1..entry.Count -> $"{entry.Rule}/{entry.File}/{entry.Fingerprint} #{occurrence}"])
-        let automation = automationInventory root allFiles
+        let automation = automationInventory root allFiles config.Automation
         // Central package versions are visible even before a project references the analyzer.
         let versions = versionInventory root allFiles
         let projects, evaluationErrors = inspectProjects root allFiles
@@ -217,7 +217,7 @@ module PolicyReview =
                         { after with Projects = projects; EvaluationErrors = errors
                                      Entries = after.Entries
                                                   .Add("suppressions/notes", suppressionInventory historicalRoot historicalFiles [])
-                                                  .Add("automation", automationInventory historicalRoot historicalFiles |> Set.ofList)
+                                                  .Add("automation", Set.empty)
                                                   .Add("analyzer package", versionInventory historicalRoot historicalFiles |> Set.ofList) }
                     else inspectState historicalRoot false
                 let added = ResizeArray<Finding>()
@@ -264,7 +264,6 @@ module PolicyReview =
                             match key.Split(':') |> Array.last with
                             | "TargetFrameworks" -> ()
                             | "AxialGuardrailsEnabled" when not (String.Equals(value, "false", StringComparison.OrdinalIgnoreCase)) -> remove "project settings" detail
-                            | "IsTestProject" when not (String.Equals(value, "true", StringComparison.OrdinalIgnoreCase)) -> remove "project settings" detail
                             | "AxialGuardrail" ->
                                 let oldItems = previous.Split(';', StringSplitOptions.RemoveEmptyEntries) |> Set.ofArray
                                 let newItems = value.Split(';', StringSplitOptions.RemoveEmptyEntries) |> Set.ofArray

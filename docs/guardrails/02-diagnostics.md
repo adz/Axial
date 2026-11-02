@@ -145,7 +145,8 @@ let legacyCall () : Task<int> = Task.FromResult 42
 let legacy = ColdTask(fun _ -> legacyCall ()) // axial-allow-AXG005: legacy API has no token overload
 ```
 
-This check does not run in test projects. Test adapters often wrap completed tasks that have no work to cancel.
+This check is omitted from the declared `test` project's default analyzer set. Test adapters often wrap completed
+tasks that have no work to cancel. `AxialGuardrailsInTests=all` enables it; `IsTestProject` does not select the set.
 
 ## AXG006: Format without reflection
 

@@ -10,7 +10,7 @@ description: Use Axial.Guardrails to detect ambient effects, exceptions in workf
 
 `axial check` compares the repository policy, baseline, and analyzer configuration with `Axial.Guardrails.lock`. Policy drift produces one loud warning with a change count and an instruction to run `axial policy review`, but exits zero. Corrupt locks and unreadable policy still fail; analyzer errors still fail builds. The lock is tamper-evident, not a security boundary; enforcement is the repository's choice.
 
-Run `axial policy review [--since <ref>] [--json]` to inspect what loosened: new or changed suppression reasons and notes, relaxed roles or rule levels, runtime/boundary/ignore/baseline additions, evaluated project settings, and changes to verification scripts, workflows, or analyzer versions. Removals appear briefly as tightening. The default reference is the reviewed commit recorded in the lock; the first review needs `--since <tag-or-commit>`. If that reference predates policy files, the review reports policy introduction rather than inventing historical policy, and still compares source exceptions.
+Run `axial policy review [--since <ref>] [--json]` to inspect what loosened: new or changed suppression reasons and notes, relaxed roles or rule levels, runtime/boundary/ignore/baseline additions, evaluated project settings, and changes to declared automation files or analyzer versions. Removals appear briefly as tightening. The default reference is the reviewed commit recorded in the lock; the first review needs `--since <tag-or-commit>`. If that reference predates policy files, the review reports policy introduction rather than inventing historical policy, and still compares source exceptions.
 
 `axial policy review --check` prints the same review and exits nonzero if anything loosened. Repositories may run it at release or merge time. After reading the review, a human runs `axial policy approve` (optionally `--yes-i-reviewed`) and commits the lock. Approval means a human read the review and records the current commit as the reviewed point; it has no signing, identity, or TTY requirement.
 
@@ -20,6 +20,25 @@ the first review), and reports any proposed loosening. An agent proposes; a huma
 stand in for that review. When policy files do not exist yet, `axial init` creates only the missing TOML, baseline, and
 bootstrap lock; it never overwrites an existing artifact and does not approve later policy changes. Daily drift warns,
 analyzer errors remain errors, and release automation runs `axial policy review --check`.
+
+For a new policy, `axial init` asks which CI host the repository uses: GitHub, GitLab, Bitbucket, or Other.
+Use `axial init --ci github|gitlab|bitbucket|other` to select without a prompt. With redirected stdin (or
+`--json`) and no flag, init selects Other and reports that choice. Existing TOML is preserved.
+Generated policies include comments explaining roles, the baseline, and automation tracking.
+
+Declare the files that enforce policy in the repository's TOML:
+
+```toml
+[review]
+automation = [".github/workflows/**", "scripts/verify.sh"]
+```
+
+Only files matching `[review].automation` are inventoried as automation by `axial policy review`; an absent or
+empty list means no automation tracking. Adding a verification script to the list makes its content changes,
+addition, and deletion review items; it does not run the script. Paths are repository-relative and use the same
+`*`, `**`, and `?` globs as other policy lists. Patterns may match no files. Unknown `[review]` keys are rejected.
+Init selects `.github/workflows/**` for GitHub, `.gitlab-ci.yml` and `.gitlab/ci/**` for GitLab,
+`bitbucket-pipelines.yml` for Bitbucket, and `[]` for Other. Add your verification scripts explicitly.
 
 Relative compiler source paths resolve against the compiler project's directory for both policy classification and
 baseline identity, not the analyzer process's working directory. Policy inventory rejects baseline symlinks outside
@@ -201,7 +220,12 @@ See the [diagnostic reference](/guardrails/diagnostics.html) for an example.
 | `AXG007` | `ResourceFromFiber` | A forked flow that returns a scoped resource it acquired, which the fiber releases before `Fiber.join` returns it |
 | `AXG008` | `ScopeFromRun` | A run returning a scope-owned `Queue.makeScoped`, `Hub.makeScoped` or `Hub.subscribe` result, or a cache tied to its creating runtime |
 
-`AXG001`, `AXG003`, `AXG005`, `AXG006`, `AXG007`, and `AXG008` run in application and library projects. They don't run in test projects, where direct effects and exceptions are often necessary for setup and assertions. Set `AxialGuardrailsInTests` to `all` to run them in a test project too.
+`AXG001`, `AXG003`, `AXG005`, `AXG006`, `AXG007`, and `AXG008` run outside the declared `test` project role.
+Test-role projects select Fixture, WaitForFacts, RawConcurrency, and SuppressionIntegrity by default, since direct
+effects and exceptions are often necessary for setup and assertions. Declare `[projects]` with
+`test = ["tests/**/*.fsproj"]` (or use `test` as the default role). This selection does not depend on
+`IsTestProject` or Microsoft.NET.Test.Sdk; file-role overrides do not change the project-wide analyzer set.
+Set `AxialGuardrailsInTests` to `all` to run every enabled analyzer in a test-role project too.
 
 `AXG002`, `RawConcurrency`, and `WaitForFacts` also run in test projects by default. Raw task bridges remain
 exempt in the test role. `lock`, `Monitor` and `Interlocked` are not reported anywhere.
@@ -212,7 +236,8 @@ Invalid notes warn under AXG002. Verification and release builds set `AxialGuard
 unacknowledged guides and invalid notes; noted findings remain Info. Ordinary Release builds are not checkpoints.
 Block findings do not accept notes or baseline downgrades. AXG001–008 retain their existing allowance/baseline behavior.
 
-`AXG004` runs only in projects where MSBuild sets `IsTestProject`. It checks a test-specific risk and does not apply to application or library projects.
+`AXG004` checks shared fixtures in modules containing xUnit tests. It is included in the test-role analyzer set
+and in the full analyzer set; modules without tests do not produce fixture findings.
 
 ## Choose guardrails per package
 

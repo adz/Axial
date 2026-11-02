@@ -233,6 +233,7 @@ module PackagePropsTests =
         Directory.CreateDirectory dir |> ignore
         try
             writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework><IsTestProject>true</IsTestProject>" "module Consumer\nlet x = lock (obj()) (fun () -> 1)\n"
+            writeV2Policy dir "test" "deny"
             let project = Path.Combine(dir, "Consumer.fsproj")
             let checkpoint = runBuildWithArgs [ "-p:AxialGuardrailsCheckpoint=true" ] project None
             Assert.True(checkpoint.ExitCode = 0, checkpoint.Output)
@@ -445,7 +446,7 @@ module PackagePropsTests =
                 writeV2Policy dir "domain" "deny"
                 File.AppendAllText(Path.Combine(dir, "Axial.Guardrails.toml"), $"\n[projects]\n{role} = [\"Consumer.fsproj\"]\n")
                 writeFixtureLock dir)
-        Assert.Equal(expectsAmbient, result.ExitCode <> 0)
+        Assert.True((expectsAmbient = (result.ExitCode <> 0)), result.Output)
         if expectsAmbient then Assert.Contains("AXG001", result.Output)
         else Assert.DoesNotContain("AXG001", result.Output)
 

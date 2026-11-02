@@ -1,6 +1,10 @@
 version = 2
 baseline = "Axial.Guardrails.baseline"
 
+[review]
+# Files that enforce policy; changes are listed by axial policy review.
+automation = [".github/workflows/**", "scripts/verify.sh"]
+
 [default]
 role = "domain"
 

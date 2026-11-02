@@ -29,6 +29,14 @@
   step with `Flow.verify`; use `Bind` instead for one-time bind-site error adaptation.
 - Execute finite roots with `App.run`. Use `App.start` when an outer host owns stopping and awaits cleanup.
 
+## Guardrails policy
+
+- The declared `test` project role selects the test analyzer set, independently of `IsTestProject` or the test SDK;
+  `AxialGuardrailsInTests=all` selects all enabled analyzers for that role.
+- `[review].automation` lists repository-relative CI/verification globs. Absent or empty means no automation tracking.
+- `axial init` asks for the CI host; `--ci github|gitlab|bitbucket|other` avoids the prompt. Non-interactive runs without
+  a flag select Other (`automation = []`) and report it. Add verification scripts explicitly to track their changes.
+
 ## Effects and resources
 
 - Process and HttpClient implementations perform only their named `IProcess` or `IHttp` effect. Inject clock,

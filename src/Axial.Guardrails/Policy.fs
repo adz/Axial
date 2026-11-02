@@ -25,7 +25,8 @@ module Policy =
           Boundaries: string list
           Exemptions: Map<string, string list>
           Runtime: string list
-          SuppressionIgnores: string list }
+          SuppressionIgnores: string list
+          Automation: string list }
 
     type ResolvedFile =
         { Role: Role
@@ -108,7 +109,7 @@ module Policy =
                 if line.StartsWith("[") && line.EndsWith("]") then
                     table <- line.Substring(1, line.Length - 2).Trim()
                     let allowedTable =
-                        table = "exemptions" || table = "default" || table = "projects" || table = "files" || table = "protected" || table = "boundaries" || table = "runtime" || table = "suppressions"
+                        table = "exemptions" || table = "default" || table = "projects" || table = "files" || table = "protected" || table = "boundaries" || table = "runtime" || table = "suppressions" || table = "review"
                         || (table.StartsWith("roles.") && table.EndsWith(".rules") && table.Split('.').Length = 3)
                     if table = "" then error <- Some $"line {lineNumber}: empty table name"
                     elif not allowedTable then error <- Some $"line {lineNumber}: unknown policy table '{table}'"
@@ -240,7 +241,7 @@ module Policy =
         | Error message -> fail message
         | Ok entries ->
             let allowed path =
-                (List.contains path [ "exemptions.AXG009"; "exemptions.AXG010"; "exemptions.AXG011"; "exemptions.AXG012" ]) || path = "version" || path = "baseline" || path = "default.role" || path = "protected.paths" || path = "boundaries.files" || path = "runtime.files" || path = "suppressions.ignore"
+                (List.contains path [ "exemptions.AXG009"; "exemptions.AXG010"; "exemptions.AXG011"; "exemptions.AXG012" ]) || path = "version" || path = "baseline" || path = "default.role" || path = "protected.paths" || path = "boundaries.files" || path = "runtime.files" || path = "suppressions.ignore" || path = "review.automation"
                 || path.StartsWith("projects.") || path.StartsWith("files.")
                 || (path.StartsWith("roles.") && path.Contains(".rules."))
             match entries |> Map.toSeq |> Seq.tryFind (fst >> allowed >> not) with
@@ -270,7 +271,7 @@ module Policy =
                     match parseRole defaultName, baselineResult with
                     | Error e, _ | _, Error e -> fail e
                     | Ok defaultRole, Ok baseline ->
-                        let needsFiles = entries |> Map.exists (fun key _ -> key.StartsWith("exemptions.") || key.StartsWith("projects.") || key.StartsWith("files.") || key = "protected.paths" || key = "boundaries.files" || key = "runtime.files" || key = "suppressions.ignore")
+                        let needsFiles = entries |> Map.exists (fun key _ -> key.StartsWith("exemptions.") || key.StartsWith("projects.") || key.StartsWith("files.") || key = "protected.paths" || key = "boundaries.files" || key = "runtime.files" || key = "suppressions.ignore" || key = "review.automation")
                         let allFiles = if needsFiles then filesUnder repositoryRoot else [||]
                         let assignments prefix allowCapabilitiesEmpty =
                             entries |> Map.toList |> List.choose (fun (key, value) ->
@@ -319,24 +320,35 @@ module Policy =
                                 match exemptions with
                                 | Error e -> fail e
                                 | Ok exemptions ->
-                                  match validatePaths "protected" protectedPaths, validatePaths "boundary" boundaryPaths, (getStrings "runtime.files" |> Result.bind (validatePaths "runtime")), ignores with
-                                  | Error e, _, _, _ | _, Error e, _, _ | _, _, Error e, _ | _, _, _, Error e -> fail e
-                                  | Ok protectedFiles, Ok boundaries, Ok runtime, Ok ignores ->
-                                    Ok { Exemptions = exemptions; Version = version; Baseline = baseline; DefaultRole = defaultRole; Projects = projects; Files = files; Rules = rules; Protected = protectedFiles; Boundaries = boundaries; Runtime = runtime; SuppressionIgnores = ignores }
+                                  let automation =
+                                      getStrings "review.automation"
+                                      |> Result.bind (fun paths ->
+                                          paths |> List.fold (fun state p ->
+                                              state |> Result.bind (fun xs -> validatePattern repositoryRoot allFiles true p |> Result.map (fun x -> x :: xs))) (Ok [])
+                                          |> Result.map List.rev)
+                                  match validatePaths "protected" protectedPaths, validatePaths "boundary" boundaryPaths, (getStrings "runtime.files" |> Result.bind (validatePaths "runtime")), ignores, automation with
+                                  | Error e, _, _, _, _ | _, Error e, _, _, _ | _, _, Error e, _, _ | _, _, _, Error e, _ | _, _, _, _, Error e -> fail e
+                                  | Ok protectedFiles, Ok boundaries, Ok runtime, Ok ignores, Ok automation ->
+                                    Ok { Exemptions = exemptions; Version = version; Baseline = baseline; DefaultRole = defaultRole; Projects = projects; Files = files; Rules = rules; Protected = protectedFiles; Boundaries = boundaries; Runtime = runtime; SuppressionIgnores = ignores; Automation = automation }
                 | _ -> fail "invalid policy"
 
     let private matchingRoles (path: string) assignments =
         assignments |> List.choose (fun assignment -> if assignment.Patterns |> List.exists (fun pattern -> (globRegex pattern).IsMatch(path)) then Some assignment.Role else None) |> Set.ofList
 
+    let private choose label subject fallback roles =
+        if Set.count roles > 1 then
+            let names = roles |> Seq.map roleName |> String.concat ", "
+            Error $"conflicting {label} role assignments for '{subject}': {names}"
+        else Ok(if Set.isEmpty roles then fallback else Set.minElement roles)
+
+    let projectRole (config: Config) projectPath =
+        normalizePath "project" projectPath
+        |> Result.bind (fun project -> choose "project" project config.DefaultRole (matchingRoles project config.Projects))
+
     let resolve (config: Config) (projectPath: string) (filePath: string) : Result<ResolvedFile, string> =
         match normalizePath "project" projectPath, normalizePath "file" filePath with
         | Error e, _ | _, Error e -> Error e
         | Ok project, Ok file ->
-            let choose label subject fallback roles =
-                if Set.count roles > 1 then
-                    let names = roles |> Seq.map roleName |> String.concat ", "
-                    Error $"conflicting {label} role assignments for '{subject}': {names}"
-                else Ok(if Set.isEmpty roles then fallback else Set.minElement roles)
-            choose "project" project config.DefaultRole (matchingRoles project config.Projects)
+            projectRole config project
             |> Result.bind (fun projectRole -> choose "file" file projectRole (matchingRoles file config.Files))
             |> Result.map (fun role -> { Role = role; Rules = config.Rules |> Map.tryFind role |> Option.defaultValue Map.empty })

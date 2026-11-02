@@ -33,9 +33,9 @@
 
       Test projects run Fixture, WaitForFacts, RawConcurrency and SuppressionIntegrity by default: ambient effect rules flag File and DateTimeOffset
       that tests legitimately use for setup and assertions. Set AxialGuardrailsInTests to all to
-      run every enabled guardrail in a test project. $(IsTestProject) is set by Microsoft.NET.Test.Sdk.
+      run every enabled guardrail in a test-role project. The checked-in policy, not the test SDK,
+      declares that role; it is resolved before writing the analyzer configuration.
     -->
-    <_AxialGuardrailsIncludeAnalyzersFlag Condition="'$(IsTestProject)' == 'true' and '$(AxialGuardrailsInTests)' != 'all'">--include-analyzers Fixture WaitForFacts RawConcurrency SuppressionIntegrity</_AxialGuardrailsIncludeAnalyzersFlag>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'">
@@ -213,6 +213,17 @@
   <Target Name="AxialGuardrailsWriteConfig"
           BeforeTargets="AxialGuardrailsEffectBoundaryCheck"
           Condition="'$(AxialGuardrailsEnabled)' == 'true'">
+    <!-- Resolve with the policy parser, including project globs and the default role. File overrides do not
+         choose the project-wide analyzer set. No restore or test-SDK inference is involved. -->
+    <Exec Command="$(_AxialGuardrailsPolicyExe) policy project-role &quot;$(MSBuildProjectFullPath)&quot;"
+          WorkingDirectory="$(_AxialGuardrailsPolicyRoot)" ConsoleToMSBuild="true" StandardOutputImportance="low"
+          Condition="'$(_AxialGuardrailsPolicyRoot)' != ''">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_AxialGuardrailsDeclaredRole" />
+    </Exec>
+    <PropertyGroup>
+      <_AxialGuardrailsIncludeAnalyzersFlag></_AxialGuardrailsIncludeAnalyzersFlag>
+      <_AxialGuardrailsIncludeAnalyzersFlag Condition="'$(_AxialGuardrailsDeclaredRole)' == 'test' and '$(AxialGuardrailsInTests)' != 'all'">--include-analyzers Fixture WaitForFacts RawConcurrency SuppressionIntegrity</_AxialGuardrailsIncludeAnalyzersFlag>
+    </PropertyGroup>
     <PropertyGroup Condition="'$(_AxialGuardrailsBaselineProposalDirectory)' != ''">
       <_AxialGuardrailsProposalProject>$([System.IO.Path]::GetRelativePath('$(_AxialGuardrailsPolicyRoot)', '$(MSBuildProjectFullPath)'))</_AxialGuardrailsProposalProject>
       <_AxialGuardrailsProposalFile>$([System.IO.Path]::Combine('$(_AxialGuardrailsBaselineProposalDirectory)', '$(_AxialGuardrailsProposalProject).$(TargetFramework).baseline'))</_AxialGuardrailsProposalFile>
@@ -226,6 +237,8 @@
       <_AxialGuardrailsConfigLine Include="@(AxialGuardrail->'guardrail&#9;%(Identity)')" />
       <_AxialGuardrailsConfigLine Include="@(_AxialGuardrailsBaselineEntry->'baseline&#9;%(Identity)')" />
       <_AxialGuardrailsConfigLine Include="setting&#9;checkpoint&#9;$(AxialGuardrailsCheckpoint)" />
+      <!-- Include selection in the content fingerprint so toggling InTests=all invalidates cached analysis. -->
+      <_AxialGuardrailsConfigLine Include="setting&#9;analyzerSelection&#9;$(_AxialGuardrailsIncludeAnalyzersFlag)" />
       <_AxialGuardrailsConfigLine Include="setting&#9;baselineOutput&#9;$(_AxialGuardrailsProposalFile)" Condition="'$(_AxialGuardrailsProposalFile)' != ''" />
       <_AxialGuardrailsConfigLine Include="setting&#9;baselineRule&#9;$(_AxialGuardrailsBaselineRuleCode)" Condition="'$(_AxialGuardrailsProposalFile)' != ''" />
       <_AxialGuardrailsConfigLine Include="setting&#9;baselineRoot&#9;$(_AxialGuardrailsBaselineRoot)" />

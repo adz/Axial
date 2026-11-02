@@ -4,6 +4,8 @@ Package maturity ratings and application evidence: `/notes/package-maturity.html
 
 Package guides: `/configuration/`, `/console/`, `/filesystem/`, `/websocket/`, `/hosting/`, `/elmish/`, `/telemetry/`, and `/guardrails/`.
 
+Guardrails selects test analyzers from the declared `test` project role, not `IsTestProject`. Declare CI and verification globs in `[review].automation`; absent or empty means no automation tracking. `axial init` asks for a CI host; `--ci github|gitlab|bitbucket|other` avoids the prompt (non-interactive default: Other).
+
 Axial is an asynchronous F# workflow library. Its public model is `Flow<'env,'error,'value>`: required dependencies and expected failures are visible in the workflow type.
 
 Load `/llms.txt` for API selection, execution, resources, concurrency, services, hosting, and platform guidance. User documentation starts at `/index.html`.

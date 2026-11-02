@@ -46,6 +46,31 @@ module PolicyTests =
             | Error _ -> ()
             | Ok _ -> failwith "invalid exemption accepted")
 
+    [<Theory>]
+    [<InlineData("scripts = []")>]
+    [<InlineData("automation = \"check.sh\"")>]
+    [<InlineData("automation = [\"../check.sh\"]")>]
+    [<InlineData("automation = [\"/check.sh\"]")>]
+    let ``review rejects unknown keys wrong types and escaping paths`` entry =
+        withRepository (fun root ->
+            match parse root ("version = 2\n[default]\nrole = \"domain\"\n[review]\n" + entry) with
+            | Error _ -> ()
+            | Ok _ -> failwith "invalid review accepted")
+
+    [<Theory>]
+    [<InlineData("")>]
+    [<InlineData("[review]\nautomation = []")>]
+    let ``automation tracking defaults to empty`` section =
+        withRepository (fun root ->
+            let policy = parse root ("version = 2\n[default]\nrole = \"domain\"\n" + section) |> Result.defaultWith (String.concat "; " >> failwith)
+            Assert.Empty policy.Automation)
+
+    [<Fact>]
+    let ``automation accepts globs before CI definitions exist`` () =
+        withRepository (fun root ->
+            let policy = parse root "version = 2\n[default]\nrole = \"domain\"\n[review]\nautomation = [\".github/workflows/**\"]" |> Result.defaultWith (String.concat "; " >> failwith)
+            Assert.Equal<string list>([".github/workflows/**"], policy.Automation))
+
     [<Fact>]
     let ``exemptions accept consumer project globs`` () =
         withRepository (fun root ->
