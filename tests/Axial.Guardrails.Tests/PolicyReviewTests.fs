@@ -186,7 +186,7 @@ module PolicyReviewTests =
     [<InlineData("ignore")>]
     [<InlineData("baseline")>]
     [<InlineData("enabled")>]
-    [<InlineData("project-role")>]
+    [<InlineData("test-analyzers")>]
     [<InlineData("guardrail")>]
     [<InlineData("verify")>]
     [<InlineData("workflow")>]
@@ -203,7 +203,7 @@ module PolicyReviewTests =
             | "ignore" -> write ConfigName (config + "\n[suppressions]\nignore = [\"App.fs\"]\n")
             | "baseline" -> write DefaultBaseline "clock.datetime\tApp.fs\tfingerprint\n"
             | "enabled" -> write "App.fsproj" (project.Replace("Enabled>true", "Enabled>false"))
-            | "project-role" -> write "App.fsproj" (project.Replace("Role>domain", "Role>host"))
+            | "test-analyzers" -> write "App.fsproj" (project.Replace("</PropertyGroup>", "<AxialGuardrailsInTests>all</AxialGuardrailsInTests></PropertyGroup>"))
             | "guardrail" -> write "App.fsproj" (project.Replace("</ItemGroup>", "<AxialGuardrail Remove=\"Axial.Configuration\"/></ItemGroup>"))
             | "verify" | "workflow" ->
                 write ConfigName (config + "\n[review]\nautomation = [\"scripts/verify.sh\", \".github/workflows/**\"]\n")

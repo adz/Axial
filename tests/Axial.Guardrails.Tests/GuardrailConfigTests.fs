@@ -42,6 +42,36 @@ module GuardrailConfigTests =
         let contributed = config.AllRules |> List.find (fun rule -> rule.Id = "acme.clock")
         test <@ contributed.Match = MembersOf("Acme.Clock", [ "Now"; "Today" ]) && contributed.Scope = InsideFlow @>
 
+    [<Theory>]
+    [<InlineData("test", "domain", "", false)>]
+    [<InlineData("domain", "test", "", true)>]
+    [<InlineData("test", "test", "all", true)>]
+    [<InlineData("test", "test", "invalid", false)>]
+    let ``analyzer gate uses project role not file overrides and retains test diagnostics`` projectRole fileRole inTests expectsFull =
+        task {
+            let! ctx = AnalyzerTestContext.create "module M\nlet now () = System.DateTimeOffset.UtcNow\n"
+            let root = System.IO.Path.GetDirectoryName ctx.FileName
+            System.IO.Directory.CreateDirectory root |> ignore
+            System.IO.File.WriteAllText(ctx.FileName, ctx.SourceText.ToString())
+            let policyPath = System.IO.Path.Combine(root, "Axial.Guardrails.toml")
+            System.IO.File.WriteAllText(policyPath, $"version = 2\n[default]\nrole = \"{projectRole}\"\n[files]\n{fileRole} = [\"{System.IO.Path.GetFileName ctx.FileName}\"]\n")
+            try
+                let project = System.IO.Path.ChangeExtension(ctx.FileName, ".fsproj")
+                let config = GuardrailConfig.parse [
+                    "guardrail\tAxial"
+                    $"setting\tpolicyRoot\t{root}"
+                    $"setting\tpolicyFile\t{policyPath}"
+                    $"setting\tprojectPath\t{project}"
+                    $"setting\tinTests\t{inTests}" ]
+                let diagnostic = EffectBoundaryAnalyzer.rawFindings ctx |> List.head |> snd
+                for code in [ "AXG001"; "AXG003"; "AXG004"; "AXG005"; "AXG006"; "AXG007"; "AXG008"; "AXG009"; "AXG010"; "AXG011"; "AXG012"; "AXG013" ] do
+                    let message = { diagnostic with Code = code }
+                    let actual = GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx [ message ]
+                    Assert.Equal(expectsFull || List.contains code [ "AXG004"; "AXG009"; "AXG013" ], not actual.IsEmpty)
+            finally
+                System.IO.Directory.Delete(root, true)
+        }
+
     [<Fact>]
     let ``parseMatch reads constructor, member, and wildcard forms`` () =
         test <@ parseMatch "ctor:System.Net.Http.HttpClient" = Some(ConstructorOf "System.Net.Http.HttpClient") @>

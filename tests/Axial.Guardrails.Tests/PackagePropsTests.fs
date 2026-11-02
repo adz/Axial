@@ -407,6 +407,15 @@ module PackagePropsTests =
         Assert.Contains("AXIALGR001", imports)
 
     [<Fact>]
+    let ``no-op builds never launch a policy tool to select analyzers`` () =
+        let targets = File.ReadAllText(Path.Combine(repoRoot (), "src", "Axial.Guardrails", "build", "Axial.Guardrails.targets"))
+        Assert.DoesNotContain("project-role", targets)
+        Assert.DoesNotContain("--include-analyzers", targets)
+        let document = System.Xml.Linq.XDocument.Parse targets
+        let configTarget = document.Descendants() |> Seq.find (fun node -> node.Name.LocalName = "Target" && (node.Attribute(System.Xml.Linq.XName.Get "Name")).Value = "AxialGuardrailsWriteConfig")
+        Assert.DoesNotContain(configTarget.Descendants(), fun node -> node.Name.LocalName = "Exec")
+
+    [<Fact>]
     let ``v2 roles and levels remain enforced while lock drift only warns`` () =
         let build role level mutateAfterLock =
             buildConsumerInTemp
