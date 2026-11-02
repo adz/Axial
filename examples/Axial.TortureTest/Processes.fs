@@ -104,7 +104,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
                         if delay = grace then Deferred.succeedNow () armed |> ignore
                         pending }
             let! stopped =
-                Axial.Process.DSL.shText "trap '' TERM HUP; while :; do :; done"
+                Axial.Process.DSL.shText "trap '' TERM HUP; while kill -0 $PPID 2>/dev/null; do :; done"
                 |> Process.stopGracefully [ StopRequest.CloseStdIn, grace ]
                 |> Process.overallTimeout (TimeSpan.FromSeconds 100.)
                 |> Process.onStarted (fun handle -> flow {

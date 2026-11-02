@@ -304,7 +304,7 @@ module ProcessExecutionClockTests =
             let mutable deliveries = 0
             let prelude = if halfClose then "read line; echo request; " else ""
             let running =
-                shText ("trap 'echo request' TERM; trap 'exit 0' USR1; echo ready; " + prelude + "while :; do :; done")
+                shText ("trap 'echo request' TERM; trap 'exit 0' USR1; echo ready; " + prelude + "while kill -0 $PPID 2>/dev/null; do :; done")
                 |> stdinFrom (Input.flowStream (FlowStream.repeatFlow (Flow.never)))
                 |> stdoutTo (Output.callback (fun output -> Flow.delay (fun () ->
                     let text = System.Text.Encoding.UTF8.GetString output
@@ -457,7 +457,7 @@ module ProcessExecutionClockTests =
                 // The engine intentionally stops output callbacks when timeout begins; native signal acknowledgements
                 // use a separate watcher, installed before launch. Each HUP creates a fresh acknowledgement
                 // after appending, so observing a one-shot HUP cannot acknowledge the ladder's later HUP.
-                shText $"hupCount=0; trap 'printf x >> \"{directory}/term\"' TERM; trap 'printf x >> \"{directory}/hup\"; hupCount=$((hupCount + 1)); : > \"{directory}/hup-$hupCount\"' HUP; echo ready; while :; do :; done"
+                shText $"hupCount=0; trap 'printf x >> \"{directory}/term\"' TERM; trap 'printf x >> \"{directory}/hup\"; hupCount=$((hupCount + 1)); : > \"{directory}/hup-$hupCount\"' HUP; echo ready; while kill -0 $PPID 2>/dev/null; do :; done"
                 |> onStarted (fun handle -> Flow.delay (fun () -> nativeId <- handle.ProcessId; started.TrySetResult handle |> ignore; Flow.ok ()))
                 |> (if mode.Contains("timeout") then overallTimeout (TimeSpan.FromSeconds 11.) else id)
                 |> stopGracefully [ StopRequest.Terminate, TimeSpan.FromSeconds 17.; StopRequest.Hangup, TimeSpan.FromSeconds 23. ]

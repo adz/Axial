@@ -985,7 +985,7 @@ module ProcessServiceTests =
     let ``early consumer exit stops an unbounded producer`` () = task {
         use rescue = new CancellationTokenSource()
         let running =
-            shText "while :; do printf 'abcdefghijklmnopqrstuvwxyz'; done"
+            shText "while kill -0 $PPID 2>/dev/null; do printf 'abcdefghijklmnopqrstuvwxyz'; done"
             => cmd $"head -c 1"
             |> toFlow
             |> fun workflow -> workflow.StartAsTask(env (), rescue.Token)
@@ -1171,7 +1171,7 @@ module ProcessServiceTests =
         let output = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let events = ConcurrentQueue<string>()
         let specification =
-            shText "trap 'echo term; exit 3' TERM; echo ready; while :; do sleep 1; done"
+            shText "trap 'echo term; exit 3' TERM; echo ready; while kill -0 $PPID 2>/dev/null; do sleep 1; done"
             |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async {
                 events.Enqueue "output"
                 output.TrySetResult() |> ignore
@@ -1278,7 +1278,7 @@ module ProcessServiceTests =
         use cancellation = new CancellationTokenSource()
         let ready = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let specification =
-            shText ("trap 'echo stopped > " + marker + "; exit 0' TERM; echo ready; while :; do sleep 1; done")
+            shText ("trap 'echo stopped > " + marker + "; exit 0' TERM; echo ready; while kill -0 $PPID 2>/dev/null; do sleep 1; done")
             |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async { ready.TrySetResult() |> ignore })))
             |> stopGracefully [ StopRequest.Terminate, TimeSpan.FromSeconds 2.0 ]
         let running = specification |> toFlow |> fun workflow -> workflow.StartAsTask(env (), cancellation.Token)
@@ -1302,7 +1302,7 @@ module ProcessServiceTests =
             let started = TaskCompletionSource<ProcessStarted>(TaskCreationOptions.RunContinuationsAsynchronously)
             let ready = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
             let request = if signalNumber = 2 then StopRequest.Interrupt else StopRequest.Hangup
-            let script = "trap 'echo trapped; exit " + string exitCode + "' " + signalName + "; echo ready; while :; do sleep 1; done"
+            let script = "trap 'echo trapped; exit " + string exitCode + "' " + signalName + "; echo ready; while kill -0 $PPID 2>/dev/null; do sleep 1; done"
             let specification =
                 // Detached verification runs under nohup, whose ignored SIGHUP disposition survives exec.
                 // Reset both tested signals before the shell installs its traps.
@@ -1373,7 +1373,7 @@ module ProcessServiceTests =
                 return [||]
             }))
             let specification =
-                shText ("trap 'echo term > " + marker + "; exit 0' TERM; echo ready; while :; do sleep 1; done")
+                shText ("trap 'echo term > " + marker + "; exit 0' TERM; echo ready; while kill -0 $PPID 2>/dev/null; do sleep 1; done")
                 |> stdinFrom (Input.flowStream source)
                 |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async { ready.TrySetResult() |> ignore })))
                 |> stopGracefully [
@@ -1548,7 +1548,7 @@ module ProcessServiceTests =
             let ready = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
             let started = TaskCompletionSource<ProcessStarted>(TaskCreationOptions.RunContinuationsAsynchronously)
             let specification =
-                shText "trap '' TERM; echo ready; while :; do sleep 1; done"
+                shText "trap '' TERM; echo ready; while kill -0 $PPID 2>/dev/null; do sleep 1; done"
                 |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async { ready.TrySetResult() |> ignore })))
                 |> onStarted (fun handle -> Flow.fromAsync (async { started.TrySetResult handle |> ignore }))
                 |> stopGracefully [ StopRequest.Terminate, TimeSpan.FromMilliseconds 100.0 ]
@@ -1567,7 +1567,7 @@ module ProcessServiceTests =
             let marker = Path.Combine(Path.GetTempPath(), "axial-timeout-term-" + Guid.NewGuid().ToString("N"))
             let ready = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
             let specification =
-                shText ("trap 'echo term > " + marker + "; exit 0' TERM; echo ready; while :; do sleep 1; done")
+                shText ("trap 'echo term > " + marker + "; exit 0' TERM; echo ready; while kill -0 $PPID 2>/dev/null; do sleep 1; done")
                 |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async { ready.TrySetResult() |> ignore })))
                 |> Process.timeout (TimeSpan.FromSeconds 5.0)
                 |> stopGracefully [ StopRequest.Terminate, TimeSpan.FromSeconds 2.0 ]
@@ -1591,7 +1591,7 @@ module ProcessServiceTests =
             use cancellation = new CancellationTokenSource()
             let ready = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
             let specification =
-                shText ("trap 'echo term > " + marker + "; exit 0' TERM; echo ready; while :; do sleep 1; done")
+                shText ("trap 'echo term > " + marker + "; exit 0' TERM; echo ready; while kill -0 $PPID 2>/dev/null; do sleep 1; done")
                 |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async { ready.TrySetResult() |> ignore })))
             let running = specification |> toFlow |> fun workflow -> workflow.StartAsTask(env (), cancellation.Token)
             try
@@ -1675,7 +1675,7 @@ module ProcessServiceTests =
             let started = TaskCompletionSource<ProcessStarted>(TaskCreationOptions.RunContinuationsAsynchronously)
             let raceAfter = TimeSpan.FromSeconds 2.0
             let specification =
-                shText ("trap 'echo term >> " + marker + "; exit 0' TERM; echo ready; while :; do sleep 1; done")
+                shText ("trap 'echo term >> " + marker + "; exit 0' TERM; echo ready; while kill -0 $PPID 2>/dev/null; do sleep 1; done")
                 |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async { ready.TrySetResult() |> ignore })))
                 |> Process.timeout raceAfter
                 |> onStarted (fun handle -> Flow.fromAsync (async { started.TrySetResult handle |> ignore }))
@@ -1709,7 +1709,7 @@ module ProcessServiceTests =
             let started = TaskCompletionSource<ProcessStarted>(TaskCreationOptions.RunContinuationsAsynchronously)
             let ready = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
             let specification =
-                shText "trap 'exit 7' TERM; echo ready; while :; do sleep 1; done"
+                shText "trap 'exit 7' TERM; echo ready; while kill -0 $PPID 2>/dev/null; do sleep 1; done"
                 |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async { ready.TrySetResult() |> ignore })))
                 |> Process.successCodes (set [ 7 ])
                 |> onStarted (fun handle -> Flow.fromAsync (async { started.TrySetResult handle |> ignore }))
