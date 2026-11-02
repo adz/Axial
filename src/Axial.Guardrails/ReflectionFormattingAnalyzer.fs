@@ -10,8 +10,7 @@
 /// Formatting a type parameter is flagged too: it is only as safe as whatever type is substituted, and a generic
 /// helper like `Cause.prettyPrint string` is exactly where a union slips in unnoticed.
 ///
-/// Render such values explicitly instead (a `describe`/`render` function or a hand-written `ToString` override), or
-/// mark a deliberate use with `// axial-allow-reflection-format` on the line or the line above.
+/// Render such values explicitly instead (a `describe`/`render` function or a hand-written `ToString` override).
 module Axial.Guardrails.ReflectionFormattingAnalyzer
 
 open System.Text.RegularExpressions
@@ -19,18 +18,7 @@ open FSharp.Analyzers.SDK
 open FSharp.Compiler.Symbols
 open FSharp.Compiler.Symbols.FSharpExprPatterns
 open FSharp.Compiler.Text
-
-let private allowDirective =
-    Regex(@"axial-allow-reflection-format\b", RegexOptions.Compiled)
-
-let private isAllowed (sourceText: ISourceText) (line1: int) : bool =
-    let textOfLine1 (n: int) =
-        if n >= 1 && n <= sourceText.GetLineCount() then
-            sourceText.GetLineString(n - 1)
-        else
-            ""
-
-    allowDirective.IsMatch(textOfLine1 line1) || allowDirective.IsMatch(textOfLine1 (line1 - 1))
+open Axial.Guardrails.Suppressions
 
 /// FSharp.Core types whose ToString overrides still print their contents with the structured printer.
 let private structuredCoreTypes =
@@ -159,16 +147,33 @@ let rec private formatLiteral (e: FSharpExpr) : string option =
 let private usesStructuredSpecifier (format: string) =
     Regex.IsMatch(format, @"%[-+0 ]*[0-9]*(\.[0-9]+)?A")
 
-/// Every reflection-formatting site in an expression tree.
-let rec private findings (e: FSharpExpr) : (range * string) list =
-    let here =
+type private Finding =
+    | ReflectionFormatting of range * string
+    | PrintfLowering of range
+
+let private isString (t: FSharpType) =
+    let t = stripAbbreviations t
+    t.HasTypeDefinition && t.TypeDefinition.TryFullName = Some "System.String"
+
+/// Every reflection-formatting or printf-lowered site in an expression tree.
+let rec private findings (nativeAot: bool) (e: FSharpExpr) : Finding list =
+    let printfLowering =
+        match e with
+        | Call(None, mfv, _, _, arguments) when nativeAot && isPrintfFunction mfv ->
+            let formats = arguments |> List.filter (fun argument -> (stripAbbreviations argument.Type).HasTypeDefinition && argument.Type.GenericArguments.Count >= 4)
+            let isExplicitPrintf = formats |> List.exists (fun argument -> argument.Type.GenericArguments.Count < 5)
+            let hasNonStringInterpolationHole = formats |> List.collect (fun argument -> holeTypes argument.Type) |> List.exists (isString >> not)
+            if formats.IsEmpty || isExplicitPrintf || hasNonStringInterpolationHole then [ PrintfLowering e.Range ] else []
+        | _ -> []
+
+    let reflectionFormatting =
         match e with
         // Boxing first does not help: `string (box error)` and `(box error).ToString()` still dispatch to the
         // value's generated ToString, so the check looks through `box` to the value's own type.
         | Call(Some receiver, mfv, _, _, []) when mfv.CompiledName = "ToString" ->
-            reflectionFormatted (unboxed receiver).Type |> Option.map (fun why -> e.Range, $"ToString() on {why}") |> Option.toList
+            reflectionFormatted (unboxed receiver).Type |> Option.map (fun why -> ReflectionFormatting(e.Range, $"ToString() on {why}")) |> Option.toList
         | Call(None, mfv, _, _, [ argument ]) when isMember "Microsoft.FSharp.Core.Operators" [ "ToString" ] mfv ->
-            reflectionFormatted (unboxed argument).Type |> Option.map (fun why -> e.Range, $"`string` on {why}") |> Option.toList
+            reflectionFormatted (unboxed argument).Type |> Option.map (fun why -> ReflectionFormatting(e.Range, $"`string` on {why}")) |> Option.toList
         | Call(None, mfv, _, _, arguments) when isPrintfFunction mfv ->
             let structured = arguments |> List.exists (fun argument -> formatLiteral argument |> Option.exists usesStructuredSpecifier)
 
@@ -180,51 +185,74 @@ let rec private findings (e: FSharpExpr) : (range * string) list =
                 | None when structured && not (isPrimitive hole) ->
                     Some $"%%A on {(stripAbbreviations hole).Format FSharpDisplayContext.Empty}, which walks the value with reflection even when it has its own ToString"
                 | None -> None)
-            |> List.map (fun why -> e.Range, why)
+            |> List.map (fun why -> ReflectionFormatting(e.Range, why))
         | Call(_, mfv, _, _, arguments) when formatsBoxedArguments mfv ->
             arguments
             |> List.choose (fun argument ->
                 let inner = unboxed argument
                 if obj.ReferenceEquals(inner, argument) then None
-                else reflectionFormatted inner.Type |> Option.map (fun why -> e.Range, $"{mfv.DisplayName} on {why}"))
+                else reflectionFormatted inner.Type |> Option.map (fun why -> ReflectionFormatting(e.Range, $"{mfv.DisplayName} on {why}")))
         | _ -> []
 
-    here @ (e.ImmediateSubExpressions |> List.collect findings)
+    printfLowering @ reflectionFormatting @ (e.ImmediateSubExpressions |> List.collect (findings nativeAot))
 
 /// Typed-tree translation throws ("error recovery at ...") for code the checker recovered from, and the analyzer CLI
 /// treats an unhandled exception as a failed run. Skip what can't be translated rather than fail the build.
-let private tolerant (f: unit -> (range * string) list) =
+let private tolerant (f: unit -> Finding list) =
     try f () with _ -> []
 
-let rec private declarationFindings (declaration: FSharpImplementationFileDeclaration) =
+let rec private declarationFindings nativeAot (declaration: FSharpImplementationFileDeclaration) =
     match declaration with
-    | FSharpImplementationFileDeclaration.Entity(_, declarations) -> declarations |> List.collect declarationFindings
-    | FSharpImplementationFileDeclaration.MemberOrFunctionOrValue(_, _, body) -> tolerant (fun () -> findings body)
-    | FSharpImplementationFileDeclaration.InitAction body -> tolerant (fun () -> findings body)
+    | FSharpImplementationFileDeclaration.Entity(_, declarations) -> declarations |> List.collect (declarationFindings nativeAot)
+    | FSharpImplementationFileDeclaration.MemberOrFunctionOrValue(_, _, body) -> tolerant (fun () -> findings nativeAot body)
+    | FSharpImplementationFileDeclaration.InitAction body -> tolerant (fun () -> findings nativeAot body)
 
-let private toMessage (range: range, why: string) : Message =
-    { Type = "Axial Reflection Formatting"
-      Message =
-        $"This formats with F#'s reflection-based structured printer ({why}), which throws under NativeAOT and "
-        + "trimming. Render the value explicitly (a describe/render function or a hand-written ToString override). "
-        + "If this code never runs trimmed, mark it: `// axial-allow-reflection-format` on this line or the line above."
-      Code = "AXG006"
-      Severity = Severity.Warning
-      Range = range
-      Fixes = [] }
+let private findingRange = function
+    | ReflectionFormatting(range, _) | PrintfLowering range -> range
 
-let analyze (ctx: CliContext) : Message list =
+let private toMessage = function
+    | ReflectionFormatting(range, why) ->
+        { Type = "Axial Reflection Formatting"
+          Message =
+            $"This formats with F#'s reflection-based structured printer ({why}), which throws under NativeAOT and "
+            + "trimming. Replace it with explicit rendering: a describe/render function or a hand-written ToString override."
+          Code = "AXG006"
+          Severity = Severity.Error
+          Range = range
+          Fixes = [] }
+    | PrintfLowering range ->
+        { Type = "Axial Reflection Formatting"
+          Message = "This formatting lowers to FSharp.Core printf, which is not compatible with NativeAOT. Replace it with String.Concat or convert each hole explicitly with `string`."
+          Code = "AXG006"
+          Severity = Severity.Error
+          Range = range
+          Fixes = [] }
+
+let private rawFindingsWithNativeAot nativeAot (ctx: CliContext) =
     match (try ctx.TypedTree with _ -> None) with
     | None -> []
     | Some tree ->
-        tolerant (fun () -> tree.Declarations |> List.collect declarationFindings)
-        |> List.distinctBy (fun (range, _) -> range.StartLine, range.StartColumn, range.EndLine, range.EndColumn)
-        |> List.filter (fun (range, _) -> not (isAllowed ctx.SourceText range.StartLine))
+        tolerant (fun () -> tree.Declarations |> List.collect (declarationFindings nativeAot))
+        |> List.distinctBy (fun finding ->
+            let range = findingRange finding
+            range.StartLine, range.StartColumn, range.EndLine, range.EndColumn)
+
+let rawRangesWithNativeAot nativeAot ctx =
+    rawFindingsWithNativeAot nativeAot ctx |> List.map findingRange
+
+let analyzeWithNativeAot nativeAot (ctx: CliContext) : Message list =
+    rawFindingsWithNativeAot nativeAot ctx
+        |> List.filter (fun finding ->
+            let config = GuardrailConfig.load ()
+            not (isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText (findingRange finding).StartLine "AXG006"))
         |> List.map toMessage
+
+let analyze (ctx: CliContext) : Message list =
+    analyzeWithNativeAot (GuardrailConfig.load ()).NativeAot ctx
 
 [<CliAnalyzer("ReflectionFormatting",
               "Flags ToString, string, interpolation and %A formatting of F# unions, records and type parameters, "
               + "which relies on reflection that NativeAOT and trimming remove.",
-              "https://github.com/adz/Axial/blob/main/docs/15-notes/03-guardrails.md")>]
+              "https://github.com/adz/Axial/blob/main/docs/15-notes/04-guardrail-diagnostics.md#axg006-format-without-reflection")>]
 let reflectionFormattingAnalyzer: Analyzer<CliContext> =
-    fun ctx -> async { return analyze ctx |> GuardrailConfig.applyCore }
+    fun ctx -> async { return analyze ctx |> GuardrailConfig.applyCore ctx }

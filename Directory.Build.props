@@ -2,34 +2,29 @@
   <PropertyGroup>
     <UseArtifactsOutput>true</UseArtifactsOutput>
 
+    <!-- The SDK enables F# reference assemblies for net7.0+, but not netstandard. Axial multi-targets both;
+         enabling them consistently keeps body-only changes from invalidating downstream project references. -->
+    <ProduceReferenceAssembly Condition="'$(MSBuildProjectExtension)' == '.fsproj'">true</ProduceReferenceAssembly>
+
     <!-- Local/dev default only; the release workflow stamps the real version via -p:Version from the release tag. -->
     <VersionPrefix>0.7.1</VersionPrefix>
-    <ReifiedVersion Condition="'$(ReifiedVersion)' == ''">0.11.0</ReifiedVersion>
+    <ReifiedVersion Condition="'$(ReifiedVersion)' == ''">0.12.1</ReifiedVersion>
     <NuGetAudit>false</NuGetAudit>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryBranch>main</RepositoryBranch>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageReadmeFile Condition="'$(PackageReadmeFile)' == ''">README.md</PackageReadmeFile>
 
-    <!--
-      Axial.Guardrails' own repo-internal defaults: see Directory.Build.targets for how every
-      project gets the same check a package consumer gets via PackageReference, without one.
-      strict for src/Axial* (library code, where the effect-boundary rule is a hard requirement -
-      see AGENTS.md's Architecture Invariants) and tests/Axial* (the only check that runs there,
-      AXG004, has already been cleaned up); warning everywhere else, since examples/ and
-      benchmarks/ are often deliberately showing plain, pre-Axial code. A single root
-      Directory.Build.props (rather than one nested under src/ and tests/) avoids breaking the SDK's
-      artifacts-output root detection, which keys off the nearest Directory.Build.props found by
-      walking up from each project. AXIAL_GUARDRAILS_SEVERITY, if set in the environment, overrides
-      whichever default applies; an individual project can still override
-      AxialGuardrailsEnabled/AxialGuardrailsSeverity itself, the same way an external consumer
-      would.
-    -->
-    <_AxialGuardrailsInStrictTree Condition="$(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)src')) or $(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)tests'))">true</_AxialGuardrailsInStrictTree>
+    <!-- Build distributable F# libraries without generated reflection-based structural formatting. -->
+    <OtherFlags Condition="$(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)src')) and '$(MSBuildProjectName)' != 'Axial.Guardrails'">$(OtherFlags) --reflectionfree</OtherFlags>
+
+    <!-- Every new Guardrails finding is an error. Existing violations can be retained only in the baseline. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AxialGuardrailsEnabled Condition="'$(AxialGuardrailsEnabled)' == ''">true</AxialGuardrailsEnabled>
-    <AxialGuardrailsSeverity Condition="'$(AxialGuardrailsSeverity)' == '' and '$(AXIAL_GUARDRAILS_SEVERITY)' != ''">$(AXIAL_GUARDRAILS_SEVERITY)</AxialGuardrailsSeverity>
-    <AxialGuardrailsSeverity Condition="'$(AxialGuardrailsSeverity)' == '' and '$(_AxialGuardrailsInStrictTree)' == 'true'">error</AxialGuardrailsSeverity>
-    <AxialGuardrailsSeverity Condition="'$(AxialGuardrailsSeverity)' == ''">warning</AxialGuardrailsSeverity>
+
+    <!-- Repo-internal projects that must not import Guardrails: the analyzer's own tests and fixture, and the
+         comparative benchmarks, whose plain-.NET implementations use ambient effects on purpose. -->
+    <_AxialRepoSkipGuardrails Condition="'$(MSBuildProjectFullPath)' == '$(MSBuildThisFileDirectory)tests/Axial.Guardrails.Tests/Axial.Guardrails.Tests.fsproj' or '$(MSBuildProjectFullPath)' == '$(MSBuildThisFileDirectory)tests/Axial.PrintfFixture/Axial.PrintfFixture.fsproj' or '$(MSBuildProjectFullPath)' == '$(MSBuildThisFileDirectory)benchmarks/Axial.Comparative/Axial.Comparative.fsproj'">true</_AxialRepoSkipGuardrails>
   </PropertyGroup>
 
   <ItemGroup>
@@ -47,7 +42,7 @@
   -->
   <ItemGroup>
     <AxialGuardrail Include="Axial" />
-    <AxialGuardrail Include="Axial.PlatformService" />
+    <AxialGuardrail Include="Axial.Configuration" />
     <AxialGuardrail Include="Axial.Console" />
     <AxialGuardrail Include="Axial.FileSystem" />
     <AxialGuardrail Include="Axial.Process" />

@@ -1,5 +1,17 @@
 <Project>
 
+  <!-- Not stamped: an obsolete setting must be visible on every build, including incremental rebuilds and builds
+       where analysis is disabled. The outer cross-targeting invocation skips this; each inner project rejects the setting. -->
+  <Target Name="AxialGuardrailsRejectRemovedSeverity"
+          BeforeTargets="Build"
+          Condition="'$(_AxialGuardrailsRemovedSeverityWarned)' != 'true' and ('$(TargetFramework)' != '' or '$(TargetFrameworks)' == '') and ('$(AxialGuardrailsSeverity)' != '' or '$(AXIAL_GUARDRAILS_SEVERITY)' != '')">
+    <Error Code="AXIALGR001"
+           Text="AxialGuardrailsSeverity / AXIAL_GUARDRAILS_SEVERITY is removed in Axial 0.12. Remove it and configure supported per-role rule levels in Axial.Guardrails.toml. See the policy-roles migration row in the 0.12.0 release notes (dev-docs/releases/0.12.0.md#policy-roles). AXG009-013 retain their fixed block/guide policy; AxialGuardrailsCheckpoint controls unacknowledged guides at checkpoints." />
+    <PropertyGroup>
+      <_AxialGuardrailsRemovedSeverityWarned>true</_AxialGuardrailsRemovedSeverityWarned>
+    </PropertyGroup>
+  </Target>
+
   <PropertyGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'">
     <!--
       A caller that imports this file directly (rather than getting it via PackageReference) can
@@ -9,17 +21,21 @@
       build runs the identical check a package consumer gets, with no separate script.
     -->
     <_AxialGuardrailsAnalyzersPath Condition="'$(_AxialGuardrailsAnalyzersPath)' == ''">$(MSBuildThisFileDirectory)..\analyzers</_AxialGuardrailsAnalyzersPath>
-    <_AxialGuardrailsExe Condition="'$(_AxialGuardrailsExe)' == ''">dotnet &quot;$(MSBuildThisFileDirectory)..\cli\FSharp.Analyzers.Cli.dll&quot;</_AxialGuardrailsExe>
+    <_AxialGuardrailsToolPath Condition="'$(_AxialGuardrailsToolPath)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory)..\cli))</_AxialGuardrailsToolPath>
+    <_AxialGuardrailsToolAssembly Condition="'$(_AxialGuardrailsToolAssembly)' == ''">$([MSBuild]::NormalizePath($(_AxialGuardrailsToolPath), FSharp.Analyzers.Cli.dll))</_AxialGuardrailsToolAssembly>
+    <_AxialGuardrailsUsesPackagedTool Condition="'$(_AxialGuardrailsExe)' == ''">true</_AxialGuardrailsUsesPackagedTool>
+    <_AxialGuardrailsExe Condition="'$(_AxialGuardrailsExe)' == ''">dotnet &quot;$(_AxialGuardrailsToolAssembly)&quot;</_AxialGuardrailsExe>
     <!--
-      Severity comes from the rules file written by AxialGuardrailsWriteConfig: each enabled guardrail carries its
-      own, defaulting to $(AxialGuardrailsSeverity). The analyzers report findings at that severity, and the CLI
-      exits non-zero only when one of them is an error, so no severity override flags are passed.
+      AXG001–008 retain their baseline behavior. Tiered rules are scoped by role: block findings are errors;
+      guide findings warn, or remain visible as Info when acknowledged. Checked-in verification/release scripts
+      set AxialGuardrailsCheckpoint to reject unacknowledged guides and invalid notes. The CLI's treat-as-error
+      option would also promote acknowledged Info, so severity is resolved in the analyzer using the rules file.
 
-      Test projects run only the Fixture analyzer by default: the effect rules flag Thread.Sleep, File and
-      DateTimeOffset that tests legitimately use for setup and assertions. Set AxialGuardrailsInTests to all to
+      Test projects run Fixture, WaitForFacts, RawConcurrency and SuppressionIntegrity by default: ambient effect rules flag File and DateTimeOffset
+      that tests legitimately use for setup and assertions. Set AxialGuardrailsInTests to all to
       run every enabled guardrail in a test project. $(IsTestProject) is set by Microsoft.NET.Test.Sdk.
     -->
-    <_AxialGuardrailsIncludeAnalyzersFlag Condition="'$(IsTestProject)' == 'true' and '$(AxialGuardrailsInTests)' != 'all'">--include-analyzers Fixture</_AxialGuardrailsIncludeAnalyzersFlag>
+    <_AxialGuardrailsIncludeAnalyzersFlag Condition="'$(IsTestProject)' == 'true' and '$(AxialGuardrailsInTests)' != 'all'">--include-analyzers Fixture WaitForFacts RawConcurrency SuppressionIntegrity</_AxialGuardrailsIncludeAnalyzersFlag>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'">
@@ -30,20 +46,137 @@
       analyzed changed. The stamp file below is what lets MSBuild skip the target entirely on a
       rebuild where @(Compile) hasn't changed, which is the common case in an edit-build loop.
     -->
-    <_AxialGuardrailsStampFile>$(IntermediateOutputPath)axial-guardrails.stamp</_AxialGuardrailsStampFile>
-    <_AxialGuardrailsConfigFile>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(IntermediateOutputPath), axial-guardrails.rules))</_AxialGuardrailsConfigFile>
+    <!-- Cross-targeting builds can evaluate IntermediateOutputPath before the SDK appends the target framework.
+         Keep analyzer state per framework explicitly: sharing these files lets one TFM suppress another and lets
+         concurrent analyzer processes contend over the same config and stamp. -->
+    <_AxialGuardrailsStampFile>$(IntermediateOutputPath)axial-guardrails.$(TargetFramework).stamp</_AxialGuardrailsStampFile>
+    <_AxialGuardrailsConfigFile>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(IntermediateOutputPath), axial-guardrails.$(TargetFramework).rules))</_AxialGuardrailsConfigFile>
+    <_AxialGuardrailsFingerprintFile>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(IntermediateOutputPath), axial-guardrails.$(TargetFramework).inputs))</_AxialGuardrailsFingerprintFile>
+    <_AxialGuardrailsFscArgsFile>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(IntermediateOutputPath), axial-guardrails.$(TargetFramework).fscargs))</_AxialGuardrailsFscArgsFile>
+    <!-- Reuse the command line CoreCompile already resolved instead of making the analyzer CLI evaluate MSBuild again. -->
+    <ProvideCommandLineArgs>true</ProvideCommandLineArgs>
+    <_AxialGuardrailsPolicyRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), Axial.Guardrails.toml))</_AxialGuardrailsPolicyRoot>
+    <_AxialGuardrailsPolicyFile Condition="'$(_AxialGuardrailsPolicyRoot)' != ''">$([MSBuild]::NormalizePath($(_AxialGuardrailsPolicyRoot), Axial.Guardrails.toml))</_AxialGuardrailsPolicyFile>
+    <_AxialGuardrailsLockFile Condition="'$(_AxialGuardrailsPolicyRoot)' != ''">$([MSBuild]::NormalizePath($(_AxialGuardrailsPolicyRoot), Axial.Guardrails.lock))</_AxialGuardrailsLockFile>
+    <_AxialGuardrailsV2BaselineRelative Condition="Exists('$(_AxialGuardrailsPolicyFile)')">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(_AxialGuardrailsPolicyFile)')), '(?m)^\s*baseline\s*=\s*&quot;([^&quot;]+)&quot;\s*$').Groups[1].Value)</_AxialGuardrailsV2BaselineRelative>
+    <AxialGuardrailsBaselineFile Condition="'$(_AxialGuardrailsV2BaselineRelative)' != ''">$([MSBuild]::NormalizePath($(_AxialGuardrailsPolicyRoot), $(_AxialGuardrailsV2BaselineRelative)))</AxialGuardrailsBaselineFile>
+    <_AxialGuardrailsBaselineRoot Condition="'$(_AxialGuardrailsPolicyRoot)' != ''">$(_AxialGuardrailsPolicyRoot)</_AxialGuardrailsBaselineRoot>
+    <_AxialGuardrailsPolicyGlobRoot Condition="'$(_AxialGuardrailsPolicyRoot)' != ''">$(_AxialGuardrailsPolicyRoot)</_AxialGuardrailsPolicyGlobRoot>
+    <_AxialGuardrailsPolicyGlobRoot Condition="'$(_AxialGuardrailsPolicyGlobRoot)' == ''">$(MSBuildProjectDirectory)</_AxialGuardrailsPolicyGlobRoot>
+    <_AxialGuardrailsPolicyCheckStamp>$(IntermediateOutputPath)axial-guardrails-policy.$(TargetFramework).stamp</_AxialGuardrailsPolicyCheckStamp>
+    <_AxialGuardrailsPolicyFingerprintFile>$(IntermediateOutputPath)axial-guardrails-policy.$(TargetFramework).inputs</_AxialGuardrailsPolicyFingerprintFile>
+    <_AxialGuardrailsPolicyToolAssembly Condition="'$(_AxialGuardrailsPolicyToolAssembly)' == ''">$([MSBuild]::NormalizePath($(MSBuildThisFileDirectory)..\policy\Axial.Tool.dll))</_AxialGuardrailsPolicyToolAssembly>
+    <_AxialGuardrailsDotNetHost Condition="'$(_AxialGuardrailsDotNetHost)' == '' and '$(DotNetHostPath)' != ''">&quot;$(DotNetHostPath)&quot;</_AxialGuardrailsDotNetHost>
+    <_AxialGuardrailsDotNetHost Condition="'$(_AxialGuardrailsDotNetHost)' == ''">dotnet</_AxialGuardrailsDotNetHost>
+    <_AxialGuardrailsPolicyExe Condition="'$(_AxialGuardrailsPolicyExe)' == ''">$(_AxialGuardrailsDotNetHost) --roll-forward LatestMajor &quot;$(_AxialGuardrailsPolicyToolAssembly)&quot;</_AxialGuardrailsPolicyExe>
   </PropertyGroup>
 
-  <!--
-    @(Compile) includes generated files under $(IntermediateOutputPath) - AssemblyInfo.fs is
-    rewritten with a fresh timestamp on every build regardless of whether anything actually
-    changed, which would make the Inputs/Outputs check below always consider itself out of date.
-    Filtering those out leaves only real source files, so the timestamp comparison means what it's
-    supposed to: "did the checked source change since the last successful check".
-  -->
   <ItemGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'">
-    <_AxialGuardrailsSourceInputs Include="@(Compile)" Exclude="$(IntermediateOutputPath)*" />
+    <_AxialGuardrailsPolicyInputs Include="$(MSBuildProjectFullPath);$(MSBuildAllProjects)" />
+    <_AxialGuardrailsPolicyInputs Include="$(AxialGuardrailsBaselineFile)" Condition="Exists('$(AxialGuardrailsBaselineFile)')" />
+    <_AxialGuardrailsPolicyInputs Include="$(_AxialGuardrailsPolicyFile);$(_AxialGuardrailsLockFile)" Condition="'$(_AxialGuardrailsPolicyRoot)' != ''" />
+    <_AxialGuardrailsProtectedInputs Include="$(_AxialGuardrailsPolicyGlobRoot)\Directory.Build.props;$(_AxialGuardrailsPolicyGlobRoot)\Directory.Build.targets;$(_AxialGuardrailsPolicyGlobRoot)\**\*.props;$(_AxialGuardrailsPolicyGlobRoot)\**\*.targets;$(_AxialGuardrailsPolicyGlobRoot)\**\.editorconfig;$(_AxialGuardrailsPolicyGlobRoot)\**\*.globalconfig;$(_AxialGuardrailsPolicyGlobRoot)\tests\Axial.Guardrails*\**\*.fs;$(_AxialGuardrailsPolicyGlobRoot)\tests\Axial.Guardrails*\**\*.fsproj" Condition="'$(_AxialGuardrailsPolicyRoot)' != ''" Exclude="$(_AxialGuardrailsPolicyGlobRoot)\**\bin\**;$(_AxialGuardrailsPolicyGlobRoot)\**\obj\**;$(_AxialGuardrailsPolicyGlobRoot)\artifacts\**" />
+    <_AxialGuardrailsPolicyInputs Include="@(_AxialGuardrailsProtectedInputs)" />
+    <_AxialGuardrailsPolicyInputs Include="$(ProjectAssetsFile)" Condition="Exists('$(ProjectAssetsFile)')" />
+    <_AxialGuardrailsPolicyInputs Include="@(EditorConfigFiles);@(AnalyzerConfigFiles)" />
   </ItemGroup>
+
+  <!-- Capture these after Build: generators and reference resolution can add items after project evaluation. The two
+       SDK assembly-attribute files are timestamp-volatile but semantically represented by the fingerprint below. -->
+  <!-- The checked-in v2 policy is authoritative. The lock check runs before analyzer configuration and emits the
+       same loud categorized summary in every environment. -->
+  <Target Name="AxialGuardrailsValidatePolicyCache"
+          BeforeTargets="AxialGuardrailsCheckPolicy"
+          Condition="'$(AxialGuardrailsEnabled)' == 'true' and '$(_AxialGuardrailsPolicyRoot)' != ''">
+    <ItemGroup>
+      <_AxialGuardrailsExistingPolicyInput Include="@(_AxialGuardrailsPolicyInputs)" Condition="Exists('%(Identity)')" />
+    </ItemGroup>
+    <GetFileHash Files="@(_AxialGuardrailsExistingPolicyInput)" Algorithm="SHA256">
+      <Output TaskParameter="Items" ItemName="_AxialGuardrailsPolicyInputHash" />
+    </GetFileHash>
+    <ItemGroup>
+      <_AxialGuardrailsPolicyFingerprintLine Include="@(_AxialGuardrailsPolicyInputHash->'%(FullPath)|%(FileHash)')" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(_AxialGuardrailsPolicyFingerprintFile)" Lines="@(_AxialGuardrailsPolicyFingerprintLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <GetFileHash Files="$(_AxialGuardrailsPolicyFingerprintFile)" Algorithm="SHA256">
+      <Output TaskParameter="Items" ItemName="_AxialGuardrailsPolicyFingerprintHash" />
+    </GetFileHash>
+    <ReadLinesFromFile File="$(_AxialGuardrailsPolicyCheckStamp)" Condition="Exists('$(_AxialGuardrailsPolicyCheckStamp)')">
+      <Output TaskParameter="Lines" ItemName="_AxialGuardrailsCachedPolicyFingerprintHash" />
+    </ReadLinesFromFile>
+    <Delete Files="$(_AxialGuardrailsPolicyCheckStamp)"
+            Condition="Exists('$(_AxialGuardrailsPolicyCheckStamp)') and '@(_AxialGuardrailsCachedPolicyFingerprintHash)' != '@(_AxialGuardrailsPolicyFingerprintHash->'%(FileHash)')'" />
+  </Target>
+
+  <Target Name="AxialGuardrailsCheckPolicy"
+          BeforeTargets="AxialGuardrailsWriteConfig"
+          Condition="'$(AxialGuardrailsEnabled)' == 'true' and '$(_AxialGuardrailsPolicyRoot)' != ''"
+          Inputs="@(_AxialGuardrailsPolicyInputs);$(_AxialGuardrailsPolicyToolAssembly)"
+          Outputs="$(_AxialGuardrailsPolicyCheckStamp)">
+    <Error Condition="!Exists('$(_AxialGuardrailsPolicyToolAssembly)')" Text="Axial.Guardrails policy tool is missing: $(_AxialGuardrailsPolicyToolAssembly). Restore/reinstall the package." />
+    <Exec Command="$(_AxialGuardrailsPolicyExe) check" WorkingDirectory="$(_AxialGuardrailsPolicyRoot)"
+          EnvironmentVariables="DOTNET_ROLL_FORWARD=LatestMajor" />
+    <WriteLinesToFile File="$(_AxialGuardrailsPolicyCheckStamp)" Lines="@(_AxialGuardrailsPolicyFingerprintHash->'%(FileHash)')" Overwrite="true" />
+  </Target>
+
+  <Target Name="AxialGuardrailsWriteInputFingerprint"
+          BeforeTargets="AxialGuardrailsEffectBoundaryCheck"
+          DependsOnTargets="AxialGuardrailsWriteConfig"
+          Condition="'$(AxialGuardrailsEnabled)' == 'true'">
+    <Error Condition="'$(_AxialGuardrailsUsesPackagedTool)' != 'true' and '@(_AxialGuardrailsConfiguredToolInput)' == ''"
+           Text="An overridden _AxialGuardrailsExe requires _AxialGuardrailsConfiguredToolInput items naming its manifest and assemblies." />
+    <ItemGroup>
+      <_AxialGuardrailsSourceInputs Include="@(Compile)" />
+      <_AxialGuardrailsSourceInputs Remove="$(GeneratedAssemblyInfoFile);$(TargetFrameworkMonikerAssemblyAttributesPath)" />
+      <_AxialGuardrailsVolatileSource Include="$(GeneratedAssemblyInfoFile);$(TargetFrameworkMonikerAssemblyAttributesPath)" Condition="Exists('%(Identity)')" />
+      <!-- Match CoreCompile's inputs: project references use stable reference assemblies when available. -->
+      <_AxialGuardrailsReferenceInputs Include="@(ReferencePathWithRefAssemblies)" />
+    </ItemGroup>
+    <GetFileHash Files="@(_AxialGuardrailsSourceInputs)" Algorithm="SHA256" Condition="'@(_AxialGuardrailsSourceInputs)' != ''">
+      <Output TaskParameter="Items" ItemName="_AxialGuardrailsSourceHash" />
+    </GetFileHash>
+    <GetFileHash Files="@(_AxialGuardrailsVolatileSource)" Algorithm="SHA256" Condition="'@(_AxialGuardrailsVolatileSource)' != ''">
+      <Output TaskParameter="Items" ItemName="_AxialGuardrailsVolatileSourceHash" />
+    </GetFileHash>
+    <!-- Reference outputs may be rewritten with a fresh timestamp by an otherwise no-op project-reference build.
+         Hash their deterministic contents so that such rewrites do not invalidate the analysis result. -->
+    <GetFileHash Files="@(_AxialGuardrailsReferenceInputs)" Algorithm="SHA256" Condition="'@(_AxialGuardrailsReferenceInputs)' != ''">
+      <Output TaskParameter="Items" ItemName="_AxialGuardrailsReferenceHash" />
+    </GetFileHash>
+    <ItemGroup>
+      <_AxialGuardrailsContentInputs Include="@(_AxialGuardrailsPolicyInputs);@(EditorConfigFiles);@(AnalyzerConfigFiles);$(_AxialGuardrailsConfigFile);@(_AxialGuardrailsToolInputs)" Condition="Exists('%(Identity)')" />
+    </ItemGroup>
+    <GetFileHash Files="@(_AxialGuardrailsContentInputs)" Algorithm="SHA256" Condition="'@(_AxialGuardrailsContentInputs)' != ''">
+      <Output TaskParameter="Items" ItemName="_AxialGuardrailsContentHash" />
+    </GetFileHash>
+    <ItemGroup>
+      <_AxialGuardrailsFingerprintLine Include="TargetFramework=$(TargetFramework)" />
+      <_AxialGuardrailsFingerprintLine Include="DefineConstants=$(DefineConstants)" />
+      <_AxialGuardrailsFingerprintLine Include="LangVersion=$(LangVersion)" />
+      <_AxialGuardrailsFingerprintLine Include="TreatWarningsAsErrors=$(TreatWarningsAsErrors)" />
+      <_AxialGuardrailsFingerprintLine Include="WarningsAsErrors=$(WarningsAsErrors)" />
+      <_AxialGuardrailsFingerprintLine Include="WarningsNotAsErrors=$(WarningsNotAsErrors)" />
+      <_AxialGuardrailsFingerprintLine Include="NoWarn=$(NoWarn)" />
+      <_AxialGuardrailsFingerprintLine Include="@(_AxialGuardrailsSourceHash->'source=%(FullPath)|%(FileHash)')" />
+      <_AxialGuardrailsFingerprintLine Include="@(_AxialGuardrailsReferenceHash->'reference=%(FullPath)|%(FileHash)')" />
+      <_AxialGuardrailsFingerprintLine Include="@(_AxialGuardrailsContentHash->'content=%(FullPath)|%(FileHash)')" />
+      <_AxialGuardrailsFingerprintLine Include="@(_AxialGuardrailsVolatileSourceHash->'volatileSource=%(FullPath)|%(FileHash)')" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(_AxialGuardrailsFingerprintFile)" Lines="@(_AxialGuardrailsFingerprintLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="$(_AxialGuardrailsFscArgsFile)" Lines="@(FscCommandLineArgs)" Overwrite="true" WriteOnlyWhenDifferent="true" Condition="'@(FscCommandLineArgs)' != ''" />
+    <GetFileHash Files="$(_AxialGuardrailsFingerprintFile)" Algorithm="SHA256">
+      <Output TaskParameter="Items" ItemName="_AxialGuardrailsFingerprintHash" />
+    </GetFileHash>
+    <ReadLinesFromFile File="$(_AxialGuardrailsStampFile)" Condition="Exists('$(_AxialGuardrailsStampFile)')">
+      <Output TaskParameter="Lines" ItemName="_AxialGuardrailsCachedFingerprintHash" />
+    </ReadLinesFromFile>
+    <!-- A checkpoint's review list must include Info even on an otherwise up-to-date build. -->
+    <Delete Files="$(_AxialGuardrailsStampFile)" Condition="'$(AxialGuardrailsCheckpoint)' == 'true' or '$(_AxialGuardrailsBaselineProposalDirectory)' != ''" />
+    <!-- A stamp is only trusted when it contains the hash of the current complete fingerprint. A truncated,
+         edited, or future-dated cache file is a miss, never permission to hide a finding. -->
+    <Delete Files="$(_AxialGuardrailsStampFile)"
+            Condition="Exists('$(_AxialGuardrailsStampFile)') and '@(_AxialGuardrailsCachedFingerprintHash)' != '@(_AxialGuardrailsFingerprintHash->'%(FileHash)')'" />
+  </Target>
 
   <!--
     Self-heals the case the Exists() guard below exists for: a repo (like this one) pointing
@@ -58,7 +191,7 @@
   -->
   <Target Name="AxialGuardrailsEnsureBuilt"
           BeforeTargets="AxialGuardrailsEffectBoundaryCheck"
-          Condition="'$(AxialGuardrailsEnabled)' == 'true' and '$(_AxialGuardrailsBootstrapProject)' != '' and !Exists('$(_AxialGuardrailsAnalyzersPath)')">
+          Condition="'$(AxialGuardrailsEnabled)' == 'true' and '$(_AxialGuardrailsBootstrapProject)' != '' and !Exists('$(_AxialGuardrailsAnalyzersPath)\Axial.Guardrails.Analyzers.dll')">
     <Exec Command="dotnet build &quot;$(_AxialGuardrailsBootstrapProject)&quot; --nologo -v quiet" />
   </Target>
 
@@ -69,8 +202,8 @@
     exit code without failing the build. Capture the CLI exit code instead: findings return -2
     (254 on Unix), while other non-zero codes indicate a tool failure.
 
-    Still skips silently if the analyzers path is somehow missing after AxialGuardrailsEnsureBuilt
-    (or there was nothing to bootstrap with) - a real package consumer never hits this at all.
+    If the analyzer path is still missing after AxialGuardrailsEnsureBuilt, the check fails with a package/path
+    repair instruction instead of silently skipping analysis.
   -->
   <!--
     Resolves @(AxialGuardrail) and @(AxialGuardrailRule) into the rules file the analyzers read (see
@@ -80,40 +213,69 @@
   <Target Name="AxialGuardrailsWriteConfig"
           BeforeTargets="AxialGuardrailsEffectBoundaryCheck"
           Condition="'$(AxialGuardrailsEnabled)' == 'true'">
+    <PropertyGroup Condition="'$(_AxialGuardrailsBaselineProposalDirectory)' != ''">
+      <_AxialGuardrailsProposalProject>$([System.IO.Path]::GetRelativePath('$(_AxialGuardrailsPolicyRoot)', '$(MSBuildProjectFullPath)'))</_AxialGuardrailsProposalProject>
+      <_AxialGuardrailsProposalFile>$([System.IO.Path]::Combine('$(_AxialGuardrailsBaselineProposalDirectory)', '$(_AxialGuardrailsProposalProject).$(TargetFramework).baseline'))</_AxialGuardrailsProposalFile>
+    </PropertyGroup>
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(_AxialGuardrailsProposalFile)'))" Condition="'$(_AxialGuardrailsProposalFile)' != ''" />
+    <WriteLinesToFile File="$(_AxialGuardrailsProposalFile)" Lines="" Overwrite="true" Condition="'$(_AxialGuardrailsProposalFile)' != ''" />
+    <ReadLinesFromFile File="$(AxialGuardrailsBaselineFile)" Condition="Exists('$(AxialGuardrailsBaselineFile)')">
+      <Output TaskParameter="Lines" ItemName="_AxialGuardrailsBaselineEntry" />
+    </ReadLinesFromFile>
     <ItemGroup>
-      <_AxialGuardrailResolved Include="@(AxialGuardrail)" />
-      <_AxialGuardrailResolved Condition="'%(_AxialGuardrailResolved.Severity)' == ''">
-        <Severity>$(AxialGuardrailsSeverity)</Severity>
-      </_AxialGuardrailResolved>
-      <_AxialGuardrailsConfigLine Include="@(_AxialGuardrailResolved->'guardrail&#9;%(Identity)&#9;%(Severity)')" />
+      <_AxialGuardrailsConfigLine Include="@(AxialGuardrail->'guardrail&#9;%(Identity)')" />
+      <_AxialGuardrailsConfigLine Include="@(_AxialGuardrailsBaselineEntry->'baseline&#9;%(Identity)')" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;checkpoint&#9;$(AxialGuardrailsCheckpoint)" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;baselineOutput&#9;$(_AxialGuardrailsProposalFile)" Condition="'$(_AxialGuardrailsProposalFile)' != ''" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;baselineRule&#9;$(_AxialGuardrailsBaselineRuleCode)" Condition="'$(_AxialGuardrailsProposalFile)' != ''" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;baselineRoot&#9;$(_AxialGuardrailsBaselineRoot)" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;policyRoot&#9;$(_AxialGuardrailsPolicyRoot)" Condition="'$(_AxialGuardrailsPolicyRoot)' != ''" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;policyFile&#9;$(_AxialGuardrailsPolicyFile)" Condition="'$(_AxialGuardrailsPolicyRoot)' != ''" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;projectPath&#9;$(MSBuildProjectFullPath)" Condition="'$(_AxialGuardrailsPolicyRoot)' != ''" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;nativeAot&#9;true" Condition="'$(IsAotCompatible)' == 'true' or '$(PublishAot)' == 'true'" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;nativeAot&#9;false" Condition="'$(IsAotCompatible)' != 'true' and '$(PublishAot)' != 'true'" />
       <_AxialGuardrailsConfigLine Include="@(AxialGuardrailRule->'rule&#9;%(Identity)&#9;%(Guardrail)&#9;%(Category)&#9;%(Match)&#9;%(Scope)&#9;%(Message)&#9;%(Replacement)')" />
     </ItemGroup>
     <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')" />
     <WriteLinesToFile File="$(_AxialGuardrailsConfigFile)" Lines="@(_AxialGuardrailsConfigLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />
   </Target>
 
-  <!-- The analyzer assemblies are inputs too: without them a project whose sources did not change keeps its stamp
-       when the rules change, so a Guardrails upgrade (or a rule edit in this repository) never re-analyzes it. -->
-  <ItemGroup>
-    <_AxialGuardrailsAnalyzerAssemblies Include="$(_AxialGuardrailsAnalyzersPath)\*.dll" />
+  <!-- Analyzer and the exact CLI installation are inputs: changing either must invalidate a successful result. An
+       overridden command cannot be inferred safely, so its importer must identify the manifest/assemblies it uses. -->
+  <ItemGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'">
+    <_AxialGuardrailsToolInputs Include="$(_AxialGuardrailsAnalyzersPath)\*.dll" />
+    <_AxialGuardrailsToolInputs Include="$(_AxialGuardrailsToolPath)*.dll" Condition="'$(_AxialGuardrailsUsesPackagedTool)' == 'true'" />
+    <_AxialGuardrailsToolInputs Include="@(_AxialGuardrailsConfiguredToolInput)" />
   </ItemGroup>
 
   <Target Name="AxialGuardrailsEffectBoundaryCheck"
           AfterTargets="Build"
-          Condition="'$(AxialGuardrailsEnabled)' == 'true' and ('$(TargetFrameworks)' == '' or '$(TargetFramework)' != '') and Exists('$(_AxialGuardrailsAnalyzersPath)')"
-          Inputs="@(_AxialGuardrailsSourceInputs);$(_AxialGuardrailsConfigFile);@(_AxialGuardrailsAnalyzerAssemblies)"
+          Condition="'$(AxialGuardrailsEnabled)' == 'true' and ('$(TargetFrameworks)' == '' or '$(TargetFramework)' != '') and ('$(_AxialGuardrailsDesignatedTargetFramework)' == '' or '$(TargetFramework)' == '$(_AxialGuardrailsDesignatedTargetFramework)')"
+          Inputs="@(_AxialGuardrailsSourceInputs);@(_AxialGuardrailsPolicyInputs);$(_AxialGuardrailsConfigFile);$(_AxialGuardrailsFingerprintFile);@(_AxialGuardrailsToolInputs)"
           Outputs="$(_AxialGuardrailsStampFile)">
+    <Error Condition="!Exists('$(_AxialGuardrailsAnalyzersPath)\Axial.Guardrails.Analyzers.dll')"
+           Text="Axial.Guardrails analyzer folder is missing or incomplete: $(_AxialGuardrailsAnalyzersPath). Restore/reinstall the package or fix the configured analyzer path." />
+    <Message Importance="high" Text="Running Axial.Guardrails analysis for $(MSBuildProjectName) ($(TargetFramework))." />
     <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')" />
-    <Exec Command="$(_AxialGuardrailsExe) --project &quot;$(MSBuildProjectFullPath)&quot; --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsIncludeAnalyzersFlag) --code-root &quot;$(MSBuildProjectDirectory)&quot;"
-          EnvironmentVariables="AXIAL_GUARDRAILS_CONFIG=$(_AxialGuardrailsConfigFile)" IgnoreExitCode="true">
+    <PropertyGroup>
+      <_AxialGuardrailsAnalysisInput Condition="'@(FscCommandLineArgs)' != ''">--fsc-args-file &quot;$(_AxialGuardrailsFscArgsFile)&quot;</_AxialGuardrailsAnalysisInput>
+      <_AxialGuardrailsAnalysisInput Condition="'@(FscCommandLineArgs)' == ''">--project &quot;$(MSBuildProjectFullPath)&quot; --property TargetFramework=$(TargetFramework) --configuration $(Configuration)</_AxialGuardrailsAnalysisInput>
+    </PropertyGroup>
+    <!-- The CLI targets net8 but may load the building SDK's newer MSBuild assemblies during project loading.
+         Override inherited Major/Disable policies only for this child, including local-tool overrides and
+         policy baseline's nested builds. Major alone stays on net8 when that runtime is installed. -->
+    <Exec Command="$(_AxialGuardrailsExe) $(_AxialGuardrailsAnalysisInput) --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsIncludeAnalyzersFlag) --code-root &quot;$(MSBuildProjectDirectory)&quot;"
+          EnvironmentVariables="AXIAL_GUARDRAILS_CONFIG=$(_AxialGuardrailsConfigFile);DOTNET_ROLL_FORWARD=LatestMajor" IgnoreExitCode="true" ConsoleToMSBuild="true">
       <Output TaskParameter="ExitCode" PropertyName="_AxialGuardrailsExit" />
+      <Output TaskParameter="ConsoleOutput" ItemName="_AxialGuardrailsToolOutput" />
     </Exec>
+    <!-- Quiet callers (including baseline generation) must not lose the exception behind a tool exit code. -->
     <!-- CLI help does not document exit codes; 254 may also indicate a tool failure. -->
     <Error Condition="'$(_AxialGuardrailsExit)' == '-2' or '$(_AxialGuardrailsExit)' == '254'"
            Text="Axial.Guardrails reported findings or failed; see the output above (AXG codes or tool errors)." />
     <Error Condition="'$(_AxialGuardrailsExit)' != '0' and '$(_AxialGuardrailsExit)' != '-2' and '$(_AxialGuardrailsExit)' != '254'"
-           Text="Axial.Guardrails analyzer tool failed (exit code $(_AxialGuardrailsExit)); inspect the output above." />
-    <Touch Files="$(_AxialGuardrailsStampFile)" AlwaysCreate="true" />
+           Text="Axial.Guardrails analyzer tool failed (exit code $(_AxialGuardrailsExit)):&#10;@(_AxialGuardrailsToolOutput, '%0A')" />
+    <WriteLinesToFile File="$(_AxialGuardrailsStampFile)" Lines="@(_AxialGuardrailsFingerprintHash->'%(FileHash)')" Overwrite="true" />
   </Target>
 
 </Project>

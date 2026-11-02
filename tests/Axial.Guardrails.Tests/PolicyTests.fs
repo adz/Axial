@@ -1,0 +1,198 @@
+namespace Axial.Guardrails.Tests
+
+open System
+open System.IO
+open Axial.Guardrails
+open Axial.Guardrails.Policy
+open Swensen.Unquote
+open Xunit
+
+module PolicyTests =
+    [<Theory>]
+    [<InlineData('\\', "C:\\", "C:\\")>]
+    [<InlineData('\\', "D:\\", "D:\\")>]
+    [<InlineData('\\', "C:\\repo\\", "C:\\repo")>]
+    [<InlineData('/', "/", "/")>]
+    [<InlineData('/', "/repo/", "/repo")>]
+    let ``pure policy root trimming preserves volume roots`` (separator: char) (canonical: string) (expected: string) =
+        let policyType = typeof<Policy.Config>.Assembly.GetType("Axial.Guardrails.Policy")
+        let trim = policyType.GetMethod("trimRootPath", System.Reflection.BindingFlags.Static ||| System.Reflection.BindingFlags.NonPublic)
+        Assert.NotNull trim
+        Assert.Equal(expected, trim.Invoke(null, [| box separator; box canonical |]) :?> string)
+
+    let private withRepository action =
+        let root = Path.Combine(Path.GetTempPath(), "Axial.Policy.Tests", Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory(Path.Combine(root, "src", "App", "Capabilities")) |> ignore
+        Directory.CreateDirectory(Path.Combine(root, "tests")) |> ignore
+        File.WriteAllText(Path.Combine(root, "src", "App", "App.fsproj"), "<Project />")
+        File.WriteAllText(Path.Combine(root, "src", "App", "Domain.fs"), "module Domain")
+        Directory.CreateDirectory(Path.Combine(root, "src", "App", "Services")) |> ignore
+        File.WriteAllText(Path.Combine(root, "src", "App", "Services", "Orders.fs"), "module Orders")
+        File.WriteAllText(Path.Combine(root, "src", "App", "Boundary.fs"), "module Boundary")
+        File.WriteAllText(Path.Combine(root, "tests", "App.Tests.fsproj"), "<Project />")
+        try action root finally Directory.Delete(root, true)
+
+    let private parse root text = Policy.parse root (set [ "effects.ambient"; "domain.async-return" ]) text
+
+    [<Theory>]
+    [<InlineData("AXG008 = [\"src/App/App.fsproj\"]")>]
+    [<InlineData("AXG009 = \"src/App/App.fsproj\"")>]
+    [<InlineData("AXG009 = [\"missing/**/*.fsproj\"]")>]
+    [<InlineData("AXG009 = [\"../outside.fsproj\"]")>]
+    let ``exemptions reject unknown rules wrong types and invalid paths`` entry =
+        withRepository (fun root ->
+            let actual = parse root ("version = 2\n[default]\nrole = \"host\"\n[exemptions]\n" + entry)
+            match actual with
+            | Error _ -> ()
+            | Ok _ -> failwith "invalid exemption accepted")
+
+    [<Fact>]
+    let ``exemptions accept consumer project globs`` () =
+        withRepository (fun root ->
+            let actual = parse root "version = 2\n[default]\nrole = \"host\"\n[exemptions]\nAXG009 = [\"src/**/*.fsproj\"]"
+            let policy = actual |> Result.toOption |> Option.get
+            Assert.Equal<string list>(["src/**/*.fsproj"], policy.Exemptions["AXG009"]))
+
+    [<Fact>]
+    let ``parses the closed version 2 schema and every rule level`` () =
+        withRepository (fun root ->
+            let actual = parse root """version = 2
+baseline = "Axial.Guardrails.baseline"
+[default]
+role = "domain"
+[projects]
+test = ["tests/**/*.fsproj"]
+[files]
+capabilities = ["src/App/Capabilities/**"]
+services = ["src/App/Services/**"]
+[boundaries]
+files = ["src/App/Boundary.fs"]
+[roles.domain.rules]
+"effects.ambient" = "forbid"
+"domain.async-return" = "deny"
+[roles.capabilities.rules]
+"effects.ambient" = "allow"
+[roles.test.rules]
+"effects.ambient" = "warn"
+"""
+            test <@ Result.isOk actual @>
+            let policy = Result.toOption actual |> Option.get
+            test <@ policy.Version = 2 && policy.DefaultRole = Domain @>
+            test <@ policy.Files |> List.exists (fun assignment -> assignment.Role = Services) @>
+            test <@ policy.Boundaries = [ "src/App/Boundary.fs" ] @>
+            test <@ policy.Rules[Domain]["effects.ambient"] = Forbid @>
+            test <@ policy.Rules[Capabilities]["effects.ambient"] = Allow @>
+            test <@ policy.Rules[Test]["effects.ambient"] = Warn @>)
+
+    [<Fact>]
+    let ``file role overrides project role which overrides default`` () =
+        withRepository (fun root ->
+            let text = "version = 2\n[default]\nrole = \"domain\"\n[projects]\nhost = [\"src/App/App.fsproj\"]\n[files]\ncapabilities = [\"src/App/Capabilities/**\"]"
+            let policy = parse root text |> Result.toOption |> Option.get
+            test <@ (Policy.resolve policy "src/App/App.fsproj" "src/App/Domain.fs" |> Result.toOption |> Option.get).Role = Host @>
+            test <@ (Policy.resolve policy "src/App/App.fsproj" "src/App/Capabilities/Sql.fs" |> Result.toOption |> Option.get).Role = Capabilities @>
+            test <@ (Policy.resolve policy "other/Other.fsproj" "other/File.fs" |> Result.toOption |> Option.get).Role = Domain @>)
+
+    [<Fact>]
+    let ``empty declared capabilities folder is valid but other unmatched paths fail`` () =
+        withRepository (fun root ->
+            let capabilities = parse root """version = 2
+[default]
+role = "domain"
+[files]
+capabilities = ["src/App/Capabilities/**"]
+"""
+            let unmatched = parse root """version = 2
+[default]
+role = "domain"
+[files]
+host = ["missing/**"]
+"""
+            test <@ Result.isOk capabilities @>
+            test <@ unmatched = Error [ "policy path 'missing/**' matches nothing" ] @>)
+
+    [<Fact>]
+    let ``same-precedence overlapping assignments to different roles fail resolution`` () =
+        withRepository (fun root ->
+            let text = "version = 2\n[default]\nrole = \"domain\"\n[files]\ncapabilities = [\"src/App/**\"]\nhost = [\"src/App/Domain.fs\"]"
+            let policy = parse root text |> Result.toOption |> Option.get
+            let actual = Policy.resolve policy "src/App/App.fsproj" "src/App/Domain.fs"
+            test <@ actual = Error "conflicting file role assignments for 'src/App/Domain.fs': capabilities, host" @>)
+
+    [<Theory>]
+    [<InlineData("version = 3\n[default]\nrole = \"domain\"", "unsupported policy version 3; expected 2")>]
+    [<InlineData("version = 2\n[default]\nrole = \"magic\"", "unknown role 'magic'; expected capabilities, services, domain, host, or test")>]
+    [<InlineData("version = 2\nwat = \"x\"\n[default]\nrole = \"domain\"", "unknown policy key 'wat'")>]
+    [<InlineData("version = 2\nversion = 2\n[default]\nrole = \"domain\"", "line 2: duplicate declaration 'version'")>]
+    let ``rejects invalid versions roles unknown keys and duplicates`` text expected =
+        withRepository (fun root -> test <@ parse root text = Error [ expected ] @>)
+
+    [<Fact>]
+    let ``rejects unknown rules and invalid levels clearly`` () =
+        withRepository (fun root ->
+            let unknown = parse root """version = 2
+[default]
+role = "domain"
+[roles.domain.rules]
+"made.up" = "deny"
+"""
+            let level = parse root """version = 2
+[default]
+role = "domain"
+[roles.domain.rules]
+"effects.ambient" = "error"
+"""
+            test <@ unknown = Error [ "unknown rule 'made.up'" ] @>
+            test <@ level = Error [ "invalid rule level 'error'; expected allow, warn, deny, or forbid" ] @>)
+
+    [<Fact>]
+    let ``rejects repository escapes`` () =
+        withRepository (fun root ->
+            let pathEscape = parse root """version = 2
+[default]
+role = "domain"
+[files]
+host = ["../Program.fs"]
+"""
+            let baselineEscape = parse root "version = 2\nbaseline = \"../outside\"\n[default]\nrole = \"domain\""
+            test <@ Result.isError pathEscape @>
+            test <@ baselineEscape = Error [ "baseline path '../outside' must be a canonical repository-relative path with no '..' or backslashes" ] @>)
+
+    [<Fact>]
+    let ``reads arrays written one entry per line with comments and a trailing comma`` () =
+        withRepository (fun root ->
+            let text = "version = 2\n[default]\nrole = \"domain\"\n[boundaries]\nfiles = [\n    \"src/App/Boundary.fs\", # exact file\n]\n"
+            let policy = parse root text |> Result.toOption |> Option.get
+            test <@ policy.Boundaries = [ "src/App/Boundary.fs" ] @>
+            test <@ Result.isError (parse root "version = 2\n[default]\nrole = \"domain\"\n[boundaries]\nfiles = [\n    \"src/App/Boundary.fs\"\n") @>)
+
+    [<Fact>]
+    let ``rejects unknown and redefined tables with their lines`` () =
+        withRepository (fun root ->
+            test <@ parse root "version = 2\n[default]\nrole = \"domain\"\n[unknown]" = Error [ "line 4: unknown policy table 'unknown'" ] @>
+            test <@ parse root "version = 2\n[default]\nrole = \"domain\"\n[default]" = Error [ "line 4: table 'default' is already declared; combine its entries under one declaration" ] @>)
+
+    [<Fact>]
+    let ``baseline paths reject symlinked parent directories`` () =
+        withRepository (fun root ->
+            let outside=Path.Combine(Path.GetTempPath(),Guid.NewGuid().ToString("N"))
+            Directory.CreateDirectory outside |> ignore
+            let link=Path.Combine(root,"linked")
+            try
+                Directory.CreateSymbolicLink(link,outside) |> ignore
+                let actual=parse root "version = 2\nbaseline = \"linked/baseline\"\n[default]\nrole = \"domain\""
+                test <@ actual = Error [ "baseline path 'linked/baseline' resolves outside the repository root" ] @>
+            finally Directory.Delete(outside,true))
+
+    [<Fact>]
+    let ``directory symlinks are not followed`` () =
+        withRepository (fun root ->
+            let outside=Path.Combine(Path.GetTempPath(),Guid.NewGuid().ToString("N"))
+            Directory.CreateDirectory outside |> ignore
+            File.WriteAllText(Path.Combine(outside,"Escaped.fs"),"module Escaped")
+            let link=Path.Combine(root,"src","linked")
+            try
+                Directory.CreateSymbolicLink(link,outside) |> ignore
+                let actual=parse root "version = 2\n[default]\nrole = \"domain\"\n[files]\nhost = [\"src/linked/**\"]"
+                test <@ actual = Error [ "policy path 'src/linked/**' matches nothing" ] @>
+            finally Directory.Delete(outside,true))

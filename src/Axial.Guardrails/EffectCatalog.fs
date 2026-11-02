@@ -1,7 +1,7 @@
 /// The table of ambient .NET effects that Axial's packages ask callers not to use directly.
 ///
 /// Each rule belongs to a guardrail, named after the package whose service replaces the effect (`Axial.HttpClient`
-/// for `new HttpClient`). A rule names a category (used in `axial-allow-effect` suppression comments), a symbol match,
+/// for `new HttpClient`). A rule names a category for grouping/documentation, a symbol match,
 /// where the match applies, a human message, and the explicit replacement. Which guardrails run, and at which
 /// severity, comes from `GuardrailConfig`.
 module Axial.Guardrails.EffectCatalog
@@ -48,34 +48,42 @@ let private rule id guardrail category matching message replacement =
       Replacement = replacement }
 
 let builtInRules: EffectRule list =
-    [ rule "random.new" "Axial.PlatformService" "random" (ConstructorOf "System.Random")
-          "constructs System.Random directly, which makes behavior depend on ambient, untestable randomness"
-          "Axial.PlatformService.IRandom (Random.service / Random.nextDouble)"
+    [ rule "random.new" CoreGuardrail "random" (ConstructorOf "System.Random")
+          "constructs System.Random directly, which makes behavior depend on ambient, untestable randomness; use System.Security.Cryptography inside capability code for secrets, tokens, and nonces"
+          "Axial.IRandom (Random.service / Random.nextDouble); for secrets, use System.Security.Cryptography inside capability code"
 
-      rule "guid.new" "Axial.PlatformService" "guid" (MembersOf("System.Guid", [ "NewGuid" ]))
+      rule "random.cryptographic" CoreGuardrail "secure-random"
+          (MembersOf(
+              "System.Security.Cryptography.RandomNumberGenerator",
+              [ "Create"; "GetBytes"; "GetNonZeroBytes"; "Fill"; "GetInt32"; "GetHexString"; "GetString"; "GetItems"; "Shuffle" ]
+          ))
+          "uses RandomNumberGenerator directly, which makes security-sensitive values depend on ambient, untestable randomness"
+          "use System.Security.Cryptography inside capability code"
+
+      rule "guid.new" CoreGuardrail "guid" (MembersOf("System.Guid", [ "NewGuid" ]))
           "calls Guid.NewGuid() directly, which makes generated identifiers untestable"
-          "Axial.PlatformService.IGuid (Guid.service / Guid.newGuid)"
+          "Axial.IGuid (Guid.service / Guid.newGuid)"
 
       rule "clock.datetime" CoreGuardrail "clock"
           (MembersOf("System.DateTime", [ "get_Now"; "Now"; "get_UtcNow"; "UtcNow"; "get_Today"; "Today" ]))
           "reads the ambient system clock through System.DateTime, which makes timing untestable"
-          "Axial.IClock (Axial.PlatformService.Clock.now)"
+          "Axial.IClock (Clock.now)"
 
       rule "clock.datetimeoffset" CoreGuardrail "clock"
           (MembersOf("System.DateTimeOffset", [ "get_Now"; "Now"; "get_UtcNow"; "UtcNow" ]))
           "reads the ambient system clock through System.DateTimeOffset, which makes timing untestable"
-          "Axial.IClock (Axial.PlatformService.Clock.now)"
+          "Axial.IClock (Clock.now)"
 
-      rule "clock.local-timezone" "Axial.PlatformService" "environment"
+      rule "clock.local-timezone" CoreGuardrail "environment"
           (MembersOf("System.TimeZoneInfo", [ "get_Local"; "Local" ]))
           "reads TimeZoneInfo.Local, which depends on the machine's configured time zone"
-          "an explicit TimeZoneInfo supplied through 'env or configuration"
+          "TimeZone.local, or TimeZone.toLocal with an explicit TimeZone value"
 
       rule "clock.stopwatch" CoreGuardrail "clock" (AnyMemberOf "System.Diagnostics.Stopwatch")
           "measures time with System.Diagnostics.Stopwatch directly, which makes durations untestable"
-          "Axial.IClock (Axial.PlatformService.Clock.timed / Clock.elapsed)"
+          "Axial.IClock (Clock.timed / Clock.elapsed)"
 
-      rule "environment.state" "Axial.PlatformService" "environment"
+      rule "environment.state" "Axial.Configuration" "environment"
           (MembersOf(
               "System.Environment",
               [ "GetEnvironmentVariable"
@@ -91,7 +99,7 @@ let builtInRules: EffectRule list =
                 "CurrentDirectory" ]
           ))
           "reads or writes ambient process/OS environment state directly"
-          "Axial.PlatformService.IEnvironment, or an explicit configuration value passed through 'env"
+          "ConfigSource.environment / Config.required from Axial.Configuration, or an explicit config value passed through 'env"
 
       rule "environment.processor-count" CoreGuardrail "environment"
           (MembersOf("System.Environment", [ "get_ProcessorCount"; "ProcessorCount" ]))
@@ -153,6 +161,20 @@ let builtInRules: EffectRule list =
             (MembersOf("System.Runtime.CompilerServices.TaskAwaiter", [ "GetResult" ]))
             "blocks the calling thread waiting for a task"
             "await the task asynchronously" with Scope = OutsideFlow }
+
+      // Dedicated analyzers implement AXG009–AXG012; catalog entries register their categories.
+      rule "concurrency.raw" CoreGuardrail "concurrency" (MembersOf("Axial.__RawConcurrency", []))
+          "uses raw concurrency" "Flow concurrency or a reasoned OS bridge"
+      rule "exception.swallowed" CoreGuardrail "exception" (MembersOf("Axial.__SwallowedException", []))
+          "discards an exception" "propagate, record, or report the exception"
+      rule "cancellation.none" CoreGuardrail "cancellation" (MembersOf("Axial.__UncancellableWork", []))
+          "disables cancellation" "the owning cancellation token"
+      rule "concurrency.discarded" CoreGuardrail "concurrency" (MembersOf("Axial.__DiscardedWork", []))
+          "discards concurrent work" "await or retain ownership"
+      // AXG013 is structural; no ambient-effect symbol match is registered here.
+      rule "test.wait-for-facts" CoreGuardrail "test-wait" (MembersOf("Axial.__WaitForFacts", []))
+          "Wait for a fact, not elapsed time."
+          "Complete a Deferred or TaskCompletionSource and wait with a deadline, or step the test clock."
 
       // AXG008 is syntactic; this entry registers its suppression category.
       rule "scope.run" CoreGuardrail "scope" (MembersOf("Axial.__ScopeFromRun", []))

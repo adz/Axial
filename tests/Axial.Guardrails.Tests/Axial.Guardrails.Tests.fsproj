@@ -5,15 +5,26 @@
     <IsPackable>false</IsPackable>
     <GenerateProgramFile>false</GenerateProgramFile>
     <OutputType>Library</OutputType>
-    <AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>
+    <!-- F# emits FS0988 for this xUnit library despite OutputType=Library; there is intentionally no entry point.
+         NU1605 is expected because analyzer tests must load the exact FSharp.Core used by FCS, while their Axial
+         fixture reference was built by the current SDK and advertises its newer FSharp.Core. -->
+    <NoWarn>$(NoWarn);FS0988;NU1605</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="AnalyzerTestContext.fs" />
+    <Compile Include="HardeningTests.fs" />
+    <Compile Include="ExternalSourceTests.fs" />
+    <Compile Include="ConcurrencyHazardsAnalyzerTests.fs" />
     <Compile Include="ReflectionFormattingAnalyzerTests.fs" />
     <Compile Include="ResourceFromFiberAnalyzerTests.fs" />
     <Compile Include="ScopeFromRunAnalyzerTests.fs" />
+    <Compile Include="WaitForFactsAnalyzerTests.fs" />
     <Compile Include="GuardrailConfigTests.fs" />
+    <Compile Include="PolicyTests.fs" />
+    <Compile Include="InitTests.fs" />
+    <Compile Include="PolicyLockTests.fs" />
+    <Compile Include="PolicyReviewTests.fs" />
     <Compile Include="PackagePropsTests.fs" />
   </ItemGroup>
 
@@ -25,12 +36,15 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Unquote" Version="7.0.0" />
+    <PackageReference Update="FSharp.Core" Version="10.1.201" PrivateAssets="all" />
     <PackageReference Include="FSharp.Analyzers.SDK.Testing" Version="0.37.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial.Guardrails\Axial.Guardrails.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Tool\Axial.Tool.fsproj" />
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.ElmishFlows\Axial.ElmishFlows.fsproj" />
   </ItemGroup>
 
 </Project>

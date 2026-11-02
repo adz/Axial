@@ -1,0 +1,26 @@
+# name	expectation	record	expected parse result or error
+implicit-count	valid	AXG001\tsrc/File.fs\t{hash}	AXG001|src/File.fs|{hash}|1
+minimum-count	valid	AXG001\tsrc/File.fs\t{hash} x2	AXG001|src/File.fs|{hash}|2
+single-digit-count-boundary	valid	AXG001\tsrc/File.fs\t{hash} x9	AXG001|src/File.fs|{hash}|9
+multi-digit-count-boundary	valid	AXG001\tsrc/File.fs\t{hash} x10	AXG001|src/File.fs|{hash}|10
+maximum-four-digit-count	valid	AXG001\tsrc/File.fs\t{hash} x9999	AXG001|src/File.fs|{hash}|9999
+maximum-count	valid	AXG001\tsrc/File.fs\t{hash} x10000	AXG001|src/File.fs|{hash}|10000
+zero-count	invalid	AXG001\tsrc/File.fs\t{hash} x0	error
+explicit-one-count	invalid	AXG001\tsrc/File.fs\t{hash} x1	error
+leading-zero-count	invalid	AXG001\tsrc/File.fs\t{hash} x01	error
+above-maximum-count	invalid	AXG001\tsrc/File.fs\t{hash} x10001	error
+integer-overflow-count	invalid	AXG001\tsrc/File.fs\t{hash} x2147483648	error
+leading-whitespace	invalid	\sAXG001\tsrc/File.fs\t{hash}	error
+path-trailing-whitespace	invalid	AXG001\tsrc/File.fs\s\t{hash}	error
+fingerprint-leading-whitespace	invalid	AXG001\tsrc/File.fs\t\s{hash}	error
+space-separated-fields	invalid	AXG001 src/File.fs {hash}	error
+missing-fingerprint-field	invalid	AXG001\tsrc/File.fs	error
+extra-field	invalid	AXG001\tsrc/File.fs\t{hash}\textra	error
+short-rule-id	invalid	AXG01\tsrc/File.fs\t{hash}	error
+lowercase-rule-id	invalid	axg001\tsrc/File.fs\t{hash}	error
+wrong-rule-prefix	invalid	BAD001\tsrc/File.fs\t{hash}	error
+dot-path-segment	invalid	AXG001\t./src/File.fs\t{hash}	error
+parent-path-segment	invalid	AXG001\tsrc/../File.fs\t{hash}	error
+empty-path-segment	invalid	AXG001\tsrc//File.fs\t{hash}	error
+absolute-path	invalid	AXG001\t/src/File.fs\t{hash}	error
+backslash-path	invalid	AXG001\tsrc\\File.fs\t{hash}	error

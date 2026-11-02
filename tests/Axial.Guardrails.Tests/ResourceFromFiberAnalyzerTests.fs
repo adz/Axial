@@ -88,7 +88,7 @@ module ResourceFromFiberAnalyzerTests =
         task {
             let! found =
                 findings (
-                    "// axial-allow-resource-from-fiber\n"
+                    "// axial-allow-AXG007: fixture intentionally demonstrates fiber ownership\n"
                     + "let a = Flow.scopeResource db |> Flow.fork\n")
 
             test <@ found = [] @>

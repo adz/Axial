@@ -1,7 +1,7 @@
 /// The `EffectBoundary` analyzer: flags direct calls to ambient .NET effects (System.Random,
 /// DateTime.Now/UtcNow, Guid.NewGuid, Console, File/Directory, Environment, Process.Start,
 /// Thread.Sleep, new HttpClient, blocking task waits inside a flow) for every enabled guardrail,
-/// unless the call site carries an explicit `axial-allow-effect` comment naming the effect category.
+/// unless a declared boundary file carries a reasoned AXG001 suppression at the call site.
 ///
 /// This exists because Axial's architecture invariant — "operational effects are explicit,
 /// mockable dependencies visible in a signature" — was violated in practice (`Schedule.jittered`
@@ -120,7 +120,7 @@ let private completedReadRanges (ctx: CliContext) =
     | None -> []
 
 /// Every ambient-effect call site in the file for the enabled guardrails, regardless of suppression. Exposed so the
-/// suppression-integrity analyzer can cross-reference `axial-allow-effect` directives against the findings they're
+/// suppression-integrity analyzer can cross-reference AXG001 directives against the findings they're
 /// meant to cover, without re-implementing symbol matching.
 let rawFindings (ctx: CliContext) : (EffectRule * FSharp.Compiler.Text.range) list =
     let rules = (GuardrailConfig.load ()).Rules
@@ -137,36 +137,38 @@ let rawFindings (ctx: CliContext) : (EffectRule * FSharp.Compiler.Text.range) li
         |> Option.map (fun rule -> rule, symbolUse.Range))
     |> Seq.toList
 
-let private toMessage (severity: Severity) (rule: EffectRule) (range: FSharp.Compiler.Text.Range) : Message =
+let private toMessage (rule: EffectRule) (range: FSharp.Compiler.Text.Range) : Message =
     { Type = "Axial Effect Boundary"
       Message =
-        $"This call {rule.Message}. The {rule.Guardrail} guardrail asks for an explicit, mockable "
-        + $"alternative: use {rule.Replacement}. If this line *is* the intended boundary "
-        + $"implementation, mark it explicitly: `// axial-allow-effect: {rule.Category}` on this "
-        + "line or the line above, or `// axial-allow-effect-file: "
-        + $"{rule.Category}` in the file header if the whole file is the boundary."
+        $"This call {rule.Message}. (1) Use {rule.Replacement}; add the Axial capability/service to your env. "
+        + "(2) If Axial has no service for this effect, create a service built on capabilities with 'axial add service <Name>'. "
+        + "(3) Only genuinely new raw I/O belongs in a capability under Capabilities/."
       Code = "AXG001"
-      Severity = severity
+      Severity = Severity.Error
       Range = range
+      // Introducing an explicit service changes the containing function's environment and often its return type;
+      // replacing only this expression is therefore not mechanically safe.
       Fixes = [] }
 
 [<CliAnalyzer("EffectBoundary",
               "Flags direct use of ambient .NET effects (clock, randomness, GUIDs, console, filesystem, "
               + "process, environment, HTTP clients, blocking waits) that bypass Axial's explicit service boundary.",
-              "https://github.com/adz/Axial/blob/main/docs/15-notes/03-guardrails.md")>]
+              "https://github.com/adz/Axial/blob/main/docs/15-notes/04-guardrail-diagnostics.md#axg001-use-explicit-effect-services")>]
 let effectBoundaryAnalyzer: Analyzer<CliContext> =
     fun (ctx: CliContext) ->
         async {
             let config = GuardrailConfig.load ()
-            let fileCategories = fileLevelAllowedCategories ctx.SourceText
-
+            let resolved = GuardrailConfig.resolvedPolicy config ctx
+            let capabilityFile = resolved |> Option.exists (fun policy -> policy.Role = Policy.Capabilities)
+            let level = resolved |> Option.bind (fun policy -> policy.Rules.TryFind "effects.ambient") |> Option.defaultValue Policy.Deny
             let messages =
+                if GuardrailConfig.isSkippedSource config ctx.FileName || capabilityFile then [] else
                 rawFindings ctx
-                |> Seq.filter (fun (rule, range) ->
-                    not (isAllowed ctx.SourceText fileCategories range.StartLine rule.Category))
-                |> Seq.map (fun (rule, range) ->
-                    toMessage (config.Severities.TryFind rule.Guardrail |> Option.defaultValue Severity.Warning) rule range)
-                |> Seq.toList
+                |> List.collect (fun (rule, range) ->
+                    if level <> Policy.Forbid && isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText range.StartLine "AXG001" then
+                        []
+                    else
+                        GuardrailConfig.apply rule.Guardrail ctx [ toMessage rule range ])
 
             return messages
         }

@@ -1,116 +1,145 @@
-/// Parses `axial-allow-effect` suppression comments out of source text.
+/// Parses rule-specific Axial.Guardrails suppression comments.
 ///
-/// Two forms are recognized:
+/// Only ordinary F# line comments are directives:
 ///
-///   // axial-allow-effect: clock
+///   // axial-allow-AXG003: foreign callback translates this exception
 ///
-/// placed on the flagged line, or the line immediately above it, allows that one call site for
-/// the named category (or categories, comma-separated). It does not silence any other category
-/// at that site, and does not silence the category anywhere else in the file.
-///
-///   // axial-allow-effect-file: clock, random
-///
-/// placed anywhere in the file's leading comment block (before the first non-comment,
-/// non-blank line) allows every call site in the file for the named categories. This is for
-/// files whose entire purpose is to be the explicit boundary around an effect, such as an
-/// Axial.PlatformService live implementation.
+/// XML documentation (`///`), block comments, and string contents are not directives. The file-wide form is
+/// `axial-allow-file-AXG001`; it must occur in the leading ordinary-comment block. Both forms are effective only in
+/// exact files declared in `[boundaries].files` in Axial.Guardrails.toml. The old
+/// `axial-allow-effect-file` spelling is not recognized; primitive effect implementations use the capabilities role.
 module Axial.Guardrails.Suppressions
 
 open System
 open System.Text.RegularExpressions
 open FSharp.Compiler.Text
 
-let private lineDirective =
-    Regex(@"axial-allow-effect:\s*([A-Za-z0-9,\-\s]+)", RegexOptions.Compiled)
+[<Literal>]
+let Prefix = "axial-allow-"
 
-let private fileDirective =
-    Regex(@"axial-allow-effect-file:\s*([A-Za-z0-9,\-\s]+)", RegexOptions.Compiled)
+type Directive =
+    { Line: int
+      RuleId: string option
+      Reason: string
+      FileWide: bool
+      Raw: string }
 
-let private categoriesOf (m: Match) : Set<string> =
-    m.Groups[1].Value.Split(',')
-    |> Array.map (fun s -> s.Trim().ToLowerInvariant())
-    |> Array.filter (fun s -> s <> "")
-    |> Set.ofArray
+let private validDirective =
+    Regex(@"\baxial-allow-(file-)?(AXG[0-9]{3})\s*:\s*(.*)$", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
 
-/// Categories suppressed at the given 1-based source line, from that line or the line above it.
-let lineLevelAllowedCategories (sourceText: ISourceText) (line1: int) : Set<string> =
-    let textOfLine1 (n: int) =
-        if n >= 1 && n <= sourceText.GetLineCount() then
-            sourceText.GetLineString(n - 1)
+type private LexState =
+    | Normal
+    | TripleString
+    | BlockComment of depth: int
+
+let private ordinaryLineComment (state: LexState) (line: string) : LexState * string option =
+    let rec scan state index =
+        if index >= line.Length then state, None
         else
-            ""
+            match state with
+            | BlockComment depth ->
+                if index + 1 < line.Length && line[index] = '(' && line[index + 1] = '*' then scan (BlockComment(depth + 1)) (index + 2)
+                elif index + 1 < line.Length && line[index] = '*' && line[index + 1] = ')' then
+                    if depth = 1 then scan Normal (index + 2) else scan (BlockComment(depth - 1)) (index + 2)
+                else scan state (index + 1)
+            | TripleString ->
+                if index + 2 < line.Length && line.Substring(index, 3) = "\"\"\"" then scan Normal (index + 3)
+                else scan state (index + 1)
+            | Normal ->
+                if index + 2 < line.Length && line.Substring(index, 3) = "\"\"\"" then scan TripleString (index + 3)
+                elif index + 1 < line.Length && line[index] = '(' && line[index + 1] = '*' then scan (BlockComment 1) (index + 2)
+                elif index + 1 < line.Length && line[index] = '/' && line[index + 1] = '/' then
+                    // XML docs explain APIs and may quote suppression syntax; they never suppress code.
+                    if index + 2 < line.Length && line[index + 2] = '/' then state, None
+                    else state, Some(line.Substring index)
+                elif line[index] = '@' && index + 1 < line.Length && line[index + 1] = '"' then
+                    let rec verbatim cursor =
+                        if cursor >= line.Length then line.Length
+                        elif line[cursor] = '"' && cursor + 1 < line.Length && line[cursor + 1] = '"' then verbatim (cursor + 2)
+                        elif line[cursor] = '"' then cursor + 1
+                        else verbatim (cursor + 1)
+                    scan Normal (verbatim (index + 2))
+                elif line[index] = '"' then
+                    let rec quoted escaped cursor =
+                        if cursor >= line.Length then line.Length
+                        elif escaped then quoted false (cursor + 1)
+                        elif line[cursor] = '\\' then quoted true (cursor + 1)
+                        elif line[cursor] = '"' then cursor + 1
+                        else quoted false (cursor + 1)
+                    scan Normal (quoted false (index + 1))
+                else scan state (index + 1)
+    scan state 0
 
-    let onThisLine = lineDirective.Match(textOfLine1 line1)
-    let onLineAbove = lineDirective.Match(textOfLine1 (line1 - 1))
-
-    let fromMatch (m: Match) =
-        if m.Success then categoriesOf m else Set.empty
-
-    Set.union (fromMatch onThisLine) (fromMatch onLineAbove)
-
-/// Categories suppressed for the whole file, read from the leading comment block: every
-/// contiguous line from the top of the file that is blank or starts with `//`.
-let fileLevelAllowedCategories (sourceText: ISourceText) : Set<string> =
-    let lineCount = sourceText.GetLineCount()
-
-    let rec headerLines n acc =
-        if n > lineCount then
-            List.rev acc
-        else
-            let text = sourceText.GetLineString(n - 1)
-            let trimmed = text.TrimStart()
-
-            if trimmed = "" || trimmed.StartsWith("//") then
-                headerLines (n + 1) (text :: acc)
-            else
-                List.rev acc
-
-    headerLines 1 []
-    |> List.map fileDirective.Match
-    |> List.filter (fun m -> m.Success)
-    |> List.map categoriesOf
-    |> List.fold Set.union Set.empty
-
-/// True when `category` is allowed at `line1` by either a line-level or file-level directive.
-let isAllowed (sourceText: ISourceText) (fileCategories: Set<string>) (line1: int) (category: string) : bool =
-    Set.contains category fileCategories
-    || Set.contains category (lineLevelAllowedCategories sourceText line1)
-
-/// Every line-level `axial-allow-effect` directive in the file, as (1-based line it appears on,
-/// the categories it names). Used by the suppression-integrity check to find directives that
-/// don't correspond to any real finding, or that name an unknown category.
-let allLineDirectives (sourceText: ISourceText) : (int * Set<string>) list =
+let private commentsByLine (sourceText: ISourceText) =
+    let mutable state = Normal
     [ for line1 in 1 .. sourceText.GetLineCount() do
-          let m = lineDirective.Match(sourceText.GetLineString(line1 - 1))
+          let next, comment = ordinaryLineComment state (sourceText.GetLineString(line1 - 1))
+          state <- next
+          yield line1, comment ]
 
-          if m.Success then
-              let categories = categoriesOf m
-
-              if not (Set.isEmpty categories) then
-                  yield line1, categories ]
-
-/// Every file-level `axial-allow-effect-file` directive in the file's leading comment block, as
-/// (1-based line it appears on, the categories it names).
-let allFileDirectives (sourceText: ISourceText) : (int * Set<string>) list =
-    let lineCount = sourceText.GetLineCount()
-
-    let rec headerLines n acc =
-        if n > lineCount then
-            List.rev acc
+let private parseComment line1 (comment: string) =
+    if not (comment.Contains(Prefix, StringComparison.OrdinalIgnoreCase)) then None
+    else
+        let matched = validDirective.Match comment
+        if matched.Success then
+            Some
+                { Line = line1
+                  RuleId = Some(matched.Groups[2].Value.ToUpperInvariant())
+                  Reason = matched.Groups[3].Value.Trim()
+                  FileWide = matched.Groups[1].Success
+                  Raw = comment.Trim() }
         else
-            let text = sourceText.GetLineString(n - 1)
-            let trimmed = text.TrimStart()
+            Some { Line = line1; RuleId = None; Reason = ""; FileWide = false; Raw = comment.Trim() }
 
-            if trimmed = "" || trimmed.StartsWith("//") then
-                headerLines (n + 1) ((n, text) :: acc)
+let allDirectives (sourceText: ISourceText) : Directive list =
+    commentsByLine sourceText
+    |> List.choose (fun (line1, comment) -> comment |> Option.bind (parseComment line1))
+
+let private notePattern =
+    Regex(@"\baxial-note\s+(AXG[0-9]{3})\s*:\s*(.*)$", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
+
+/// Notes acknowledge guide findings, never suppress them. Reuse the ordinary-comment lexer so quoted
+/// documentation and string contents cannot acknowledge a finding.
+let allNotes (sourceText: ISourceText) : Directive list =
+    commentsByLine sourceText
+    |> List.choose (fun (line, comment) ->
+        comment |> Option.bind (fun text ->
+            if not (text.Contains("axial-note", StringComparison.OrdinalIgnoreCase)) then None
             else
-                List.rev acc
+                let matched = notePattern.Match text
+                Some { Line = line
+                       RuleId = if matched.Success then Some(matched.Groups[1].Value.ToUpperInvariant()) else None
+                       Reason = if matched.Success then matched.Groups[2].Value.Trim() else ""
+                       FileWide = false; Raw = text.Trim() }))
 
-    [ for line1, text in headerLines 1 [] do
-          let m = fileDirective.Match(text)
+let guideMessage (config: GuardrailConfig.Config) (ctx: FSharp.Analyzers.SDK.CliContext) (message: FSharp.Analyzers.SDK.Message) =
+    match allNotes ctx.SourceText |> List.tryFind (fun note ->
+        note.RuleId = Some message.Code && note.Reason <> ""
+        && (note.Line = message.Range.StartLine || note.Line + 1 = message.Range.StartLine)) with
+    | Some note -> { message with Severity = FSharp.Analyzers.SDK.Severity.Info; Message = $"{message.Message} Acknowledged: {note.Reason}" }
+    | None -> { message with Severity = if config.Checkpoint then FSharp.Analyzers.SDK.Severity.Error else FSharp.Analyzers.SDK.Severity.Warning }
 
-          if m.Success then
-              let categories = categoriesOf m
+let private isInLeadingCommentBlock (sourceText: ISourceText) line1 =
+    let ordinaryComments = commentsByLine sourceText |> Map.ofList
+    [ 1 .. line1 ]
+    |> List.forall (fun n ->
+        let trimmed = sourceText.GetLineString(n - 1).Trim()
+        trimmed = "" || (ordinaryComments[n].IsSome && sourceText.GetLineString(n - 1).TrimStart().StartsWith("//")))
 
-              if not (Set.isEmpty categories) then
-                  yield line1, categories ]
+let validDirectives (sourceText: ISourceText) =
+    allDirectives sourceText
+    |> List.filter (fun directive ->
+        directive.RuleId.IsSome
+        && directive.Reason <> ""
+        && (not directive.FileWide || isInLeadingCommentBlock sourceText directive.Line))
+
+/// True when a declared boundary file has a valid suppression for `ruleId` on the finding line,
+/// the line above it, or in its leading comment block.
+let isAllowed (boundaryFiles: Set<string>) (fileName: string) (sourceText: ISourceText) line1 (ruleId: string) =
+    let fullPath = try Some(IO.Path.GetFullPath fileName) with _ -> None
+    if not (boundaryFiles.Contains "*" || fullPath |> Option.exists boundaryFiles.Contains) then false
+    else
+        validDirectives sourceText
+        |> List.exists (fun directive ->
+            directive.RuleId = Some(ruleId.ToUpperInvariant())
+            && (directive.FileWide || directive.Line = line1 || directive.Line = line1 - 1))
