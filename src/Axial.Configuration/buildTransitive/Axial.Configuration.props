@@ -1,0 +1,7 @@
+<Project>
+  <!-- Referencing Axial.Configuration turns on its Axial.Guardrails guardrail; its rules ship in Axial.Guardrails.
+       Remove it with <AxialGuardrail Remove="Axial.Configuration" /> to opt out of that package-specific rule set. -->
+  <ItemGroup>
+    <AxialGuardrail Include="Axial.Configuration" />
+  </ItemGroup>
+</Project>
