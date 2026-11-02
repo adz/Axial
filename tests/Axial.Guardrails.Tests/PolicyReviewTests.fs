@@ -117,7 +117,7 @@ module PolicyReviewTests =
             git ["add"; "."] |> ignore
             git ["commit"; "-qm"; "test project"] |> ignore
             let code, output = cli ["policy"; "review"; "--since"; "HEAD"; "--check"]
-            Assert.True(code = 0, output)
+            Assert.True((code = 0), output)
             Assert.DoesNotContain("project settings", output))
 
     [<Theory>]

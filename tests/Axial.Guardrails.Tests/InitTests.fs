@@ -50,7 +50,7 @@ module InitTests =
         let root = tempRepo ignore
         try
             let code, _, errors = run root ["init"; "--ci"; host]
-            Assert.True(code = 0, errors)
+            Assert.True((code = 0), errors)
             let config = read root "Axial.Guardrails.toml"
             Assert.Contains("[review]", config)
             Assert.Contains("automation = " + expected, config)
@@ -64,7 +64,7 @@ module InitTests =
         let root = tempRepo ignore
         try
             let code, output, errors = run root ["init"]
-            Assert.True(code = 0, errors)
+            Assert.True((code = 0), errors)
             Assert.Contains("Other", output)
             Assert.Contains("automation = []", read root "Axial.Guardrails.toml")
         finally Directory.Delete(root, true)
