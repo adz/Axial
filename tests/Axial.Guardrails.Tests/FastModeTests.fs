@@ -38,7 +38,7 @@ module FastModeTests =
         child.ExitCode, stdout.Result + stderr.Result
     let private report dir = Directory.GetFiles(dir, "*.result.xml", SearchOption.AllDirectories) |> Array.exactlyOne |> XDocument.Load
     let private attr name (e: XElement) = e.Attribute(XName.Get name).Value
-    let private checkSuccess (code, output) = Assert.True(code = 0, output)
+    let private checkSuccess (code, output) = Assert.True((code = 0), output)
     let private withFixture test =
         let dir = fixture ()
         try test dir finally Directory.Delete(dir, true)
