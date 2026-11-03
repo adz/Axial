@@ -67,7 +67,7 @@ test = ["**/*.fsproj"]
         }
 
     [<Fact>]
-    let ``desktop startLayer blocking bridge requires its exact declared boundary`` () = task {
+    let ``service startLayer blocking bridge requires its exact declared boundary`` () = task {
         let f = fixture ()
         let policy = Path.Combine(f.Repo, "Axial.Guardrails.toml")
         write (Path.Combine(f.Repo, "Other.fs")) "module Other\n"
@@ -78,7 +78,7 @@ test = ["**/*.fsproj"]
             + (if marked then " // axial-allow-AXG001: desktop startup owns this blocking host boundary" else "")
             + "\n"
         let analyze declared marked = task {
-            write policy ("version = 2\n[default]\nrole = \"host\"\n[boundaries]\nfiles = [\"" + declared + "\"]\n")
+            write policy ("version = 2\n[default]\nrole = \"services\"\n[boundaries]\nfiles = [\"" + declared + "\"]\n")
             // GuardrailConfig caches the TSV (not policy mtimes), just as an analyzer host does per build.
             let config = f.Config + declared + string marked
             File.Copy(f.Config, config, true)

@@ -14,9 +14,11 @@ module FastModeTests =
         let dir = Path.Combine(Path.GetTempPath(), "axial-fast-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
         let bin name = Path.Combine(root (), "artifacts/bin", name, config ())
+        let nuget = match Environment.GetEnvironmentVariable "NUGET_PACKAGES" with null | "" -> Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget/packages") | value -> value
         File.WriteAllText(Path.Combine(dir, "Consumer.fsproj"), $"""<Project Sdk="Microsoft.NET.Sdk">
 <PropertyGroup><TargetFramework>net10.0</TargetFramework><NuGetAudit>false</NuGetAudit>
 <_AxialGuardrailsAnalyzersPath>{escape (bin "Axial.Guardrails")}</_AxialGuardrailsAnalyzersPath>
+<_AxialGuardrailsToolPath>{escape (Path.Combine(nuget, "fsharp-analyzers/0.37.2/tools/net8.0/any"))}/</_AxialGuardrailsToolPath>
 <_AxialGuardrailsTaskAssembly>{escape (Path.Combine(bin "Axial.Guardrails.Build", "Axial.Guardrails.Build.dll"))}</_AxialGuardrailsTaskAssembly>
 </PropertyGroup><ItemGroup><Compile Include="Program.fs"/><Compile Include="Other.fs"/><AxialGuardrail Include="Axial"/></ItemGroup>
 <Import Project="{escape (Path.Combine(root (), "src/Axial.Guardrails/build/Axial.Guardrails.props"))}"/>
@@ -31,7 +33,7 @@ module FastModeTests =
         start.UseShellExecute <- false
         start.RedirectStandardOutput <- true
         start.RedirectStandardError <- true
-        for arg in ["build"; "--nologo"; "-v:q"; "-nodeReuse:false"; "-m:1"; "-c"; config ()] @ args do start.ArgumentList.Add arg
+        for arg in ["build"; "--nologo"; "-v:minimal"; "-nodeReuse:false"; "-m:1"; "-c"; config ()] @ args do start.ArgumentList.Add arg
         use child = Process.Start start
         let stdout, stderr = child.StandardOutput.ReadToEndAsync(), child.StandardError.ReadToEndAsync()
         if not (child.WaitForExit(90000)) then child.Kill true; failwith "build timed out"
@@ -73,13 +75,101 @@ module FastModeTests =
         Assert.Empty(Directory.GetFiles(dir, "*.stamp", SearchOption.AllDirectories)))
 
     [<Fact>]
-    let ``Fast defines invalidate syntax results including inactive branches`` () = withFixture (fun dir ->
+    let ``corrupt MSBuild task assembly reports AXGINF001 rather than silently dropping analysis`` () = withFixture (fun dir ->
+        let broken = Path.Combine(dir, "BrokenTask.dll")
+        File.WriteAllText(broken, "not an assembly")
+        let code, output = build dir ["-p:_AxialGuardrailsTaskAssembly=" + broken]
+        Assert.NotEqual(0, code)
+        Assert.Contains("AXGINF001", output)
+        Assert.Contains("task-load failure", output)
+        Assert.Empty(Directory.GetFiles(dir, "*.stamp", SearchOption.AllDirectories)))
+
+    [<Fact>]
+    let ``inventory cache detects protected file additions removals and corrupted snapshots`` () = withFixture (fun dir ->
+        let assembly = System.Reflection.Assembly.LoadFrom(Path.Combine(root (), "artifacts/bin/Axial.Guardrails.Build", config (), "Axial.Guardrails.Build.dll"))
+        let typ = assembly.GetType("AxialGuardrailsTask")
+        Directory.CreateDirectory(Path.Combine(dir, "obj")) |> ignore
+        let memo = Path.Combine(dir, "obj", "inventory.xml")
+        let inventory () =
+            let instance = Activator.CreateInstance typ
+            typ.GetProperty("WorkingDirectory").SetValue(instance, dir)
+            typ.GetProperty("MemoFile").SetValue(instance, memo)
+            typ.GetMethod("Inventory", System.Reflection.BindingFlags.Instance ||| System.Reflection.BindingFlags.NonPublic).Invoke(instance, [||]) |> ignore
+            typ.GetProperty("InventoryFiles").GetValue(instance) :?> Microsoft.Build.Framework.ITaskItem[] |> Array.map _.ItemSpec
+        let before = Directory.GetLastWriteTimeUtc dir
+        Assert.Empty(inventory ())
+        let props = Path.Combine(dir, "New.props")
+        File.WriteAllText(props, "<Project/>")
+        Directory.SetLastWriteTimeUtc(dir, before)
+        Assert.Contains(props, inventory ())
+        File.Delete props
+        Directory.SetLastWriteTimeUtc(dir, before)
+        Assert.DoesNotContain(props, inventory ())
+        File.WriteAllText(memo, "<broken")
+        Assert.Empty(inventory ()))
+
+    [<Fact>]
+    let ``Fast cannot satisfy Full even after a successful Fast stamp`` () = withFixture (fun dir ->
+        checkSuccess (build dir ["-p:AxialGuardrailsMode=Fast"])
+        let full = build dir ["-p:AxialGuardrailsMode=Full"; "-p:_AxialGuardrailsExe=DO_NOT_LAUNCH"; "-p:_AxialGuardrailsUsesPackagedTool=true"]
+        Assert.NotEqual(0, fst full)
+        Assert.Contains("AXGINF001", snd full)
+        Assert.Equal("Full", attr "mode" (report dir).Root)
+        Assert.Equal("false", attr "complete" (report dir).Root)
+        Assert.Empty(Directory.GetFiles(dir, "*.stamp", SearchOption.AllDirectories)))
+
+    [<Fact>]
+    let ``Framework fallback uses effective Full mode even with global Fast property`` () = withFixture (fun dir ->
+        let code, output = build dir ["-p:AxialGuardrailsMode=Fast"; "-p:_AxialGuardrailsFrameworkFallback=true"]
+        Assert.NotEqual(0, code)
+        Assert.Contains("Framework MSBuild uses out-of-process Full", output)
+        Assert.Equal("Full", attr "mode" (report dir).Root)
+        Assert.Contains("AXG001", output))
+
+    [<Fact>]
+    let ``Fast ambiguous hints never block warnings as errors`` () = withFixture (fun dir ->
+        let result = build dir ["-p:AxialGuardrailsMode=Fast"; "-warnaserror"; "-p:TreatWarningsAsErrors=true"]
+        checkSuccess result
+        Assert.Contains("fast/unverified", snd result))
+
+    [<Fact>]
+    let ``concurrent Fast builds of the same project publish valid reusable coverage`` () = withFixture (fun dir ->
+        let args = ["-p:AxialGuardrailsMode=Fast"]
+        checkSuccess (build dir args)
+        Directory.GetFiles(dir, "*.stamp", SearchOption.AllDirectories) |> Array.iter File.Delete
+        let first = System.Threading.Tasks.Task.Run(fun () -> build dir args)
+        let second = System.Threading.Tasks.Task.Run(fun () -> build dir args)
+        checkSuccess first.Result
+        checkSuccess second.Result
+        let cached = build dir args
+        checkSuccess cached
+        Assert.DoesNotContain("Running Axial.Guardrails analysis", snd cached))
+
+    [<Fact>]
+    let ``concurrent Fast TFMs keep independent complete reports and stamps`` () = withFixture (fun dir ->
+        let project = Path.Combine(dir, "Consumer.fsproj")
+        File.WriteAllText(project, File.ReadAllText(project).Replace("<TargetFramework>net10.0</TargetFramework>", "<TargetFrameworks>net8.0;net10.0</TargetFrameworks>"))
+        checkSuccess (build dir ["-p:AxialGuardrailsMode=Fast"])
+        Directory.GetFiles(dir, "*.stamp", SearchOption.AllDirectories) |> Array.iter File.Delete
+        let first = System.Threading.Tasks.Task.Run(fun () -> build dir ["-p:AxialGuardrailsMode=Fast"; "-f"; "net8.0"])
+        let second = System.Threading.Tasks.Task.Run(fun () -> build dir ["-p:AxialGuardrailsMode=Fast"; "-f"; "net10.0"])
+        checkSuccess first.Result
+        checkSuccess second.Result
+        let reports = Directory.GetFiles(dir, "*.result.xml", SearchOption.AllDirectories) |> Array.map XDocument.Load
+        Assert.Equal(2, reports.Length)
+        for doc in reports do Assert.Equal("true", attr "complete" doc.Root)
+        Assert.Equal(2, Directory.GetFiles(dir, "*.stamp", SearchOption.AllDirectories).Length))
+
+    [<Theory>]
+    [<InlineData("-p:DefineConstants=SPECIAL")>]
+    [<InlineData("-p:OtherFlags=--define:SPECIAL")>]
+    let ``Fast defines invalidate syntax results including inactive branches`` defineArgument = withFixture (fun dir ->
         File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\n#if SPECIAL\nlet now () = System.DateTimeOffset.UtcNow\n#else\nlet now () = 1\n#endif\n")
         let args = ["-p:AxialGuardrailsMode=Fast"]
         let first = build dir args
         checkSuccess first
         Assert.DoesNotContain("AXG001", snd first)
-        let second = build dir ("-p:DefineConstants=SPECIAL" :: args)
+        let second = build dir (defineArgument :: args)
         checkSuccess second
         Assert.Contains("AXG001", snd second))
 

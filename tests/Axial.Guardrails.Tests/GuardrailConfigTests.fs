@@ -69,7 +69,7 @@ module GuardrailConfigTests =
                 for code in [ "AXG001"; "AXG003"; "AXG004"; "AXG005"; "AXG006"; "AXG007"; "AXG008"; "AXG009"; "AXG010"; "AXG011"; "AXG012"; "AXG013" ] do
                     let message = { diagnostic with Code = code }
                     let actual = GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx [ message ]
-                    Assert.Equal(expectsFull || List.contains code [ "AXG004"; "AXG009"; "AXG013" ], not actual.IsEmpty)
+                    Assert.Equal(expectsFull || List.contains code [ "AXG001"; "AXG004"; "AXG009"; "AXG013" ], not actual.IsEmpty)
             finally
                 System.IO.Directory.Delete(root, true)
         }

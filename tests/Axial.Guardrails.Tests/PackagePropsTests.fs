@@ -75,6 +75,7 @@ module PackagePropsTests =
   <PropertyGroup>
     {frameworkProperty}
     <OutputType>Library</OutputType>
+    <AxialGuardrailsMode Condition="'$(AxialGuardrailsMode)' == ''">Full</AxialGuardrailsMode>
     <_AxialGuardrailsAnalyzersPath>{xmlEscape (analyzersPath ())}</_AxialGuardrailsAnalyzersPath>
     <_AxialGuardrailsTaskAssembly>{xmlEscape (Path.Combine(repoRoot (), "artifacts", "bin", "Axial.Guardrails.Build", configuration (), "Axial.Guardrails.Build.dll"))}</_AxialGuardrailsTaskAssembly>
     <_AxialGuardrailsExe>dotnet &quot;{xmlEscape (cliDll ())}&quot;</_AxialGuardrailsExe>
@@ -188,6 +189,30 @@ module PackagePropsTests =
         finally Directory.Delete(dir, true)
 
     [<Theory>]
+    [<InlineData("Fast")>]
+    [<InlineData("Full")>]
+    let ``domain project can keep all effects in separate capability files`` mode =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-file-effects-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework>" "module Consumer\nlet pure x = x + 1\n"
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            File.WriteAllText(project, File.ReadAllText(project).Replace("<Compile Include=\"Program.fs\" />", "<Compile Include=\"Program.fs\" /><Compile Include=\"Effects.fs\" />"))
+            File.WriteAllText(Path.Combine(dir, "Effects.fs"), "module Effects\nlet now () = System.DateTime.UtcNow\n")
+            writeV2Policy dir "domain" "deny"
+            File.AppendAllText(Path.Combine(dir, "Axial.Guardrails.toml"), "\n[files]\ncapabilities = [\"Effects.fs\"]\n")
+            writeFixtureLock dir
+            let args = ["-p:AxialGuardrailsMode=" + mode]
+            let separated = runBuildWithArgs args project None
+            Assert.True(separated.ExitCode = 0, separated.Output)
+            Assert.DoesNotContain("AXG001", separated.Output)
+            File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet now () = System.DateTime.UtcNow\n")
+            let misplaced = runBuildWithArgs args project None
+            Assert.Equal((mode = "Fast"), (misplaced.ExitCode = 0))
+            Assert.Contains("AXG001", misplaced.Output)
+        finally Directory.Delete(dir, true)
+
+    [<Theory>]
     [<InlineData("Auto")>]
     [<InlineData("fast")>]
     [<InlineData("FULL")>]
@@ -200,12 +225,12 @@ module PackagePropsTests =
     [<Theory>]
     [<InlineData("Fast")>]
     [<InlineData("Full")>]
-    let ``slice2 test role selection is identical in both modes`` mode =
+    let ``test role retains AXG001 guidance with mode appropriate certainty`` mode =
         let result = buildConsumerInTemp (fun dir ->
             writeConsumerProject dir ($"<TargetFramework>net10.0</TargetFramework><AxialGuardrailsMode>{mode}</AxialGuardrailsMode>") "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n"
             writeV2Policy dir "test" "deny")
-        Assert.True(result.ExitCode = 0, result.Output)
-        Assert.DoesNotContain("AXG001", result.Output)
+        Assert.Equal((mode = "Fast"), (result.ExitCode = 0))
+        Assert.Contains("AXG001", result.Output)
 
     [<Fact>]
     let ``slice2 command timeout kills tree and inherited pipes cannot hang`` () =
@@ -888,10 +913,10 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
         Assert.Contains("axial policy review", openDrift.Output)
 
     [<Theory>]
-    [<InlineData("test", false, false, false)>]
+    [<InlineData("test", false, false, true)>]
     [<InlineData("domain", true, false, true)>]
     [<InlineData("test", false, true, true)>]
-    let ``declared project role chooses test analyzer set independently of test SDK`` role isTest all expectsAmbient =
+    let ``AXG001 guidance is retained independently of test SDK and InTests`` role isTest all expectsAmbient =
         let result =
             buildConsumerInTemp (fun dir ->
                 writeConsumerProject dir
@@ -906,7 +931,7 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
         else Assert.DoesNotContain("AXG001", result.Output)
 
     [<Fact>]
-    let ``changing InTests invalidates cached analyzer selection in both directions`` () =
+    let ``changing InTests invalidates cached analysis without dropping AXG001`` () =
         let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-selection-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
         try
@@ -914,23 +939,28 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
             writeV2Policy dir "test" "deny"
             let project = Path.Combine(dir, "Consumer.fsproj")
             let first = runBuild project None
-            Assert.True(first.ExitCode = 0, first.Output)
+            Assert.NotEqual(0, first.ExitCode)
+            Assert.Contains("AXG001", first.Output)
             let all = runBuildWithArgs [ "-p:AxialGuardrailsInTests=all" ] project None
             Assert.NotEqual(0, all.ExitCode)
             Assert.Contains("AXG001", all.Output)
             let reduced = runBuild project None
-            Assert.True(reduced.ExitCode = 0, reduced.Output)
+            Assert.NotEqual(0, reduced.ExitCode)
             Assert.Contains("Running Axial.Guardrails analysis", reduced.Output)
-            Assert.DoesNotContain("AXG001", reduced.Output)
+            Assert.Contains("AXG001", reduced.Output)
         finally
             Directory.Delete(dir, true)
 
     [<Fact>]
-    let ``default test builds report guessed waits without enabling ambient effect rules`` () =
+    let ``test policy can allow ambient effects without disabling guessed wait guidance`` () =
+        let allowTestEffects dir =
+            writeV2Policy dir "test" "deny"
+            File.AppendAllText(Path.Combine(dir, "Axial.Guardrails.toml"), "\n[roles.test.rules]\n\"effects.ambient\" = \"allow\"\n")
+            writeFixtureLock dir
         let build source =
             buildConsumerInTemp (fun dir ->
                 writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework><IsTestProject>true</IsTestProject>" source
-                writeV2Policy dir "test" "deny")
+                allowTestEffects dir)
 
         let ambient = build "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n"
         Assert.True(ambient.ExitCode = 0, ambient.Output)
@@ -946,7 +976,7 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
                 writeConsumerProject dir
                     "<TargetFramework>net10.0</TargetFramework><IsTestProject>true</IsTestProject><AxialGuardrailsCheckpoint>true</AxialGuardrailsCheckpoint>"
                     "module Consumer\nlet wait () = task { do! System.Threading.Tasks.Task.Delay 10 }\n"
-                writeV2Policy dir "test" "deny")
+                allowTestEffects dir)
         Assert.True(checkpoint.ExitCode <> 0, checkpoint.Output)
         Assert.Contains("error AXG013", checkpoint.Output)
 

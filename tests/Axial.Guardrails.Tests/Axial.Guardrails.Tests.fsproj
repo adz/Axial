@@ -29,6 +29,7 @@
     <Compile Include="PolicyReviewTests.fs" />
     <Compile Include="PackagePropsTests.fs" />
     <Compile Include="FastModeTests.fs" />
+    <Compile Include="FastSyntaxTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
