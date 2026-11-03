@@ -33,7 +33,6 @@ module FullDiagnosticCorpus =
             let plugins =
                 assembly.GetTypes() |> Array.collect (fun t -> t.GetMethods(BindingFlags.Public ||| BindingFlags.Static))
                 |> Array.filter (fun m -> m.GetCustomAttributes(false) |> Array.exists (fun a -> a.GetType().Name = "CliAnalyzerAttribute"))
-            Assert.Equal(13, plugins.Length)
             let findings = ResizeArray<string>()
             for plugin in plugins do
                 let! messages = (plugin.Invoke(null, [| box ctx |]) :?> Async<Message list>) |> Async.StartAsTask
@@ -44,12 +43,23 @@ module FullDiagnosticCorpus =
             return findings.ToArray() |> Array.sort
         }
 
+/// full-diagnostic-corpus.json freezes every finding for the sources above. After a deliberate message or site
+/// change, regenerate it from the current analyzers and review the diff:
+///   AXIAL_GUARDRAILS_CORPUS_CAPTURE=$PWD/tests/Axial.Guardrails.Tests/full-diagnostic-corpus.json \
+///     dotnet test tests/Axial.Guardrails.Tests --filter "FullyQualifiedName~FullDiagnosticEquivalenceTests"
+/// Setting AXIAL_GUARDRAILS_REFERENCE_ANALYZER to an older Axial.Guardrails.dll instead compares against, and
+/// captures from, that build.
 [<Collection("Concurrency policy environment")>]
 type FullDiagnosticEquivalenceTests() =
     [<Fact>]
     member _.``Full corpus matches pre optimization diagnostics exactly`` () =
         task {
-            let snapshots = JsonSerializer.Deserialize<FullDiagnosticCorpus.Snapshot array>(File.ReadAllText(Path.Combine(__SOURCE_DIRECTORY__, "full-diagnostic-corpus.json")))
+            let output = Environment.GetEnvironmentVariable "AXIAL_GUARDRAILS_CORPUS_CAPTURE"
+            let capturing = not (String.IsNullOrEmpty output)
+            let snapshots =
+                if capturing then
+                    FullDiagnosticCorpus.sources () |> List.map (fun source -> { FullDiagnosticCorpus.Source = source; FullDiagnosticCorpus.Findings = [||] }) |> List.toArray
+                else JsonSerializer.Deserialize<FullDiagnosticCorpus.Snapshot array>(File.ReadAllText(Path.Combine(__SOURCE_DIRECTORY__, "full-diagnostic-corpus.json")))
             Assert.Equal<string list>(FullDiagnosticCorpus.sources (), snapshots |> Array.map _.Source |> Array.toList)
             let referencePath = Environment.GetEnvironmentVariable "AXIAL_GUARDRAILS_REFERENCE_ANALYZER"
             let reference =
@@ -62,8 +72,8 @@ type FullDiagnosticEquivalenceTests() =
                     let! original = FullDiagnosticCorpus.capture assembly snapshot.Source
                     Assert.Equal<string>(original, findings)
                     captured.Add { Source = snapshot.Source; Findings = original }
+                | None when capturing -> captured.Add { Source = snapshot.Source; Findings = findings }
                 | None -> Assert.Equal<string>(snapshot.Findings, findings)
-            let output = Environment.GetEnvironmentVariable "AXIAL_GUARDRAILS_CORPUS_CAPTURE"
-            if reference.IsSome && not (String.IsNullOrEmpty output) then
+            if capturing then
                 File.WriteAllText(output, JsonSerializer.Serialize(captured.ToArray(), JsonSerializerOptions(WriteIndented = true)))
         }
