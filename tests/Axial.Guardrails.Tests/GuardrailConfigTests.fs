@@ -63,7 +63,9 @@ module GuardrailConfigTests =
                     $"setting\tpolicyFile\t{policyPath}"
                     $"setting\tprojectPath\t{project}"
                     $"setting\tinTests\t{inTests}" ]
-                let diagnostic = EffectBoundaryAnalyzer.rawFindings ctx |> List.head |> snd
+                let diagnostic =
+                    { Type = "test"; Message = "finding"; Code = "AXG001"; Severity = Severity.Error
+                      Range = EffectBoundaryAnalyzer.rawFindings ctx |> List.head |> snd; Fixes = [] }
                 for code in [ "AXG001"; "AXG003"; "AXG004"; "AXG005"; "AXG006"; "AXG007"; "AXG008"; "AXG009"; "AXG010"; "AXG011"; "AXG012"; "AXG013" ] do
                     let message = { diagnostic with Code = code }
                     let actual = GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx [ message ]
