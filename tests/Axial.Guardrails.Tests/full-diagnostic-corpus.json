@@ -1,0 +1,76 @@
+[
+  {
+    "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nlet f () = Cache.make (fun k -\u003E Flow.ok k) |\u003E Flow.run ()\n",
+    "Findings": [
+      "AXG008|Error|4:11-4:57|This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open.",
+      "AXG008|Error|4:46-4:57|This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open."
+    ]
+  },
+  {
+    "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nlet f () = Flow.run () (Hub.makeScoped ())\nlet g () = Flow.run () (Queue.makeScoped QueueStrategy.Unbounded)\n",
+    "Findings": [
+      "AXG008|Error|4:11-4:42|This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open.",
+      "AXG008|Error|5:11-5:65|This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open."
+    ]
+  },
+  {
+    "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nlet f () = Flow.run () (Cache.make (fun k -\u003E Flow.ok k) |\u003E Flow.map id)\n",
+    "Findings": [
+      "AXG008|Error|4:11-4:71|This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open."
+    ]
+  },
+  {
+    "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nmodule C = Axial.Cache\nlet f () = C.make (fun k -\u003E Flow.ok k) |\u003E Flow.run ()\n",
+    "Findings": [
+      "AXG008|Error|5:11-5:53|This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open.",
+      "AXG008|Error|5:42-5:53|This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open."
+    ]
+  },
+  {
+    "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nmodule Cache =\n    let make x = x\nmodule Flow =\n    let run x = x\nlet f () = Cache.make 1 |\u003E Flow.run\n",
+    "Findings": []
+  },
+  {
+    "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nlet f () = Task.FromResult 1 |\u003E ignore\nlet g () = ignore (Task.FromResult 2)\nlet h () = let _ = ValueTask\u003Cint\u003E(1) in ()\n",
+    "Findings": [
+      "AXG012|Error|4:11-4:28|Concurrent work is discarded. Await it or retain and join its owning fiber.",
+      "AXG012|Error|5:18-5:37|Concurrent work is discarded. Await it or retain and join its owning fiber.",
+      "AXG012|Error|6:19-6:36|Concurrent work is discarded. Await it or retain and join its owning fiber."
+    ]
+  },
+  {
+    "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nlet ignore (pending: Task\u003Cint\u003E) = pending\nlet f () = Task.FromResult 1 |\u003E ignore\nlet g () = [ Task.FromResult 1; Task.FromResult 2 ]\n",
+    "Findings": []
+  },
+  {
+    "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nlet f () = try failwith \u0022x\u0022 with :? System.IO.FileNotFoundException as unused -\u003E ()\nlet g () = try failwith \u0022x\u0022 with :? exn -\u003E ()\n",
+    "Findings": [
+      "AXG010|Warning|5:43-5:45|narrowing guidance"
+    ]
+  },
+  {
+    "Source": "module M\nopen Axial\nopen System.Threading.Tasks\ntype Failure = exn\nlet f () = try failwith \u0022x\u0022 with :? Failure -\u003E ()\nlet g () = try failwith \u0022x\u0022 with error -\u003E Error error\n",
+    "Findings": [
+      "AXG010|Warning|5:47-5:49|narrowing guidance"
+    ]
+  },
+  {
+    "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nlet f () = Task.Run(fun () -\u003E 1)\nlet token = System.Threading.CancellationToken.None\nlet source = TaskCompletionSource\u003Cint\u003E()\n",
+    "Findings": [
+      "AXG009|Error|4:11-4:19|Use Flow concurrency rather than raw TPL coordination; move an OS bridge into a capability-role module.",
+      "AXG009|Error|6:13-6:33|Use Flow concurrency rather than raw TPL coordination; move an OS bridge into a capability-role module.",
+      "AXG011|Error|5:12-5:51|Use the runtime\u0027s uninterruptible cleanup primitive instead of CancellationToken.None."
+    ]
+  },
+  {
+    "Source": "module M\nopen Axial\nopen System.Threading.Tasks\ntype Item = { Name: string }\nlet f () = sprintf \u0022%A\u0022 { Name = \u0022x\u0022 }\nlet g () = string { Name = \u0022x\u0022 }\n",
+    "Findings": []
+  },
+  {
+    "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nlet f () = flow { return raise (System.Exception()) }\nlet g () = System.DateTimeOffset.UtcNow\n",
+    "Findings": [
+      "AXG001|Error|5:11-5:39|This call reads the ambient system clock through System.DateTimeOffset, which makes timing untestable. (1) Use Axial.IClock (Clock.now); add the Axial capability/service to your env. (2) If Axial has no service for this effect, create a service built on capabilities with \u0027axial add service \u003CName\u003E\u0027. (3) Only genuinely new raw I/O belongs in a capability under Capabilities/.",
+      "AXG003|Error|4:25-4:51|\u0060raise\u0060 is called directly inside a \u0060flow { }\u0060 block. Flow already has a typed \u0027error channel for expected failures - an ordinary exception here silently becomes a defect (Cause.Die) instead, which callers matching on \u0027error never see. Replace it with \u0060return! Flow.fail err\u0060 for an expected failure, or \u0060return! Flow.die defect\u0060 for an unrecoverable defect."
+    ]
+  }
+]
