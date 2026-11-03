@@ -163,7 +163,11 @@ module PackagePropsTests =
             Assert.Equal("true", document.Root.Attribute(System.Xml.Linq.XName.Get "complete").Value)
             Assert.NotEmpty(document.Descendants(System.Xml.Linq.XName.Get "coverage"))
             Assert.Empty(Directory.GetFiles(dir, "axial-guardrails.*.timings.xml", SearchOption.AllDirectories))
+            let memo = Directory.GetFiles(dir, "*.digests.xml", SearchOption.AllDirectories) |> Array.exactlyOne
+            let memoTime = DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            File.SetLastWriteTimeUtc(memo, memoTime)
             let cached = runBuild project None
+            Assert.Equal(memoTime, File.GetLastWriteTimeUtc memo)
             Assert.Equal(0, cached.ExitCode)
             Assert.DoesNotContain("Running Axial.Guardrails analysis", cached.Output)
             Assert.Contains("AXG001", cached.Output)
@@ -177,10 +181,8 @@ module PackagePropsTests =
                 Assert.Contains(phase, text)
         finally Directory.Delete(dir, true)
 
-    [<Theory>]
-    [<InlineData(false)>]
-    [<InlineData(true)>]
-    let ``slice1 analyzer exception warns with rule and file and does not stamp`` (strict: bool) =
+    [<Fact>]
+    let ``slice1 analyzer exception fails closed with rule file and cause while retaining findings`` () =
         let dir = Path.Combine(Path.GetTempPath(), "axial-slice1-plugin-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
         try
@@ -209,9 +211,9 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
             let path = xml.Descendants(System.Xml.Linq.XName.Get "_AxialGuardrailsAnalyzersPath") |> Seq.exactlyOne
             path.Value <- Path.Combine(plugin, "bin", configuration (), "net10.0")
             xml.Save project
-            let result = runBuildWithArgs [ $"-p:AxialGuardrailsRequireCompleteCoverage={strict.ToString().ToLowerInvariant()}" ] project None
-            Assert.True((result.ExitCode <> 0) = strict, result.Output)
-            Assert.True(result.Output.Contains((if strict then "error" else "warning") + " AXGINF001"), result.Output)
+            let result = runBuild project None
+            Assert.True(result.ExitCode <> 0, result.Output)
+            Assert.True(result.Output.Contains("error AXGINF001"), result.Output)
             Assert.Contains("retained finding", result.Output)
             Assert.Contains("InjectedFailure skipped", result.Output)
             Assert.Contains("Program.fs", result.Output)
@@ -227,10 +229,8 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
             Assert.Contains("status=\"ran\"", text)
         finally Directory.Delete(dir, true)
 
-    [<Theory>]
-    [<InlineData(false)>]
-    [<InlineData(true)>]
-    let ``slice1 process crash reports once and strict mode fails without stamping`` (strict: bool) =
+    [<Fact>]
+    let ``slice1 process crash fails closed once under warnings as errors without stamping`` () =
         if not (OperatingSystem.IsWindows()) then
             let dir = Path.Combine(Path.GetTempPath(), "axial-slice1-crash-" + Guid.NewGuid().ToString("N"))
             Directory.CreateDirectory dir |> ignore
@@ -241,8 +241,9 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
                 let command = xml.Descendants(System.Xml.Linq.XName.Get "_AxialGuardrailsExe") |> Seq.exactlyOne
                 command.Value <- "sh -c 'exit 17' --"
                 xml.Save project
-                let result = runBuildWithArgs [ "-warnaserror"; "-clp:NoSummary"; $"-p:AxialGuardrailsRequireCompleteCoverage={strict.ToString().ToLowerInvariant()}" ] project None
-                Assert.True((result.ExitCode <> 0) = strict, result.Output)
+                let result = runBuildWithArgs [ "-warnaserror" ] project None
+                Assert.True(result.ExitCode <> 0, result.Output)
+                Assert.Contains("error AXGINF001", result.Output)
                 let diagnostics = result.Output.Split('\n') |> Array.takeWhile (fun line -> not (line.StartsWith("Build "))) |> Array.filter (fun line -> line.Contains("AXGINF001"))
                 Assert.True(diagnostics.Length = 1, result.Output)
                 Assert.Contains("exit code 17", result.Output)
@@ -256,7 +257,7 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
         let dir = Path.Combine(Path.GetTempPath(), "axial-signature-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
         try
-            writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework><AxialGuardrailsRequireCompleteCoverage>true</AxialGuardrailsRequireCompleteCoverage>" "module Consumer\nlet value = 1\n"
+            writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework>" "module Consumer\nlet value = 1\n"
             let project = Path.Combine(dir, "Consumer.fsproj")
             File.WriteAllText(Path.Combine(dir, "Program.fsi"), "module Consumer\nval value: int\n")
             File.WriteAllText(project, (File.ReadAllText project).Replace("<Compile Include=\"Program.fs\" />", "<Compile Include=\"Program.fsi\" /><Compile Include=\"Program.fs\" />"))
@@ -349,7 +350,8 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
                 command.Value <- $"sh \"{script}\""
                 xml.Save project
                 let result = runBuildWithEnvironment [ "DOTNET_ROLL_FORWARD", "Major" ] [] project None
-                Assert.True(result.ExitCode = 0, result.Output)
+                Assert.True(result.ExitCode <> 0, result.Output)
+                Assert.Contains("error AXGINF001", result.Output)
                 Assert.Equal("LatestMajor", File.ReadAllText(Path.Combine(dir, "runtime.txt")))
             finally Directory.Delete(dir, true)
 
