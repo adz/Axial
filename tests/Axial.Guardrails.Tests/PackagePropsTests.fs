@@ -177,8 +177,10 @@ module PackagePropsTests =
                 Assert.Contains(phase, text)
         finally Directory.Delete(dir, true)
 
-    [<Fact>]
-    let ``slice1 analyzer exception warns with rule and file and does not stamp`` () =
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
+    let ``slice1 analyzer exception warns with rule and file and does not stamp`` (strict: bool) =
         let dir = Path.Combine(Path.GetTempPath(), "axial-slice1-plugin-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
         try
@@ -189,7 +191,16 @@ module PackagePropsTests =
                 $"<Reference Include=\"{name}\"><HintPath>{path}</HintPath></Reference>"
             let references = [ "Axial.Guardrails.Analyzers"; "FSharp.Analyzers.SDK"; "FSharp.Compiler.Service" ] |> List.map reference |> String.concat ""
             File.WriteAllText(Path.Combine(plugin, "Plugin.fsproj"), $"<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><AssemblyName>Plugin.Analyzers</AssemblyName></PropertyGroup><ItemGroup><Compile Include=\"Plugin.fs\" />{references}</ItemGroup></Project>")
-            File.WriteAllText(Path.Combine(plugin, "Plugin.fs"), "module Plugin\nopen FSharp.Analyzers.SDK\n[<CliAnalyzer(\"InjectedFailure\", \"Test failure\", \"https://example.com\")>]\nlet analyzer: Analyzer<CliContext> = Axial.Guardrails.Execution.track \"InjectedFailure\" (fun _ -> async { return failwith \"injected rule failure\" })\n")
+            File.WriteAllText(Path.Combine(plugin, "Plugin.fs"), """module Plugin
+open FSharp.Analyzers.SDK
+[<CliAnalyzer("InjectedFailure", "Test failure", "https://example.com")>]
+let analyzer: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFailure" (fun _ -> async { return failwith ("injected rule failure" + string (char 1)) })
+[<CliAnalyzer("InjectedFinding", "Test finding", "https://example.com")>]
+let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFinding" (fun _ -> async {
+    return [{ Type = "test"; Code = "TEST001"; Severity = Severity.Warning
+              Message = "retained finding" + string (char 1) + " emoji: 😀"
+              Range = FSharp.Compiler.Text.Range.range0; Fixes = [] }] })
+""")
             let compiled = runBuild (Path.Combine(plugin, "Plugin.fsproj")) None
             Assert.True(compiled.ExitCode = 0, compiled.Output)
             writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework><TreatWarningsAsErrors>true</TreatWarningsAsErrors>" "module Consumer\nlet value = 1\n"
@@ -198,9 +209,10 @@ module PackagePropsTests =
             let path = xml.Descendants(System.Xml.Linq.XName.Get "_AxialGuardrailsAnalyzersPath") |> Seq.exactlyOne
             path.Value <- Path.Combine(plugin, "bin", configuration (), "net10.0")
             xml.Save project
-            let result = runBuildWithArgs [ "-warnaserror" ] project None
-            Assert.True(result.ExitCode = 0, result.Output)
-            Assert.True(result.Output.Contains("warning AXGINF001"), result.Output)
+            let result = runBuildWithArgs [ $"-p:AxialGuardrailsRequireCompleteCoverage={strict.ToString().ToLowerInvariant()}" ] project None
+            Assert.True((result.ExitCode <> 0) = strict, result.Output)
+            Assert.True(result.Output.Contains((if strict then "error" else "warning") + " AXGINF001"), result.Output)
+            Assert.Contains("retained finding", result.Output)
             Assert.Contains("InjectedFailure skipped", result.Output)
             Assert.Contains("Program.fs", result.Output)
             Assert.Contains("injected rule failure", result.Output)
@@ -208,6 +220,9 @@ module PackagePropsTests =
             let report = Directory.GetFiles(dir, "axial-guardrails.*.result.xml", SearchOption.AllDirectories) |> Array.exactlyOne
             let text = File.ReadAllText report
             Assert.Contains("complete=\"false\"", text)
+            Assert.Contains("retained finding", text)
+            Assert.Contains("😀", text)
+            Assert.Contains("injected rule failure", text)
             Assert.Contains("rule=\"EffectBoundary\"", text)
             Assert.Contains("status=\"ran\"", text)
         finally Directory.Delete(dir, true)
@@ -228,7 +243,8 @@ module PackagePropsTests =
                 xml.Save project
                 let result = runBuildWithArgs [ "-warnaserror"; "-clp:NoSummary"; $"-p:AxialGuardrailsRequireCompleteCoverage={strict.ToString().ToLowerInvariant()}" ] project None
                 Assert.True((result.ExitCode <> 0) = strict, result.Output)
-                Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(result.Output, "AXGINF001").Count)
+                let diagnostics = result.Output.Split('\n') |> Array.takeWhile (fun line -> not (line.StartsWith("Build "))) |> Array.filter (fun line -> line.Contains("AXGINF001"))
+                Assert.True(diagnostics.Length = 1, result.Output)
                 Assert.Contains("exit code 17", result.Output)
                 Assert.Empty(Directory.GetFiles(dir, "axial-guardrails.net10.0.stamp", SearchOption.AllDirectories))
                 let report = Directory.GetFiles(dir, "axial-guardrails.*.result.xml", SearchOption.AllDirectories) |> Array.exactlyOne
