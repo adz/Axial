@@ -12,6 +12,10 @@ description: Use Axial.Guardrails to detect ambient effects, exceptions in workf
 
 Run `axial policy review [--since <ref>] [--json]` to inspect what loosened: new or changed suppression reasons and notes, relaxed roles or rule levels, runtime/boundary/ignore/baseline additions, evaluated project settings, and changes to declared automation files or analyzer versions. Removals appear briefly as tightening. The default reference is the reviewed commit recorded in the lock; the first review needs `--since <tag-or-commit>`. If that reference predates policy files, the review reports policy introduction rather than inventing historical policy, and still compares source exceptions.
 
+`axial check --full` builds the single solution (`.slnx` or `.sln`) in the current directory with explicit Full mode and checkpoint enforcement. It analyzes every enabled project and target framework, including frameworks normally restricted by a designated-framework setting. Each result must have complete Full coverage; infrastructure failures, incomplete coverage, error/warning findings, or a failing `axial policy review --check` produce a nonzero exit. A first policy review still needs a human-reviewed reference recorded in the lock. The command never approves policy or generates a baseline.
+
+`AxialGuardrailsMode=Fast|Full` selects the build mode. The package and this repository default to `Full` during rollout. Both modes currently run exactly the same typed analyzers and preserve policy roles and rule severities; Fast does not yet provide parse-only analysis. Invalid values fail the build. Neither `CI`, Release configuration nor branch names select a mode. Set the property explicitly, for example `dotnet build -p:AxialGuardrailsMode=Fast`. Changing modes invalidates cached analysis in either direction; result and coverage records identify their mode.
+
 `axial policy review --check` prints the same review and exits nonzero if anything loosened. Repositories may run it at release or merge time. After reading the review, a human runs `axial policy approve` (optionally `--yes-i-reviewed`) and commits the lock. Approval means a human read the review and records the current commit as the reviewed point; it has no signing, identity, or TTY requirement.
 
 A migration prepares the TOML and reasoned exceptions, runs `axial check` and `axial policy review` (use `--since` for
@@ -19,7 +23,7 @@ the first review), and reports any proposed loosening. An agent proposes; a huma
 `axial policy approve`, and commits the lock. There is no approval alias or `--yes-i-reviewed` recipe that lets an agent
 stand in for that review. When policy files do not exist yet, `axial init` creates only the missing TOML, baseline, and
 bootstrap lock; it never overwrites an existing artifact and does not approve later policy changes. Daily drift warns,
-analyzer errors remain errors, and release automation runs `axial policy review --check`.
+analyzer errors remain errors, and release automation runs `axial check --full`.
 
 For a new policy, `axial init` asks which CI host the repository uses: GitHub, GitLab, Bitbucket, or Other.
 Use `axial init --ci github|gitlab|bitbucket|other` to select without a prompt. With redirected stdin (or

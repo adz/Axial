@@ -5,6 +5,7 @@
   <UsingTask TaskName="AxialGuardrailsTask" AssemblyFile="$(_AxialGuardrailsTaskAssembly)" Condition="'$(_AxialGuardrailsTaskHost)' != 'true'" />
   <UsingTask TaskName="AxialGuardrailsTask" AssemblyFile="$(_AxialGuardrailsTaskAssembly)" TaskFactory="TaskHostFactory" Condition="'$(_AxialGuardrailsTaskHost)' == 'true'" />
   <PropertyGroup>
+    <AxialGuardrailsMode Condition="'$(AxialGuardrailsMode)' == ''">Full</AxialGuardrailsMode>
     <AxialGuardrailsTimings Condition="'$(AxialGuardrailsTimings)' == ''">false</AxialGuardrailsTimings>
     <_AxialGuardrailsForce>false</_AxialGuardrailsForce>
     <_AxialGuardrailsFingerprintMilliseconds>0</_AxialGuardrailsFingerprintMilliseconds>
@@ -21,6 +22,11 @@
     <PropertyGroup>
       <_AxialGuardrailsRemovedSeverityWarned>true</_AxialGuardrailsRemovedSeverityWarned>
     </PropertyGroup>
+  </Target>
+
+  <Target Name="AxialGuardrailsValidateMode" BeforeTargets="Build;AxialGuardrailsWriteInputFingerprint">
+    <Error Condition="'$(AxialGuardrailsMode)' != 'Fast' and '$(AxialGuardrailsMode)' != 'Full'"
+           Text="AxialGuardrailsMode must be Fast or Full (received '$(AxialGuardrailsMode)')." />
   </Target>
 
   <PropertyGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'">
@@ -166,7 +172,8 @@
       <Output TaskParameter="Items" ItemName="_AxialGuardrailsContentHash" />
     </GetFileHash>
     <ItemGroup>
-      <_AxialGuardrailsFingerprintLine Include="Schema=1-full" />
+      <_AxialGuardrailsFingerprintLine Include="Schema=2-mode" />
+      <_AxialGuardrailsFingerprintLine Include="Mode=$(AxialGuardrailsMode)" />
       <_AxialGuardrailsFingerprintLine Include="Rules=$(_AxialGuardrailsRules)" />
       <_AxialGuardrailsFingerprintLine Include="TargetFramework=$(TargetFramework)" />
       <_AxialGuardrailsFingerprintLine Include="AxialGuardrailsInTests=$(AxialGuardrailsInTests)" />
@@ -260,7 +267,7 @@
 
   <Target Name="AxialGuardrailsEffectBoundaryCheck"
           AfterTargets="Build"
-          Condition="'$(AxialGuardrailsEnabled)' == 'true' and ('$(TargetFrameworks)' == '' or '$(TargetFramework)' != '') and ('$(_AxialGuardrailsDesignatedTargetFramework)' == '' or '$(TargetFramework)' == '$(_AxialGuardrailsDesignatedTargetFramework)')"
+          Condition="'$(AxialGuardrailsEnabled)' == 'true' and ('$(TargetFrameworks)' == '' or '$(TargetFramework)' != '') and ('$(_AxialGuardrailsFullCheckDirectory)' != '' or '$(_AxialGuardrailsDesignatedTargetFramework)' == '' or '$(TargetFramework)' == '$(_AxialGuardrailsDesignatedTargetFramework)')"
           >
     <Error Condition="!Exists('$(_AxialGuardrailsAnalyzersPath)\Axial.Guardrails.Analyzers.dll')"
            Text="Axial.Guardrails analyzer folder is missing or incomplete: $(_AxialGuardrailsAnalyzersPath). Restore/reinstall the package or fix the configured analyzer path." />
@@ -276,7 +283,7 @@
       <_AxialGuardrailsProposalCoverageFile Condition="'$(_AxialGuardrailsProposalFile)' != ''">$(_AxialGuardrailsProposalFile).coverage.xml</_AxialGuardrailsProposalCoverageFile>
       <_AxialGuardrailsForce Condition="'$(AxialGuardrailsCheckpoint)' == 'true' or '$(_AxialGuardrailsBaselineProposalDirectory)' != ''">true</_AxialGuardrailsForce>
     </PropertyGroup>
-    <AxialGuardrailsTask Action="Run"
+    <AxialGuardrailsTask Action="Run" Mode="$(AxialGuardrailsMode)" Project="$(MSBuildProjectFullPath)" TargetFramework="$(TargetFramework)"
           Command="$(_AxialGuardrailsExe) $(_AxialGuardrailsAnalysisInput) --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; --code-root &quot;$(MSBuildProjectDirectory)&quot;"
           WorkingDirectory="$(MSBuildProjectDirectory)" ConfigFile="$(_AxialGuardrailsConfigFile)"
           Files="@(Compile)" Rules="$(_AxialGuardrailsRules)"
@@ -285,6 +292,14 @@
           Timings="$(AxialGuardrailsTimings)" TimingsFile="$(IntermediateOutputPath)axial-guardrails.$(TargetFramework).timings.xml"
           CoverageFile="$(_AxialGuardrailsProposalCoverageFile)"
           FingerprintMilliseconds="$(_AxialGuardrailsFingerprintMilliseconds)" Force="$(_AxialGuardrailsForce)" />
+    <!-- A fresh directory belongs to one full-check invocation; cached reports were validated and replayed above. -->
+    <PropertyGroup Condition="'$(_AxialGuardrailsFullCheckDirectory)' != ''">
+      <_AxialGuardrailsFullCheckProject>$([System.Guid]::NewGuid())</_AxialGuardrailsFullCheckProject>
+    </PropertyGroup>
+    <MakeDir Directories="$(_AxialGuardrailsFullCheckDirectory)/$(_AxialGuardrailsFullCheckProject)" Condition="'$(_AxialGuardrailsFullCheckDirectory)' != ''" />
+    <Copy SourceFiles="$(IntermediateOutputPath)axial-guardrails.$(TargetFramework).result.xml"
+          DestinationFiles="$(_AxialGuardrailsFullCheckDirectory)/$(_AxialGuardrailsFullCheckProject)/$(TargetFramework).xml"
+          Condition="'$(_AxialGuardrailsFullCheckDirectory)' != ''" />
   </Target>
 
 </Project>

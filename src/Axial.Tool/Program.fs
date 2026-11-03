@@ -8,7 +8,9 @@ open Axial.Tool.PolicyLock
 module Program =
     let private workflow = """Axial policy workflow:
   1. axial init [--ci github|gitlab|bitbucket|other]
-  2. axial check
+  2. axial check [--full]
+     --full builds every solution project/TFM in Full mode, requires complete coverage,
+     rejects findings, then runs policy review --check. Never writes a lock or baseline.
   3. axial policy review [--since <ref>] [--check] [--json]
   4. A human reads the review, then runs axial policy approve [--yes-i-reviewed].
 
@@ -59,6 +61,65 @@ Approval means a human read the review. The first review requires --since <ref>.
             else
                 let count = changes.RulesDowngraded.Length + changes.BaselineAdded.Length + changes.SuppressionsAdded.Length + changes.BoundariesAdded.Length + (changes.ProtectedChanged |> List.filter ((<>) LockName) |> List.length)
                 emitWith (Some changes) asJson true $"WARNING: Policy changed since the last review: {max 1 count} changes. Run `axial policy review`."
+
+    let private fullCheck asJson =
+        let directory = Path.Combine(Path.GetTempPath(), "axial-full-check-" + Guid.NewGuid().ToString("N"))
+        try
+            try
+                let solutions =
+                    Directory.GetFiles(root(), "*.slnx")
+                    |> Array.append (Directory.GetFiles(root(), "*.sln"))
+                if solutions.Length <> 1 then
+                    emit asJson false "axial check --full requires exactly one solution (.slnx or .sln) in the current directory."
+                else
+                    Directory.CreateDirectory directory |> ignore
+                    let start = Diagnostics.ProcessStartInfo("dotnet")
+                    start.WorkingDirectory <- root()
+                    start.UseShellExecute <- false
+                    start.RedirectStandardOutput <- true
+                    start.RedirectStandardError <- true
+                    for argument in [ "build"; solutions[0]; "--nologo"; "-v"; "minimal"
+                                      "-p:AxialGuardrailsMode=Full"; "-p:AxialGuardrailsCheckpoint=true"
+                                      "-p:_AxialGuardrailsBaselineProposalDirectory="
+                                      "-p:_AxialGuardrailsBaselineRuleCode="
+                                      "-p:_AxialGuardrailsFullCheckDirectory=" + directory ] do
+                        start.ArgumentList.Add argument
+                    use child = Diagnostics.Process.Start start
+                    let stdout = child.StandardOutput.ReadToEndAsync()
+                    let stderr = child.StandardError.ReadToEndAsync()
+                    if not (child.WaitForExit(1800000)) then
+                        child.Kill(true)
+                        child.WaitForExit()
+                        emit asJson false "Full analysis timed out; coverage is incomplete."
+                    else
+                        let output = stdout.Result + stderr.Result
+                        if child.ExitCode <> 0 then
+                            emit asJson false ("Full analysis failed (findings, build failure, or incomplete coverage).\n" + output)
+                        else
+                            let reports = Directory.GetFiles(directory, "*.xml", SearchOption.AllDirectories)
+                            let mutable failure = if reports.Length = 0 then Some "Full analysis produced no coverage records." else None
+                            for path in reports do
+                                let report = System.Xml.Linq.XDocument.Load path
+                                let attribute (element: System.Xml.Linq.XElement) name =
+                                    element.Attribute(System.Xml.Linq.XName.Get name) |> Option.ofObj |> Option.map _.Value
+                                let entries = report.Root.Elements(System.Xml.Linq.XName.Get "coverage") |> Seq.toArray
+                                if attribute report.Root "mode" <> Some "Full" || attribute report.Root "complete" <> Some "true" ||
+                                   entries |> Array.exists (fun entry -> attribute entry "status" <> Some "ran" || attribute entry "mode" <> Some "Full") then
+                                    failure <- Some ("Full analysis coverage is incomplete: " + path)
+                                elif report.Descendants(System.Xml.Linq.XName.Get "finding") |> Seq.exists (fun finding -> attribute finding "severity" <> Some "Info") then
+                                    failure <- Some ("Full analysis reported findings: " + path + "\n" + output)
+                            match failure with
+                            | Some message -> emit asJson false message
+                            | None ->
+                                match PolicyReview.review (root()) None with
+                                | Error error -> emit asJson false ("Full analysis passed; policy review --check failed: " + error)
+                                | Ok review when not review.Loosened.IsEmpty ->
+                                    emit asJson false ("policy review --check failed:\n" + PolicyReview.format review)
+                                | Ok review -> emit asJson true ("Full analysis passed for " + string reports.Length + " project/TFM records.\n" + PolicyReview.format review)
+            with error -> emit asJson false ("Full analysis failed: " + error.Message)
+        finally
+            try if Directory.Exists directory then Directory.Delete(directory, true)
+            with :? IOException | :? UnauthorizedAccessException -> ()
 
     let private confirm () =
         printf "Type 'approve' to record this reviewed policy change: "
@@ -252,6 +313,7 @@ Approval means a human read the review. The first review requires --since <ref>.
         match args with
         | [] -> help asJson
         | ["check"] -> check asJson
+        | ["check"; "--full"] -> fullCheck asJson
         | ["init"] -> init asJson None
         | ["init"; "--ci"; host] when List.contains host ciHosts -> init asJson (Some host)
         | "init"::_ -> emit asJson false "Usage: axial init [--ci github|gitlab|bitbucket|other] [--json]"

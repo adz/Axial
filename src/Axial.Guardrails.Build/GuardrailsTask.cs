@@ -14,6 +14,9 @@ using Microsoft.Build.Utilities;
 public class AxialGuardrailsTask : Task
 {
     public string Action { get; set; }
+    public string Mode { get; set; } = "Full";
+    public string Project { get; set; } = "";
+    public string TargetFramework { get; set; } = "";
     public ITaskItem[] Files { get; set; } = Array.Empty<ITaskItem>();
     public bool Memoize { get; set; }
     public string MemoFile { get; set; }
@@ -153,6 +156,7 @@ public class AxialGuardrailsTask : Task
             if (stamp.Length != 2 || stamp[0] != Fingerprint || stamp[1] != Digest(ResultFile)) return false;
             cached = XDocument.Load(ResultFile);
             return (string)cached.Root.Attribute("schema") == "1" && (string)cached.Root.Attribute("fingerprint") == Fingerprint &&
+                (string)cached.Root.Attribute("mode") == Mode &&
                 (string)cached.Root.Attribute("complete") == "true" && Complete(cached.Root);
         }
         catch { return false; }
@@ -221,7 +225,8 @@ public class AxialGuardrailsTask : Task
         Log.LogMessage(MessageImportance.High, "Running Axial.Guardrails analysis.");
         var runDirectory = Path.GetFullPath(ResultFile + "." + Guid.NewGuid().ToString("N") + ".run");
         Directory.CreateDirectory(runDirectory);
-        var root = new XElement("result", new XAttribute("schema", "1"), new XAttribute("fingerprint", Fingerprint));
+        var root = new XElement("result", new XAttribute("schema", "1"), new XAttribute("fingerprint", Fingerprint),
+            new XAttribute("mode", Mode), new XAttribute("project", Project), new XAttribute("targetFramework", TargetFramework));
         var phases = new Dictionary<string, double>();
         var watch = Timings ? Stopwatch.StartNew() : null;
         double loaded = 0, checking = 0, checkedAt = 0, output = 0;
@@ -278,6 +283,7 @@ public class AxialGuardrailsTask : Task
                 infrastructure.Add("Analysis inputs changed during execution; discard this coverage and rerun.");
             }
             if (!complete && infrastructure.Count == 0) infrastructure.Add("Analyzer coverage is incomplete.");
+            foreach (var entry in root.Elements("coverage")) entry.SetAttributeValue("mode", Mode);
             root.SetAttributeValue("complete", complete ? "true" : "false");
             root.SetAttributeValue("exit", exit);
             Atomic(ResultFile, new XDocument(root));
@@ -303,6 +309,7 @@ public class AxialGuardrailsTask : Task
             root.SetAttributeValue("complete", "false");
             root.SetAttributeValue("failure", error.Message);
             MissingCoverage(root, error.Message);
+            foreach (var entry in root.Elements("coverage")) entry.SetAttributeValue("mode", Mode);
             Atomic(ResultFile, new XDocument(root));
             if (!string.IsNullOrEmpty(CoverageFile)) Atomic(CoverageFile, new XDocument(root));
         }

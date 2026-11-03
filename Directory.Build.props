@@ -20,6 +20,7 @@
 
     <!-- Every new Guardrails finding is an error. Existing violations can be retained only in the baseline. -->
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AxialGuardrailsMode Condition="'$(AxialGuardrailsMode)' == ''">Full</AxialGuardrailsMode>
     <AxialGuardrailsEnabled Condition="'$(AxialGuardrailsEnabled)' == ''">true</AxialGuardrailsEnabled>
 
     <!-- Repo-internal projects that must not import Guardrails: the analyzer's own tests and fixture, and the
