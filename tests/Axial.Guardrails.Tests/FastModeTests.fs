@@ -165,6 +165,19 @@ public static string Run(string input) {
         Assert.Contains("AXG001", output))
 
     [<Fact>]
+    let ``Fast exact fixture errors block and cached findings still block`` () = withFixture (fun dir ->
+        File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nopen System\ntype FactAttribute() = inherit Attribute()\nlet fixture = obj()\n[<Fact>]\nlet test () = ()\n")
+        let args = ["-p:AxialGuardrailsMode=Fast"]
+        let first = build dir args
+        Assert.NotEqual(0, fst first)
+        Assert.Contains("error AXG004", snd first)
+        Assert.Contains("syntax-exact", snd first)
+        let cached = build dir args
+        Assert.NotEqual(0, fst cached)
+        Assert.Contains("error AXG004", snd cached)
+        Assert.DoesNotContain("Running Axial.Guardrails analysis", snd cached))
+
+    [<Fact>]
     let ``Fast ambiguous hints never block warnings as errors`` () = withFixture (fun dir ->
         let result = build dir ["-p:AxialGuardrailsMode=Fast"; "-warnaserror"; "-p:TreatWarningsAsErrors=true"]
         checkSuccess result

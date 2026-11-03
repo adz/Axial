@@ -54,6 +54,7 @@ module FastSyntaxTests =
     [<InlineData("AXG001", "let x = System.DateTime.UtcNow")>]
     [<InlineData("AXG003", "let x = flow { return failwith \"no\" }")>]
     [<InlineData("AXG006", "let x = sprintf \"%A\" 1")>]
+    [<InlineData("AXG004", "let fixture = obj()\n[<Xunit.Fact>]\nlet test () = ()")>]
     [<InlineData("AXG009", "let x = Task.Run(fun () -> ())")>]
     [<InlineData("AXG013", "let x = Task.Delay(20)")>]
     let ``inactive conditional syntax produces no advice`` code body =
@@ -97,8 +98,23 @@ module FastSyntaxTests =
                 Assert.Equal(expected, fast)
                 let full = EffectBoundaryAnalyzer.analyzeWithConfig conf ctx |> List.exists (fun m -> m.Code = "AXG001")
                 Assert.Equal(expected, full)
-            finally File.Delete policyPath
+            finally Directory.Delete(root, true)
         }
+
+    [<Theory>]
+    [<InlineData("host")>]
+    [<InlineData("capabilities")>]
+    let ``forbid remains unsuppressible in effect role files in both modes`` role =
+        withConfig role (fun original path ->
+            let root = original.PolicyRoot.Value
+            let source = "// axial-allow-file-AXG001: negative control for an unsuppressible policy\nmodule M\nlet now () = System.DateTime.UtcNow\n"
+            File.WriteAllText(path, source)
+            let policy = Path.Combine(root, "Axial.Guardrails.toml")
+            File.AppendAllText(policy, $"\n[roles.{role}.rules]\n\"effects.ambient\" = \"forbid\"\n[boundaries]\nfiles = [\"Fast.fs\"]\n")
+            let config = GuardrailConfig.parse ["guardrail\tAxial"; $"setting\tpolicyRoot\t{root}"; $"setting\tpolicyFile\t{policy}"; $"setting\tprojectPath\t{root}/Tests.fsproj"]
+            let ctx = AnalyzerTestContext.createAt path source |> fun t -> t.GetAwaiter().GetResult()
+            Assert.NotEmpty(EffectBoundaryAnalyzer.analyzeWithConfig config ctx)
+            Assert.Contains(FastSyntax.analyze config path ctx.SourceText ctx.ParseFileResults.ParseTree, fun (_, message) -> message.Code = "AXG001"))
 
     [<Fact>]
     let ``Fast advice is compared with Full diagnostics on a typed corpus`` () =
