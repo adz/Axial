@@ -231,6 +231,7 @@ module PackagePropsTests =
     [<InlineData("multiple")>]
     [<InlineData("json")>]
     [<InlineData("review")>]
+    [<InlineData("json-review")>]
     let ``slice2 full check covers all TFMs fails closed and never writes policy`` scenario =
         let dir = Path.Combine(Path.GetTempPath(), "axial-full-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
@@ -253,7 +254,7 @@ module PackagePropsTests =
                 let corrupt = "<Target Name=\"CorruptExportedCoverage\" AfterTargets=\"AxialGuardrailsEffectBoundaryCheck\"><ItemGroup><Export Include=\"$(_AxialGuardrailsFullCheckDirectory)/**/*.xml\" /></ItemGroup><WriteLinesToFile File=\"%(Export.Identity)\" Lines=\"&lt;result mode=&quot;Full&quot; complete=&quot;false&quot; /&gt;\" Overwrite=\"true\" /></Target>"
                 File.WriteAllText(path, (File.ReadAllText path).Replace("</Project>", corrupt + "</Project>"))
             if scenario = "hint" then
-                let hint = """<Target Name="ExportHint" AfterTargets="AxialGuardrailsEffectBoundaryCheck"><XmlPoke XmlInputPath="$(_AxialGuardrailsFullCheckDirectory)/$(_AxialGuardrailsFullCheckProject)/$(TargetFramework).xml" Query="//finding/@severity" Value="Hint" /></Target>"""
+                let hint = """<Target Name="ExportHint" AfterTargets="AxialGuardrailsEffectBoundaryCheck" Condition="'$(_AxialGuardrailsFullCheckProject)' != ''"><XmlPoke XmlInputPath="$(_AxialGuardrailsFullCheckDirectory)/$(_AxialGuardrailsFullCheckProject)/$(TargetFramework).xml" Query="//finding/@severity" Value="Hint" /></Target>"""
                 File.WriteAllText(consumer, (File.ReadAllText consumer).Replace("</Project>", hint + "</Project>"))
             if scenario = "missing" then
                 let path = Path.Combine(other, "Consumer.fsproj")
@@ -288,7 +289,7 @@ module PackagePropsTests =
             let lockPath = Path.Combine(dir, "Axial.Guardrails.lock")
             let snapshot = Axial.Tool.PolicyLock.inspect dir |> function Ok value -> value | Error error -> failwith error
             File.WriteAllText(lockPath, Axial.Tool.PolicyReview.prepareReviewedLock dir snapshot)
-            if scenario = "review" then File.AppendAllText(Path.Combine(dir, "Program.fs"), "// axial-allow-AXG001: new boundary\n")
+            if scenario = "review" || scenario = "json-review" then File.AppendAllText(Path.Combine(dir, "Program.fs"), "// axial-allow-AXG001: new boundary\n")
             let baselinePath = Path.Combine(dir, "Axial.Guardrails.baseline")
             let lockBytes = File.ReadAllBytes lockPath
             let baselineBytes = File.ReadAllBytes baselinePath
@@ -300,7 +301,7 @@ module PackagePropsTests =
             if scenario <> "json" then
                 start.ArgumentList.Add "--configuration"
                 start.ArgumentList.Add "Release"
-            if scenario = "json" then start.ArgumentList.Add "--json"
+            if scenario = "json" || scenario = "json-review" then start.ArgumentList.Add "--json"
             start.RedirectStandardOutput <- true
             start.RedirectStandardError <- true
             use child = Process.Start start
@@ -321,8 +322,11 @@ module PackagePropsTests =
                 let exported = Directory.GetDirectories(dir, "exported", SearchOption.AllDirectories) |> Array.collect (fun path -> Directory.GetFiles(path, "*.xml"))
                 Assert.Equal(2, exported.Length)
             elif scenario = "multiple" then Assert.Contains("exactly one solution", output)
-            elif scenario = "review" then
-                Assert.Contains("policy review", output)
+            elif scenario = "review" || scenario = "json-review" then
+                Assert.Contains("policy review --check failed:", output)
+                if scenario = "json-review" then
+                    use json = System.Text.Json.JsonDocument.Parse(stdout.Result)
+                    Assert.Equal("error", json.RootElement.GetProperty("status").GetString())
                 Assert.Empty(Directory.GetFiles(dir, "*.result.xml", SearchOption.AllDirectories))
             else
                 if scenario = "json" then
