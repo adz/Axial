@@ -234,7 +234,7 @@ let private analyzeContained (config: GuardrailConfig.Config) code (ctx: CliCont
 
 let analyzeWithConfig (config: GuardrailConfig.Config) code (ctx: CliContext) =
     if GuardrailConfig.isSkippedSource config ctx.FileName
-       || (code <> "AXG009" && GuardrailConfig.usesTestAnalyzerSet config) then []
+       || (not (GuardrailConfig.reportsInTestSet code) && GuardrailConfig.usesTestAnalyzerSet config) then []
     else analyzeContained config code ctx
 
 [<CliAnalyzer("RawConcurrency", "Flags raw concurrency outside the runtime.", "https://github.com/adz/Axial")>]

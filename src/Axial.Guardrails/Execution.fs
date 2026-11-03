@@ -38,12 +38,13 @@ let track (rule: string) (analyzer: Analyzer<CliContext>) : Analyzer<CliContext>
         let timer = if timed then Some(Stopwatch.StartNew()) else None
         let! outcome = async {
             try
-                if GuardrailConfig.shouldRunAnalyzer (GuardrailConfig.load ()) rule then
+                match GuardrailConfig.shouldRunAnalyzer (GuardrailConfig.load ()) rule with
+                | Ok true ->
                     let! findings = analyzer ctx
                     return Ok findings
-                else
-                    // A policy-selected empty result is complete coverage, not an infrastructure skip.
-                    return Ok []
+                // A policy-selected empty result is complete coverage, not an infrastructure skip.
+                | Ok false -> return Ok []
+                | Error reason -> return Error reason
             with error -> return Error error.Message
         }
         let findings, skipped, reason =

@@ -276,16 +276,43 @@ type ConcurrencyHazardsPolicyTests() =
                 Environment.SetEnvironmentVariable(GuardrailConfig.EnvironmentVariable, config)
                 for inTests in [ ""; "all" ] do
                     settings inTests
-                    for rule in [ "EffectBoundary"; "RaiseInFlow"; "DiscardedCancellation"; "ReflectionFormatting"
-                                  "ResourceFromFiber"; "ScopeFromRun"; "SwallowedException"; "UncancellableWork"; "DiscardedWork"
-                                  "SuppressionIntegrity"; "Fixture"; "RawConcurrency"; "WaitForFacts" ] do
+                    for analyzer in GuardrailConfig.analyzers do
                         let mutable called = false
-                        let! _ = Execution.track rule (fun _ -> async { called <- true; return [] }) ctx |> Async.StartAsTask
-                        let testRule = List.contains rule [ "SuppressionIntegrity"; "Fixture"; "RawConcurrency"; "WaitForFacts" ]
-                        Assert.Equal((inTests = "all" || testRule), called)
+                        let! _ = Execution.track analyzer.Name (fun _ -> async { called <- true; return [] }) ctx |> Async.StartAsTask
+                        Assert.Equal((inTests = "all" || analyzer.RunsInTests), called)
             finally
                 Environment.SetEnvironmentVariable(GuardrailConfig.EnvironmentVariable, previous)
                 System.IO.Directory.Delete(root, true)
+        }
+
+    [<Fact>]
+    member _.``analyzer table matches every registered CLI analyzer`` () =
+        let registered =
+            typeof<GuardrailConfig.Config>.Assembly.GetTypes()
+            |> Array.collect (fun t -> t.GetMethods(System.Reflection.BindingFlags.Public ||| System.Reflection.BindingFlags.Static))
+            |> Array.choose (fun m -> m.GetCustomAttributes(false) |> Array.tryPick (function :? FSharp.Analyzers.SDK.CliAnalyzerAttribute as a -> Some a.Name | _ -> None))
+            |> Set.ofArray
+        Assert.Equal<Set<string>>(registered, GuardrailConfig.analyzers |> List.map _.Name |> Set.ofList)
+
+    [<Fact>]
+    member _.``unknown analyzer fails closed as an infrastructure skip`` () =
+        task {
+            let! ctx = AnalyzerTestContext.create "module M\nlet value = 1"
+            let run = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "axial-unknown-" + Guid.NewGuid().ToString("N"))
+            System.IO.Directory.CreateDirectory run |> ignore
+            let previous = Environment.GetEnvironmentVariable "AXIAL_GUARDRAILS_RUN"
+            try
+                Environment.SetEnvironmentVariable("AXIAL_GUARDRAILS_RUN", run)
+                let mutable called = false
+                let! findings = Execution.track "NewlyNamedRule" (fun _ -> async { called <- true; return [] }) ctx |> Async.StartAsTask
+                Assert.False called
+                Assert.Empty findings
+                let record = System.IO.Directory.GetFiles(run, "*.xml") |> Assert.Single |> System.Xml.Linq.XElement.Load
+                Assert.Equal("skipped", record.Attribute(System.Xml.Linq.XName.Get "status").Value)
+                Assert.Contains("NewlyNamedRule", record.Attribute(System.Xml.Linq.XName.Get "reason").Value)
+            finally
+                Environment.SetEnvironmentVariable("AXIAL_GUARDRAILS_RUN", previous)
+                System.IO.Directory.Delete(run, true)
         }
 
     [<Theory>]

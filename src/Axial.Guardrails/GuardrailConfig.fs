@@ -319,10 +319,35 @@ let usesTestAnalyzerSet (config: Config) =
         | None -> false
     | _ -> false
 
+/// One CLI analyzer: the codes it reports and whether test projects run it by default.
+type AnalyzerEntry = { Name: string; Codes: string list; RunsInTests: bool }
+
+/// The single registry of CLI analyzers. A tracked name missing here fails closed instead of being skipped.
+let analyzers =
+    [ { Name = "EffectBoundary"; Codes = [ "AXG001" ]; RunsInTests = false }
+      { Name = "SuppressionIntegrity"; Codes = [ "AXG002" ]; RunsInTests = true }
+      { Name = "RaiseInFlow"; Codes = [ "AXG003" ]; RunsInTests = false }
+      { Name = "Fixture"; Codes = [ "AXG004" ]; RunsInTests = true }
+      { Name = "DiscardedCancellation"; Codes = [ "AXG005" ]; RunsInTests = false }
+      { Name = "ReflectionFormatting"; Codes = [ "AXG006" ]; RunsInTests = false }
+      { Name = "ResourceFromFiber"; Codes = [ "AXG007" ]; RunsInTests = false }
+      { Name = "ScopeFromRun"; Codes = [ "AXG008" ]; RunsInTests = false }
+      { Name = "RawConcurrency"; Codes = [ "AXG009" ]; RunsInTests = true }
+      { Name = "SwallowedException"; Codes = [ "AXG010" ]; RunsInTests = false }
+      { Name = "UncancellableWork"; Codes = [ "AXG011" ]; RunsInTests = false }
+      { Name = "DiscardedWork"; Codes = [ "AXG012" ]; RunsInTests = false }
+      { Name = "WaitForFacts"; Codes = [ "AXG013" ]; RunsInTests = true } ]
+
+let private testSetCodes = analyzers |> List.filter _.RunsInTests |> List.collect _.Codes |> Set.ofList
+
+/// Whether a code is reported in a test project that uses the reduced analyzer set.
+let reportsInTestSet code = Set.contains code testSetCodes
+
 /// Selection happens before a rule touches symbols or typed trees; AXG002 still validates directives.
 let shouldRunAnalyzer config rule =
-    not (usesTestAnalyzerSet config)
-    || List.contains rule [ "SuppressionIntegrity"; "Fixture"; "RawConcurrency"; "WaitForFacts" ]
+    match analyzers |> List.tryFind (fun analyzer -> analyzer.Name = rule) with
+    | Some analyzer -> Ok(analyzer.RunsInTests || not (usesTestAnalyzerSet config))
+    | None -> Error $"analyzer {rule} is not registered in GuardrailConfig.analyzers"
 
 let private resolvableFullPath (config: Config) (fileName: string) =
     try
@@ -356,9 +381,7 @@ let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: 
         let testSet = usesTestAnalyzerSet config
         let findings =
             messages
-            |> List.filter (fun message ->
-                not testSet
-                || List.contains message.Code [ "AXG002"; "AXG004"; "AXG009"; "AXG013" ])
+            |> List.filter (fun message -> not testSet || reportsInTestSet message.Code)
             |> List.map (fun message ->
                 let entry =
                     { RuleId = message.Code.ToUpperInvariant()
