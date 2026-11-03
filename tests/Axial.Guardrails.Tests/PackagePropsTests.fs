@@ -221,6 +221,7 @@ module PackagePropsTests =
 
     [<Theory>]
     [<InlineData("complete")>]
+    [<InlineData("cached")>]
     [<InlineData("incomplete")>]
     [<InlineData("record")>]
     [<InlineData("finding")>]
@@ -312,7 +313,7 @@ module PackagePropsTests =
                 child.WaitForExit()
                 failwith "Full check timed out"
             let output = stdout.Result + stderr.Result
-            if List.contains scenario ["complete"; "warning"; "hint"; "baselined"; "json"] then Assert.True(child.ExitCode = 0, output)
+            if List.contains scenario ["complete"; "cached"; "warning"; "hint"; "baselined"; "json"] then Assert.True(child.ExitCode = 0, output)
             else Assert.NotEqual(0, child.ExitCode)
             if scenario = "incomplete" then Assert.Contains("AXGINF001", output)
             elif scenario = "record" then Assert.Contains("Full analysis coverage is incomplete:", output)
@@ -333,6 +334,17 @@ module PackagePropsTests =
                     use json = System.Text.Json.JsonDocument.Parse(stdout.Result)
                     Assert.Equal("ok", json.RootElement.GetProperty("status").GetString())
                 Assert.Contains("3 project/TFM records", output)
+                if scenario = "cached" then
+                    use repeated = Process.Start start
+                    let repeatedOut = repeated.StandardOutput.ReadToEndAsync()
+                    let repeatedErr = repeated.StandardError.ReadToEndAsync()
+                    if not (repeated.WaitForExit(180000)) then
+                        repeated.Kill(true)
+                        failwith "Repeated Full check timed out"
+                    let replay = repeatedOut.Result + repeatedErr.Result
+                    Assert.True(repeated.ExitCode = 0, replay)
+                    Assert.Contains("3 project/TFM records", replay)
+                    Assert.DoesNotContain("Running Axial.Guardrails analysis", replay)
                 for projectDirectory, framework in [dir, "net8.0"; dir, "net10.0"; other, "net10.0"] do
                     let release = Path.Combine(projectDirectory, "obj", "Release", framework, "axial-guardrails." + framework + ".result.xml")
                     Assert.True(File.Exists release, release)
