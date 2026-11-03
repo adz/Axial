@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <Compile Include="AnalyzerTestContext.fs" />
+    <Compile Include="SymbolIndexTests.fs" />
     <Compile Include="HardeningTests.fs" />
     <Compile Include="ExternalSourceTests.fs" />
     <Compile Include="ConcurrencyHazardsAnalyzerTests.fs" />
