@@ -30,6 +30,8 @@
   <PropertyGroup Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails' and '$(_AxialRepoSkipGuardrails)' != 'true' and '$(MSBuildProjectExtension)' == '.fsproj'">
     <!-- The analyzer's own build output, not the packaged analyzers/ folder these paths default to. -->
     <_AxialGuardrailsAnalyzersPath>$(MSBuildThisFileDirectory)artifacts\bin\Axial.Guardrails\$(Configuration.ToLower())</_AxialGuardrailsAnalyzersPath>
+    <!-- This repo rebuilds the task DLL: isolate it from reusable MSBuild nodes. -->
+    <_AxialGuardrailsTaskHost>true</_AxialGuardrailsTaskHost>
     <_AxialGuardrailsTaskAssembly>$(MSBuildThisFileDirectory)artifacts\bin\Axial.Guardrails.Build\$(Configuration.ToLower())\Axial.Guardrails.Build.dll</_AxialGuardrailsTaskAssembly>
     <!-- The fsharp-analyzers local tool from .config/dotnet-tools.json, not a packaged cli/ copy. -->
     <_AxialGuardrailsExe>dotnet fsharp-analyzers</_AxialGuardrailsExe>

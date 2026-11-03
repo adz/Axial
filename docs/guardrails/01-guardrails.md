@@ -129,10 +129,11 @@ entry point completed, including when policy makes it return no findings; `skipp
 Only complete coverage for the current input fingerprint can produce a reusable stamp. Cache hits replay findings,
 including warnings and acknowledged Info; unreadable, truncated, or mismatched reports rerun analysis.
 
-An analyzer exception emits `AXGINF001`, naming the rule and file, while other rules continue. A process failure
-also warns and leaves no complete stamp. This infrastructure warning is not promoted by warnings-as-errors;
-ordinary findings retain their policy severity. A successful compilation with this warning is **not** evidence of
-complete analysis. Candidate-baseline generation rejects incomplete coverage rather than accepting missing findings.
+Analyzer exceptions leave other rules running; process failures and incomplete coverage leave no complete stamp.
+`AXGINF001` fails the build with one MSBuild error per project/target framework, naming the cause, skipped-check
+count and up to three rule/file examples. There is no opt-out: a successful compilation alone does not establish
+complete analysis. Available findings are still reported at their policy severity, including Error findings replayed
+from cache. Candidate-baseline generation also rejects incomplete coverage rather than accepting missing findings.
 
 Set `-p:AxialGuardrailsTimings=true` to write `axial-guardrails.<TFM>.timings.xml` beside the report. It records
 fingerprinting, CLI startup/analyzer loading, compiler-argument or project loading, FCS checking, each rule/file,

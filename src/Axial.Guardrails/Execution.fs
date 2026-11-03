@@ -5,10 +5,29 @@ module Axial.Guardrails.Execution
 open System
 open System.Diagnostics
 open System.IO
+open System.Text
+open System.Xml
 open System.Xml.Linq
 open FSharp.Analyzers.SDK
 
-let private attribute name (value: obj) = XAttribute(XName.Get name, value)
+// XML 1.0 cannot represent every string an analyzer or exception can produce.
+// Keep valid surrogate pairs, and replace invalid characters without dropping the finding.
+let private xmlText (value: string) =
+    let result = StringBuilder(value.Length)
+    let mutable index = 0
+    while index < value.Length do
+        let ch = value[index]
+        if Char.IsHighSurrogate ch && index + 1 < value.Length && Char.IsLowSurrogate value[index + 1] then
+            result.Append(ch).Append(value[index + 1]) |> ignore
+            index <- index + 2
+        else
+            result.Append(if XmlConvert.IsXmlChar ch then ch else '\uFFFD') |> ignore
+            index <- index + 1
+    result.ToString()
+
+let private attribute name (value: obj) =
+    let safe = match value with :? string as text -> box (xmlText text) | _ -> value
+    XAttribute(XName.Get name, safe)
 
 let track (rule: string) (analyzer: Analyzer<CliContext>) : Analyzer<CliContext> =
     fun ctx -> async {
@@ -28,23 +47,30 @@ let track (rule: string) (analyzer: Analyzer<CliContext>) : Analyzer<CliContext>
             | Ok findings -> findings, false, ""
             | Error reason -> [], true, reason
         if not (String.IsNullOrEmpty directory) then
-            let entry = XElement(XName.Get "coverage",
-                                 attribute "rule" rule,
-                                 attribute "file" (Path.GetFullPath ctx.FileName),
-                                 attribute "status" (if skipped then "skipped" else "ran"),
-                                 attribute "reason" reason)
-            timer |> Option.iter (fun watch -> entry.Add(attribute "milliseconds" watch.Elapsed.TotalMilliseconds))
-            for finding in findings do
-                entry.Add(XElement(XName.Get "finding",
-                                   attribute "code" finding.Code,
-                                   attribute "severity" (string finding.Severity),
-                                   attribute "line" finding.Range.StartLine,
-                                   attribute "column" finding.Range.StartColumn,
-                                   finding.Message))
-            let path = Path.Combine(directory, Guid.NewGuid().ToString("N") + ".xml")
-            let temporary = path + ".tmp"
-            entry.Save temporary
-            File.Move(temporary, path)
+            try
+                let entry = XElement(XName.Get "coverage",
+                                     attribute "rule" rule,
+                                     attribute "file" (Path.GetFullPath ctx.FileName),
+                                     attribute "status" (if skipped then "skipped" else "ran"),
+                                     attribute "reason" reason)
+                timer |> Option.iter (fun watch -> entry.Add(attribute "milliseconds" watch.Elapsed.TotalMilliseconds))
+                for finding in findings do
+                    entry.Add(XElement(XName.Get "finding",
+                                       attribute "code" finding.Code,
+                                       attribute "severity" (string finding.Severity),
+                                       attribute "line" finding.Range.StartLine,
+                                       attribute "column" finding.Range.StartColumn,
+                                       xmlText finding.Message))
+                let path = Path.Combine(directory, Guid.NewGuid().ToString("N") + ".xml")
+                let temporary = path + ".tmp"
+                try
+                    entry.Save temporary
+                    File.Move(temporary, path)
+                finally
+                    if File.Exists temporary then File.Delete temporary
+            with error ->
+                // Missing coverage makes the build report incomplete; the CLI still receives findings.
+                Console.Error.WriteLine($"warning AXGINF001: {rule} could not record {ctx.FileName}: {error.Message}")
         elif skipped then
             Console.Error.WriteLine($"warning AXGINF001: {rule} skipped {ctx.FileName}: {reason}")
         return findings

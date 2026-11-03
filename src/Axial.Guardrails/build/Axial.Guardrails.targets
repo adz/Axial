@@ -2,10 +2,9 @@
   <PropertyGroup>
     <_AxialGuardrailsTaskAssembly Condition="'$(_AxialGuardrailsTaskAssembly)' == ''">$([MSBuild]::NormalizePath($(MSBuildThisFileDirectory), .., tasks, Axial.Guardrails.Build.dll))</_AxialGuardrailsTaskAssembly>
   </PropertyGroup>
-  <UsingTask TaskName="AxialGuardrailsTask" AssemblyFile="$(_AxialGuardrailsTaskAssembly)" />
+  <UsingTask TaskName="AxialGuardrailsTask" AssemblyFile="$(_AxialGuardrailsTaskAssembly)" Condition="'$(_AxialGuardrailsTaskHost)' != 'true'" />
+  <UsingTask TaskName="AxialGuardrailsTask" AssemblyFile="$(_AxialGuardrailsTaskAssembly)" TaskFactory="TaskHostFactory" Condition="'$(_AxialGuardrailsTaskHost)' == 'true'" />
   <PropertyGroup>
-    <!-- Infrastructure is not a compiler diagnostic, including with MSBuild -warnaserror. -->
-    <MSBuildWarningsNotAsErrors>$(MSBuildWarningsNotAsErrors);AXGINF001</MSBuildWarningsNotAsErrors>
     <AxialGuardrailsTimings Condition="'$(AxialGuardrailsTimings)' == ''">false</AxialGuardrailsTimings>
     <_AxialGuardrailsForce>false</_AxialGuardrailsForce>
     <_AxialGuardrailsFingerprintMilliseconds>0</_AxialGuardrailsFingerprintMilliseconds>
@@ -151,7 +150,11 @@
     </GetFileHash>
     <!-- Reference outputs may be rewritten with a fresh timestamp by an otherwise no-op project-reference build.
          Hash their deterministic contents so that such rewrites do not invalidate the analysis result. -->
-    <AxialGuardrailsTask Action="Hash" Files="@(_AxialGuardrailsReferenceInputs);@(_AxialGuardrailsToolInputs)" Memoize="true" MemoFile="$(IntermediateOutputPath)axial-guardrails.$(TargetFramework).digests.xml">
+    <ItemGroup>
+      <!-- Do not marshal ResolveReferences' unrelated metadata through the task host. -->
+      <_AxialGuardrailsDigestInputs Include="@(_AxialGuardrailsReferenceInputs);@(_AxialGuardrailsToolInputs)" KeepMetadata="AxialGuardrailsDigestInput" />
+    </ItemGroup>
+    <AxialGuardrailsTask Action="Hash" Files="@(_AxialGuardrailsDigestInputs)" Memoize="true" MemoFile="$(IntermediateOutputPath)axial-guardrails.$(TargetFramework).digests.xml">
       <Output TaskParameter="Hashed" ItemName="_AxialGuardrailsReferenceHash" />
     </AxialGuardrailsTask>
     <ItemGroup>

@@ -26,6 +26,8 @@ public class AxialGuardrailsTask : Task
     public string WorkingDirectory { get; set; }
     public string ConfigFile { get; set; }
     public bool Timings { get; set; }
+    readonly List<string> infrastructure = new List<string>();
+    XElement runResult;
     public string TimingsFile { get; set; }
     public string[] Rules { get; set; }
     public ITaskItem[] RequestInputs { get; set; } = Array.Empty<ITaskItem>();
@@ -73,7 +75,7 @@ public class AxialGuardrailsTask : Task
         using (var stream = File.OpenRead(path))
         using (var sha = SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "");
     }
-    static bool IsDigest(string value) => value != null && value.Length == 64 && value.All(c => "0123456789ABCDEF".Contains(c));
+    static bool IsDigest(string value) => value != null && value.Length == 64 && value.All(c => "0123456789ABCDEF".IndexOf(c) >= 0);
     static void Publish(string temporary, string path)
     {
         if (File.Exists(path)) File.Replace(temporary, path, null); else File.Move(temporary, path);
@@ -95,7 +97,7 @@ public class AxialGuardrailsTask : Task
         }
         var updated = new XElement("digests", new XAttribute("schema", "1"));
         Hashed = Files.Select(item => {
-            var path = Path.GetFullPath(item.ItemSpec);
+            var path = item.GetMetadata("FullPath");
             var identity = Memoize ? Identity(path) : null;
             XElement old;
             string digest;
@@ -113,15 +115,34 @@ public class AxialGuardrailsTask : Task
             if (identity != null) result.SetMetadata("VerifiedIdentity", identity);
             return (ITaskItem)result;
         }).ToArray();
-        if (Memoize) Atomic(MemoFile, new XDocument(updated));
+        if (Memoize)
+        {
+            var document = new XDocument(updated);
+            bool unchanged;
+            try { unchanged = File.Exists(MemoFile) && XNode.DeepEquals(XDocument.Load(MemoFile), document); }
+            catch { unchanged = false; }
+            if (!unchanged) Atomic(MemoFile, document);
+        }
     }
-    string[] SourcePaths() => Files.Select(f => Path.GetFullPath(f.ItemSpec)).Distinct().ToArray();
+    string[] SourcePaths() => Files.Select(f => f.GetMetadata("FullPath")).Distinct().ToArray();
+    static HashSet<(string, string)> Coverage(XElement root) => new HashSet<(string, string)>(
+        root.Elements("coverage").Select(e => ((string)e.Attribute("file"), (string)e.Attribute("rule"))));
+    void MissingCoverage(XElement root, string reason)
+    {
+        var entries = Coverage(root);
+        foreach (var path in SourcePaths())
+        foreach (var rule in Rules)
+            if (entries.Add((path, rule)))
+                root.Add(new XElement("coverage", new XAttribute("file", path), new XAttribute("rule", rule), new XAttribute("status", "skipped"), new XAttribute("reason", reason)));
+    }
     bool Complete(XElement root)
     {
         var entries = root.Elements("coverage").ToArray();
+        var ran = Coverage(root);
         var paths = SourcePaths();
-        return entries.Length == paths.Length * Rules.Length &&
-            paths.All(path => Rules.All(rule => entries.Count(e => (string)e.Attribute("file") == path && (string)e.Attribute("rule") == rule && (string)e.Attribute("status") == "ran") == 1));
+        return entries.Length == paths.Length * Rules.Length && ran.Count == entries.Length &&
+            entries.All(e => (string)e.Attribute("status") == "ran") &&
+            paths.All(path => Rules.All(rule => ran.Contains((path, rule))));
     }
     bool LoadCache(out XDocument cached)
     {
@@ -139,7 +160,7 @@ public class AxialGuardrailsTask : Task
     }
     void Infrastructure(string message)
     {
-        Log.LogWarning(null, "AXGINF001", null, null, 0, 0, 0, 0, message);
+        infrastructure.Add(message);
     }
     void Findings(XElement root)
     {
@@ -158,6 +179,25 @@ public class AxialGuardrailsTask : Task
             }
         }
     }
+    // cmd requires raw nested quotes, not ArgumentList's Windows CRT escaping.
+    // Retain shell command overrides; Unix exec makes the CLI the child process.
+    public static ProcessStartInfo CreateStartInfo(string command, bool windows) => new ProcessStartInfo {
+        FileName = windows ? "cmd.exe" : "/bin/sh",
+        Arguments = windows ? "/d /s /c \"" + command + "\"" : "-c \"exec " + command.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("$", "\\$").Replace("`", "\\`") + "\"",
+        UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true
+    };
+    static void Stop(Process child)
+    {
+        // Preserve tree termination on modern hosts while keeping the task loadable by Framework MSBuild.
+        var killTree = typeof(Process).GetMethod("Kill", new[] { typeof(bool) });
+        if (killTree != null) killTree.Invoke(child, new object[] { true });
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            using (var killer = Process.Start(new ProcessStartInfo("taskkill.exe", $"/pid {child.Id} /t /f") { UseShellExecute = false, CreateNoWindow = true }))
+                killer.WaitForExit();
+        }
+        else child.Kill();
+    }
     void Run()
     {
         XDocument cached;
@@ -173,6 +213,7 @@ public class AxialGuardrailsTask : Task
         var runDirectory = Path.GetFullPath(ResultFile + "." + Guid.NewGuid().ToString("N") + ".run");
         Directory.CreateDirectory(runDirectory);
         var root = new XElement("result", new XAttribute("schema", "1"), new XAttribute("fingerprint", Fingerprint));
+        runResult = root;
         var phases = new Dictionary<string, double>();
         var watch = Timings ? Stopwatch.StartNew() : null;
         double loaded = 0, checking = 0, checkedAt = 0, output = 0;
@@ -181,15 +222,12 @@ public class AxialGuardrailsTask : Task
         try
         {
             var windows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-            var start = new ProcessStartInfo(windows ? "cmd.exe" : "/bin/sh") {
-                WorkingDirectory = WorkingDirectory, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true
-            };
-            start.ArgumentList.Add(windows ? "/c" : "-c");
-            start.ArgumentList.Add((windows ? "" : "exec ") + Command + (Timings ? " --verbosity diagnostic" : ""));
-            start.Environment["AXIAL_GUARDRAILS_RUN"] = runDirectory;
-            start.Environment["AXIAL_GUARDRAILS_CONFIG"] = Path.GetFullPath(ConfigFile);
-            start.Environment["AXIAL_GUARDRAILS_TIMINGS"] = Timings ? "true" : "false";
-            start.Environment["DOTNET_ROLL_FORWARD"] = "LatestMajor";
+            var start = CreateStartInfo(Command + (Timings ? " --verbosity diagnostic" : ""), windows);
+            start.WorkingDirectory = WorkingDirectory;
+            start.EnvironmentVariables["AXIAL_GUARDRAILS_RUN"] = runDirectory;
+            start.EnvironmentVariables["AXIAL_GUARDRAILS_CONFIG"] = Path.GetFullPath(ConfigFile);
+            start.EnvironmentVariables["AXIAL_GUARDRAILS_TIMINGS"] = Timings ? "true" : "false";
+            start.EnvironmentVariables["DOTNET_ROLL_FORWARD"] = "LatestMajor";
             using (var child = new Process { StartInfo = start })
             {
                 Action<string> receive = line => {
@@ -208,16 +246,11 @@ public class AxialGuardrailsTask : Task
                 child.OutputDataReceived += (_, args) => receive(args.Data);
                 child.ErrorDataReceived += (_, args) => receive(args.Data);
                 child.Start(); child.BeginOutputReadLine(); child.BeginErrorReadLine();
-                if (!child.WaitForExit(600000)) { child.Kill(true); Infrastructure("Analyzer process timed out; coverage is incomplete."); }
+                if (!child.WaitForExit(600000)) { Stop(child); Infrastructure("Analyzer process timed out; coverage is incomplete."); }
                 child.WaitForExit(); exit = child.ExitCode;
             }
             foreach (var path in Directory.GetFiles(runDirectory, "*.xml")) root.Add(XElement.Load(path));
-            foreach (var path in SourcePaths())
-            foreach (var rule in Rules)
-                if (!root.Elements("coverage").Any(e => (string)e.Attribute("file") == path && (string)e.Attribute("rule") == rule))
-                    root.Add(new XElement("coverage", new XAttribute("file", path), new XAttribute("rule", rule), new XAttribute("status", "skipped"), new XAttribute("reason", "Analyzer process did not report this rule/file")));
-            foreach (var entry in root.Elements("coverage").Where(e => (string)e.Attribute("status") != "ran"))
-                Infrastructure($"{(string)entry.Attribute("rule")} skipped {(string)entry.Attribute("file")}: {(string)entry.Attribute("reason")}");
+            MissingCoverage(root, "Analyzer process did not report this rule/file");
             Findings(root);
             var complete = Complete(root) && (exit == 0 || exit == 254 || exit == -2);
             // 254 is ambiguous in the upstream CLI: only findings plus complete rule/file coverage establish success.
@@ -227,7 +260,7 @@ public class AxialGuardrailsTask : Task
                 Infrastructure($"Analyzer process failed (exit code {exit}); coverage is incomplete. {string.Join(" ", lines.Skip(Math.Max(0, lines.Count - 4)))}");
             }
             if (complete && RequestInputs.Any(item => {
-                var path = Path.GetFullPath(item.ItemSpec);
+                var path = item.GetMetadata("FullPath");
                 var identity = item.GetMetadata("VerifiedIdentity");
                 return !(identity != "" && identity == Identity(path)) && Digest(path) != item.GetMetadata("FileHash");
             }))
@@ -235,6 +268,7 @@ public class AxialGuardrailsTask : Task
                 complete = false;
                 Infrastructure("Analysis inputs changed during execution; discard this coverage and rerun.");
             }
+            if (!complete && infrastructure.Count == 0) Infrastructure("Analyzer coverage is incomplete.");
             root.SetAttributeValue("complete", complete ? "true" : "false");
             root.SetAttributeValue("exit", exit);
             Atomic(ResultFile, new XDocument(root));
@@ -259,10 +293,7 @@ public class AxialGuardrailsTask : Task
             Infrastructure("Analyzer infrastructure failed; coverage is incomplete: " + error.Message);
             root.SetAttributeValue("complete", "false");
             root.SetAttributeValue("failure", error.Message);
-            foreach (var path in SourcePaths())
-            foreach (var rule in Rules)
-                if (!root.Elements("coverage").Any(e => (string)e.Attribute("file") == path && (string)e.Attribute("rule") == rule))
-                    root.Add(new XElement("coverage", new XAttribute("file", path), new XAttribute("rule", rule), new XAttribute("status", "skipped"), new XAttribute("reason", error.Message)));
+            MissingCoverage(root, error.Message);
             Atomic(ResultFile, new XDocument(root));
             if (!string.IsNullOrEmpty(CoverageFile)) Atomic(CoverageFile, new XDocument(root));
         }
@@ -284,6 +315,13 @@ public class AxialGuardrailsTask : Task
     public override bool Execute()
     {
         if (Action == "Hash") Hash(); else Run();
+        if (infrastructure.Count != 0)
+        {
+            var skipped = runResult.Elements("coverage").Where(e => (string)e.Attribute("status") != "ran").ToArray();
+            var examples = string.Join("; ", skipped.Take(3).Select(e => $"{(string)e.Attribute("rule")} skipped {(string)e.Attribute("file")}: {(string)e.Attribute("reason")}"));
+            var message = string.Join(" ", infrastructure) + $" {skipped.Length} skipped rule/file checks. " + examples;
+            Log.LogError(null, "AXGINF001", null, null, 0, 0, 0, 0, message);
+        }
         return !Log.HasLoggedErrors;
     }
 }

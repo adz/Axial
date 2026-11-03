@@ -28,16 +28,16 @@ for path in paths:
     if path.name == "Axial.Guardrails.targets":
         xml = ET.fromstring(text)
         for target in list(xml):
-            if target.tag == "Target" and target.get("Name") == "AxialGuardrailsWarnRemovedSeverity":
-                assert [node.tag for node in target] == ["Warning", "PropertyGroup"]
+            if target.tag == "Target" and target.get("Name") == "AxialGuardrailsRejectRemovedSeverity":
+                assert [node.tag for node in target] == ["Error", "PropertyGroup"]
                 assert target[0].get("Code") == "AXIALGR001"
                 assert [(node.tag, node.text) for node in target[1]] == [("_AxialGuardrailsRemovedSeverityWarned", "true")]
                 xml.remove(target)
         text = ET.tostring(xml, encoding="unicode")
     if path.name == "GuardrailConfig.fs":
-        # The once-per-process diagnostic reads the removed environment spelling only to warn; it does not
+        # The removed-setting diagnostic reads the old environment spelling only to reject it; it does not
         # feed policy or severity. Exclude that function from the legacy-switch scan.
-        text = re.sub(r'let private removedSeverityText =.*?\n\nlet load', '\n\nlet load', text, flags=re.S)
+        text = re.sub(r'let rejectRemovedSeverity \(\) =.*?\n\nlet load', '\n\nlet load', text, flags=re.S)
     if pattern.search(text):
         raise SystemExit(f"legacy policy switch in {path}")
 PY
