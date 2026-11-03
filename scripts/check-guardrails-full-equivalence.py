@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Compare two exported Full matrices, including exact findings and expected project/TFM coverage.
 
+Ad-hoc tool for comparing performance work by hand; it is not part of CI or scripts/verify.sh.
 Usage: scripts/check-guardrails-full-equivalence.py BEFORE AFTER
 The only accepted message change is AXG010's catch-narrowing guidance; acknowledgement reasons stay exact.
 """

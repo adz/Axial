@@ -78,30 +78,32 @@ Approval means a human read the review. The first review requires --since <ref>.
                     | Ok review when not (PolicyReview.checkPassed review) ->
                         emit asJson false ("policy review --check failed:\n" + PolicyReview.format review)
                     | Ok review ->
-                        Directory.CreateDirectory directory |> ignore
                         // A per-run import path invalidates MSBuildAllProjects and defeats exact cache reuse.
                         let expectedTarget = Path.Combine(AppContext.BaseDirectory, "FullCheck.targets")
-                        if not (File.Exists expectedTarget) then failwith "Full analysis coverage collector is missing."
-                        let code, _, _ = Command.run (root()) "dotnet"
-                                            [ "build"; solutions[0]; "--configuration"; configuration; "--nologo"; "-v"; "minimal"; "-nodeReuse:false"
-                                              "-p:AxialGuardrailsMode=Full"; "-p:AxialGuardrailsCheckpoint=true"
-                                              "-p:_AxialGuardrailsBaselineProposalDirectory="; "-p:_AxialGuardrailsBaselineRuleCode="
-                                              "-p:CustomAfterMicrosoftCommonTargets=" + expectedTarget
-                                              "-p:_AxialGuardrailsFullCheckDirectory=" + directory ] 1800000 true
-                        if code <> 0 then emit asJson false "Full analysis failed (findings, build failure, or incomplete coverage); see build diagnostics."
+                        if not (File.Exists expectedTarget) then
+                            emit asJson false ("Full analysis coverage collector is missing: " + expectedTarget + ". Reinstall Axial.Tool.")
                         else
-                            let reports = Directory.GetFiles(directory, "*.xml", SearchOption.AllDirectories)
-                            let expected = Directory.GetFiles(directory, "*.expected") |> Array.map (File.ReadAllText >> _.Trim()) |> Set.ofArray
-                            let incomplete = reports |> Array.tryFind (Coverage.complete (Some "Full") >> not)
-                            match incomplete with
-                            | Some path -> emit asJson false ("Full analysis coverage is incomplete: " + path)
-                            | None ->
-                                let actual = reports |> Array.map Coverage.identity |> Set.ofArray
-                                if expected.IsEmpty || actual <> expected || reports.Length <> actual.Count then
-                                    emit asJson false ("Full analysis coverage is incomplete: expected project/TFM records do not match exported records. Missing: " + String.concat ", " (Set.difference expected actual))
-                                elif reports |> Array.exists Coverage.errors then
-                                    emit asJson false "Full analysis reported Error findings."
-                                else emit asJson true ("Full analysis passed for " + string reports.Length + " project/TFM records.\n" + PolicyReview.format review)
+                            Directory.CreateDirectory directory |> ignore
+                            let code, _, _ = Command.run (root()) "dotnet"
+                                                [ "build"; solutions[0]; "--configuration"; configuration; "--nologo"; "-v"; "minimal"; "-nodeReuse:false"
+                                                  "-p:AxialGuardrailsMode=Full"; "-p:AxialGuardrailsCheckpoint=true"
+                                                  "-p:_AxialGuardrailsBaselineProposalDirectory="; "-p:_AxialGuardrailsBaselineRuleCode="
+                                                  "-p:CustomAfterMicrosoftCommonTargets=" + expectedTarget
+                                                  "-p:_AxialGuardrailsFullCheckDirectory=" + directory ] 1800000 true
+                            if code <> 0 then emit asJson false "Full analysis failed (findings, build failure, or incomplete coverage); see build diagnostics."
+                            else
+                                let reports = Directory.GetFiles(directory, "*.xml", SearchOption.AllDirectories)
+                                let expected = Directory.GetFiles(directory, "*.expected") |> Array.map (File.ReadAllText >> _.Trim()) |> Set.ofArray
+                                let incomplete = reports |> Array.tryFind (Coverage.complete (Some "Full") >> not)
+                                match incomplete with
+                                | Some path -> emit asJson false ("Full analysis coverage is incomplete: " + path)
+                                | None ->
+                                    let actual = reports |> Array.map Coverage.identity |> Set.ofArray
+                                    if expected.IsEmpty || actual <> expected || reports.Length <> actual.Count then
+                                        emit asJson false ("Full analysis coverage is incomplete: expected project/TFM records do not match exported records. Missing: " + String.concat ", " (Set.difference expected actual))
+                                    elif reports |> Array.exists Coverage.errors then
+                                        emit asJson false "Full analysis reported Error findings."
+                                    else emit asJson true ("Full analysis passed for " + string reports.Length + " project/TFM records.\n" + PolicyReview.format review)
             with error -> emit asJson false ("Full analysis failed: " + error.Message)
         finally
             try if Directory.Exists directory then Directory.Delete(directory, true)
