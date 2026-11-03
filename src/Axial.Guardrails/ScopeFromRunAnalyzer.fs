@@ -28,11 +28,9 @@ let private symbolMatches (ctx: CliContext) entity names expr =
     match headRange expr with
     | None -> false
     | Some location ->
-        ctx.GetAllSymbolUsesOfFile()
+        (SymbolIndex.forContext ctx).EndingAt location
         |> Seq.exists (fun useSite ->
-            (useSite.Range.End = location.End && useSite.Range.StartLine = location.StartLine
-             && useSite.Range.StartColumn <= location.StartColumn)
-            && (match useSite.Symbol with
+            (match useSite.Symbol with
                 | :? FSharpMemberOrFunctionOrValue as memberValue ->
                     Set.contains memberValue.CompiledName names
                     && (memberValue.DeclaringEntity
@@ -99,7 +97,7 @@ let rec private typedDeclarations declaration =
     | FSharpImplementationFileDeclaration.InitAction body ->
         try typedFindings body with _ -> []
 
-let rawRanges (ctx: CliContext) : range list =
+let private collectRanges (ctx: CliContext) : range list =
     let expressions =
         match ctx.ParseFileResults.ParseTree with
         | ParsedInput.ImplFile(ParsedImplFileInput(contents = modules)) ->
@@ -111,6 +109,9 @@ let rawRanges (ctx: CliContext) : range list =
         | None -> []
     (expressions |> List.collect (find ctx)) @ typed
     |> List.distinctBy (fun r -> r.StartLine, r.StartColumn, r.EndLine, r.EndColumn)
+
+let rawRanges (ctx: CliContext) : range list =
+    SymbolIndex.memo ctx "AXG008.ranges" (fun () -> collectRanges ctx)
 
 let analyze (ctx: CliContext) : Message list =
     let config = GuardrailConfig.load ()

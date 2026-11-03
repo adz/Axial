@@ -337,7 +337,9 @@ Additions to this list appear in `axial policy review`; ordinary policy drift wa
 
 Reports only catch-all `try/with` handlers (`_`, a bound exception, or a type test for `exn` / `System.Exception`)
 that neither use the exception nor call `raise` or `reraise`. Handlers for narrower exception types are not reported;
-type abbreviations are resolved. Returning or recording the bound exception counts as use, including assignments,
+type abbreviations are resolved. When the exception value is irrelevant, narrow the catch to the specific type(s),
+for example `| :? FileNotFoundException ->`. A narrowed catch need not bind or use an exception value; do not add
+an exception to a return value merely to silence this guide. Returning or recording the bound exception counts as use, including assignments,
 error-record fields, and chained calls such as `ExceptionDispatchInfo.Capture(error).Throw()`.
 A guard that inspects the bound exception counts as classification. A reporting function's name alone does not
 establish exception use. Wildcard handlers returning a fallback value are still reported; returning `Error` or
@@ -345,7 +347,9 @@ establish exception use. Wildcard handlers returning a fallback value are still 
 
 ```fsharp
 let swallowed () = try failwith "failed" with _ -> ()
-let propagated () = try failwith "failed" with _ -> reraise ()
+let narrowed () =
+    try raise (System.IO.FileNotFoundException())
+    with :? System.IO.FileNotFoundException -> ()
 ```
 
 This is a guide warning. When an exception is intentionally irrelevant, put
@@ -369,6 +373,8 @@ let acknowledged () =
 ```
 
 The finding stays visible as Info with the reason. An unacknowledged finding becomes an error at a checkpoint.
+Host boundary projects may keep catch-alls under an explicit `AXG010` project-path declaration in `[exemptions]`.
+The `host` role alone, or listing a file in `[boundaries]`, is not an exemption.
 
 ## AXG011: Explain uncancellable work
 
@@ -400,7 +406,7 @@ let retained () = System.Threading.Tasks.Task.FromResult 1
 
 This is an error. Await the task or retain and join the fiber; neither `axial-allow` nor `axial-note` exempts it.
 
-AXG009–AXG012 exempt the `test` role. Host-role projects are exempt only when their
+AXG009–AXG012 exempt the `test` role unless `AxialGuardrailsInTests=all` enables full test analysis. Host-role projects are exempt only when their
 repository-relative project path matches that rule's `[exemptions]` list in `Axial.Guardrails.toml`.
 The table accepts only `AXG009`, `AXG010`, `AXG011`, and `AXG012`, each an array of project-path globs.
 Paths must stay inside the repository and match existing files. Other roles ignore these lists;
@@ -409,6 +415,7 @@ an ordinary host with no matching declaration is not exempt. For example:
 ```toml
 [exemptions]
 AXG009 = ["tools/**/*.fsproj"]
+AXG010 = ["tools/**/*.fsproj"]
 AXG012 = ["tools/**/*.fsproj"]
 ```
 

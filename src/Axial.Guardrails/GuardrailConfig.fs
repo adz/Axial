@@ -307,7 +307,7 @@ let resolvedPolicy (config: Config) (ctx: CliContext) =
     | _ -> None
 
 // Only the declared project role selects the reduced set; file-role overrides cannot opt a project out.
-let private usesTestAnalyzerSet (config: Config) =
+let usesTestAnalyzerSet (config: Config) =
     if String.Equals(config.InTests, "all", StringComparison.OrdinalIgnoreCase) then false else
     match config.Policy, config.PolicyRoot, config.ProjectPath with
     | Some policy, Some root, Some project ->
@@ -318,6 +318,11 @@ let private usesTestAnalyzerSet (config: Config) =
             | Error error -> invalidArg "policy" error
         | None -> false
     | _ -> false
+
+/// Selection happens before a rule touches symbols or typed trees; AXG002 still validates directives.
+let shouldRunAnalyzer config rule =
+    not (usesTestAnalyzerSet config)
+    || List.contains rule [ "SuppressionIntegrity"; "Fixture"; "RawConcurrency"; "WaitForFacts" ]
 
 let private resolvableFullPath (config: Config) (fileName: string) =
     try

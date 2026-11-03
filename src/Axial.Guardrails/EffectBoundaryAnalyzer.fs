@@ -122,12 +122,11 @@ let private completedReadRanges (ctx: CliContext) =
 /// Every ambient-effect call site in the file for the enabled guardrails, regardless of suppression. Exposed so the
 /// suppression-integrity analyzer can cross-reference AXG001 directives against the findings they're
 /// meant to cover, without re-implementing symbol matching.
-let rawFindings (ctx: CliContext) : (EffectRule * FSharp.Compiler.Text.range) list =
-    let rules = (GuardrailConfig.load ()).Rules
+let private collectFindings rules (ctx: CliContext) : (EffectRule * FSharp.Compiler.Text.range) list =
     let flowBodies = lazy (RaiseInFlowAnalyzer.flowBodyRanges ctx)
     let safeReads = completedReadRanges ctx
 
-    ctx.GetAllSymbolUsesOfFile()
+    (SymbolIndex.forContext ctx).All
     |> Seq.choose (fun symbolUse ->
         let inside = flowBodies.Value |> List.exists (fun body -> contains body symbolUse.Range)
         ruleFor rules inside symbolUse.Symbol
@@ -136,6 +135,10 @@ let rawFindings (ctx: CliContext) : (EffectRule * FSharp.Compiler.Text.range) li
             || not (safeReads |> List.exists (fun read -> contains read symbolUse.Range)))
         |> Option.map (fun rule -> rule, symbolUse.Range))
     |> Seq.toList
+
+let rawFindings (ctx: CliContext) : (EffectRule * FSharp.Compiler.Text.range) list =
+    let rules = (GuardrailConfig.load ()).Rules
+    SymbolIndex.memo ctx ("AXG001.findings", rules) (fun () -> collectFindings rules ctx)
 
 let private toMessage (rule: EffectRule) (range: FSharp.Compiler.Text.Range) : Message =
     { Type = "Axial Effect Boundary"

@@ -228,7 +228,7 @@ let private toMessage = function
           Range = range
           Fixes = [] }
 
-let private rawFindingsWithNativeAot nativeAot (ctx: CliContext) =
+let private collectFindingsWithNativeAot nativeAot (ctx: CliContext) =
     match (try ctx.TypedTree with _ -> None) with
     | None -> []
     | Some tree ->
@@ -236,6 +236,9 @@ let private rawFindingsWithNativeAot nativeAot (ctx: CliContext) =
         |> List.distinctBy (fun finding ->
             let range = findingRange finding
             range.StartLine, range.StartColumn, range.EndLine, range.EndColumn)
+
+let private rawFindingsWithNativeAot nativeAot ctx =
+    SymbolIndex.memo ctx ("AXG006.findings", nativeAot) (fun () -> collectFindingsWithNativeAot nativeAot ctx)
 
 let rawRangesWithNativeAot nativeAot ctx =
     rawFindingsWithNativeAot nativeAot ctx |> List.map findingRange

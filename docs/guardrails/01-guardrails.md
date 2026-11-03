@@ -244,7 +244,7 @@ See the [diagnostic reference](/guardrails/diagnostics.html) for an example.
 | `AXG005` | `DiscardedCancellation` | Task adapters that discard their cancellation token |
 | `AXG006` | `ReflectionFormatting` | Formatting that needs F# reflection, which NativeAOT and trimming remove |
 | `AXG009` | `RawConcurrency` | Raw task bridges (`TaskCompletionSource`, `Task.Run`, `ContinueWith`, threads, `CancellationTokenSource`) outside their allowed roles/files |
-| `AXG010` | `SwallowedException` | Catch-all handlers ignoring the exception (guide) |
+| `AXG010` | `SwallowedException` | Catch-all handlers ignoring the exception; narrow to specific exception types (guide) |
 | `AXG011` | `UncancellableWork` | `CancellationToken.None` outside `Cancellation.never`, the one definition that owns it |
 | `AXG012` | `DiscardedWork` | Typed Task/ValueTask/Fiber discards |
 | `AXG013` | `WaitForFacts` | Blocking sleeps (error) and directly awaited delays (guide) in test-role code |
@@ -258,17 +258,25 @@ effects and exceptions are often necessary for setup and assertions. Declare `[p
 `IsTestProject` or Microsoft.NET.Test.Sdk; file-role overrides do not change the project-wide analyzer set.
 Analyzers resolve the project role in-process; no policy-tool process is launched to select the set.
 Set `AxialGuardrailsInTests` to `all` to run every enabled analyzer in a test-role project too. Policy review
-compares this evaluated property, so changing it appears in the review. Both this setting and the TOML policy
+compares this evaluated property: enabling `all` is a tightening, and removing `all` is a loosening.
+Non-test analyzers return before walking symbols or typed trees when the reduced test set is selected.
+Both this setting and the TOML policy
 invalidate cached analysis when changed.
 
 `AXG002`, `RawConcurrency`, and `WaitForFacts` also run in test projects by default. Raw task bridges remain
-exempt in the test role. `lock`, `Monitor` and `Interlocked` are not reported anywhere.
+exempt in the test role unless `AxialGuardrailsInTests=all`. `lock`, `Monitor` and `Interlocked` are not reported anywhere.
+
+For AXG010, when the exception value is irrelevant, catch the specific type(s), for example
+`| :? FileNotFoundException ->`; a typed catch need not use the value. Do not force the exception into a return
+value to silence the guide. Host boundary projects can declare an `AXG010` exemption as described above.
 
 Guide findings (AXG010 and awaited-delay AXG013) warn in ordinary builds. A valid
 `// axial-note AXGnnn: <reason>` on the finding's line or the preceding line changes a guide finding to visible Info.
 Invalid notes warn under AXG002. Verification and release builds set `AxialGuardrailsCheckpoint=true` to reject
 unacknowledged guides and invalid notes; noted findings remain Info. Ordinary Release builds are not checkpoints.
 Block findings do not accept notes or baseline downgrades. AXG001–008 retain their existing allowance/baseline behavior.
+Checkpoints, including `axial check --full`, reuse complete Full results only for identical fingerprinted inputs and
+checkpoint settings. Cache hits replay findings and export the same project/TFM coverage; a Fast result cannot satisfy Full.
 
 `AXG004` checks shared fixtures in modules containing xUnit tests. It is included in the test-role analyzer set
 and in the full analyzer set; modules without tests do not produce fixture findings.

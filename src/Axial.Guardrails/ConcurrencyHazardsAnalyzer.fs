@@ -35,7 +35,7 @@ let rec private handlerExpressions expr =
 let private key (r: range) = r.StartLine, r.StartColumn, r.EndLine, r.EndColumn
 
 let private symbolRanges code (ctx: CliContext) =
-    ctx.GetAllSymbolUsesOfFile()
+    (SymbolIndex.forContext ctx).All
     |> Seq.choose (fun site ->
         match site.Symbol with
         | :? FSharpMemberOrFunctionOrValue as value ->
@@ -79,10 +79,9 @@ let rec private catchAll (ctx: CliContext) pat =
     | SynPat.Or(left, right, _, _) -> catchAll ctx left || catchAll ctx right
     | SynPat.Ands(patterns, _) -> patterns |> List.forall (catchAll ctx)
     | SynPat.IsInst(targetType, _) ->
-        ctx.GetAllSymbolUsesOfFile()
+        (SymbolIndex.forContext ctx).ContainedIn targetType.Range
         |> Seq.exists (fun site ->
-            Range.rangeContainsRange targetType.Range site.Range
-            && (match site.Symbol with
+            (match site.Symbol with
                 | :? FSharpEntity as entity ->
                     if entity.IsFSharpAbbreviation then baseExceptionType entity.AbbreviatedType
                     else entity.TryFullName = Some "System.Exception"
@@ -126,8 +125,11 @@ let private typedConcurrentRanges (ctx: CliContext) =
     | Some tree -> tree.Declarations |> List.collect declarations |> List.map key |> Set.ofList
     | None -> Set.empty
 
-let rawRanges code (ctx: CliContext) =
-    let nodes = expressions ctx |> List.collect walk
+let private collectRanges code (ctx: CliContext) =
+    let nodes =
+        if code = "AXG010" || code = "AXG012" then
+            SymbolIndex.memo ctx "concurrency.nodes" (fun () -> expressions ctx |> List.collect walk)
+        else []
     let syntactic =
         match code with
         | "AXG010" -> nodes |> List.collect (swallowed ctx)
@@ -154,10 +156,9 @@ let rawRanges code (ctx: CliContext) =
                 | SynExpr.Paren(inner, _, _, _) | SynExpr.Typed(inner, _, _)
                 | SynExpr.TypeApp(inner, _, _, _, _, _, _) -> ignores inner
                 | SynExpr.Ident _ | SynExpr.LongIdent _ ->
-                    ctx.GetAllSymbolUsesOfFile()
+                    (SymbolIndex.forContext ctx).ContainedIn target.Range
                     |> Seq.exists (fun site ->
-                        Range.rangeContainsRange target.Range site.Range
-                        && (match site.Symbol with
+                        (match site.Symbol with
                             | :? FSharpMemberOrFunctionOrValue as value ->
                                 value.CompiledName = "Ignore"
                                 && (value.DeclaringEntity |> Option.bind _.TryFullName) = Some "Microsoft.FSharp.Core.Operators"
@@ -181,11 +182,15 @@ let rawRanges code (ctx: CliContext) =
                     | SynExpr.App(_, false, target, value, _) when ignores target && discarded value -> [ value.Range ]
                     | _ -> [])
         | _ -> []
-    symbolRanges code ctx @ syntactic |> List.distinctBy key
+    let symbols = if code = "AXG009" || code = "AXG011" then symbolRanges code ctx else []
+    symbols @ syntactic |> List.distinctBy key
+
+let rawRanges code (ctx: CliContext) =
+    SymbolIndex.memo ctx (code + ".ranges") (fun () -> collectRanges code ctx)
 
 let private descriptions =
     Map.ofList [ "AXG009", "Use Flow concurrency rather than raw TPL coordination; move an OS bridge into a capability-role module."
-                 "AXG010", "Consider propagating, recording, or reporting this exception; this catch-all handler ignores it."
+                 "AXG010", "This catch-all handler ignores the exception. Consider narrowing the catch to the specific exception type(s), for example | :? FileNotFoundException ->. A typed catch need not use the exception value."
                  "AXG011", "Use the runtime's uninterruptible cleanup primitive instead of CancellationToken.None."
                  "AXG012", "Concurrent work is discarded. Await it or retain and join its owning fiber." ]
 
@@ -210,13 +215,17 @@ let private analyzeContained (config: GuardrailConfig.Config) code (ctx: CliCont
             when value.CompiledName = "never"
                  && (value.DeclaringEntity |> Option.bind _.TryFullName) = Some "Axial.Platform.Cancellation" -> [ body.Range ]
         | _ -> []
-    let primitives = ctx.TypedTree |> Option.map (fun tree -> List.collect primitiveDefinitions tree.Declarations) |> Option.defaultValue []
-    if (code = "AXG009" || code = "AXG012") && runtime then []
+    let primitives = lazy (
+        if code = "AXG011" then
+            ctx.TypedTree |> Option.map (fun tree -> List.collect primitiveDefinitions tree.Declarations) |> Option.defaultValue []
+        else [])
+    if exempt || ((code = "AXG009" || code = "AXG012") && runtime)
+       || (role = Some Policy.Test && not (String.Equals(config.InTests, "all", StringComparison.OrdinalIgnoreCase)))
+       || (code = "AXG009" && role = Some Policy.Capabilities) then []
     else
         rawRanges code ctx
         |> List.filter (fun r ->
-            not (code = "AXG011" && primitives |> List.exists (fun definition -> Range.rangeContainsRange definition r))
-            && role <> Some Policy.Test && not exempt && (code <> "AXG009" || role <> Some Policy.Capabilities))
+            not (code = "AXG011" && primitives.Value |> List.exists (fun definition -> Range.rangeContainsRange definition r)))
         |> List.map (fun r ->
             { Type = "Axial Concurrency Hazard"; Code = code; Message = descriptions[code]
               Severity = Severity.Error; Range = r; Fixes = [] })
@@ -224,7 +233,9 @@ let private analyzeContained (config: GuardrailConfig.Config) code (ctx: CliCont
         |> GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx
 
 let analyzeWithConfig (config: GuardrailConfig.Config) code (ctx: CliContext) =
-    if GuardrailConfig.isSkippedSource config ctx.FileName then [] else analyzeContained config code ctx
+    if GuardrailConfig.isSkippedSource config ctx.FileName
+       || (code <> "AXG009" && GuardrailConfig.usesTestAnalyzerSet config) then []
+    else analyzeContained config code ctx
 
 [<CliAnalyzer("RawConcurrency", "Flags raw concurrency outside the runtime.", "https://github.com/adz/Axial")>]
 let rawConcurrencyAnalyzer: Analyzer<CliContext> = fun ctx -> Execution.track "RawConcurrency" (fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) "AXG009" ctx }) ctx

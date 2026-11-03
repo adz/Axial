@@ -21,11 +21,9 @@ let private matches (ctx: CliContext) entity memberName expr =
     match headRange expr with
     | None -> false
     | Some location ->
-        ctx.GetAllSymbolUsesOfFile()
+        (SymbolIndex.forContext ctx).EndingAt location
         |> Seq.exists (fun site ->
-            site.Range.End = location.End && site.Range.StartLine = location.StartLine
-            && site.Range.StartColumn <= location.StartColumn
-            && (match site.Symbol with
+            (match site.Symbol with
                 | :? FSharpMemberOrFunctionOrValue as value ->
                     value.CompiledName = memberName
                     && (value.DeclaringEntity |> Option.exists (fun owner -> owner.TryFullName = Some entity))
@@ -50,11 +48,9 @@ let rec private infiniteArgument (ctx: CliContext) expr =
         match headRange expr with
         | None -> false
         | Some location ->
-            ctx.GetAllSymbolUsesOfFile()
+            (SymbolIndex.forContext ctx).EndingAt location
             |> Seq.exists (fun site ->
-                site.Range.End = location.End && site.Range.StartLine = location.StartLine
-                && site.Range.StartColumn <= location.StartColumn
-                && (match site.Symbol with
+                (match site.Symbol with
                     | :? FSharpField as field ->
                         (field.Name = "Infinite" || field.Name = "InfiniteTimeSpan")
                         && (field.DeclaringEntity |> Option.exists (fun owner -> owner.TryFullName = Some "System.Threading.Timeout"))
@@ -64,11 +60,9 @@ let private hasCancellationParameter (ctx: CliContext) expr =
     match headRange expr with
     | None -> false
     | Some location ->
-        ctx.GetAllSymbolUsesOfFile()
+        (SymbolIndex.forContext ctx).EndingAt location
         |> Seq.exists (fun site ->
-            site.Range.End = location.End && site.Range.StartLine = location.StartLine
-            && site.Range.StartColumn <= location.StartColumn
-            && (match site.Symbol with
+            (match site.Symbol with
                 | :? FSharpMemberOrFunctionOrValue as value ->
                     value.CurriedParameterGroups |> Seq.collect id |> Seq.tryLast
                     |> Option.exists (fun parameter ->
@@ -97,9 +91,9 @@ let rec private approvedHelperBodies (ctx: CliContext) decls =
         | SynModuleDecl.Let(bindings = bindings) ->
             bindings |> List.choose (fun (SynBinding(headPat = pattern; expr = body)) ->
                 let approved =
-                    ctx.GetAllSymbolUsesOfFile()
+                    (SymbolIndex.forContext ctx).ContainedIn pattern.Range
                     |> Seq.exists (fun site ->
-                        site.IsFromDefinition && Range.rangeContainsRange pattern.Range site.Range
+                        site.IsFromDefinition
                         && (match site.Symbol with
                             | :? FSharpMemberOrFunctionOrValue as value ->
                                 (value.DisplayName = "waitUntil" || value.DisplayName = "occupyThread")
@@ -128,7 +122,7 @@ let rec private find ctx approvedBodies expr : (range * bool) list =
     here @ nested
 
 /// Raw sites also serve AXG002's stale-suppression validation, independently of policy role.
-let private rawSites (ctx: CliContext) =
+let private collectSites (ctx: CliContext) =
     match ctx.ParseFileResults.ParseTree with
     | ParsedInput.ImplFile(ParsedImplFileInput(contents = modules)) ->
         modules
@@ -137,6 +131,9 @@ let private rawSites (ctx: CliContext) =
             allExprsInModule decls |> List.collect (find ctx approvedBodies))
         |> List.distinctBy (fun (r, _) -> r.StartLine, r.StartColumn, r.EndLine, r.EndColumn)
     | _ -> []
+
+let private rawSites ctx =
+    SymbolIndex.memo ctx "AXG013.sites" (fun () -> collectSites ctx)
 
 let rawRanges ctx = rawSites ctx |> List.map fst
 

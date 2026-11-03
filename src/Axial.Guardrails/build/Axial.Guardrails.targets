@@ -281,7 +281,9 @@
          policy baseline's nested builds. Major alone stays on net8 when that runtime is installed. -->
     <PropertyGroup>
       <_AxialGuardrailsProposalCoverageFile Condition="'$(_AxialGuardrailsProposalFile)' != ''">$(_AxialGuardrailsProposalFile).coverage.xml</_AxialGuardrailsProposalCoverageFile>
-      <_AxialGuardrailsForce Condition="'$(AxialGuardrailsCheckpoint)' == 'true' or '$(_AxialGuardrailsBaselineProposalDirectory)' != ''">true</_AxialGuardrailsForce>
+      <!-- Checkpoint is already in the content-hashed config. Complete results for that exact
+           request replay findings and export full coverage; only baseline proposals need fresh side effects. -->
+      <_AxialGuardrailsForce Condition="'$(_AxialGuardrailsBaselineProposalDirectory)' != ''">true</_AxialGuardrailsForce>
     </PropertyGroup>
     <AxialGuardrailsTask Action="Run" Mode="$(AxialGuardrailsMode)" Project="$(MSBuildProjectFullPath)" TargetFramework="$(TargetFramework)"
           Command="$(_AxialGuardrailsExe) $(_AxialGuardrailsAnalysisInput) --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; --code-root &quot;$(MSBuildProjectDirectory)&quot;"

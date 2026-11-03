@@ -256,6 +256,8 @@ module PolicyReview =
                             match key.Split(':') |> Array.last with
                             | "TargetFrameworks" -> ()
                             | "AxialGuardrailsEnabled" when not (String.Equals(value, "false", StringComparison.OrdinalIgnoreCase)) -> remove "project settings" detail
+                            | "AxialGuardrailsInTests" when String.Equals(value, "all", StringComparison.OrdinalIgnoreCase) ->
+                                remove "project settings" (detail + " (tightened)")
                             | "AxialGuardrail" ->
                                 let oldItems = previous.Split(';', StringSplitOptions.RemoveEmptyEntries) |> Set.ofArray
                                 let newItems = value.Split(';', StringSplitOptions.RemoveEmptyEntries) |> Set.ofArray
