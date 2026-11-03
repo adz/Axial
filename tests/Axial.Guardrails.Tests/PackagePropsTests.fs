@@ -317,11 +317,55 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
         let task = assembly.GetType("AxialGuardrailsTask")
         let factory = task.GetMethod("CreateStartInfo")
         Assert.NotNull factory
-        let command = "dotnet \"C:\\Program Files\\tool.dll\" --project \"C:\\my app\\App.fsproj\""
+        let command = "dotnet \"C:\\Program Files\\tool.dll\" --project \"C:\\my & app\\App.fsproj\""
         let start = factory.Invoke(null, [| box command; box true |]) :?> ProcessStartInfo
         Assert.Equal("cmd.exe", start.FileName)
         Assert.Equal("/d /s /c \"" + command + "\"", start.Arguments)
         Assert.Empty start.ArgumentList
+
+    [<Fact>]
+    let ``fix2 Unix shell overrides retain expansion quoting and backslashes`` () =
+        if not (OperatingSystem.IsWindows()) then
+            let assembly = System.Reflection.Assembly.LoadFrom(Path.Combine(repoRoot (), "artifacts", "bin", "Axial.Guardrails.Build", configuration (), "Axial.Guardrails.Build.dll"))
+            let factory = assembly.GetType("AxialGuardrailsTask").GetMethod("CreateStartInfo")
+            let command = "printf '%s|%s|%s' \"$AXIAL_QUOTE_TEST\" \"$(printf substitution)\" 'a\\b'"
+            let start = factory.Invoke(null, [| box command; box false |]) :?> ProcessStartInfo
+            start.EnvironmentVariables["AXIAL_QUOTE_TEST"] <- "expanded value"
+            use child = Process.Start start
+            let output = child.StandardOutput.ReadToEnd()
+            child.WaitForExit()
+            Assert.Equal(0, child.ExitCode)
+            Assert.Equal("expanded value|substitution|a\\b", output)
+
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
+    let ``fix2 cleanup failures are diagnostic only`` unauthorized =
+        let assembly = System.Reflection.Assembly.LoadFrom(Path.Combine(repoRoot (), "artifacts", "bin", "Axial.Guardrails.Build", configuration (), "Axial.Guardrails.Build.dll"))
+        let cleanup = assembly.GetType("AxialGuardrailsTask").GetMethod("CleanupRunDirectory", System.Reflection.BindingFlags.Static ||| System.Reflection.BindingFlags.NonPublic)
+        Assert.NotNull cleanup
+        let messages = ResizeArray<string>()
+        let remove = Action<string>(fun _ -> if unauthorized then raise (UnauthorizedAccessException("denied")) else raise (IOException("locked")))
+        cleanup.Invoke(null, [| box "run"; box remove; box (Action<string>(messages.Add)) |]) |> ignore
+        Assert.Single messages |> ignore
+        Assert.Contains((if unauthorized then "denied" else "locked"), messages[0])
+
+    [<Fact>]
+    let ``fix2 record failure cause reaches the single infrastructure error`` () =
+        if not (OperatingSystem.IsWindows()) then
+            let dir = Path.Combine(Path.GetTempPath(), "axial-record-failure-" + Guid.NewGuid().ToString("N"))
+            Directory.CreateDirectory dir |> ignore
+            try
+                writeConsumer dir
+                let project = Path.Combine(dir, "Consumer.fsproj")
+                let xml = System.Xml.Linq.XDocument.Load project
+                (xml.Descendants(System.Xml.Linq.XName.Get "_AxialGuardrailsExe") |> Seq.exactlyOne).Value <- "printf '%s\\n' 'Axial.Guardrails infrastructure: InjectedRule could not record Program.fs: injected recording failure'"
+                xml.Save project
+                let result = runBuild project None
+                Assert.NotEqual(0, result.ExitCode)
+                Assert.Contains("injected recording failure", result.Output)
+                Assert.DoesNotContain("warning AXGINF001", result.Output)
+            finally Directory.Delete(dir, true)
 
     [<Theory>]
     [<InlineData("AxialGuardrailsCheckPolicy")>]
