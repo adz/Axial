@@ -28,6 +28,7 @@
     <Compile Include="PolicyLockTests.fs" />
     <Compile Include="PolicyReviewTests.fs" />
     <Compile Include="PackagePropsTests.fs" />
+    <Compile Include="FastModeTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
