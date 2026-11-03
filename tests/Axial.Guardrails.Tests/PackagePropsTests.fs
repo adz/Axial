@@ -333,8 +333,9 @@ module PackagePropsTests =
                     use json = System.Text.Json.JsonDocument.Parse(stdout.Result)
                     Assert.Equal("ok", json.RootElement.GetProperty("status").GetString())
                 Assert.Contains("3 project/TFM records", output)
-                let release = Directory.GetFiles(dir, "*.result.xml", SearchOption.AllDirectories) |> Array.filter (fun path -> path.ToLowerInvariant().Contains("release"))
-                Assert.Equal(3, release.Length)
+                for projectDirectory, framework in [dir, "net8.0"; dir, "net10.0"; other, "net10.0"] do
+                    let release = Path.Combine(projectDirectory, "obj", "Release", framework, "axial-guardrails." + framework + ".result.xml")
+                    Assert.True(File.Exists release, release)
                 let reports = Directory.GetDirectories(dir, "exported", SearchOption.AllDirectories) |> Array.collect (fun path -> Directory.GetFiles(path, "*.xml"))
                 Assert.Equal(3, reports.Length)
                 let identities = reports |> Array.map Axial.Tool.Coverage.identity |> Set.ofArray
