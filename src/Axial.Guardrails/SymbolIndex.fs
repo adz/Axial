@@ -15,7 +15,12 @@ let private facts = ConditionalWeakTable<CliContext, ConcurrentDictionary<obj, L
 
 let memo (ctx: CliContext) (key: obj) (create: unit -> 'a) : 'a =
     let file = facts.GetValue(ctx, fun _ -> ConcurrentDictionary())
-    file.GetOrAdd(key, fun _ -> lazy (box (create ()))).Value :?> 'a
+    let value = file.GetOrAdd(key, fun _ -> lazy (box (create ())))
+    try value.Value :?> 'a
+    with _ ->
+        // A failure belongs to the rule that hit it; the next caller recomputes rather than inheriting it.
+        file.TryRemove(KeyValuePair(key, value)) |> ignore
+        reraise ()
 
 let private position (p: pos) = struct (p.Line, p.Column)
 

@@ -26,6 +26,20 @@ module SymbolIndexTests =
                     Assert.Equal<(range * string * bool) list>(identity expectedInside, identity (index.ContainedIn r))
         }
 
+    [<Fact>]
+    let ``a failed memo is recomputed by the next caller`` () =
+        task {
+            let! ctx = AnalyzerTestContext.create "module M\nlet f x = x + 1\n"
+            let mutable calls = 0
+            let create () =
+                calls <- calls + 1
+                if calls = 1 then failwith "first rule failure" else calls
+            Assert.Throws<exn>(fun () -> SymbolIndex.memo ctx "fails-once" create |> ignore) |> ignore
+            Assert.Equal(2, SymbolIndex.memo ctx "fails-once" create)
+            Assert.Equal(2, SymbolIndex.memo ctx "fails-once" create)
+            Assert.Equal(2, calls)
+        }
+
     [<MethodImpl(MethodImplOptions.NoInlining)>]
     let private abandonedIndex () =
         let ctx = AnalyzerTestContext.create "module M\nlet f x = x + 1\n" |> _.GetAwaiter().GetResult()
