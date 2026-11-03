@@ -344,10 +344,14 @@ let private testSetCodes = analyzers |> List.filter _.RunsInTests |> List.collec
 let reportsInTestSet code = Set.contains code testSetCodes
 
 /// Selection happens before a rule touches symbols or typed trees; AXG002 still validates directives.
+/// An unregistered analyzer runs wherever no selection is made (non-test roles, InTests=all); only the reduced
+/// test set needs its codes, so there it fails closed instead of being silently skipped or run.
 let shouldRunAnalyzer config rule =
+    let selecting = usesTestAnalyzerSet config
     match analyzers |> List.tryFind (fun analyzer -> analyzer.Name = rule) with
-    | Some analyzer -> Ok(analyzer.RunsInTests || not (usesTestAnalyzerSet config))
-    | None -> Error $"analyzer {rule} is not registered in GuardrailConfig.analyzers"
+    | Some analyzer -> Ok(analyzer.RunsInTests || not selecting)
+    | None when not selecting -> Ok true
+    | None -> Error $"analyzer {rule} is not registered in GuardrailConfig.analyzers, so the test analyzer set cannot select it"
 
 let private resolvableFullPath (config: Config) (fileName: string) =
     try

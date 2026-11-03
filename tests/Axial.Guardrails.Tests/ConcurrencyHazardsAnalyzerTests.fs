@@ -295,24 +295,46 @@ type ConcurrencyHazardsPolicyTests() =
         Assert.Equal<Set<string>>(registered, GuardrailConfig.analyzers |> List.map _.Name |> Set.ofList)
 
     [<Fact>]
-    member _.``unknown analyzer fails closed as an infrastructure skip`` () =
+    member _.``unknown analyzer runs without selection and fails closed under the test set`` () =
         task {
             let! ctx = AnalyzerTestContext.create "module M\nlet value = 1"
+            let root = System.IO.Path.GetDirectoryName ctx.FileName
+            System.IO.Directory.CreateDirectory root |> ignore
+            let policy = System.IO.Path.Combine(root, "Axial.Guardrails.toml")
+            let config = System.IO.Path.Combine(root, "config.tsv")
             let run = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "axial-unknown-" + Guid.NewGuid().ToString("N"))
             System.IO.Directory.CreateDirectory run |> ignore
-            let previous = Environment.GetEnvironmentVariable "AXIAL_GUARDRAILS_RUN"
+            let settings role inTests =
+                System.IO.File.WriteAllText(policy, $"version = 2\n[default]\nrole = \"{role}\"\n")
+                System.IO.File.WriteAllLines(config,
+                    [| "setting\tpolicyFile\t" + policy; "setting\tpolicyRoot\t" + root
+                       "setting\tprojectPath\t" + System.IO.Path.Combine(root, "Tests.fsproj")
+                       "setting\tinTests\t" + inTests |])
+            let previousConfig = Environment.GetEnvironmentVariable GuardrailConfig.EnvironmentVariable
+            let previousRun = Environment.GetEnvironmentVariable "AXIAL_GUARDRAILS_RUN"
             try
+                Environment.SetEnvironmentVariable(GuardrailConfig.EnvironmentVariable, config)
                 Environment.SetEnvironmentVariable("AXIAL_GUARDRAILS_RUN", run)
-                let mutable called = false
-                let! findings = Execution.track "NewlyNamedRule" (fun _ -> async { called <- true; return [] }) ctx |> Async.StartAsTask
-                Assert.False called
-                Assert.Empty findings
-                let record = System.IO.Directory.GetFiles(run, "*.xml") |> Assert.Single |> System.Xml.Linq.XElement.Load
-                Assert.Equal("skipped", record.Attribute(System.Xml.Linq.XName.Get "status").Value)
-                Assert.Contains("NewlyNamedRule", record.Attribute(System.Xml.Linq.XName.Get "reason").Value)
+                for role, inTests, selected in [ "domain", "", false; "test", "all", false; "test", "", true ] do
+                    for file in System.IO.Directory.GetFiles run do System.IO.File.Delete file
+                    settings role inTests
+                    let mutable called = false
+                    let! findings = Execution.track "NewlyNamedRule" (fun _ -> async { called <- true; return [] }) ctx |> Async.StartAsTask
+                    Assert.Empty findings
+                    let record = System.IO.Directory.GetFiles(run, "*.xml") |> Assert.Single |> System.Xml.Linq.XElement.Load
+                    let status = record.Attribute(System.Xml.Linq.XName.Get "status").Value
+                    if selected then
+                        Assert.False called
+                        Assert.Equal("skipped", status)
+                        Assert.Contains("NewlyNamedRule", record.Attribute(System.Xml.Linq.XName.Get "reason").Value)
+                    else
+                        Assert.True called
+                        Assert.Equal("ran", status)
             finally
-                Environment.SetEnvironmentVariable("AXIAL_GUARDRAILS_RUN", previous)
+                Environment.SetEnvironmentVariable(GuardrailConfig.EnvironmentVariable, previousConfig)
+                Environment.SetEnvironmentVariable("AXIAL_GUARDRAILS_RUN", previousRun)
                 System.IO.Directory.Delete(run, true)
+                System.IO.Directory.Delete(root, true)
         }
 
     [<Theory>]
