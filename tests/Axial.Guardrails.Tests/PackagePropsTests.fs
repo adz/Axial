@@ -181,8 +181,10 @@ module PackagePropsTests =
                 Assert.Contains(phase, text)
         finally Directory.Delete(dir, true)
 
-    [<Fact>]
-    let ``slice1 analyzer exception fails closed with rule file and cause while retaining findings`` () =
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
+    let ``slice1 analyzer exception fails closed with rule file and cause while retaining findings`` recordFailure =
         let dir = Path.Combine(Path.GetTempPath(), "axial-slice1-plugin-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
         try
@@ -203,6 +205,10 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
               Message = "retained finding" + string (char 1) + " emoji: 😀"
               Range = FSharp.Compiler.Text.Range.range0; Fixes = [] }] })
             """)
+            if recordFailure then
+                let file = Path.Combine(plugin, "Plugin.fs")
+                let text = File.ReadAllText file
+                File.WriteAllText(file, text.Replace("return failwith (\"injected rule failure\" + string (char 1))", "let directory = System.Environment.GetEnvironmentVariable \"AXIAL_GUARDRAILS_RUN\" in System.IO.Directory.Delete(directory, true); System.IO.File.WriteAllText(directory, \"blocked\"); return []"))
             let compiled = runBuild (Path.Combine(plugin, "Plugin.fsproj")) None
             Assert.True(compiled.ExitCode = 0, compiled.Output)
             writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework><TreatWarningsAsErrors>true</TreatWarningsAsErrors>" "module Consumer\nlet value = 1\n"
@@ -214,19 +220,25 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
             let result = runBuild project None
             Assert.True(result.ExitCode <> 0, result.Output)
             Assert.True(result.Output.Contains("error AXGINF001"), result.Output)
-            Assert.Contains("retained finding", result.Output)
-            Assert.Contains("InjectedFailure skipped", result.Output)
-            Assert.Contains("Program.fs", result.Output)
-            Assert.Contains("injected rule failure", result.Output)
-            Assert.Empty(Directory.GetFiles(dir, "axial-guardrails.net10.0.stamp", SearchOption.AllDirectories))
-            let report = Directory.GetFiles(dir, "axial-guardrails.*.result.xml", SearchOption.AllDirectories) |> Array.exactlyOne
-            let text = File.ReadAllText report
-            Assert.Contains("complete=\"false\"", text)
-            Assert.Contains("retained finding", text)
-            Assert.Contains("😀", text)
-            Assert.Contains("injected rule failure", text)
-            Assert.Contains("rule=\"EffectBoundary\"", text)
-            Assert.Contains("status=\"ran\"", text)
+            Assert.DoesNotContain("warning AXGINF001", result.Output)
+            if recordFailure then
+                Assert.Contains("InjectedFailure could not record", result.Output)
+                Assert.Contains("Program.fs", result.Output)
+                Assert.Empty(Directory.GetFiles(dir, "axial-guardrails.net10.0.stamp", SearchOption.AllDirectories))
+            else
+                Assert.Contains("retained finding", result.Output)
+                Assert.Contains("InjectedFailure skipped", result.Output)
+                Assert.Contains("Program.fs", result.Output)
+                Assert.Contains("injected rule failure", result.Output)
+                Assert.Empty(Directory.GetFiles(dir, "axial-guardrails.net10.0.stamp", SearchOption.AllDirectories))
+                let report = Directory.GetFiles(dir, "axial-guardrails.*.result.xml", SearchOption.AllDirectories) |> Array.exactlyOne
+                let text = File.ReadAllText report
+                Assert.Contains("complete=\"false\"", text)
+                Assert.Contains("retained finding", text)
+                Assert.Contains("😀", text)
+                Assert.Contains("injected rule failure", text)
+                Assert.Contains("rule=\"EffectBoundary\"", text)
+                Assert.Contains("status=\"ran\"", text)
         finally Directory.Delete(dir, true)
 
     [<Fact>]
@@ -328,14 +340,14 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
         if not (OperatingSystem.IsWindows()) then
             let assembly = System.Reflection.Assembly.LoadFrom(Path.Combine(repoRoot (), "artifacts", "bin", "Axial.Guardrails.Build", configuration (), "Axial.Guardrails.Build.dll"))
             let factory = assembly.GetType("AxialGuardrailsTask").GetMethod("CreateStartInfo")
-            let command = "printf '%s|%s|%s' \"$AXIAL_QUOTE_TEST\" \"$(printf substitution)\" 'a\\b'"
+            let command = "printf '%s|%s|%s' \"$AXIAL_QUOTE_TEST\" \"$(printf substitution)\" 'a\\b'; printf '|tail'"
             let start = factory.Invoke(null, [| box command; box false |]) :?> ProcessStartInfo
             start.EnvironmentVariables["AXIAL_QUOTE_TEST"] <- "expanded value"
             use child = Process.Start start
             let output = child.StandardOutput.ReadToEnd()
             child.WaitForExit()
             Assert.Equal(0, child.ExitCode)
-            Assert.Equal("expanded value|substitution|a\\b", output)
+            Assert.Equal("expanded value|substitution|a\\b|tail", output)
 
     [<Theory>]
     [<InlineData(false)>]

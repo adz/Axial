@@ -70,8 +70,8 @@ let track (rule: string) (analyzer: Analyzer<CliContext>) : Analyzer<CliContext>
                     if File.Exists temporary then File.Delete temporary
             with error ->
                 // Missing coverage makes the build report incomplete; the CLI still receives findings.
-                Console.Error.WriteLine($"warning AXGINF001: {rule} could not record {ctx.FileName}: {error.Message}")
+                Console.Error.WriteLine($"Axial.Guardrails infrastructure: {rule} could not record {ctx.FileName}: {error.Message}")
         elif skipped then
-            Console.Error.WriteLine($"warning AXGINF001: {rule} skipped {ctx.FileName}: {reason}")
+            Console.Error.WriteLine($"Axial.Guardrails infrastructure: {rule} skipped {ctx.FileName}: {reason}")
         return findings
     }

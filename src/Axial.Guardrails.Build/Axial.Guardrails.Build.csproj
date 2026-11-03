@@ -12,4 +12,16 @@
     <Compile Include="GuardrailsTask.cs" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.11.4" PrivateAssets="all" ExcludeAssets="runtime" />
   </ItemGroup>
+  <!-- A rebuilt task gets a new load path even in a reusable MSBuild node. -->
+  <Target Name="PublishContentHashedTask" AfterTargets="Build">
+    <GetFileHash Files="$(TargetPath)" Algorithm="SHA256">
+      <Output TaskParameter="Items" ItemName="_GuardrailsTaskHash" />
+    </GetFileHash>
+    <PropertyGroup>
+      <_GuardrailsTaskStore>$(MSBuildThisFileDirectory)../../artifacts/guardrails-task</_GuardrailsTaskStore>
+      <_GuardrailsTaskDigest>@(_GuardrailsTaskHash->'%(FileHash)')</_GuardrailsTaskDigest>
+    </PropertyGroup>
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(_GuardrailsTaskStore)/$(_GuardrailsTaskDigest)" SkipUnchangedFiles="true" />
+    <WriteLinesToFile File="$(_GuardrailsTaskStore)/current" Lines="$(_GuardrailsTaskDigest)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
 </Project>

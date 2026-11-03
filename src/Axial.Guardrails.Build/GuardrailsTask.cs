@@ -27,7 +27,6 @@ public class AxialGuardrailsTask : Task
     public string ConfigFile { get; set; }
     public bool Timings { get; set; }
     readonly List<string> infrastructure = new List<string>();
-    XElement runResult;
     public string TimingsFile { get; set; }
     public string[] Rules { get; set; }
     public ITaskItem[] RequestInputs { get; set; } = Array.Empty<ITaskItem>();
@@ -158,10 +157,6 @@ public class AxialGuardrailsTask : Task
         }
         catch { return false; }
     }
-    void Infrastructure(string message)
-    {
-        infrastructure.Add(message);
-    }
     void Findings(XElement root)
     {
         foreach (var entry in root.Elements("coverage"))
@@ -180,10 +175,24 @@ public class AxialGuardrailsTask : Task
         }
     }
     // cmd requires raw nested quotes, not ArgumentList's Windows CRT escaping.
-    // Retain shell command overrides; Unix exec makes the CLI the child process.
+    // Unix Arguments uses .NET argv escaping, not shell escaping: $ and backticks reach sh unchanged.
+    // cmd paths containing % or ^ are unsupported; quoted & is supported.
+    static string QuoteArgument(string value)
+    {
+        var result = new StringBuilder("\"");
+        var slashes = 0;
+        foreach (var ch in value)
+        {
+            if (ch == '\\') { slashes++; continue; }
+            result.Append('\\', ch == '"' ? slashes * 2 + 1 : slashes);
+            result.Append(ch);
+            slashes = 0;
+        }
+        return result.Append('\\', slashes * 2).Append('"').ToString();
+    }
     public static ProcessStartInfo CreateStartInfo(string command, bool windows) => new ProcessStartInfo {
         FileName = windows ? "cmd.exe" : "/bin/sh",
-        Arguments = windows ? "/d /s /c \"" + command + "\"" : "-c \"exec " + command.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("$", "\\$").Replace("`", "\\`") + "\"",
+        Arguments = windows ? "/d /s /c \"" + command + "\"" : "-c " + QuoteArgument(command),
         UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true
     };
     static void Stop(Process child)
@@ -213,7 +222,6 @@ public class AxialGuardrailsTask : Task
         var runDirectory = Path.GetFullPath(ResultFile + "." + Guid.NewGuid().ToString("N") + ".run");
         Directory.CreateDirectory(runDirectory);
         var root = new XElement("result", new XAttribute("schema", "1"), new XAttribute("fingerprint", Fingerprint));
-        runResult = root;
         var phases = new Dictionary<string, double>();
         var watch = Timings ? Stopwatch.StartNew() : null;
         double loaded = 0, checking = 0, checkedAt = 0, output = 0;
@@ -246,18 +254,19 @@ public class AxialGuardrailsTask : Task
                 child.OutputDataReceived += (_, args) => receive(args.Data);
                 child.ErrorDataReceived += (_, args) => receive(args.Data);
                 child.Start(); child.BeginOutputReadLine(); child.BeginErrorReadLine();
-                if (!child.WaitForExit(600000)) { Stop(child); Infrastructure("Analyzer process timed out; coverage is incomplete."); }
+                if (!child.WaitForExit(600000)) { Stop(child); infrastructure.Add("Analyzer process timed out; coverage is incomplete."); }
                 child.WaitForExit(); exit = child.ExitCode;
             }
+            infrastructure.AddRange(lines.Where(line => line.StartsWith("Axial.Guardrails infrastructure:", StringComparison.Ordinal)));
             foreach (var path in Directory.GetFiles(runDirectory, "*.xml")) root.Add(XElement.Load(path));
             MissingCoverage(root, "Analyzer process did not report this rule/file");
             Findings(root);
-            var complete = Complete(root) && (exit == 0 || exit == 254 || exit == -2);
+            var complete = infrastructure.Count == 0 && Complete(root) && (exit == 0 || exit == 254 || exit == -2);
             // 254 is ambiguous in the upstream CLI: only findings plus complete rule/file coverage establish success.
             if (exit != 0 && !(complete && root.Descendants("finding").Any(f => (string)f.Attribute("severity") == "Error")))
             {
                 complete = false;
-                Infrastructure($"Analyzer process failed (exit code {exit}); coverage is incomplete. {string.Join(" ", lines.Skip(Math.Max(0, lines.Count - 4)))}");
+                infrastructure.Add($"Analyzer process failed (exit code {exit}); coverage is incomplete. {string.Join(" ", lines.Skip(Math.Max(0, lines.Count - 4)))}");
             }
             if (complete && RequestInputs.Any(item => {
                 var path = item.GetMetadata("FullPath");
@@ -266,9 +275,9 @@ public class AxialGuardrailsTask : Task
             }))
             {
                 complete = false;
-                Infrastructure("Analysis inputs changed during execution; discard this coverage and rerun.");
+                infrastructure.Add("Analysis inputs changed during execution; discard this coverage and rerun.");
             }
-            if (!complete && infrastructure.Count == 0) Infrastructure("Analyzer coverage is incomplete.");
+            if (!complete && infrastructure.Count == 0) infrastructure.Add("Analyzer coverage is incomplete.");
             root.SetAttributeValue("complete", complete ? "true" : "false");
             root.SetAttributeValue("exit", exit);
             Atomic(ResultFile, new XDocument(root));
@@ -290,7 +299,7 @@ public class AxialGuardrailsTask : Task
         }
         catch (Exception error)
         {
-            Infrastructure("Analyzer infrastructure failed; coverage is incomplete: " + error.Message);
+            infrastructure.Add("Analyzer infrastructure failed; coverage is incomplete: " + error.Message);
             root.SetAttributeValue("complete", "false");
             root.SetAttributeValue("failure", error.Message);
             MissingCoverage(root, error.Message);
@@ -299,9 +308,22 @@ public class AxialGuardrailsTask : Task
         }
         finally
         {
-            try { Directory.Delete(runDirectory, true); }
-            catch (IOException error) { Infrastructure("Could not remove analyzer run directory: " + error.Message); }
+            CleanupRunDirectory(runDirectory, path => Directory.Delete(path, true),
+                message => Log.LogMessage(MessageImportance.Low, message));
         }
+        if (infrastructure.Count != 0)
+        {
+            var skipped = root.Elements("coverage").Where(e => (string)e.Attribute("status") != "ran").ToArray();
+            var examples = string.Join("; ", skipped.Take(3).Select(e => $"{(string)e.Attribute("rule")} skipped {(string)e.Attribute("file")}: {(string)e.Attribute("reason")}"));
+            var message = string.Join(" ", infrastructure) + $" {skipped.Length} skipped rule/file checks. " + examples;
+            Log.LogError(null, "AXGINF001", null, null, 0, 0, 0, 0, message);
+        }
+    }
+    static void CleanupRunDirectory(string path, Action<string> remove, Action<string> diagnostic)
+    {
+        try { remove(path); }
+        catch (IOException error) { diagnostic("Could not remove analyzer run directory: " + error.Message); }
+        catch (UnauthorizedAccessException error) { diagnostic("Could not remove analyzer run directory: " + error.Message); }
     }
     void WriteTimings(XElement root, Dictionary<string, double> phases)
     {
@@ -315,13 +337,6 @@ public class AxialGuardrailsTask : Task
     public override bool Execute()
     {
         if (Action == "Hash") Hash(); else Run();
-        if (infrastructure.Count != 0)
-        {
-            var skipped = runResult.Elements("coverage").Where(e => (string)e.Attribute("status") != "ran").ToArray();
-            var examples = string.Join("; ", skipped.Take(3).Select(e => $"{(string)e.Attribute("rule")} skipped {(string)e.Attribute("file")}: {(string)e.Attribute("reason")}"));
-            var message = string.Join(" ", infrastructure) + $" {skipped.Length} skipped rule/file checks. " + examples;
-            Log.LogError(null, "AXGINF001", null, null, 0, 0, 0, 0, message);
-        }
         return !Log.HasLoggedErrors;
     }
 }
