@@ -185,26 +185,71 @@ module PackagePropsTests =
             Assert.Contains("AxialGuardrailsMode must be Fast or Full", invalid.Output)
         finally Directory.Delete(dir, true)
 
+    [<Fact>]
+    let ``slice2 invalid mode fails even when analysis is disabled`` () =
+        let result = buildConsumerInTemp (fun dir ->
+            writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework><AxialGuardrailsMode>Auto</AxialGuardrailsMode><AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>" "module Consumer\n")
+        Assert.NotEqual(0, result.ExitCode)
+        Assert.Contains("AxialGuardrailsMode must be Fast or Full", result.Output)
+
+    [<Theory>]
+    [<InlineData("Fast")>]
+    [<InlineData("Full")>]
+    let ``slice2 test role selection is identical in both modes`` mode =
+        let result = buildConsumerInTemp (fun dir ->
+            writeConsumerProject dir ($"<TargetFramework>net10.0</TargetFramework><AxialGuardrailsMode>{mode}</AxialGuardrailsMode>") "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n"
+            writeV2Policy dir "test" "deny")
+        Assert.True(result.ExitCode = 0, result.Output)
+        Assert.DoesNotContain("AXG001", result.Output)
+
     [<Theory>]
     [<InlineData("complete")>]
     [<InlineData("incomplete")>]
+    [<InlineData("record")>]
     [<InlineData("finding")>]
     [<InlineData("review")>]
     let ``slice2 full check covers all TFMs fails closed and never writes policy`` scenario =
         let dir = Path.Combine(Path.GetTempPath(), "axial-full-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
         try
-            writeConsumerProject dir "<TargetFrameworks>net8.0;net10.0</TargetFrameworks>" "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n"
+            let source = if scenario = "finding" then "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n" else "module Consumer\nlet value = 42\n"
+            writeConsumerProject dir "<TargetFrameworks>net8.0;net10.0</TargetFrameworks>" source
             writeV2Policy dir "domain" (if scenario = "finding" then "deny" else "warn")
-            File.WriteAllText(Path.Combine(dir, "Consumer.slnx"), "<Solution><Project Path=\"Consumer.fsproj\" /></Solution>")
+            let other = Path.Combine(dir, "Other")
+            Directory.CreateDirectory other |> ignore
+            writeConsumerProject other "<TargetFramework>net10.0</TargetFramework>" "module Other\nlet value = 1\n"
+            File.WriteAllText(Path.Combine(dir, "Consumer.slnx"), "<Solution><Project Path=\"Consumer.fsproj\" /><Project Path=\"Other/Consumer.fsproj\" /></Solution>")
+            // Full checks must override the ordinary designated-framework optimization.
+            let consumer = Path.Combine(dir, "Consumer.fsproj")
+            File.WriteAllText(consumer, (File.ReadAllText consumer).Replace("</Project>", "<PropertyGroup><_AxialGuardrailsDesignatedTargetFramework>net8.0</_AxialGuardrailsDesignatedTargetFramework></PropertyGroup></Project>"))
             if scenario = "incomplete" then
                 let path = Path.Combine(dir, "Consumer.fsproj")
                 File.WriteAllText(path, (File.ReadAllText path).Replace("</Project>", "<PropertyGroup><_AxialGuardrailsExe>echo incomplete</_AxialGuardrailsExe></PropertyGroup></Project>"))
+            if scenario = "record" then
+                let path = Path.Combine(dir, "Consumer.fsproj")
+                let corrupt = "<Target Name=\"CorruptExportedCoverage\" AfterTargets=\"AxialGuardrailsEffectBoundaryCheck\"><ItemGroup><Export Include=\"$(_AxialGuardrailsFullCheckDirectory)/**/*.xml\" /></ItemGroup><WriteLinesToFile File=\"%(Export.Identity)\" Lines=\"&lt;result mode=&quot;Full&quot; complete=&quot;false&quot; /&gt;\" Overwrite=\"true\" /></Target>"
+                File.WriteAllText(path, (File.ReadAllText path).Replace("</Project>", corrupt + "</Project>"))
+            let git arguments =
+                let info = ProcessStartInfo("git")
+                info.WorkingDirectory <- dir
+                info.RedirectStandardOutput <- true
+                info.RedirectStandardError <- true
+                for argument in arguments do info.ArgumentList.Add argument
+                use child = Process.Start info
+                Assert.True(child.WaitForExit(10000))
+                Assert.True(child.ExitCode = 0, child.StandardError.ReadToEnd())
+            git ["init"; "-q"]
+            git ["config"; "user.email"; "tests@example.invalid"]
+            git ["config"; "user.name"; "Test"]
+            git ["add"; "."]
+            git ["commit"; "-qm"; "fixture"]
             let lockPath = Path.Combine(dir, "Axial.Guardrails.lock")
+            let snapshot = Axial.Tool.PolicyLock.inspect dir |> function Ok value -> value | Error error -> failwith error
+            File.WriteAllText(lockPath, Axial.Tool.PolicyReview.prepareReviewedLock dir snapshot)
+            if scenario = "review" then File.AppendAllText(Path.Combine(dir, "Program.fs"), "// axial-allow-AXG001: new boundary\n")
             let baselinePath = Path.Combine(dir, "Axial.Guardrails.baseline")
             let lockBytes = File.ReadAllBytes lockPath
             let baselineBytes = File.ReadAllBytes baselinePath
-            // No reviewed git checkpoint: a successful analysis must still fail policy review.
             let start = ProcessStartInfo(dotnetHost ())
             start.WorkingDirectory <- dir
             start.ArgumentList.Add(policyToolDll ())
@@ -217,13 +262,14 @@ module PackagePropsTests =
             let stderr = child.StandardError.ReadToEndAsync()
             Assert.True(child.WaitForExit(180000), "Full check timed out")
             let output = stdout.Result + stderr.Result
-            Assert.NotEqual(0, child.ExitCode)
-            if scenario = "incomplete" then Assert.Contains("coverage", output)
+            if scenario = "complete" then Assert.True(child.ExitCode = 0, output)
+            else Assert.NotEqual(0, child.ExitCode)
+            if scenario = "incomplete" || scenario = "record" then Assert.Contains("coverage", output)
             elif scenario = "finding" then Assert.Contains("AXG001", output)
             else
-                Assert.Contains("policy review", output)
+                if scenario = "review" then Assert.Contains("policy review", output)
                 let reports = Directory.GetFiles(dir, "*.result.xml", SearchOption.AllDirectories)
-                Assert.Equal(2, reports.Length)
+                Assert.Equal(3, reports.Length)
                 for report in reports do Assert.Contains("mode=\"Full\"", File.ReadAllText report)
             Assert.Equal<byte>(lockBytes, File.ReadAllBytes lockPath)
             Assert.Equal<byte>(baselineBytes, File.ReadAllBytes baselinePath)
