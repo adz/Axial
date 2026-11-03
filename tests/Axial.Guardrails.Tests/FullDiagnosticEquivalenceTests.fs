@@ -51,7 +51,19 @@ type FullDiagnosticEquivalenceTests() =
         task {
             let snapshots = JsonSerializer.Deserialize<FullDiagnosticCorpus.Snapshot array>(File.ReadAllText(Path.Combine(__SOURCE_DIRECTORY__, "full-diagnostic-corpus.json")))
             Assert.Equal<string list>(FullDiagnosticCorpus.sources (), snapshots |> Array.map _.Source |> Array.toList)
+            let referencePath = Environment.GetEnvironmentVariable "AXIAL_GUARDRAILS_REFERENCE_ANALYZER"
+            let reference =
+                if String.IsNullOrEmpty referencePath then None else Some(Assembly.LoadFile referencePath)
+            let captured = ResizeArray<FullDiagnosticCorpus.Snapshot>()
             for snapshot in snapshots do
                 let! findings = FullDiagnosticCorpus.capture typeof<Axial.Guardrails.GuardrailConfig.Config>.Assembly snapshot.Source
-                Assert.Equal<string>(snapshot.Findings, findings)
+                match reference with
+                | Some assembly ->
+                    let! original = FullDiagnosticCorpus.capture assembly snapshot.Source
+                    Assert.Equal<string>(original, findings)
+                    captured.Add { Source = snapshot.Source; Findings = original }
+                | None -> Assert.Equal<string>(snapshot.Findings, findings)
+            let output = Environment.GetEnvironmentVariable "AXIAL_GUARDRAILS_CORPUS_CAPTURE"
+            if reference.IsSome && not (String.IsNullOrEmpty output) then
+                File.WriteAllText(output, JsonSerializer.Serialize(captured.ToArray(), JsonSerializerOptions(WriteIndented = true)))
         }

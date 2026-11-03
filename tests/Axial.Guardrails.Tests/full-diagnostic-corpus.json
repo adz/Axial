@@ -64,7 +64,10 @@
   },
   {
     "Source": "module M\nopen Axial\nopen System.Threading.Tasks\ntype Item = { Name: string }\nlet f () = sprintf \u0022%A\u0022 { Name = \u0022x\u0022 }\nlet g () = string { Name = \u0022x\u0022 }\n",
-    "Findings": []
+    "Findings": [
+      "AXG006|Error|5:11-5:23|This formats with F#\u0027s reflection-based structured printer (formatting a hole where Item is an F# record whose generated ToString uses sprintf \u0022%\u002BA\u0022), which throws under NativeAOT and trimming. Replace it with explicit rendering: a describe/render function or a hand-written ToString override.",
+      "AXG006|Error|6:11-6:32|This formats with F#\u0027s reflection-based structured printer (\u0060string\u0060 on Item is an F# record whose generated ToString uses sprintf \u0022%\u002BA\u0022), which throws under NativeAOT and trimming. Replace it with explicit rendering: a describe/render function or a hand-written ToString override."
+    ]
   },
   {
     "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nlet f () = flow { return raise (System.Exception()) }\nlet g () = System.DateTimeOffset.UtcNow\n",

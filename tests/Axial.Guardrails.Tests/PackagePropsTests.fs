@@ -648,6 +648,7 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
             Assert.DoesNotContain("AXG002", noted.Output)
             let repeated = runBuildWithArgs [ "-p:AxialGuardrailsCheckpoint=true" ] project None
             Assert.True(repeated.ExitCode = 0, repeated.Output)
+            Assert.DoesNotContain("Running Axial.Guardrails analysis", repeated.Output)
             Assert.Contains("info axg010", repeated.Output.ToLowerInvariant())
             Assert.Contains("best effort observer", repeated.Output)
             File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\n// axial-note AXG010: stale\nlet value = 1\n")
