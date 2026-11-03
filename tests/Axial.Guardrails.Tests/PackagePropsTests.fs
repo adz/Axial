@@ -176,6 +176,8 @@ module PackagePropsTests =
                     Assert.Equal(mode, entry.Attribute(System.Xml.Linq.XName.Get "mode").Value))
                 let cached = build (Some mode) [] []
                 Assert.DoesNotContain("Running Axial.Guardrails analysis", cached)
+            build (Some "Fast") ["CI", "true"] ["-p:Configuration=Release"] |> ignore
+            Assert.Equal("Fast", attribute "mode")
             build None ["CI", "true"] ["-p:Configuration=Release"] |> ignore
             Assert.Equal("Full", attribute "mode")
             build None ["CI", "false"] [] |> ignore
@@ -207,12 +209,13 @@ module PackagePropsTests =
     [<InlineData("incomplete")>]
     [<InlineData("record")>]
     [<InlineData("finding")>]
+    [<InlineData("warning")>]
     [<InlineData("review")>]
     let ``slice2 full check covers all TFMs fails closed and never writes policy`` scenario =
         let dir = Path.Combine(Path.GetTempPath(), "axial-full-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
         try
-            let source = if scenario = "finding" then "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n" else "module Consumer\nlet value = 42\n"
+            let source = if scenario = "finding" || scenario = "warning" then "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n" else "module Consumer\nlet value = 42\n"
             writeConsumerProject dir "<TargetFrameworks>net8.0;net10.0</TargetFrameworks>" source
             writeV2Policy dir "domain" (if scenario = "finding" then "deny" else "warn")
             let other = Path.Combine(dir, "Other")
@@ -260,13 +263,17 @@ module PackagePropsTests =
             use child = Process.Start start
             let stdout = child.StandardOutput.ReadToEndAsync()
             let stderr = child.StandardError.ReadToEndAsync()
-            Assert.True(child.WaitForExit(180000), "Full check timed out")
+            if not (child.WaitForExit(180000)) then
+                child.Kill(true)
+                child.WaitForExit()
+                failwith "Full check timed out"
             let output = stdout.Result + stderr.Result
             if scenario = "complete" then Assert.True(child.ExitCode = 0, output)
             else Assert.NotEqual(0, child.ExitCode)
             if scenario = "incomplete" then Assert.Contains("AXGINF001", output)
             elif scenario = "record" then Assert.Contains("Full analysis coverage is incomplete:", output)
             elif scenario = "finding" then Assert.Contains("AXG001", output)
+            elif scenario = "warning" then Assert.Contains("Full analysis reported findings:", output)
             else
                 if scenario = "review" then Assert.Contains("policy review", output)
                 let reports = Directory.GetFiles(dir, "*.result.xml", SearchOption.AllDirectories)
