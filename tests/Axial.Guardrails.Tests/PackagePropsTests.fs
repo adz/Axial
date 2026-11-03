@@ -200,7 +200,7 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
     return [{ Type = "test"; Code = "TEST001"; Severity = Severity.Warning
               Message = "retained finding" + string (char 1) + " emoji: 😀"
               Range = FSharp.Compiler.Text.Range.range0; Fixes = [] }] })
-""")
+            """)
             let compiled = runBuild (Path.Combine(plugin, "Plugin.fsproj")) None
             Assert.True(compiled.ExitCode = 0, compiled.Output)
             writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework><TreatWarningsAsErrors>true</TreatWarningsAsErrors>" "module Consumer\nlet value = 1\n"
