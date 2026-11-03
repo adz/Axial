@@ -186,7 +186,6 @@ module PolicyReviewTests =
     [<InlineData("ignore")>]
     [<InlineData("baseline")>]
     [<InlineData("enabled")>]
-    [<InlineData("test-analyzers")>]
     [<InlineData("guardrail")>]
     [<InlineData("verify")>]
     [<InlineData("workflow")>]
@@ -203,7 +202,6 @@ module PolicyReviewTests =
             | "ignore" -> write ConfigName (config + "\n[suppressions]\nignore = [\"App.fs\"]\n")
             | "baseline" -> write DefaultBaseline "clock.datetime\tApp.fs\tfingerprint\n"
             | "enabled" -> write "App.fsproj" (project.Replace("Enabled>true", "Enabled>false"))
-            | "test-analyzers" -> write "App.fsproj" (project.Replace("</PropertyGroup>", "<AxialGuardrailsInTests>all</AxialGuardrailsInTests></PropertyGroup>"))
             | "guardrail" -> write "App.fsproj" (project.Replace("</ItemGroup>", "<AxialGuardrail Remove=\"Axial.Configuration\"/></ItemGroup>"))
             | "verify" | "workflow" ->
                 write ConfigName (config + "\n[review]\nautomation = [\"scripts/verify.sh\", \".github/workflows/**\"]\n")
@@ -214,6 +212,21 @@ module PolicyReviewTests =
             Assert.NotEqual(0, code)
             Assert.DoesNotContain("Unknown command", output)
             Assert.DoesNotContain("unknown key", output))
+
+    [<Fact>]
+    let ``enabling all test analyzers tightens policy and removing all loosens it`` () =
+        repository (fun root write git cli ->
+            let project = File.ReadAllText(Path.Combine(root, "App.fsproj"))
+            write "App.fsproj" (project.Replace("</PropertyGroup>", "<AxialGuardrailsInTests>all</AxialGuardrailsInTests></PropertyGroup>"))
+            let code, output = cli ["policy"; "review"; "--since"; "HEAD"; "--check"]
+            Assert.Equal(0, code)
+            Assert.Contains("AxialGuardrailsInTests", output)
+            git ["add"; "."] |> ignore
+            git ["commit"; "-qm"; "all tests"] |> ignore
+            write "App.fsproj" project
+            let code, output = cli ["policy"; "review"; "--since"; "HEAD"; "--check"]
+            Assert.NotEqual(0, code)
+            Assert.Contains("AxialGuardrailsInTests", output))
 
     [<Fact>]
     let ``tightening and removals do not fail check`` () =

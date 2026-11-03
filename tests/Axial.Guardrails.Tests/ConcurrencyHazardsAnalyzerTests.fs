@@ -63,7 +63,9 @@ module ConcurrencyHazardsAnalyzerTests =
     let ``AXG010 reports swallowed exceptions including fallback values`` body =
         task {
             let! messages = findings "AXG010" body
-            Assert.Single(messages) |> ignore
+            let message = Assert.Single(messages)
+            Assert.Contains("narrow", message.Message, StringComparison.OrdinalIgnoreCase)
+            Assert.Contains(":? FileNotFoundException", message.Message)
         }
 
     [<Theory>]
@@ -71,6 +73,8 @@ module ConcurrencyHazardsAnalyzerTests =
     [<InlineData("let f () = try failwith \"bad\" with ex -> raise ex")>]
     [<InlineData("let f () = try failwith \"bad\" with ex -> Error ex")>]
     [<InlineData("let f () = try failwith \"bad\" with ex -> Some ex")>]
+    [<InlineData("let f () = try failwith \"bad\" with :? System.IO.FileNotFoundException -> ()")>]
+    [<InlineData("let f () = try failwith \"bad\" with :? System.IO.FileNotFoundException as unused -> ()")>]
     [<InlineData("let f () = try failwith \"bad\" with :? InvalidOperationException -> ()")>]
     [<InlineData("let f () = try failwith \"bad\" with :? OperationCanceledException as error -> ()")>]
     [<InlineData("type Failure = System.InvalidOperationException\nlet f () = try failwith \"bad\" with :? Failure -> ()")>]
@@ -252,6 +256,37 @@ type ConcurrencyHazardsPolicyTests() =
             let text = System.IO.File.ReadAllText file
             for forbidden in [ "\"benchmarks/"; "\"Axial.Tool"; "\"Axial.Guardrails\""; "\"src/Axial"; "\"examples/Axial" ] do
                 Assert.DoesNotContain(forbidden, text)
+
+    [<Fact>]
+    member _.``test role bypasses non test analyzer callbacks before any walk`` () =
+        task {
+            let! ctx = AnalyzerTestContext.create "module M\nlet value = 1"
+            let root = System.IO.Path.GetDirectoryName ctx.FileName
+            System.IO.Directory.CreateDirectory root |> ignore
+            let policy = System.IO.Path.Combine(root, "Axial.Guardrails.toml")
+            let config = System.IO.Path.Combine(root, "config.tsv")
+            System.IO.File.WriteAllText(policy, "version = 2\n[default]\nrole = \"test\"\n")
+            let settings inTests =
+                System.IO.File.WriteAllLines(config,
+                    [| "setting\tpolicyFile\t" + policy; "setting\tpolicyRoot\t" + root
+                       "setting\tprojectPath\t" + System.IO.Path.Combine(root, "Tests.fsproj")
+                       "setting\tinTests\t" + inTests |])
+            let previous = Environment.GetEnvironmentVariable GuardrailConfig.EnvironmentVariable
+            try
+                Environment.SetEnvironmentVariable(GuardrailConfig.EnvironmentVariable, config)
+                for inTests in [ ""; "all" ] do
+                    settings inTests
+                    for rule in [ "EffectBoundary"; "RaiseInFlow"; "DiscardedCancellation"; "ReflectionFormatting"
+                                  "ResourceFromFiber"; "ScopeFromRun"; "SwallowedException"; "UncancellableWork"; "DiscardedWork"
+                                  "SuppressionIntegrity"; "Fixture"; "RawConcurrency"; "WaitForFacts" ] do
+                        let mutable called = false
+                        let! _ = Execution.track rule (fun _ -> async { called <- true; return [] }) ctx |> Async.StartAsTask
+                        let testRule = List.contains rule [ "SuppressionIntegrity"; "Fixture"; "RawConcurrency"; "WaitForFacts" ]
+                        Assert.Equal((inTests = "all" || testRule), called)
+            finally
+                Environment.SetEnvironmentVariable(GuardrailConfig.EnvironmentVariable, previous)
+                System.IO.Directory.Delete(root, true)
+        }
 
     [<Theory>]
     [<InlineData("domain")>]
