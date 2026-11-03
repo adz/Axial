@@ -210,10 +210,18 @@ Approval means a human read the review. The first review requires --since <ref>.
                             child.Kill(true)
                             child.WaitForExit()
                             failwith $"Baseline generation timed out for {project}."
-                        if child.ExitCode <> 0 then
+                        let incomplete =
+                            Directory.GetFiles(proposal, "*.coverage.xml", SearchOption.AllDirectories)
+                            |> Array.exists (fun path ->
+                                let report = System.Xml.Linq.XDocument.Load path
+                                string (report.Root.Attribute(System.Xml.Linq.XName.Get "complete").Value) <> "true")
+                        if child.ExitCode <> 0 || incomplete then
                             failwith ($"Baseline generation failed for {project}; resolve compilation, tool or unrelated diagnostics first.\n" + output.Result + errors.Result)
                     let outputs = Directory.GetFiles(proposal, "*.baseline", SearchOption.AllDirectories)
                     if outputs.Length = 0 then failwith "No projects ran Guardrails candidate generation. Restore/update Axial.Guardrails and enable analysis."
+                    for path in outputs do
+                        if not (File.Exists(path + ".coverage.xml")) then
+                            failwith "Baseline generation has no complete coverage receipt. Restore/update Axial.Guardrails and rerun."
                     let candidates = outputs |> Array.toList |> List.collect baselineEntries |> List.filter (fun entry -> entry.Rule = diagnostic)
                     let baselinePath = Path.Combine(repo, snapshot.BaselinePath)
                     let merged =

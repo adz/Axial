@@ -26,6 +26,7 @@
     <Project Path="src/Axial.ElmishFlows/Axial.ElmishFlows.fsproj" />
     <Project Path="src/Axial.FileSystem/Axial.FileSystem.fsproj" />
     <Project Path="src/Axial.Guardrails/Axial.Guardrails.fsproj" />
+    <Project Path="src/Axial.Guardrails.Build/Axial.Guardrails.Build.csproj" />
     <Project Path="src/Axial.Hosting.AspNetCore/Axial.Hosting.AspNetCore.fsproj" />
     <Project Path="src/Axial.Hosting.Browser/Axial.Hosting.Browser.fsproj" />
     <Project Path="src/Axial.Hosting.GenHttp/Axial.Hosting.GenHttp.fsproj" />

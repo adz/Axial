@@ -203,4 +203,4 @@ let analyze (ctx: CliContext) : Message list =
               + "before Fiber.join returns it.",
               "https://github.com/adz/Axial/blob/main/docs/15-notes/04-guardrail-diagnostics.md#axg007-keep-resources-acquired-by-a-fiber")>]
 let resourceFromFiberAnalyzer: Analyzer<CliContext> =
-    fun ctx -> async { return analyze ctx |> GuardrailConfig.applyCore ctx }
+    fun ctx -> Execution.track "ResourceFromFiber" (fun ctx -> async { return analyze ctx |> GuardrailConfig.applyCore ctx }) ctx

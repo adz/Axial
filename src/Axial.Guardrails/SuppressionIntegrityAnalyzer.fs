@@ -95,8 +95,8 @@ let private findingForNote (config: Config) (ctx: CliContext) (note: Directive) 
 [<CliAnalyzer("SuppressionIntegrity",
               "Flags invalid Axial.Guardrails suppressions and guide acknowledgements.",
               "https://github.com/adz/Axial/blob/main/docs/15-notes/04-guardrail-diagnostics.md#axg002-remove-invalid-suppressions")>]
-let suppressionIntegrityAnalyzer: Analyzer<CliContext> =
-    fun ctx ->
+let suppressionIntegrityAnalyzer (ctx: CliContext) =
+    let run (ctx: CliContext) =
         async {
             let config = load ()
             return
@@ -106,3 +106,4 @@ let suppressionIntegrityAnalyzer: Analyzer<CliContext> =
                     @ (allNotes ctx.SourceText |> List.choose (findingForNote config ctx))
                     |> applyWith config Axial.Guardrails.EffectCatalog.CoreGuardrail ctx
         }
+    Execution.track "SuppressionIntegrity" run ctx

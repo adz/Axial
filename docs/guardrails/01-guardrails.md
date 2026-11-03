@@ -121,6 +121,31 @@ projects; `--check` fails until that review item is resolved.
 
 For adoption guidance, see [Installation](/getting-started/installation.html#add-effect-boundary-guardrails-optional).
 
+### Build reports and timings
+
+Each project/target framework writes `axial-guardrails.<TFM>.result.xml` in its intermediate output directory
+(usually under `obj`). The report contains findings and a rule/file coverage matrix. `ran` records that the
+entry point completed, including when policy makes it return no findings; `skipped` includes a failure reason.
+Only complete coverage for the current input fingerprint can produce a reusable stamp. Cache hits replay findings,
+including warnings and acknowledged Info; unreadable, truncated, or mismatched reports rerun analysis.
+
+An analyzer exception emits `AXGINF001`, naming the rule and file, while other rules continue. A process failure
+also warns and leaves no complete stamp. This infrastructure warning is not promoted by warnings-as-errors;
+ordinary findings retain their policy severity. A successful compilation with this warning is **not** evidence of
+complete analysis. Candidate-baseline generation rejects incomplete coverage rather than accepting missing findings.
+
+Set `-p:AxialGuardrailsTimings=true` to write `axial-guardrails.<TFM>.timings.xml` beside the report. It records
+fingerprinting, CLI startup/analyzer loading, compiler-argument or project loading, FCS checking, each rule/file,
+and output time in milliseconds. CLI phase boundaries are observed from its diagnostic log; parallel rule times
+overlap and must not be summed as wall time. Timing collection is off by default.
+
+Source and configuration contents are rehashed on every request. Binary digest reuse on supported 64-bit Linux
+local filesystems (ext, XFS, Btrfs, tmpfs and overlay) verifies device, inode, size and kernel-managed nanosecond
+change time, not just a restorable modification timestamp. A changed identity triggers content hashing; other
+platforms/filesystems rehash. This assumes ordinary filesystem writers, not privileged manipulation of filesystem
+metadata. Tool, reference, ordered compiler arguments, policy, source order and target-framework inputs all
+participate in the analysis fingerprint.
+
 ### Verify the analyzer runs
 
 A minimal deliberate finding confirms that the package actually runs and fails at error severity. In a consumer

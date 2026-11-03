@@ -277,8 +277,8 @@ let rawRanges (ctx: CliContext) =
               + "block, where it silently becomes an unhandled defect instead of routing through the "
               + "typed 'error channel.",
               "https://github.com/adz/Axial/blob/main/docs/15-notes/04-guardrail-diagnostics.md#axg003-return-typed-failures-from-workflows")>]
-let raiseInFlowAnalyzer: Analyzer<CliContext> =
-    fun (ctx: CliContext) ->
+let raiseInFlowAnalyzer (ctx: CliContext) =
+    let run (ctx: CliContext) =
         async {
             let sourceText = ctx.SourceText
 
@@ -296,3 +296,4 @@ let raiseInFlowAnalyzer: Analyzer<CliContext> =
 
             return GuardrailConfig.applyCore ctx messages
         }
+    Execution.track "RaiseInFlow" run ctx

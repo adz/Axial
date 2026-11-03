@@ -65,6 +65,7 @@
     <Compile Include="EffectCatalog.fs" />
     <Compile Include="Policy.fs" />
     <Compile Include="GuardrailConfig.fs" />
+    <Compile Include="Execution.fs" />
     <Compile Include="Suppressions.fs" />
     <Compile Include="RaiseInFlowAnalyzer.fs" />
     <Compile Include="EffectBoundaryAnalyzer.fs" />
@@ -81,6 +82,7 @@
   <ItemGroup>
     <None Include="build\Axial.Guardrails.props" Pack="true" PackagePath="build\" />
     <None Include="build\Axial.Guardrails.targets" Pack="true" PackagePath="build\" />
+    <ProjectReference Include="../Axial.Guardrails.Build/Axial.Guardrails.Build.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
   </ItemGroup>
 
   <!--
@@ -91,6 +93,7 @@
   <Target Name="_AxialGuardrailsPackAnalyzerOutput" BeforeTargets="_GetPackageFiles" DependsOnTargets="Build">
     <MSBuild Projects="$(MSBuildThisFileDirectory)..\Axial.Tool\Axial.Tool.fsproj" Targets="Build" Properties="Configuration=$(Configuration)" />
     <ItemGroup>
+      <None Include="$(MSBuildThisFileDirectory)..\..\artifacts\bin\Axial.Guardrails.Build\$(Configuration.ToLower())\Axial.Guardrails.Build.dll" Pack="true" PackagePath="tasks\" />
       <_AxialGuardrailsAnalyzerFile Include="$(TargetDir)*.dll" />
       <None Include="@(_AxialGuardrailsAnalyzerFile)" Pack="true" PackagePath="analyzers\%(Filename)%(Extension)" />
       <_AxialGuardrailsCliFile Include="$(NuGetPackageRoot)fsharp-analyzers\0.37.2\tools\net8.0\any\*.*" />

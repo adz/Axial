@@ -154,8 +154,8 @@ let private toMessage (rule: EffectRule) (range: FSharp.Compiler.Text.Range) : M
               "Flags direct use of ambient .NET effects (clock, randomness, GUIDs, console, filesystem, "
               + "process, environment, HTTP clients, blocking waits) that bypass Axial's explicit service boundary.",
               "https://github.com/adz/Axial/blob/main/docs/15-notes/04-guardrail-diagnostics.md#axg001-use-explicit-effect-services")>]
-let effectBoundaryAnalyzer: Analyzer<CliContext> =
-    fun (ctx: CliContext) ->
+let effectBoundaryAnalyzer (ctx: CliContext) =
+    let run (ctx: CliContext) =
         async {
             let config = GuardrailConfig.load ()
             let resolved = GuardrailConfig.resolvedPolicy config ctx
@@ -172,3 +172,4 @@ let effectBoundaryAnalyzer: Analyzer<CliContext> =
 
             return messages
         }
+    Execution.track "EffectBoundary" run ctx

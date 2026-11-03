@@ -123,8 +123,8 @@ let rawRanges (ctx: CliContext) =
               + "CancellationToken parameter, so cancelling the Flow cannot stop the underlying "
               + "operation.",
               "https://github.com/adz/Axial/blob/main/docs/15-notes/04-guardrail-diagnostics.md#axg005-preserve-cancellation-tokens")>]
-let discardedCancellationAnalyzer: Analyzer<CliContext> =
-    fun (ctx: CliContext) ->
+let discardedCancellationAnalyzer (ctx: CliContext) =
+    let run (ctx: CliContext) =
         async {
             let sourceText = ctx.SourceText
 
@@ -136,3 +136,4 @@ let discardedCancellationAnalyzer: Analyzer<CliContext> =
                 |> List.map message
                 |> GuardrailConfig.applyCore ctx
         }
+    Execution.track "DiscardedCancellation" run ctx

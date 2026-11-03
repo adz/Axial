@@ -128,4 +128,4 @@ let analyze (ctx: CliContext) : Message list =
 [<CliAnalyzer("ScopeFromRun", "Flags scope-owned services returned by a completed Flow run.",
               "https://github.com/adz/Axial/blob/main/docs/15-notes/04-guardrail-diagnostics.md#axg008-keep-scope-owned-services-inside-their-run")>]
 let scopeFromRunAnalyzer: Analyzer<CliContext> =
-    fun ctx -> async { return analyze ctx |> GuardrailConfig.applyCore ctx }
+    fun ctx -> Execution.track "ScopeFromRun" (fun ctx -> async { return analyze ctx |> GuardrailConfig.applyCore ctx }) ctx

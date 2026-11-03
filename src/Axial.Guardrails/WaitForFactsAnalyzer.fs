@@ -162,4 +162,4 @@ let analyzeWithConfig (config: GuardrailConfig.Config) (ctx: CliContext) : Messa
 [<CliAnalyzer("WaitForFacts", "Flags guessed waits in test-role code.",
               "https://github.com/adz/Axial/blob/main/docs/15-notes/04-guardrail-diagnostics.md#axg013-wait-for-facts-not-time")>]
 let waitForFactsAnalyzer: Analyzer<CliContext> =
-    fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) ctx }
+    fun ctx -> Execution.track "WaitForFacts" (fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) ctx }) ctx

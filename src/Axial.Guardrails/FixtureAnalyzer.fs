@@ -117,8 +117,8 @@ let rawRanges (ctx: CliContext) =
               + "xUnit Fact/Theory or FsCheck Property test - shared, computed-once state that's unsafe "
               + "under parallel test execution.",
               "https://github.com/adz/Axial/blob/main/docs/15-notes/04-guardrail-diagnostics.md#axg004-create-fresh-test-fixtures")>]
-let fixtureAnalyzer: Analyzer<CliContext> =
-    fun (ctx: CliContext) ->
+let fixtureAnalyzer (ctx: CliContext) =
+    let run (ctx: CliContext) =
         async {
             let modules =
                 match ctx.ParseFileResults.ParseTree with
@@ -130,3 +130,4 @@ let fixtureAnalyzer: Analyzer<CliContext> =
                 |> List.collect (fun (SynModuleOrNamespace(decls = decls)) -> checkDecls ctx decls)
                 |> GuardrailConfig.applyCore ctx
         }
+    Execution.track "Fixture" run ctx

@@ -76,6 +76,7 @@ module PackagePropsTests =
     {frameworkProperty}
     <OutputType>Library</OutputType>
     <_AxialGuardrailsAnalyzersPath>{xmlEscape (analyzersPath ())}</_AxialGuardrailsAnalyzersPath>
+    <_AxialGuardrailsTaskAssembly>{xmlEscape (Path.Combine(repoRoot (), "artifacts", "bin", "Axial.Guardrails.Build", configuration (), "Axial.Guardrails.Build.dll"))}</_AxialGuardrailsTaskAssembly>
     <_AxialGuardrailsExe>dotnet &quot;{xmlEscape (cliDll ())}&quot;</_AxialGuardrailsExe>
     <_AxialGuardrailsBootstrapProject>{xmlEscape (Path.Combine(repoRoot (), "src", "Axial.Guardrails", "Axial.Guardrails.fsproj"))}</_AxialGuardrailsBootstrapProject>
     <_AxialGuardrailsPolicyToolAssembly>{xmlEscape (policyToolDll ())}</_AxialGuardrailsPolicyToolAssembly>
@@ -152,9 +153,10 @@ module PackagePropsTests =
         Directory.CreateDirectory dir |> ignore
         try
             writeConsumer dir
+            writeV2Policy dir "domain" "warn"
             let project = Path.Combine(dir, "Consumer.fsproj")
             let first = runBuild project None
-            Assert.Equal(0, first.ExitCode)
+            Assert.True(first.ExitCode = 0, first.Output)
             Assert.Contains("AXG001", first.Output)
             let report = Directory.GetFiles(dir, "axial-guardrails.*.result.xml", SearchOption.AllDirectories) |> Array.exactlyOne
             let document = System.Xml.Linq.XDocument.Load report
@@ -173,6 +175,41 @@ module PackagePropsTests =
             let text = File.ReadAllText timings
             for phase in [ "startup"; "project-load"; "fcs-check"; "output"; "fingerprint"; "rule" ] do
                 Assert.Contains(phase, text)
+        finally Directory.Delete(dir, true)
+
+    [<Fact>]
+    let ``slice1 analyzer exception warns with rule and file and does not stamp`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-slice1-plugin-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            let plugin = Path.Combine(dir, "plugin")
+            Directory.CreateDirectory plugin |> ignore
+            let reference name =
+                let path = Path.Combine(analyzersPath (), name + ".dll") |> xmlEscape
+                $"<Reference Include=\"{name}\"><HintPath>{path}</HintPath></Reference>"
+            let references = [ "Axial.Guardrails.Analyzers"; "FSharp.Analyzers.SDK"; "FSharp.Compiler.Service" ] |> List.map reference |> String.concat ""
+            File.WriteAllText(Path.Combine(plugin, "Plugin.fsproj"), $"<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><AssemblyName>Plugin.Analyzers</AssemblyName></PropertyGroup><ItemGroup><Compile Include=\"Plugin.fs\" />{references}</ItemGroup></Project>")
+            File.WriteAllText(Path.Combine(plugin, "Plugin.fs"), "module Plugin\nopen FSharp.Analyzers.SDK\n[<CliAnalyzer(\"InjectedFailure\", \"Test failure\", \"https://example.com\")>]\nlet analyzer: Analyzer<CliContext> = Axial.Guardrails.Execution.track \"InjectedFailure\" (fun _ -> async { return failwith \"injected rule failure\" })\n")
+            let compiled = runBuild (Path.Combine(plugin, "Plugin.fsproj")) None
+            Assert.True(compiled.ExitCode = 0, compiled.Output)
+            writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework><TreatWarningsAsErrors>true</TreatWarningsAsErrors>" "module Consumer\nlet value = 1\n"
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let xml = System.Xml.Linq.XDocument.Load project
+            let path = xml.Descendants(System.Xml.Linq.XName.Get "_AxialGuardrailsAnalyzersPath") |> Seq.exactlyOne
+            path.Value <- Path.Combine(plugin, "bin", configuration (), "net10.0")
+            xml.Save project
+            let result = runBuildWithArgs [ "-warnaserror" ] project None
+            Assert.True(result.ExitCode = 0, result.Output)
+            Assert.True(result.Output.Contains("warning AXGINF001"), result.Output)
+            Assert.Contains("InjectedFailure skipped", result.Output)
+            Assert.Contains("Program.fs", result.Output)
+            Assert.Contains("injected rule failure", result.Output)
+            Assert.Empty(Directory.GetFiles(dir, "axial-guardrails.net10.0.stamp", SearchOption.AllDirectories))
+            let report = Directory.GetFiles(dir, "axial-guardrails.*.result.xml", SearchOption.AllDirectories) |> Array.exactlyOne
+            let text = File.ReadAllText report
+            Assert.Contains("complete=\"false\"", text)
+            Assert.Contains("rule=\"EffectBoundary\"", text)
+            Assert.Contains("status=\"ran\"", text)
         finally Directory.Delete(dir, true)
 
     [<Fact>]
@@ -195,30 +232,7 @@ module PackagePropsTests =
                 Assert.Contains("complete=\"false\"", File.ReadAllText report)
             finally Directory.Delete(dir, true)
 
-    [<Fact>]
-    let ``slice1 failed rule records skip while following rule still runs`` () =
-        let dir = Path.Combine(Path.GetTempPath(), "axial-slice1-rule-" + Guid.NewGuid().ToString("N"))
-        Directory.CreateDirectory dir |> ignore
-        let previous = Environment.GetEnvironmentVariable "AXIAL_GUARDRAILS_RUN"
-        try
-            Environment.SetEnvironmentVariable("AXIAL_GUARDRAILS_RUN", dir)
-            let context = AnalyzerTestContext.create "module Fixture\nlet value = 1\n" |> fun pending -> pending.GetAwaiter().GetResult()
-            let broken = Axial.Guardrails.Execution.track "BrokenRule" (fun _ -> async { return failwith "injected failure" })
-            let healthy = Axial.Guardrails.Execution.track "HealthyRule" (fun _ -> async { return [] })
-            Assert.Empty(broken context |> Async.RunSynchronously)
-            Assert.Empty(healthy context |> Async.RunSynchronously)
-            let entries = Directory.GetFiles(dir, "*.xml") |> Array.map File.ReadAllText |> String.concat "\n"
-            Assert.Contains("BrokenRule", entries)
-            Assert.Contains("injected failure", entries)
-            Assert.Contains("skipped", entries)
-            Assert.Contains("HealthyRule", entries)
-            Assert.Contains("ran", entries)
-        finally
-            Environment.SetEnvironmentVariable("AXIAL_GUARDRAILS_RUN", previous)
-            Directory.Delete(dir, true)
-
     [<Theory>]
-    [<InlineData("AxialGuardrailsEffectBoundaryCheck")>]
     [<InlineData("AxialGuardrailsCheckPolicy")>]
     let ``tool launch overrides inherited runtime policy only for its child`` (targetName: string) =
         let xml = System.Xml.Linq.XDocument.Load(Path.Combine(repoRoot (), "src", "Axial.Guardrails", "build", "Axial.Guardrails.targets"))
@@ -743,7 +757,9 @@ module PackagePropsTests =
             assertAnalysisRan true (build [])
             assertAnalysisRan false (build [])
             assertAnalysisRan true (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
+            let sourceTimestamp = File.GetLastWriteTimeUtc generated
             File.WriteAllText(generated, "module Generated\nlet value = \"two\"\n")
+            File.SetLastWriteTimeUtc(generated, sourceTimestamp)
             assertAnalysisRan true (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
             assertAnalysisRan false (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
 
@@ -753,7 +769,9 @@ module PackagePropsTests =
             assertAnalysisRan true (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
             assertAnalysisRan false (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
 
+            let toolTimestamp = File.GetLastWriteTimeUtc toolMarker
             File.WriteAllText(toolMarker, "v2")
+            File.SetLastWriteTimeUtc(toolMarker, toolTimestamp)
             assertAnalysisRan true (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
             assertAnalysisRan false (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
         finally

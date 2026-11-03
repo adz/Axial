@@ -30,6 +30,7 @@
   <PropertyGroup Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails' and '$(_AxialRepoSkipGuardrails)' != 'true' and '$(MSBuildProjectExtension)' == '.fsproj'">
     <!-- The analyzer's own build output, not the packaged analyzers/ folder these paths default to. -->
     <_AxialGuardrailsAnalyzersPath>$(MSBuildThisFileDirectory)artifacts\bin\Axial.Guardrails\$(Configuration.ToLower())</_AxialGuardrailsAnalyzersPath>
+    <_AxialGuardrailsTaskAssembly>$(MSBuildThisFileDirectory)artifacts\bin\Axial.Guardrails.Build\$(Configuration.ToLower())\Axial.Guardrails.Build.dll</_AxialGuardrailsTaskAssembly>
     <!-- The fsharp-analyzers local tool from .config/dotnet-tools.json, not a packaged cli/ copy. -->
     <_AxialGuardrailsExe>dotnet fsharp-analyzers</_AxialGuardrailsExe>
     <!-- Only this repo sets this; a real package consumer never needs to bootstrap-build anything. -->

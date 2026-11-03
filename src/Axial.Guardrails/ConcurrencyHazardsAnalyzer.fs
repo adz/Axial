@@ -227,13 +227,13 @@ let analyzeWithConfig (config: GuardrailConfig.Config) code (ctx: CliContext) =
     if GuardrailConfig.isSkippedSource config ctx.FileName then [] else analyzeContained config code ctx
 
 [<CliAnalyzer("RawConcurrency", "Flags raw concurrency outside the runtime.", "https://github.com/adz/Axial")>]
-let rawConcurrencyAnalyzer: Analyzer<CliContext> = fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) "AXG009" ctx }
+let rawConcurrencyAnalyzer: Analyzer<CliContext> = fun ctx -> Execution.track "RawConcurrency" (fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) "AXG009" ctx }) ctx
 
 [<CliAnalyzer("SwallowedException", "Flags unreported exceptions.", "https://github.com/adz/Axial")>]
-let swallowedExceptionAnalyzer: Analyzer<CliContext> = fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) "AXG010" ctx }
+let swallowedExceptionAnalyzer: Analyzer<CliContext> = fun ctx -> Execution.track "SwallowedException" (fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) "AXG010" ctx }) ctx
 
 [<CliAnalyzer("UncancellableWork", "Flags CancellationToken.None outside runtime cleanup.", "https://github.com/adz/Axial")>]
-let uncancellableWorkAnalyzer: Analyzer<CliContext> = fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) "AXG011" ctx }
+let uncancellableWorkAnalyzer: Analyzer<CliContext> = fun ctx -> Execution.track "UncancellableWork" (fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) "AXG011" ctx }) ctx
 
 [<CliAnalyzer("DiscardedWork", "Flags discarded concurrent work.", "https://github.com/adz/Axial")>]
-let discardedWorkAnalyzer: Analyzer<CliContext> = fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) "AXG012" ctx }
+let discardedWorkAnalyzer: Analyzer<CliContext> = fun ctx -> Execution.track "DiscardedWork" (fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) "AXG012" ctx }) ctx
