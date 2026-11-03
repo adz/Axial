@@ -14,13 +14,13 @@ public sealed class ReleasePolicyTests
         var workflow = File.ReadAllText(Path.Combine(root!.FullName, ".github/workflows/release.yml"));
         var checkout = workflow.IndexOf("ref: ${{ steps.version.outputs.tag }}", StringComparison.Ordinal);
         var build = workflow.IndexOf("dotnet build src/Axial.Tool/Axial.Tool.fsproj", StringComparison.Ordinal);
-        var check = workflow.IndexOf("policy review --check", StringComparison.Ordinal);
+        var check = workflow.IndexOf("check --full --configuration Release", StringComparison.Ordinal);
         var pack = workflow.IndexOf("- name: Pack libraries", StringComparison.Ordinal);
         Assert.True(checkout >= 0 && checkout < build, "Build the tool from the resolved release tag, including resumed releases.");
-        Assert.True(build < check && check < pack, "Review must succeed before packaging or publication.");
+        Assert.True(build < check && check < pack, "Full guardrails and policy review must succeed before packaging or publication.");
         var reviewStep = workflow[workflow.LastIndexOf("      - name:", check, StringComparison.Ordinal)..workflow.IndexOf("      - name:", check, StringComparison.Ordinal)];
         Assert.DoesNotContain("continue-on-error", reviewStep);
         Assert.DoesNotContain("|| true", reviewStep);
-        Assert.Contains("dotnet --roll-forward Major artifacts/bin/Axial.Tool/release/Axial.Tool.dll policy review --check", reviewStep);
+        Assert.Contains("dotnet --roll-forward Major artifacts/bin/Axial.Tool/release/Axial.Tool.dll check --full --configuration Release", reviewStep);
     }
 }
