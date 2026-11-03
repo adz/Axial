@@ -210,12 +210,16 @@ module PackagePropsTests =
     [<InlineData("record")>]
     [<InlineData("finding")>]
     [<InlineData("warning")>]
+    [<InlineData("baselined")>]
+    [<InlineData("missing")>]
+    [<InlineData("multiple")>]
+    [<InlineData("json")>]
     [<InlineData("review")>]
     let ``slice2 full check covers all TFMs fails closed and never writes policy`` scenario =
         let dir = Path.Combine(Path.GetTempPath(), "axial-full-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
         try
-            let source = if scenario = "finding" || scenario = "warning" then "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n" else "module Consumer\nlet value = 42\n"
+            let source = if scenario = "finding" || scenario = "warning" || scenario = "baselined" then "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n" else "module Consumer\nlet value = 42\n"
             writeConsumerProject dir "<TargetFrameworks>net8.0;net10.0</TargetFrameworks>" source
             writeV2Policy dir "domain" (if scenario = "finding" then "deny" else "warn")
             let other = Path.Combine(dir, "Other")
@@ -232,6 +236,15 @@ module PackagePropsTests =
                 let path = Path.Combine(dir, "Consumer.fsproj")
                 let corrupt = "<Target Name=\"CorruptExportedCoverage\" AfterTargets=\"AxialGuardrailsEffectBoundaryCheck\"><ItemGroup><Export Include=\"$(_AxialGuardrailsFullCheckDirectory)/**/*.xml\" /></ItemGroup><WriteLinesToFile File=\"%(Export.Identity)\" Lines=\"&lt;result mode=&quot;Full&quot; complete=&quot;false&quot; /&gt;\" Overwrite=\"true\" /></Target>"
                 File.WriteAllText(path, (File.ReadAllText path).Replace("</Project>", corrupt + "</Project>"))
+            if scenario = "missing" then
+                let path = Path.Combine(other, "Consumer.fsproj")
+                File.WriteAllText(path, (File.ReadAllText path).Replace("</Project>", "<Target Name=\"AxialGuardrailsEffectBoundaryCheck\" /></Project>"))
+            if scenario = "multiple" then File.Copy(Path.Combine(dir, "Consumer.slnx"), Path.Combine(dir, "Duplicate.slnx"))
+            if scenario = "baselined" then
+                File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n")
+                // A real baseline entry downgrades the finding; check must preserve that severity.
+                let fingerprint = Axial.Guardrails.Policy.fingerprint "let now () = System.DateTimeOffset.UtcNow"
+                File.AppendAllText(Path.Combine(dir, "Axial.Guardrails.baseline"), $"AXG001\tProgram.fs\t{fingerprint}\n")
             let git arguments =
                 let info = ProcessStartInfo("git")
                 info.WorkingDirectory <- dir
@@ -258,6 +271,9 @@ module PackagePropsTests =
             start.ArgumentList.Add(policyToolDll ())
             start.ArgumentList.Add "check"
             start.ArgumentList.Add "--full"
+            start.ArgumentList.Add "--configuration"
+            start.ArgumentList.Add "Release"
+            if scenario = "json" then start.ArgumentList.Add "--json"
             start.RedirectStandardOutput <- true
             start.RedirectStandardError <- true
             use child = Process.Start start
@@ -268,17 +284,26 @@ module PackagePropsTests =
                 child.WaitForExit()
                 failwith "Full check timed out"
             let output = stdout.Result + stderr.Result
-            if scenario = "complete" then Assert.True(child.ExitCode = 0, output)
+            if List.contains scenario ["complete"; "warning"; "baselined"; "json"] then Assert.True(child.ExitCode = 0, output)
             else Assert.NotEqual(0, child.ExitCode)
             if scenario = "incomplete" then Assert.Contains("AXGINF001", output)
             elif scenario = "record" then Assert.Contains("Full analysis coverage is incomplete:", output)
             elif scenario = "finding" then Assert.Contains("AXG001", output)
-            elif scenario = "warning" then Assert.Contains("Full analysis reported findings:", output)
+            elif scenario = "missing" then Assert.Contains("Full analysis coverage is incomplete:", output)
+            elif scenario = "multiple" then Assert.Contains("exactly one solution", output)
+            elif scenario = "review" then
+                Assert.Contains("policy review", output)
+                Assert.Empty(Directory.GetFiles(dir, "*.result.xml", SearchOption.AllDirectories))
             else
-                if scenario = "review" then Assert.Contains("policy review", output)
+                if scenario = "json" then
+                    use json = System.Text.Json.JsonDocument.Parse(stdout.Result)
+                    Assert.Equal("ok", json.RootElement.GetProperty("status").GetString())
+                Assert.Contains("3 project/TFM records", output)
                 let reports = Directory.GetFiles(dir, "*.result.xml", SearchOption.AllDirectories)
                 Assert.Equal(3, reports.Length)
-                for report in reports do Assert.Contains("mode=\"Full\"", File.ReadAllText report)
+                for report in reports do
+                    Assert.Contains("mode=\"Full\"", File.ReadAllText report)
+                    Assert.Contains("release", report.ToLowerInvariant())
             Assert.Equal<byte>(lockBytes, File.ReadAllBytes lockPath)
             Assert.Equal<byte>(baselineBytes, File.ReadAllBytes baselinePath)
         finally Directory.Delete(dir, true)
