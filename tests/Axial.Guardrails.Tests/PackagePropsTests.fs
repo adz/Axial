@@ -259,7 +259,7 @@ module PackagePropsTests =
         Directory.CreateDirectory dir |> ignore
         try
             writeConsumer dir
-            writeV2Policy dir "domain" "error"
+            writeV2Policy dir "domain" "deny"
             let project = Path.Combine(dir, "Consumer.fsproj")
             let first = runBuild project None
             Assert.True(first.ExitCode <> 0, first.Output)
