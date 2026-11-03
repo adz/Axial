@@ -308,7 +308,7 @@ let resolvedPolicy (config: Config) (ctx: CliContext) =
 
 // Only the declared project role selects the reduced set; file-role overrides cannot opt a project out.
 let private usesTestAnalyzerSet (config: Config) =
-    if config.InTests = "all" then false else
+    if String.Equals(config.InTests, "all", StringComparison.OrdinalIgnoreCase) then false else
     match config.Policy, config.PolicyRoot, config.ProjectPath with
     | Some policy, Some root, Some project ->
         match tryRelative root project with
