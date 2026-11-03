@@ -79,15 +79,9 @@ Approval means a human read the review. The first review requires --since <ref>.
                         emit asJson false ("policy review --check failed:\n" + PolicyReview.format review)
                     | Ok review ->
                         Directory.CreateDirectory directory |> ignore
-                        let expectedTarget = Path.Combine(directory, "expected.targets")
-                        // Independent of Guardrails' target: an overridden/skipped analyzer must leave a gap.
-                        // CustomAfterMicrosoftCommonTargets also reaches projects without a package import.
-                        File.WriteAllText(expectedTarget, """<Project>
-  <Target Name="AxialFullCheckExpected" BeforeTargets="Build" Condition="'$(MSBuildProjectExtension)' == '.fsproj' and '$(TargetFramework)' != '' and '$(AxialGuardrailsEnabled)' != 'false' and '$(_AxialRepoSkipGuardrails)' != 'true'">
-    <PropertyGroup><_AxialExpectedFile>$(_AxialGuardrailsFullCheckDirectory)/$([System.Guid]::NewGuid()).expected</_AxialExpectedFile></PropertyGroup>
-    <WriteLinesToFile File="$(_AxialExpectedFile)" Lines="$(MSBuildProjectFullPath)|$(TargetFramework)" Overwrite="true" />
-  </Target>
-                        </Project>""")
+                        // A per-run import path invalidates MSBuildAllProjects and defeats exact cache reuse.
+                        let expectedTarget = Path.Combine(AppContext.BaseDirectory, "FullCheck.targets")
+                        if not (File.Exists expectedTarget) then failwith "Full analysis coverage collector is missing."
                         let code, _, _ = Command.run (root()) "dotnet"
                                             [ "build"; solutions[0]; "--configuration"; configuration; "--nologo"; "-v"; "minimal"; "-nodeReuse:false"
                                               "-p:AxialGuardrailsMode=Full"; "-p:AxialGuardrailsCheckpoint=true"

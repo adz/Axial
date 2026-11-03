@@ -1,0 +1,8 @@
+<Project>
+  <!-- Independent of the analyzer target: an overridden/skipped analyzer must leave a gap.
+       Ship a stable, content-fingerprinted import instead of a new temporary import on every check. -->
+  <Target Name="AxialFullCheckExpected" BeforeTargets="Build" Condition="'$(MSBuildProjectExtension)' == '.fsproj' and '$(TargetFramework)' != '' and '$(AxialGuardrailsEnabled)' != 'false' and '$(_AxialRepoSkipGuardrails)' != 'true'">
+    <PropertyGroup><_AxialExpectedFile>$(_AxialGuardrailsFullCheckDirectory)/$([System.Guid]::NewGuid()).expected</_AxialExpectedFile></PropertyGroup>
+    <WriteLinesToFile File="$(_AxialExpectedFile)" Lines="$(MSBuildProjectFullPath)|$(TargetFramework)" Overwrite="true" />
+  </Target>
+</Project>

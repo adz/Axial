@@ -16,6 +16,7 @@
     <_AxialRepoSkipGuardrails>true</_AxialRepoSkipGuardrails>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="FullCheck.targets" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Compile Include="../Axial.Guardrails/Policy.fs" Link="Policy.fs" />
     <Compile Include="PolicyLock.fs" />
     <Compile Include="Command.fs" />

@@ -310,6 +310,17 @@ type ConcurrencyHazardsPolicyTests() =
             Assert.Empty messages
         }
 
+    [<Theory>]
+    [<InlineData("AXG009")>]
+    [<InlineData("AXG010")>]
+    [<InlineData("AXG011")>]
+    [<InlineData("AXG012")>]
+    member _.``all test analyzers report tiered findings too`` code =
+        task {
+            let! messages = runWithSettings [ "setting\tinTests\tall" ] "test" false false "Fixture.fsproj" source code
+            Assert.NotEmpty messages
+        }
+
     [<Fact>]
     member _.``runtime list exempts raw primitives and discarded work but not uncancellable work`` () =
         task {
