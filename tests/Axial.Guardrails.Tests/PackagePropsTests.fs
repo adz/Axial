@@ -187,10 +187,13 @@ module PackagePropsTests =
             Assert.Contains("AxialGuardrailsMode must be Fast or Full", invalid.Output)
         finally Directory.Delete(dir, true)
 
-    [<Fact>]
-    let ``slice2 invalid mode fails even when analysis is disabled`` () =
+    [<Theory>]
+    [<InlineData("Auto")>]
+    [<InlineData("fast")>]
+    [<InlineData("FULL")>]
+    let ``slice2 invalid mode fails even when analysis is disabled`` mode =
         let result = buildConsumerInTemp (fun dir ->
-            writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework><AxialGuardrailsMode>Auto</AxialGuardrailsMode><AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>" "module Consumer\n")
+            writeConsumerProject dir ($"<TargetFramework>net10.0</TargetFramework><AxialGuardrailsMode>{mode}</AxialGuardrailsMode><AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>") "module Consumer\n")
         Assert.NotEqual(0, result.ExitCode)
         Assert.Contains("AxialGuardrailsMode must be Fast or Full", result.Output)
 
@@ -204,12 +207,25 @@ module PackagePropsTests =
         Assert.True(result.ExitCode = 0, result.Output)
         Assert.DoesNotContain("AXG001", result.Output)
 
+    [<Fact>]
+    let ``slice2 command timeout kills tree and inherited pipes cannot hang`` () =
+        if not (OperatingSystem.IsWindows()) then
+            let watch = Stopwatch.StartNew()
+            let error = Assert.ThrowsAny<Exception>(fun () -> Axial.Tool.Command.run (Path.GetTempPath()) "/bin/sh" ["-c"; "sleep 30 & wait"] 100 false |> ignore)
+            Assert.Contains("timed out", error.Message)
+            Assert.True(watch.Elapsed.TotalSeconds < 10.)
+            let code, output, _ = Axial.Tool.Command.run (Path.GetTempPath()) "/bin/sh" ["-c"; "sleep 4 & echo parent-exited"] 1000 false
+            Assert.Equal(0, code)
+            Assert.Contains("parent-exited", output)
+            Assert.True(watch.Elapsed.TotalSeconds < 4.)
+
     [<Theory>]
     [<InlineData("complete")>]
     [<InlineData("incomplete")>]
     [<InlineData("record")>]
     [<InlineData("finding")>]
     [<InlineData("warning")>]
+    [<InlineData("hint")>]
     [<InlineData("baselined")>]
     [<InlineData("missing")>]
     [<InlineData("multiple")>]
@@ -219,9 +235,9 @@ module PackagePropsTests =
         let dir = Path.Combine(Path.GetTempPath(), "axial-full-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
         try
-            let source = if scenario = "finding" || scenario = "warning" || scenario = "baselined" then "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n" else "module Consumer\nlet value = 42\n"
+            let source = if List.contains scenario ["finding"; "warning"; "hint"; "baselined"] then "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n" else "module Consumer\nlet value = 42\n"
             writeConsumerProject dir "<TargetFrameworks>net8.0;net10.0</TargetFrameworks>" source
-            writeV2Policy dir "domain" (if scenario = "finding" then "deny" else "warn")
+            writeV2Policy dir "domain" (if scenario = "finding" || scenario = "baselined" then "deny" else "warn")
             let other = Path.Combine(dir, "Other")
             Directory.CreateDirectory other |> ignore
             writeConsumerProject other "<TargetFramework>net10.0</TargetFramework>" "module Other\nlet value = 1\n"
@@ -236,6 +252,9 @@ module PackagePropsTests =
                 let path = Path.Combine(dir, "Consumer.fsproj")
                 let corrupt = "<Target Name=\"CorruptExportedCoverage\" AfterTargets=\"AxialGuardrailsEffectBoundaryCheck\"><ItemGroup><Export Include=\"$(_AxialGuardrailsFullCheckDirectory)/**/*.xml\" /></ItemGroup><WriteLinesToFile File=\"%(Export.Identity)\" Lines=\"&lt;result mode=&quot;Full&quot; complete=&quot;false&quot; /&gt;\" Overwrite=\"true\" /></Target>"
                 File.WriteAllText(path, (File.ReadAllText path).Replace("</Project>", corrupt + "</Project>"))
+            if scenario = "hint" then
+                let hint = """<Target Name="ExportHint" AfterTargets="AxialGuardrailsEffectBoundaryCheck"><XmlPoke XmlInputPath="$(_AxialGuardrailsFullCheckDirectory)/$(_AxialGuardrailsFullCheckProject)/$(TargetFramework).xml" Query="//finding/@severity" Value="Hint" /></Target>"""
+                File.WriteAllText(consumer, (File.ReadAllText consumer).Replace("</Project>", hint + "</Project>"))
             if scenario = "missing" then
                 let path = Path.Combine(other, "Consumer.fsproj")
                 File.WriteAllText(path, (File.ReadAllText path).Replace("</Project>", "<Target Name=\"AxialGuardrailsEffectBoundaryCheck\" /></Project>"))
@@ -249,6 +268,9 @@ module PackagePropsTests =
                 let entries = Directory.GetFiles(proposal, "*.baseline", SearchOption.AllDirectories) |> Array.collect File.ReadAllLines |> Array.distinct
                 Assert.NotEmpty entries
                 File.AppendAllLines(Path.Combine(dir, "Axial.Guardrails.baseline"), entries)
+            for project in [consumer; Path.Combine(other, "Consumer.fsproj")] do
+                let capture = """<Target Name="CaptureExport" AfterTargets="AxialGuardrailsEffectBoundaryCheck" Condition="'$(_AxialGuardrailsFullCheckProject)' != ''"><MakeDir Directories="$(MSBuildProjectDirectory)/exported" /><Copy SourceFiles="$(_AxialGuardrailsFullCheckDirectory)/$(_AxialGuardrailsFullCheckProject)/$(TargetFramework).xml" DestinationFiles="$(MSBuildProjectDirectory)/exported/$(TargetFramework).xml" /></Target>"""
+                File.WriteAllText(project, (File.ReadAllText project).Replace("</Project>", capture + "</Project>"))
             let git arguments =
                 let info = ProcessStartInfo("git")
                 info.WorkingDirectory <- dir
@@ -275,8 +297,9 @@ module PackagePropsTests =
             start.ArgumentList.Add(policyToolDll ())
             start.ArgumentList.Add "check"
             start.ArgumentList.Add "--full"
-            start.ArgumentList.Add "--configuration"
-            start.ArgumentList.Add "Release"
+            if scenario <> "json" then
+                start.ArgumentList.Add "--configuration"
+                start.ArgumentList.Add "Release"
             if scenario = "json" then start.ArgumentList.Add "--json"
             start.RedirectStandardOutput <- true
             start.RedirectStandardError <- true
@@ -288,12 +311,15 @@ module PackagePropsTests =
                 child.WaitForExit()
                 failwith "Full check timed out"
             let output = stdout.Result + stderr.Result
-            if List.contains scenario ["complete"; "warning"; "baselined"; "json"] then Assert.True(child.ExitCode = 0, output)
+            if List.contains scenario ["complete"; "warning"; "hint"; "baselined"; "json"] then Assert.True(child.ExitCode = 0, output)
             else Assert.NotEqual(0, child.ExitCode)
             if scenario = "incomplete" then Assert.Contains("AXGINF001", output)
             elif scenario = "record" then Assert.Contains("Full analysis coverage is incomplete:", output)
             elif scenario = "finding" then Assert.Contains("AXG001", output)
-            elif scenario = "missing" then Assert.Contains("Full analysis coverage is incomplete:", output)
+            elif scenario = "missing" then
+                Assert.Contains("Full analysis coverage is incomplete:", output)
+                let exported = Directory.GetDirectories(dir, "exported", SearchOption.AllDirectories) |> Array.collect (fun path -> Directory.GetFiles(path, "*.xml"))
+                Assert.Equal(2, exported.Length)
             elif scenario = "multiple" then Assert.Contains("exactly one solution", output)
             elif scenario = "review" then
                 Assert.Contains("policy review", output)
@@ -303,11 +329,15 @@ module PackagePropsTests =
                     use json = System.Text.Json.JsonDocument.Parse(stdout.Result)
                     Assert.Equal("ok", json.RootElement.GetProperty("status").GetString())
                 Assert.Contains("3 project/TFM records", output)
-                let reports = Directory.GetFiles(dir, "*.result.xml", SearchOption.AllDirectories)
+                let release = Directory.GetFiles(dir, "*.result.xml", SearchOption.AllDirectories) |> Array.filter (fun path -> path.ToLowerInvariant().Contains("release"))
+                Assert.Equal(3, release.Length)
+                let reports = Directory.GetDirectories(dir, "exported", SearchOption.AllDirectories) |> Array.collect (fun path -> Directory.GetFiles(path, "*.xml"))
                 Assert.Equal(3, reports.Length)
-                for report in reports do
-                    Assert.Contains("mode=\"Full\"", File.ReadAllText report)
-                    Assert.Contains("release", report.ToLowerInvariant())
+                let identities = reports |> Array.map Axial.Tool.Coverage.identity |> Set.ofArray
+                Assert.Equal(3, identities.Count)
+                for report in reports do Assert.True(Axial.Tool.Coverage.complete (Some "Full") report)
+                if scenario = "baselined" then
+                    Assert.Contains("severity=\"Warning\"", File.ReadAllText(Path.Combine(dir, "exported", "net10.0.xml")))
             Assert.Equal<byte>(lockBytes, File.ReadAllBytes lockPath)
             Assert.Equal<byte>(baselineBytes, File.ReadAllBytes baselinePath)
         finally Directory.Delete(dir, true)

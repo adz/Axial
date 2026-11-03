@@ -25,7 +25,7 @@
   </Target>
 
   <Target Name="AxialGuardrailsValidateMode" BeforeTargets="Build;AxialGuardrailsWriteInputFingerprint">
-    <Error Condition="'$(AxialGuardrailsMode)' != 'Fast' and '$(AxialGuardrailsMode)' != 'Full'"
+    <Error Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(AxialGuardrailsMode)', '^(Fast|Full)$')) != 'true'"
            Text="AxialGuardrailsMode must be Fast or Full (received '$(AxialGuardrailsMode)')." />
   </Target>
 

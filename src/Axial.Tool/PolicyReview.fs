@@ -14,19 +14,11 @@ module PolicyReview =
     type Review = { Since: string; Loosened: Finding list; Removed: Finding list }
 
     let private command root executable args =
-        let info = ProcessStartInfo(executable)
-        info.WorkingDirectory <- root
-        info.RedirectStandardOutput <- true
-        info.RedirectStandardError <- true
-        for arg in args do info.ArgumentList.Add(arg: string)
-        use child = Process.Start info
-        let output = child.StandardOutput.ReadToEndAsync()
-        let errors = child.StandardError.ReadToEndAsync()
-        if not (child.WaitForExit(60000)) then
-            child.Kill(true)
-            failwith $"{executable} timed out"
-        if child.ExitCode <> 0 then failwith (errors.Result + output.Result)
-        output.Result
+        let code, output, errors = Command.run root executable args 60000 false
+        if code <> 0 then failwith (errors + output)
+        output
+
+    let checkPassed result = result.Loosened.IsEmpty
 
     let currentCommit root = command root "git" ["rev-parse"; "--verify"; "HEAD^{commit}"] |> _.Trim()
 

@@ -84,13 +84,14 @@ jobs:
       - name: Check release notes
         run: bash scripts/check-release-notes.sh "${{ steps.version.outputs.value }}"
 
-      - name: Build
+      # One Release build: check reviews policy first, then builds and exports Full coverage.
+      # Version is inherited by MSBuild from the environment, including the nested build.
+      - name: Build with full guardrails and policy review checkpoint
+        env:
+          Version: ${{ steps.version.outputs.value }}
         run: |
           bash scripts/ensure-guardrails-built.sh Release
-          dotnet build Axial.slnx --configuration Release --no-restore --no-incremental --nologo -v minimal -p:AxialGuardrailsCheckpoint=true -p:Version="${{ steps.version.outputs.value }}"
-
-      - name: Full guardrails and policy review checkpoint
-        run: dotnet --roll-forward Major artifacts/bin/Axial.Tool/release/Axial.Tool.dll check --full
+          dotnet --roll-forward Major artifacts/bin/Axial.Tool/release/Axial.Tool.dll check --full --configuration Release
 
       - name: Check documentation conventions
         run: bash scripts/check-docs-conventions.sh

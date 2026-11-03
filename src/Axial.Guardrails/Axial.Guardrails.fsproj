@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>Axial.Guardrails.Analyzers</AssemblyName>
+    <_AxialRepoSkipGuardrails>true</_AxialRepoSkipGuardrails>
     <RootNamespace>Axial.Guardrails</RootNamespace>
     <PackageId>Axial.Guardrails</PackageId>
     <Authors>Adam Davies</Authors>

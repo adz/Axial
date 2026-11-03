@@ -18,6 +18,7 @@
   <ItemGroup>
     <Compile Include="../Axial.Guardrails/Policy.fs" Link="Policy.fs" />
     <Compile Include="PolicyLock.fs" />
+    <Compile Include="Command.fs" />
     <Compile Include="PolicyReview.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
