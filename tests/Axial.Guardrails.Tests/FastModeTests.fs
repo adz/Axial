@@ -52,6 +52,7 @@ module FastModeTests =
         Assert.Contains("fast/unverified", snd result)
         let doc = report dir
         Assert.Equal("Fast", attr "mode" doc.Root)
+        Assert.Equal("true", attr "isolated" doc.Root)
         let entries = doc.Root.Elements(XName.Get "coverage") |> Seq.toArray
         Assert.Contains(entries, fun e -> attr "rule" e = "Fixture" && attr "status" e = "ran")
         Assert.Contains(entries, fun e -> attr "rule" e = "ScopeFromRun" && attr "status" e = "deferred to full"))
@@ -208,7 +209,20 @@ public static string Run(string input) {
         Assert.DoesNotContain("AXG001", snd first)
         let second = build dir (defineArgument :: args)
         checkSuccess second
-        Assert.Contains("AXG001", snd second))
+        Assert.Contains("AXG001", snd second)
+        let restored = build dir args
+        checkSuccess restored
+        Assert.DoesNotContain("AXG001", snd restored))
+
+    [<Fact>]
+    let ``Fast rejects untracked response file flags without stamping`` () = withFixture (fun dir ->
+        let response = Path.Combine(dir, "extra.rsp")
+        File.WriteAllText(response, "--define:SPECIAL\n")
+        let code, output = build dir ["-p:AxialGuardrailsMode=Fast"; "-p:OtherFlags=@" + response]
+        Assert.NotEqual(0, code)
+        Assert.Contains("AXGINF001", output)
+        Assert.Contains("response files", output)
+        Assert.Empty(Directory.GetFiles(dir, "*.stamp", SearchOption.AllDirectories)))
 
     [<Fact>]
     let ``Fast stale report is rejected and only changed file is reparsed`` () = withFixture (fun dir ->
