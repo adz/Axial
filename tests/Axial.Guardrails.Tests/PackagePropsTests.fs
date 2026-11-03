@@ -148,6 +148,88 @@ module PackagePropsTests =
             Directory.Delete(dir, true)
 
     [<Fact>]
+    let ``slice2 modes separate stamps without changing role selection or environment defaults`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-modes-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumer dir
+            writeV2Policy dir "domain" "warn"
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let report () =
+                Directory.GetFiles(dir, "*.result.xml", SearchOption.AllDirectories)
+                |> Array.exactlyOne |> System.Xml.Linq.XDocument.Load
+            let attribute name = (report ()).Root.Attribute(System.Xml.Linq.XName.Get name).Value
+            let build mode environment extra =
+                let args = extra @ (mode |> Option.map (fun value -> ["-p:AxialGuardrailsMode=" + value]) |> Option.defaultValue [])
+                let result = runBuildWithEnvironment environment args project None
+                Assert.True(result.ExitCode = 0, result.Output)
+                Assert.Contains("AXG001", result.Output)
+                result.Output
+            build None [] [] |> ignore
+            Assert.Equal("Full", attribute "mode")
+            let original = attribute "fingerprint"
+            for mode in ["Fast"; "Full"; "Fast"] do
+                let output = build (Some mode) [] []
+                Assert.Contains("Running Axial.Guardrails analysis", output)
+                Assert.Equal(mode, attribute "mode")
+                Assert.All((report ()).Root.Elements(System.Xml.Linq.XName.Get "coverage"), fun entry ->
+                    Assert.Equal(mode, entry.Attribute(System.Xml.Linq.XName.Get "mode").Value))
+                let cached = build (Some mode) [] []
+                Assert.DoesNotContain("Running Axial.Guardrails analysis", cached)
+            build None ["CI", "true"] ["-p:Configuration=Release"] |> ignore
+            Assert.Equal("Full", attribute "mode")
+            build None ["CI", "false"] [] |> ignore
+            Assert.Equal(original, attribute "fingerprint")
+            let invalid = runBuildWithArgs ["-p:AxialGuardrailsMode=Auto"] project None
+            Assert.NotEqual(0, invalid.ExitCode)
+            Assert.Contains("AxialGuardrailsMode must be Fast or Full", invalid.Output)
+        finally Directory.Delete(dir, true)
+
+    [<Theory>]
+    [<InlineData("complete")>]
+    [<InlineData("incomplete")>]
+    [<InlineData("finding")>]
+    [<InlineData("review")>]
+    let ``slice2 full check covers all TFMs fails closed and never writes policy`` scenario =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-full-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumerProject dir "<TargetFrameworks>net8.0;net10.0</TargetFrameworks>" "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n"
+            writeV2Policy dir "domain" (if scenario = "finding" then "deny" else "warn")
+            File.WriteAllText(Path.Combine(dir, "Consumer.slnx"), "<Solution><Project Path=\"Consumer.fsproj\" /></Solution>")
+            if scenario = "incomplete" then
+                let path = Path.Combine(dir, "Consumer.fsproj")
+                File.WriteAllText(path, (File.ReadAllText path).Replace("</Project>", "<PropertyGroup><_AxialGuardrailsExe>echo incomplete</_AxialGuardrailsExe></PropertyGroup></Project>"))
+            let lockPath = Path.Combine(dir, "Axial.Guardrails.lock")
+            let baselinePath = Path.Combine(dir, "Axial.Guardrails.baseline")
+            let lockBytes = File.ReadAllBytes lockPath
+            let baselineBytes = File.ReadAllBytes baselinePath
+            // No reviewed git checkpoint: a successful analysis must still fail policy review.
+            let start = ProcessStartInfo(dotnetHost ())
+            start.WorkingDirectory <- dir
+            start.ArgumentList.Add(policyToolDll ())
+            start.ArgumentList.Add "check"
+            start.ArgumentList.Add "--full"
+            start.RedirectStandardOutput <- true
+            start.RedirectStandardError <- true
+            use child = Process.Start start
+            let stdout = child.StandardOutput.ReadToEndAsync()
+            let stderr = child.StandardError.ReadToEndAsync()
+            Assert.True(child.WaitForExit(180000), "Full check timed out")
+            let output = stdout.Result + stderr.Result
+            Assert.NotEqual(0, child.ExitCode)
+            if scenario = "incomplete" then Assert.Contains("coverage", output)
+            elif scenario = "finding" then Assert.Contains("AXG001", output)
+            else
+                Assert.Contains("policy review", output)
+                let reports = Directory.GetFiles(dir, "*.result.xml", SearchOption.AllDirectories)
+                Assert.Equal(2, reports.Length)
+                for report in reports do Assert.Contains("mode=\"Full\"", File.ReadAllText report)
+            Assert.Equal<byte>(lockBytes, File.ReadAllBytes lockPath)
+            Assert.Equal<byte>(baselineBytes, File.ReadAllBytes baselinePath)
+        finally Directory.Delete(dir, true)
+
+    [<Fact>]
     let ``slice1 cache report corruption reruns and cache hits replay findings with opt in timings`` () =
         let dir = Path.Combine(Path.GetTempPath(), "axial-slice1-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
