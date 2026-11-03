@@ -74,6 +74,43 @@ module FastModeTests =
         Assert.Contains("AXGINF001", output)
         Assert.Empty(Directory.GetFiles(dir, "*.stamp", SearchOption.AllDirectories)))
 
+    [<Theory>]
+    [<InlineData("parser crash")>]
+    [<InlineData("visitor crash")>]
+    let ``Fast failure receipts aggregate once retain findings and never stamp under warnings as errors`` fault = withFixture (fun dir ->
+        let plugin = Path.Combine(dir, "plugin")
+        Directory.CreateDirectory plugin |> ignore
+        File.WriteAllText(Path.Combine(plugin, "Plugin.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net8.0</TargetFramework><AssemblyName>FakeFast</AssemblyName></PropertyGroup></Project>")
+        File.WriteAllText(Path.Combine(plugin, "Runner.cs"), """using System.IO;
+using System.Xml.Linq;
+namespace Axial.Guardrails {
+public static class FastRunner {
+public static string Run(string input) {
+ var root = new XElement("fast");
+ foreach (var source in XElement.Parse(input).Elements("file")) {
+  bool bad = Path.GetFileName(source.Value) == "Program.fs";
+  if (bad) root.Add(new XElement("failure", new XAttribute("file", source.Value), "FAULT"));
+  foreach (var rule in new [] {"EffectBoundary", "RaiseInFlow", "Fixture", "ReflectionFormatting", "RawConcurrency", "WaitForFacts"}) {
+   if (bad && ("FAULT" == "parser crash" || rule == "Fixture")) continue;
+   var entry = new XElement("coverage", new XAttribute("file", source.Value), new XAttribute("rule", rule), new XAttribute("status", "ran"));
+   if (!bad && rule == "EffectBoundary") entry.Add(new XElement("finding", new XAttribute("code", "AXG001"), new XAttribute("severity", "Info"), new XAttribute("line", 2), new XAttribute("column", 0), "kept available finding"));
+   root.Add(entry);
+  }
+ }
+ return root.ToString();
+}}}
+""".Replace("FAULT", fault))
+        checkSuccess (build dir ["plugin/Plugin.csproj"])
+        let assembly = Path.Combine(plugin, "bin", config (), "net8.0", "FakeFast.dll")
+        let code, output = build dir ["-p:_AxialGuardrailsFastAssembly=" + assembly; "-warnaserror"]
+        Assert.NotEqual(0, code)
+        Assert.Contains(fault, output)
+        Assert.Contains("kept available finding", output)
+        let errors = output.Split('\n') |> Array.filter (fun line -> line.Contains(": error AXGINF001:")) |> Array.map _.Trim() |> Array.distinct
+        Assert.Single errors |> ignore
+        Assert.Equal("false", attr "complete" (report dir).Root)
+        Assert.Empty(Directory.GetFiles(dir, "*.stamp", SearchOption.AllDirectories)))
+
     [<Fact>]
     let ``corrupt MSBuild task assembly reports AXGINF001 rather than silently dropping analysis`` () = withFixture (fun dir ->
         let broken = Path.Combine(dir, "BrokenTask.dll")
