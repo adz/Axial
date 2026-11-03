@@ -243,8 +243,12 @@ module PackagePropsTests =
             if scenario = "baselined" then
                 File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n")
                 // A real baseline entry downgrades the finding; check must preserve that severity.
-                let fingerprint = Axial.Guardrails.Policy.fingerprint "let now () = System.DateTimeOffset.UtcNow"
-                File.AppendAllText(Path.Combine(dir, "Axial.Guardrails.baseline"), $"AXG001\tProgram.fs\t{fingerprint}\n")
+                let proposal = Path.Combine(dir, "candidates")
+                let generated = runBuildWithArgs ["-p:_AxialGuardrailsBaselineProposalDirectory=" + proposal; "-p:_AxialGuardrailsBaselineRuleCode=AXG001"] consumer None
+                Assert.True(generated.ExitCode = 0, generated.Output)
+                let entries = Directory.GetFiles(proposal, "*.baseline", SearchOption.AllDirectories) |> Array.collect File.ReadAllLines |> Array.distinct
+                Assert.NotEmpty entries
+                File.AppendAllLines(Path.Combine(dir, "Axial.Guardrails.baseline"), entries)
             let git arguments =
                 let info = ProcessStartInfo("git")
                 info.WorkingDirectory <- dir
