@@ -90,7 +90,7 @@ public static string Run(string input) {
  var root = new XElement("fast");
  foreach (var source in XElement.Parse(input).Elements("file")) {
   bool bad = Path.GetFileName(source.Value) == "Program.fs";
-  if (bad) root.Add(new XElement("failure", new XAttribute("file", source.Value), "FAULT"));
+  if (bad) root.Add(new XElement("failure", new XAttribute("file", source.Value), "FAULT\nsecond-line cause"));
   foreach (var rule in new [] {"EffectBoundary", "RaiseInFlow", "Fixture", "ReflectionFormatting", "RawConcurrency", "WaitForFacts"}) {
    if (bad && ("FAULT" == "parser crash" || rule == "Fixture")) continue;
    var entry = new XElement("coverage", new XAttribute("file", source.Value), new XAttribute("rule", rule), new XAttribute("status", "ran"));
