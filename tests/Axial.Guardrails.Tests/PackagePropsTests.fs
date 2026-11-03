@@ -218,7 +218,7 @@ module PackagePropsTests =
             let other = Path.Combine(dir, "Other")
             Directory.CreateDirectory other |> ignore
             writeConsumerProject other "<TargetFramework>net10.0</TargetFramework>" "module Other\nlet value = 1\n"
-            File.WriteAllText(Path.Combine(dir, "Consumer.slnx"), "<Solution><Project Path=\"Consumer.fsproj\" /><Project Path=\"Other/Consumer.fsproj\" /></Solution>")
+            File.WriteAllText(Path.Combine(dir, "Consumer.slnx"), "<Solution><Project Path=\"Consumer.fsproj\" /><Folder Name=\"/Other/\"><Project Path=\"Other/Consumer.fsproj\" /></Folder></Solution>")
             // Full checks must override the ordinary designated-framework optimization.
             let consumer = Path.Combine(dir, "Consumer.fsproj")
             File.WriteAllText(consumer, (File.ReadAllText consumer).Replace("</Project>", "<PropertyGroup><_AxialGuardrailsDesignatedTargetFramework>net8.0</_AxialGuardrailsDesignatedTargetFramework></PropertyGroup></Project>"))
@@ -264,7 +264,8 @@ module PackagePropsTests =
             let output = stdout.Result + stderr.Result
             if scenario = "complete" then Assert.True(child.ExitCode = 0, output)
             else Assert.NotEqual(0, child.ExitCode)
-            if scenario = "incomplete" || scenario = "record" then Assert.Contains("coverage", output)
+            if scenario = "incomplete" then Assert.Contains("AXGINF001", output)
+            elif scenario = "record" then Assert.Contains("Full analysis coverage is incomplete:", output)
             elif scenario = "finding" then Assert.Contains("AXG001", output)
             else
                 if scenario = "review" then Assert.Contains("policy review", output)
