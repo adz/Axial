@@ -34,7 +34,8 @@ automation = [".github/workflows/**", "scripts/verify.sh"]
 ```
 
 Only files matching `[review].automation` are inventoried as automation by `axial policy review`; an absent or
-empty list means no automation tracking. Adding a verification script to the list makes its content changes,
+empty list means no automation tracking. The first review after upgrading lists the declared automation files
+as added. Adding a verification script to the list makes its content changes,
 addition, and deletion review items; it does not run the script. Paths are repository-relative and use the same
 `*`, `**`, and `?` globs as other policy lists. Patterns may match no files. Unknown `[review]` keys are rejected.
 Init selects `.github/workflows/**` for GitHub, `.gitlab-ci.yml` and `.gitlab/ci/**` for GitLab,
@@ -225,7 +226,10 @@ Test-role projects select Fixture, WaitForFacts, RawConcurrency, and Suppression
 effects and exceptions are often necessary for setup and assertions. Declare `[projects]` with
 `test = ["tests/**/*.fsproj"]` (or use `test` as the default role). This selection does not depend on
 `IsTestProject` or Microsoft.NET.Test.Sdk; file-role overrides do not change the project-wide analyzer set.
-Set `AxialGuardrailsInTests` to `all` to run every enabled analyzer in a test-role project too.
+Analyzers resolve the project role in-process; no policy-tool process is launched to select the set.
+Set `AxialGuardrailsInTests` to `all` to run every enabled analyzer in a test-role project too. Policy review
+compares this evaluated property, so changing it appears in the review. Both this setting and the TOML policy
+invalidate cached analysis when changed.
 
 `AXG002`, `RawConcurrency`, and `WaitForFacts` also run in test projects by default. Raw task bridges remain
 exempt in the test role. `lock`, `Monitor` and `Interlocked` are not reported anywhere.

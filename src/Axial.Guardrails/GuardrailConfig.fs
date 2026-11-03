@@ -32,6 +32,7 @@ type Config =
       EnabledGuardrails: Set<string>
       NativeAot: bool
       Checkpoint: bool
+      InTests: string
       AllRules: EffectRule list
       BoundaryFiles: Set<string>
       BaselineRoot: string
@@ -55,6 +56,7 @@ let defaults: Config =
     { EnabledGuardrails = builtInGuardrails
       NativeAot = false
       Checkpoint = false
+      InTests = ""
       AllRules = builtInRules
       // Direct analyzer hosts (not the MSBuild package) have no project item graph; preserve rule-unit-test support.
       BoundaryFiles = Set.singleton "*"
@@ -152,6 +154,7 @@ let parse (lines: string seq) : Config =
     { EnabledGuardrails = enabled
       NativeAot = nativeAot
       Checkpoint = setting "checkpoint" |> Option.exists (fun value -> String.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
+      InTests = setting "inTests" |> Option.defaultValue ""
       AllRules = builtInRules @ contributed
       BoundaryFiles =
         match policy, policyRoot with
@@ -303,6 +306,19 @@ let resolvedPolicy (config: Config) (ctx: CliContext) =
             None
     | _ -> None
 
+// Only the declared project role selects the reduced set; file-role overrides cannot opt a project out.
+let private usesTestAnalyzerSet (config: Config) =
+    if config.InTests = "all" then false else
+    match config.Policy, config.PolicyRoot, config.ProjectPath with
+    | Some policy, Some root, Some project ->
+        match tryRelative root project with
+        | Some relative ->
+            match Policy.projectRole policy relative with
+            | Ok role -> role = Policy.Test
+            | Error error -> invalidArg "policy" error
+        | None -> false
+    | _ -> false
+
 let private resolvableFullPath (config: Config) (fileName: string) =
     try
         let basePath =
@@ -332,8 +348,12 @@ let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: 
         for entry in config.Baseline do
             remaining[(entry.RuleId, entry.File, entry.Fingerprint)] <- entry.Count
 
+        let testSet = usesTestAnalyzerSet config
         let findings =
             messages
+            |> List.filter (fun message ->
+                not testSet
+                || List.contains message.Code [ "AXG002"; "AXG004"; "AXG009"; "AXG013" ])
             |> List.map (fun message ->
                 let entry =
                     { RuleId = message.Code.ToUpperInvariant()

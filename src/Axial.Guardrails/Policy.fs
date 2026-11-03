@@ -34,7 +34,7 @@ module Policy =
 
     type private Value = String of string | Integer of int | Strings of string list
 
-    let private roleName = function Domain -> "domain" | Capabilities -> "capabilities" | Services -> "services" | Host -> "host" | Test -> "test"
+    let roleName = function Domain -> "domain" | Capabilities -> "capabilities" | Services -> "services" | Host -> "host" | Test -> "test"
 
     let private parseRole value =
         match value with
@@ -235,6 +235,13 @@ module Policy =
             | None when not allowEmpty && matches.Length = 0 -> Error $"policy path '{pattern}' matches nothing"
             | None -> Ok normalized)
 
+    let private validatePatterns root allFiles allowEmpty patterns =
+        patterns
+        |> List.fold (fun state pattern ->
+            state |> Result.bind (fun paths ->
+                validatePattern root allFiles allowEmpty pattern |> Result.map (fun path -> path :: paths))) (Ok [])
+        |> Result.map List.rev
+
     let parse (repositoryRoot: string) (knownRuleIds: Set<string>) (text: string) : Result<Config, string list> =
         let fail message = Error [ message ]
         match parseDocument text with
@@ -306,10 +313,7 @@ module Policy =
                                 let validatePaths kind (paths: string list) =
                                     paths |> List.fold (fun state p -> state |> Result.bind (fun xs -> (if kind = "runtime" && (p.Contains('*') || p.Contains('?')) then Error "runtime.files requires exact file paths, not globs" else validatePattern repositoryRoot allFiles false p) |> Result.map (fun x -> x::xs))) (Ok [])
                                     |> Result.map List.rev
-                                let ignores =
-                                    suppressionIgnores |> List.fold (fun state p ->
-                                        state |> Result.bind (fun xs -> validatePattern repositoryRoot allFiles true p |> Result.map (fun x -> x :: xs))) (Ok [])
-                                    |> Result.map List.rev
+                                let ignores = validatePatterns repositoryRoot allFiles true suppressionIgnores
                                 let exemptions =
                                     [ "AXG009"; "AXG010"; "AXG011"; "AXG012" ]
                                     |> List.fold (fun state code ->
@@ -322,10 +326,7 @@ module Policy =
                                 | Ok exemptions ->
                                   let automation =
                                       getStrings "review.automation"
-                                      |> Result.bind (fun paths ->
-                                          paths |> List.fold (fun state p ->
-                                              state |> Result.bind (fun xs -> validatePattern repositoryRoot allFiles true p |> Result.map (fun x -> x :: xs))) (Ok [])
-                                          |> Result.map List.rev)
+                                      |> Result.bind (validatePatterns repositoryRoot allFiles true)
                                   match validatePaths "protected" protectedPaths, validatePaths "boundary" boundaryPaths, (getStrings "runtime.files" |> Result.bind (validatePaths "runtime")), ignores, automation with
                                   | Error e, _, _, _, _ | _, Error e, _, _, _ | _, _, Error e, _, _ | _, _, _, Error e, _ | _, _, _, _, Error e -> fail e
                                   | Ok protectedFiles, Ok boundaries, Ok runtime, Ok ignores, Ok automation ->

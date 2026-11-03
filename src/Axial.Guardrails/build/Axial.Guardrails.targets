@@ -34,7 +34,7 @@
       Test projects run Fixture, WaitForFacts, RawConcurrency and SuppressionIntegrity by default: ambient effect rules flag File and DateTimeOffset
       that tests legitimately use for setup and assertions. Set AxialGuardrailsInTests to all to
       run every enabled guardrail in a test-role project. The checked-in policy, not the test SDK,
-      declares that role; it is resolved before writing the analyzer configuration.
+      declares that role; analyzers resolve it in-process from their existing policy input.
     -->
   </PropertyGroup>
 
@@ -151,6 +151,7 @@
     </GetFileHash>
     <ItemGroup>
       <_AxialGuardrailsFingerprintLine Include="TargetFramework=$(TargetFramework)" />
+      <_AxialGuardrailsFingerprintLine Include="AxialGuardrailsInTests=$(AxialGuardrailsInTests)" />
       <_AxialGuardrailsFingerprintLine Include="DefineConstants=$(DefineConstants)" />
       <_AxialGuardrailsFingerprintLine Include="LangVersion=$(LangVersion)" />
       <_AxialGuardrailsFingerprintLine Include="TreatWarningsAsErrors=$(TreatWarningsAsErrors)" />
@@ -213,17 +214,6 @@
   <Target Name="AxialGuardrailsWriteConfig"
           BeforeTargets="AxialGuardrailsEffectBoundaryCheck"
           Condition="'$(AxialGuardrailsEnabled)' == 'true'">
-    <!-- Resolve with the policy parser, including project globs and the default role. File overrides do not
-         choose the project-wide analyzer set. No restore or test-SDK inference is involved. -->
-    <Exec Command="$(_AxialGuardrailsPolicyExe) policy project-role &quot;$(MSBuildProjectFullPath)&quot;"
-          WorkingDirectory="$(_AxialGuardrailsPolicyRoot)" ConsoleToMSBuild="true" StandardOutputImportance="low"
-          Condition="'$(_AxialGuardrailsPolicyRoot)' != ''">
-      <Output TaskParameter="ConsoleOutput" PropertyName="_AxialGuardrailsDeclaredRole" />
-    </Exec>
-    <PropertyGroup>
-      <_AxialGuardrailsIncludeAnalyzersFlag></_AxialGuardrailsIncludeAnalyzersFlag>
-      <_AxialGuardrailsIncludeAnalyzersFlag Condition="'$(_AxialGuardrailsDeclaredRole)' == 'test' and '$(AxialGuardrailsInTests)' != 'all'">--include-analyzers Fixture WaitForFacts RawConcurrency SuppressionIntegrity</_AxialGuardrailsIncludeAnalyzersFlag>
-    </PropertyGroup>
     <PropertyGroup Condition="'$(_AxialGuardrailsBaselineProposalDirectory)' != ''">
       <_AxialGuardrailsProposalProject>$([System.IO.Path]::GetRelativePath('$(_AxialGuardrailsPolicyRoot)', '$(MSBuildProjectFullPath)'))</_AxialGuardrailsProposalProject>
       <_AxialGuardrailsProposalFile>$([System.IO.Path]::Combine('$(_AxialGuardrailsBaselineProposalDirectory)', '$(_AxialGuardrailsProposalProject).$(TargetFramework).baseline'))</_AxialGuardrailsProposalFile>
@@ -237,8 +227,7 @@
       <_AxialGuardrailsConfigLine Include="@(AxialGuardrail->'guardrail&#9;%(Identity)')" />
       <_AxialGuardrailsConfigLine Include="@(_AxialGuardrailsBaselineEntry->'baseline&#9;%(Identity)')" />
       <_AxialGuardrailsConfigLine Include="setting&#9;checkpoint&#9;$(AxialGuardrailsCheckpoint)" />
-      <!-- Include selection in the content fingerprint so toggling InTests=all invalidates cached analysis. -->
-      <_AxialGuardrailsConfigLine Include="setting&#9;analyzerSelection&#9;$(_AxialGuardrailsIncludeAnalyzersFlag)" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;inTests&#9;$(AxialGuardrailsInTests)" />
       <_AxialGuardrailsConfigLine Include="setting&#9;baselineOutput&#9;$(_AxialGuardrailsProposalFile)" Condition="'$(_AxialGuardrailsProposalFile)' != ''" />
       <_AxialGuardrailsConfigLine Include="setting&#9;baselineRule&#9;$(_AxialGuardrailsBaselineRuleCode)" Condition="'$(_AxialGuardrailsProposalFile)' != ''" />
       <_AxialGuardrailsConfigLine Include="setting&#9;baselineRoot&#9;$(_AxialGuardrailsBaselineRoot)" />
@@ -277,7 +266,7 @@
     <!-- The CLI targets net8 but may load the building SDK's newer MSBuild assemblies during project loading.
          Override inherited Major/Disable policies only for this child, including local-tool overrides and
          policy baseline's nested builds. Major alone stays on net8 when that runtime is installed. -->
-    <Exec Command="$(_AxialGuardrailsExe) $(_AxialGuardrailsAnalysisInput) --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsIncludeAnalyzersFlag) --code-root &quot;$(MSBuildProjectDirectory)&quot;"
+    <Exec Command="$(_AxialGuardrailsExe) $(_AxialGuardrailsAnalysisInput) --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; --code-root &quot;$(MSBuildProjectDirectory)&quot;"
           EnvironmentVariables="AXIAL_GUARDRAILS_CONFIG=$(_AxialGuardrailsConfigFile);DOTNET_ROLL_FORWARD=LatestMajor" IgnoreExitCode="true" ConsoleToMSBuild="true">
       <Output TaskParameter="ExitCode" PropertyName="_AxialGuardrailsExit" />
       <Output TaskParameter="ConsoleOutput" ItemName="_AxialGuardrailsToolOutput" />

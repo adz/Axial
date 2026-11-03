@@ -137,7 +137,6 @@ module PolicyLock =
                 // Runtime exemptions are approval-sensitive like boundary declarations.
                 let boundaries = (config.Boundaries @ (config.Runtime |> List.map (fun path -> "runtime:" + path))) |> Set.ofList
                 let baselineEntries = baselineEntries baselinePath
-                let roleName = function Domain->"domain" | Capabilities->"capabilities" | Services->"services" | Host->"host" | Test->"test"
                 let sourceProjects =
                     files
                     |> Seq.filter (fun path -> path.EndsWith(".fsproj",StringComparison.Ordinal))

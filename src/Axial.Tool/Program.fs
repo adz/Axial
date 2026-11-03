@@ -247,25 +247,6 @@ Approval means a human read the review. The first review requires --since <ref>.
         | ["init"] -> init asJson None
         | ["init"; "--ci"; host] when List.contains host ciHosts -> init asJson (Some host)
         | "init"::_ -> emit asJson false "Usage: axial init [--ci github|gitlab|bitbucket|other] [--json]"
-        // MSBuild reads only the declared project role; package-derived IsTestProject is not policy.
-        | ["policy"; "project-role"; project] ->
-            let policyPath = Path.Combine(root(), ConfigName)
-            match Axial.Guardrails.Policy.parse (root()) knownRules (File.ReadAllText policyPath) with
-            | Error errors -> emit asJson false (String.concat Environment.NewLine errors)
-            | Ok config ->
-                let relative = Path.GetRelativePath(root(), Path.GetFullPath project).Replace('\\', '/')
-                match Axial.Guardrails.Policy.projectRole config relative with
-                | Error error -> emit asJson false error
-                | Ok role ->
-                    let name =
-                        match role with
-                        | Axial.Guardrails.Policy.Domain -> "domain"
-                        | Axial.Guardrails.Policy.Capabilities -> "capabilities"
-                        | Axial.Guardrails.Policy.Services -> "services"
-                        | Axial.Guardrails.Policy.Host -> "host"
-                        | Axial.Guardrails.Policy.Test -> "test"
-                    printfn "%s" name
-                    0
         | "policy"::"review"::rest ->
             let rec options (since: string option) checkOnly = function
                 | [] -> Ok (since, checkOnly)

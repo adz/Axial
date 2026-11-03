@@ -460,6 +460,26 @@ module PackagePropsTests =
         else Assert.DoesNotContain("AXG001", result.Output)
 
     [<Fact>]
+    let ``changing InTests invalidates cached analyzer selection in both directions`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-selection-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework>" "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n"
+            writeV2Policy dir "test" "deny"
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let first = runBuild project None
+            Assert.True(first.ExitCode = 0, first.Output)
+            let all = runBuildWithArgs [ "-p:AxialGuardrailsInTests=all" ] project None
+            Assert.NotEqual(0, all.ExitCode)
+            Assert.Contains("AXG001", all.Output)
+            let reduced = runBuild project None
+            Assert.True(reduced.ExitCode = 0, reduced.Output)
+            Assert.Contains("Running Axial.Guardrails analysis", reduced.Output)
+            Assert.DoesNotContain("AXG001", reduced.Output)
+        finally
+            Directory.Delete(dir, true)
+
+    [<Fact>]
     let ``default test builds report guessed waits without enabling ambient effect rules`` () =
         let build source =
             buildConsumerInTemp (fun dir ->

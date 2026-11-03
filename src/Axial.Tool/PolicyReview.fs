@@ -100,7 +100,7 @@ module PolicyReview =
         // Query mode validates glob exclusions even in inactive item groups. Supply the
         // same safe fallback as the targets, without overriding the project's enabled setting.
         let globRoot = Path.GetDirectoryName(Path.GetFullPath(Path.Combine(root, project)))
-        let output = command root "dotnet" (["msbuild"; project; "-nologo"; $"-p:_AxialGuardrailsPolicyGlobRoot={globRoot}"; "-getProperty:AxialGuardrailsEnabled,AxialGuardrailsRole,TargetFrameworks"; "-getItem:AxialGuardrail,PackageReference,PackageVersion"] @ extraArgs)
+        let output = command root "dotnet" (["msbuild"; project; "-nologo"; $"-p:_AxialGuardrailsPolicyGlobRoot={globRoot}"; "-getProperty:AxialGuardrailsEnabled,AxialGuardrailsInTests,TargetFrameworks"; "-getItem:AxialGuardrail,PackageReference,PackageVersion"] @ extraArgs)
         use json = JsonDocument.Parse output
         let properties = json.RootElement.GetProperty("Properties")
         let items = json.RootElement.GetProperty("Items")
@@ -167,7 +167,6 @@ module PolicyReview =
             match parse root knownRules (File.ReadAllText(Path.Combine(root, ConfigName))) with
             | Ok config -> config | Error errors -> failwith (String.concat "\n" errors)
         let snapshot = inspect root |> function Ok s -> s | Error e -> failwith e
-        let roleName = function Domain -> "domain" | Capabilities -> "capabilities" | Services -> "services" | Host -> "host" | Test -> "test"
         let assignments kind entries =
             entries |> List.collect (fun entry -> entry.Patterns |> List.map (fun pattern -> $"{kind}:{pattern} => {roleName entry.Role}"))
         let suppressions = suppressionInventory root allFiles config.SuppressionIgnores

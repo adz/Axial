@@ -45,6 +45,8 @@ test = ["**/*.fsproj"]
 """
         write config (String.concat "\n" [
             "guardrail\tAxial"
+            // Exercise every analyzer's source classification even though this fixture has a test project role.
+            "setting\tinTests\tall"
             $"setting\tpolicyRoot\t{repo}"
             $"setting\tpolicyFile\t{policy}"
             $"setting\tprojectPath\t{project}"
