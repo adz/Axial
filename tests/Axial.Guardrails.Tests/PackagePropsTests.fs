@@ -146,6 +146,77 @@ module PackagePropsTests =
         finally
             Directory.Delete(dir, true)
 
+    [<Fact>]
+    let ``slice1 cache report corruption reruns and cache hits replay findings with opt in timings`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-slice1-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumer dir
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let first = runBuild project None
+            Assert.Equal(0, first.ExitCode)
+            Assert.Contains("AXG001", first.Output)
+            let report = Directory.GetFiles(dir, "axial-guardrails.*.result.xml", SearchOption.AllDirectories) |> Array.exactlyOne
+            let document = System.Xml.Linq.XDocument.Load report
+            Assert.Equal("true", document.Root.Attribute(System.Xml.Linq.XName.Get "complete").Value)
+            Assert.NotEmpty(document.Descendants(System.Xml.Linq.XName.Get "coverage"))
+            Assert.Empty(Directory.GetFiles(dir, "axial-guardrails.*.timings.xml", SearchOption.AllDirectories))
+            let cached = runBuild project None
+            Assert.Equal(0, cached.ExitCode)
+            Assert.DoesNotContain("Running Axial.Guardrails analysis", cached.Output)
+            Assert.Contains("AXG001", cached.Output)
+            File.WriteAllText(report, "<truncated")
+            let rerun = runBuildWithArgs [ "-p:AxialGuardrailsTimings=true" ] project None
+            Assert.Equal(0, rerun.ExitCode)
+            Assert.Contains("Running Axial.Guardrails analysis", rerun.Output)
+            let timings = Directory.GetFiles(dir, "axial-guardrails.*.timings.xml", SearchOption.AllDirectories) |> Array.exactlyOne
+            let text = File.ReadAllText timings
+            for phase in [ "startup"; "project-load"; "fcs-check"; "output"; "fingerprint"; "rule" ] do
+                Assert.Contains(phase, text)
+        finally Directory.Delete(dir, true)
+
+    [<Fact>]
+    let ``slice1 process crash warns under warnings as errors and never stamps`` () =
+        if not (OperatingSystem.IsWindows()) then
+            let dir = Path.Combine(Path.GetTempPath(), "axial-slice1-crash-" + Guid.NewGuid().ToString("N"))
+            Directory.CreateDirectory dir |> ignore
+            try
+                writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework><TreatWarningsAsErrors>true</TreatWarningsAsErrors>" "module Consumer\nlet value = 1\n"
+                let project = Path.Combine(dir, "Consumer.fsproj")
+                let xml = System.Xml.Linq.XDocument.Load project
+                let command = xml.Descendants(System.Xml.Linq.XName.Get "_AxialGuardrailsExe") |> Seq.exactlyOne
+                command.Value <- "sh -c 'exit 17' --"
+                xml.Save project
+                let result = runBuildWithArgs [ "-warnaserror" ] project None
+                Assert.True(result.ExitCode = 0, result.Output)
+                Assert.Contains("AXGINF001", result.Output)
+                Assert.Empty(Directory.GetFiles(dir, "axial-guardrails.net10.0.stamp", SearchOption.AllDirectories))
+                let report = Directory.GetFiles(dir, "axial-guardrails.*.result.xml", SearchOption.AllDirectories) |> Array.exactlyOne
+                Assert.Contains("complete=\"false\"", File.ReadAllText report)
+            finally Directory.Delete(dir, true)
+
+    [<Fact>]
+    let ``slice1 failed rule records skip while following rule still runs`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-slice1-rule-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        let previous = Environment.GetEnvironmentVariable "AXIAL_GUARDRAILS_RUN"
+        try
+            Environment.SetEnvironmentVariable("AXIAL_GUARDRAILS_RUN", dir)
+            let context = AnalyzerTestContext.create "module Fixture\nlet value = 1\n" |> fun pending -> pending.GetAwaiter().GetResult()
+            let broken = Axial.Guardrails.Execution.track "BrokenRule" (fun _ -> async { return failwith "injected failure" })
+            let healthy = Axial.Guardrails.Execution.track "HealthyRule" (fun _ -> async { return [] })
+            Assert.Empty(broken context |> Async.RunSynchronously)
+            Assert.Empty(healthy context |> Async.RunSynchronously)
+            let entries = Directory.GetFiles(dir, "*.xml") |> Array.map File.ReadAllText |> String.concat "\n"
+            Assert.Contains("BrokenRule", entries)
+            Assert.Contains("injected failure", entries)
+            Assert.Contains("skipped", entries)
+            Assert.Contains("HealthyRule", entries)
+            Assert.Contains("ran", entries)
+        finally
+            Environment.SetEnvironmentVariable("AXIAL_GUARDRAILS_RUN", previous)
+            Directory.Delete(dir, true)
+
     [<Theory>]
     [<InlineData("AxialGuardrailsEffectBoundaryCheck")>]
     [<InlineData("AxialGuardrailsCheckPolicy")>]
