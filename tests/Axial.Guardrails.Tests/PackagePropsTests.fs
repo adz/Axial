@@ -212,8 +212,10 @@ module PackagePropsTests =
             Assert.Contains("status=\"ran\"", text)
         finally Directory.Delete(dir, true)
 
-    [<Fact>]
-    let ``slice1 process crash warns under warnings as errors and never stamps`` () =
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
+    let ``slice1 process crash reports once and strict mode fails without stamping`` (strict: bool) =
         if not (OperatingSystem.IsWindows()) then
             let dir = Path.Combine(Path.GetTempPath(), "axial-slice1-crash-" + Guid.NewGuid().ToString("N"))
             Directory.CreateDirectory dir |> ignore
@@ -224,13 +226,85 @@ module PackagePropsTests =
                 let command = xml.Descendants(System.Xml.Linq.XName.Get "_AxialGuardrailsExe") |> Seq.exactlyOne
                 command.Value <- "sh -c 'exit 17' --"
                 xml.Save project
-                let result = runBuildWithArgs [ "-warnaserror" ] project None
-                Assert.True(result.ExitCode = 0, result.Output)
-                Assert.Contains("AXGINF001", result.Output)
+                let result = runBuildWithArgs [ "-warnaserror"; "-clp:NoSummary"; $"-p:AxialGuardrailsRequireCompleteCoverage={strict.ToString().ToLowerInvariant()}" ] project None
+                Assert.True((result.ExitCode <> 0) = strict, result.Output)
+                Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(result.Output, "AXGINF001").Count)
+                Assert.Contains("exit code 17", result.Output)
                 Assert.Empty(Directory.GetFiles(dir, "axial-guardrails.net10.0.stamp", SearchOption.AllDirectories))
                 let report = Directory.GetFiles(dir, "axial-guardrails.*.result.xml", SearchOption.AllDirectories) |> Array.exactlyOne
                 Assert.Contains("complete=\"false\"", File.ReadAllText report)
             finally Directory.Delete(dir, true)
+
+    [<Fact>]
+    let ``slice1 signature files reach complete coverage and reuse the cache`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-signature-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework><AxialGuardrailsRequireCompleteCoverage>true</AxialGuardrailsRequireCompleteCoverage>" "module Consumer\nlet value = 1\n"
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            File.WriteAllText(Path.Combine(dir, "Program.fsi"), "module Consumer\nval value: int\n")
+            File.WriteAllText(project, (File.ReadAllText project).Replace("<Compile Include=\"Program.fs\" />", "<Compile Include=\"Program.fsi\" /><Compile Include=\"Program.fs\" />"))
+            let first = runBuild project None
+            Assert.True(first.ExitCode = 0, first.Output)
+            let report = Directory.GetFiles(dir, "*.result.xml", SearchOption.AllDirectories) |> Array.exactlyOne
+            Assert.Contains("complete=\"true\"", File.ReadAllText report)
+            let second = runBuild project None
+            Assert.True(second.ExitCode = 0, second.Output)
+            Assert.DoesNotContain("Running Axial.Guardrails analysis", second.Output)
+        finally Directory.Delete(dir, true)
+
+    [<Fact>]
+    let ``slice1 cached error findings still fail the build`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-error-cache-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumer dir
+            writeV2Policy dir "domain" "error"
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let first = runBuild project None
+            Assert.True(first.ExitCode <> 0, first.Output)
+            Assert.Contains("error AXG001", first.Output)
+            let second = runBuild project None
+            Assert.DoesNotContain("Running Axial.Guardrails analysis", second.Output)
+            Assert.True(second.ExitCode <> 0, second.Output)
+            Assert.Contains("error AXG001", second.Output)
+        finally Directory.Delete(dir, true)
+
+    [<Fact>]
+    let ``slice1 every CLI entry point is tracked and included in the coverage contract`` () =
+        let root = Path.Combine(repoRoot (), "src", "Axial.Guardrails")
+        let matches pattern text =
+            System.Text.RegularExpressions.Regex.Matches(text, pattern)
+            |> Seq.cast<System.Text.RegularExpressions.Match>
+            |> Seq.map (fun m -> m.Groups[1].Value)
+            |> Seq.toList
+        let mutable entries = []
+        let mutable tracked = []
+        for file in Directory.GetFiles(root, "*.fs") do
+            let text = File.ReadAllText file
+            entries <- entries @ matches "CliAnalyzer\\(\"([^\"]+)\"" text
+            tracked <- tracked @ matches "Execution.track \"([^\"]+)\"" text
+            // Check each entry's body, not merely the aggregate set.
+            for block in System.Text.RegularExpressions.Regex.Split(text, "\\[<CliAnalyzer") |> Array.skip 1 do
+                let name = matches "^\\(\"([^\"]+)\"" block |> List.exactlyOne
+                Assert.Contains($"Execution.track \"{name}\"", block)
+        let xml = System.Xml.Linq.XDocument.Load(Path.Combine(root, "build", "Axial.Guardrails.targets"))
+        let rules = (xml.Descendants(System.Xml.Linq.XName.Get "_AxialGuardrailsRules") |> Seq.exactlyOne).Value.Split(';') |> Array.toList
+        Assert.NotEmpty entries
+        Assert.Equal<string list>(List.sort entries, List.sort tracked)
+        Assert.Equal<string list>(List.sort entries, List.sort rules)
+
+    [<Fact>]
+    let ``slice1 Windows shell arguments preserve nested command quotes`` () =
+        let assembly = System.Reflection.Assembly.LoadFrom(Path.Combine(repoRoot (), "artifacts", "bin", "Axial.Guardrails.Build", configuration (), "Axial.Guardrails.Build.dll"))
+        let task = assembly.GetType("AxialGuardrailsTask")
+        let factory = task.GetMethod("CreateStartInfo")
+        Assert.NotNull factory
+        let command = "dotnet \"C:\\Program Files\\tool.dll\" --project \"C:\\my app\\App.fsproj\""
+        let start = factory.Invoke(null, [| box command; box true |]) :?> ProcessStartInfo
+        Assert.Equal("cmd.exe", start.FileName)
+        Assert.Equal("/d /s /c \"" + command + "\"", start.Arguments)
+        Assert.Empty start.ArgumentList
 
     [<Theory>]
     [<InlineData("AxialGuardrailsCheckPolicy")>]
