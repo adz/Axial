@@ -250,7 +250,7 @@ Approval means a human read the review. The first review requires --since <ref>.
                         let code, output, errors = Command.run repo "dotnet"
                                                     ["build"; project; "--nologo"; "-v:q"; "-m:1"; "-nodeReuse:false";
                                                      "-p:_AxialGuardrailsBaselineProposalDirectory=" + proposal;
-                                                     "-p:_AxialGuardrailsBaselineRuleCode=" + diagnostic] 180000 true
+                                                     "-p:_AxialGuardrailsBaselineRuleCode=" + diagnostic] 180000 false
                         let incomplete =
                             Directory.GetFiles(proposal, "*.coverage.xml", SearchOption.AllDirectories)
                             |> Array.exists (Coverage.complete None >> not)
