@@ -91,3 +91,9 @@ module AnalyzerTestContext =
         getContext withAxial (Path.Combine(directory, "Fixture.fs")) source
 
     let create source = createWithAxial false source
+
+    /// Waits for a context from a synchronous fact. The work runs on the thread pool, off xunit's synchronization
+    /// context: blocking a runner thread on a task whose continuations need that context (and the gate above) can
+    /// deadlock when the runner has as few threads as a 2-vCPU CI machine.
+    let wait (create: unit -> Threading.Tasks.Task<'T>) : 'T =
+        Threading.Tasks.Task.Run<'T>(Func<Threading.Tasks.Task<'T>> create).GetAwaiter().GetResult()

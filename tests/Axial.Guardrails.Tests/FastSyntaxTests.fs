@@ -147,7 +147,7 @@ module FastSyntaxTests =
             let policy = Path.Combine(root, "Axial.Guardrails.toml")
             File.AppendAllText(policy, $"\n[roles.{role}.rules]\n\"effects.ambient\" = \"forbid\"\n[boundaries]\nfiles = [\"Fast.fs\"]\n")
             let config = GuardrailConfig.parse ["guardrail\tAxial"; $"setting\tpolicyRoot\t{root}"; $"setting\tpolicyFile\t{policy}"; $"setting\tprojectPath\t{root}/Tests.fsproj"]
-            let ctx = AnalyzerTestContext.createAt path source |> fun t -> t.GetAwaiter().GetResult()
+            let ctx = AnalyzerTestContext.wait (fun () -> AnalyzerTestContext.createAt path source)
             Assert.NotEmpty(EffectBoundaryAnalyzer.analyzeWithConfig config ctx)
             Assert.Contains(FastSyntax.analyze config path ctx.SourceText ctx.ParseFileResults.ParseTree, fun (_, message) -> message.Code = "AXG001"))
 
@@ -174,7 +174,7 @@ module FastSyntaxTests =
         for code, role, source in corpus do
             withConfig role (fun config path ->
                 File.WriteAllText(path, source)
-                let ctx = AnalyzerTestContext.createWithAxialAt path source |> fun t -> t.GetAwaiter().GetResult()
+                let ctx = AnalyzerTestContext.wait (fun () -> AnalyzerTestContext.createWithAxialAt path source)
                 Assert.Empty(ctx.CheckFileResults.Diagnostics |> Array.filter (fun d -> d.Severity = FSharp.Compiler.Diagnostics.FSharpDiagnosticSeverity.Error))
                 let fast = FastSyntax.analyze config path ctx.SourceText ctx.ParseFileResults.ParseTree |> List.map snd |> List.filter (fun m -> m.Code = code)
                 let full =

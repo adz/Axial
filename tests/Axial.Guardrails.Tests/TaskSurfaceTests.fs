@@ -34,7 +34,7 @@ module TaskSurfaceTests =
 
     let private full config path (source: string) =
         File.WriteAllText(path, source)
-        let ctx = AnalyzerTestContext.createWithAxialAt path source |> fun t -> t.GetAwaiter().GetResult()
+        let ctx = AnalyzerTestContext.wait (fun () -> AnalyzerTestContext.createWithAxialAt path source)
         Assert.Empty(ctx.CheckFileResults.Diagnostics |> Array.filter (fun d -> d.Severity = FSharp.Compiler.Diagnostics.FSharpDiagnosticSeverity.Error))
         TaskSurfaceAnalyzer.analyzeWithConfig config ctx
 

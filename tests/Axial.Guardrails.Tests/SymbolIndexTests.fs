@@ -42,7 +42,7 @@ module SymbolIndexTests =
 
     [<MethodImpl(MethodImplOptions.NoInlining)>]
     let private abandonedIndex () =
-        let ctx = AnalyzerTestContext.create "module M\nlet f x = x + 1\n" |> _.GetAwaiter().GetResult()
+        let ctx = AnalyzerTestContext.wait (fun () -> AnalyzerTestContext.create "module M\nlet f x = x + 1\n")
         let index = SymbolIndex.forContext ctx
         // Force both indexes and a memo whose closure captures its key (ephemeron cycle).
         index.EndingAt ctx.ParseFileResults.ParseTree.Range |> Seq.length |> ignore

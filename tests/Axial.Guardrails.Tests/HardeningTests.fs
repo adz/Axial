@@ -230,3 +230,17 @@ module HardeningTests =
                     Assert.Contains("line 2", error.Message)
                     Assert.Equal("error", expected)
                 | value -> Assert.Fail($"Vector '{name}' has unknown expectation '{value}'")
+
+    [<Fact>]
+    let ``test processes keep their output and fail when a descendant holds the pipe open`` () =
+        let shell (script: string) =
+            let info = System.Diagnostics.ProcessStartInfo("/bin/sh")
+            info.ArgumentList.Add "-c"
+            info.ArgumentList.Add script
+            info
+        let code, out, err = TestProcess.run 30_000 (shell "echo out; echo err >&2; exit 3")
+        Assert.Equal((3, "out\n", "err\n"), (code, out, err))
+        // A backgrounded job inherits stdout and outlives the shell: the drain never reaches end-of-file.
+        let error = Assert.ThrowsAny<exn>(fun () -> TestProcess.run 30_000 (shell "echo started; sleep 30 &") |> ignore)
+        Assert.Contains("output stayed open", error.Message)
+        Assert.Contains("started", error.Message)
