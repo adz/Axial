@@ -35,17 +35,9 @@ module PolicyLock =
 
     let private relative root path = Path.GetRelativePath(root, path).Replace('\\','/')
     let internal repositoryFiles root =
-        let git = ProcessStartInfo("git", "ls-files -z --cached --others --exclude-standard")
-        git.WorkingDirectory <- root
-        git.RedirectStandardOutput <- true
-        git.RedirectStandardError <- true
-        git.UseShellExecute <- false
-        use childProcess = Process.Start git
-        let errors = childProcess.StandardError.ReadToEndAsync()
-        let output = childProcess.StandardOutput.ReadToEnd()
-        childProcess.WaitForExit()
-        errors.GetAwaiter().GetResult() |> ignore
-        if childProcess.ExitCode = 0 then
+        // Bounded: a hung git fails this check instead of hanging every build that runs it.
+        let code, output, _ = Command.run root "git" [ "ls-files"; "-z"; "--cached"; "--others"; "--exclude-standard" ] 120000 false
+        if code = 0 then
             output.Split('\000',StringSplitOptions.RemoveEmptyEntries) |> Array.map(fun path -> Path.Combine(root,path)) |> Array.filter File.Exists
         else
             let skipped = set [ ".git"; ".livedocs"; ".fsdocs"; "node_modules"; "artifacts"; "bin"; "obj"; "output" ]
