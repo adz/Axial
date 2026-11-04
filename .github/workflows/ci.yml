@@ -16,6 +16,8 @@ env:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    # About twice the slowest recent run (Build ~10 min, Test ~40 min): a hang fails fast instead of running for hours.
+    timeout-minutes: 120
 
     steps:
       - name: Check out repository
@@ -41,6 +43,7 @@ jobs:
         run: bash scripts/check-release-notes.sh
 
       - name: Build
+        timeout-minutes: 30
         # Full typed coverage on every push. Policy review/approval remains a release gate:
         # pending human review must not make ordinary main pushes red.
         run: |
@@ -48,23 +51,30 @@ jobs:
           dotnet build Axial.slnx --configuration Release --no-restore --nologo -v minimal -p:AxialGuardrailsMode=Full
 
       - name: Test
-        run: dotnet test Axial.slnx --configuration Release --no-build --nologo -v minimal
+        timeout-minutes: 80
+        # A test host that makes no progress for 15 minutes is killed and named; dumps are too large to keep.
+        run: dotnet test Axial.slnx --configuration Release --no-build --nologo -v minimal --blame-hang-timeout 15m --blame-hang-dump-type none
 
       - name: Test HTTP host adapters
-        run: dotnet test tests/Axial.Hosting.Http.Tests --configuration Release --nologo -v minimal
+        timeout-minutes: 20
+        run: dotnet test tests/Axial.Hosting.Http.Tests --configuration Release --nologo -v minimal --blame-hang-timeout 15m --blame-hang-dump-type none
 
       - name: Check shipped assemblies for FSharp.Core printf
+        timeout-minutes: 30
         # Not in Axial.slnx: it builds every shipped project itself, including the HTTP adapters.
-        run: dotnet test tests/Axial.Build.Tests --configuration Release --nologo -v minimal
+        run: dotnet test tests/Axial.Build.Tests --configuration Release --nologo -v minimal --blame-hang-timeout 15m --blame-hang-dump-type none
 
       - name: Run main example
+        timeout-minutes: 10
         run: dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --configuration Release --no-build --nologo
 
       - name: Run maintenance example
+        timeout-minutes: 10
         run: dotnet run --project examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj --configuration Release --no-build --nologo
 
   fable:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Check out repository
@@ -91,6 +101,7 @@ jobs:
 
   native-aot:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Check out repository
@@ -112,6 +123,7 @@ jobs:
 
   packages:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Check out repository
