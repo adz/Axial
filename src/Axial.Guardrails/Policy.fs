@@ -362,4 +362,9 @@ module Policy =
         | Ok project, Ok file ->
             projectRole config project
             |> Result.bind (fun projectRole -> choose "file" file projectRole (matchingRoles file config.Files))
-            |> Result.map (fun role -> { Role = role; Rules = config.Rules |> Map.tryFind role |> Option.defaultValue Map.empty })
+            |> Result.map (fun role ->
+                let rules = config.Rules |> Map.tryFind role |> Option.defaultValue Map.empty
+                // Tests exercise live effects for setup and assertions: AXG001 guides them by default. Policy can
+                // still opt in to deny/forbid (or allow) explicitly.
+                let rules = if role = Test && not (rules.ContainsKey "effects.ambient") then rules.Add("effects.ambient", Warn) else rules
+                { Role = role; Rules = rules })

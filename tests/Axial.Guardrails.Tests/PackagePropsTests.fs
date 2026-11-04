@@ -226,11 +226,20 @@ module PackagePropsTests =
     [<InlineData("Fast")>]
     [<InlineData("Full")>]
     let ``test role retains AXG001 guidance with mode appropriate certainty`` mode =
-        let result = buildConsumerInTemp (fun dir ->
+        let build optIn = buildConsumerInTemp (fun dir ->
             writeConsumerProject dir ($"<TargetFramework>net10.0</TargetFramework><AxialGuardrailsMode>{mode}</AxialGuardrailsMode>") "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n"
-            writeV2Policy dir "test" "deny")
-        Assert.Equal((mode = "Fast"), (result.ExitCode = 0))
-        Assert.Contains("AXG001", result.Output)
+            writeV2Policy dir "test" "deny"
+            if optIn then
+                File.AppendAllText(Path.Combine(dir, "Axial.Guardrails.toml"), "\n[roles.test.rules]\n\"effects.ambient\" = \"deny\"\n")
+                writeFixtureLock dir)
+        // The test role warns by default in both modes; deny is an explicit opt-in that only Full can enforce.
+        let warned = build false
+        Assert.True((warned.ExitCode = 0), warned.Output)
+        Assert.Contains("AXG001", warned.Output)
+        if mode = "Full" then Assert.Contains("warning AXG001", warned.Output)
+        let denied = build true
+        Assert.Equal((mode = "Fast"), (denied.ExitCode = 0))
+        Assert.Contains("AXG001", denied.Output)
 
     [<Fact>]
     let ``slice2 command timeout kills tree and inherited pipes cannot hang`` () =
@@ -913,10 +922,10 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
         Assert.Contains("axial policy review", openDrift.Output)
 
     [<Theory>]
-    [<InlineData("test", false, false, true)>]
+    [<InlineData("test", false, false, false)>]
     [<InlineData("domain", true, false, true)>]
-    [<InlineData("test", false, true, true)>]
-    let ``AXG001 guidance is retained independently of test SDK and InTests`` role isTest all expectsAmbient =
+    [<InlineData("test", false, true, false)>]
+    let ``AXG001 guidance is retained independently of test SDK and InTests`` role isTest all expectsError =
         let result =
             buildConsumerInTemp (fun dir ->
                 writeConsumerProject dir
@@ -926,9 +935,9 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
                 writeV2Policy dir "domain" "deny"
                 File.AppendAllText(Path.Combine(dir, "Axial.Guardrails.toml"), $"\n[projects]\n{role} = [\"Consumer.fsproj\"]\n")
                 writeFixtureLock dir)
-        Assert.True((expectsAmbient = (result.ExitCode <> 0)), result.Output)
-        if expectsAmbient then Assert.Contains("AXG001", result.Output)
-        else Assert.DoesNotContain("AXG001", result.Output)
+        // The test role warns by default; the domain role keeps deny.
+        Assert.True((expectsError = (result.ExitCode <> 0)), result.Output)
+        Assert.Contains("AXG001", result.Output)
 
     [<Fact>]
     let ``changing InTests invalidates cached analysis without dropping AXG001`` () =
@@ -938,14 +947,15 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
             writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework>" "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n"
             writeV2Policy dir "test" "deny"
             let project = Path.Combine(dir, "Consumer.fsproj")
+            // Test-role AXG001 warns by default, so every build succeeds and still reports it.
             let first = runBuild project None
-            Assert.NotEqual(0, first.ExitCode)
+            Assert.True((first.ExitCode = 0), first.Output)
             Assert.Contains("AXG001", first.Output)
             let all = runBuildWithArgs [ "-p:AxialGuardrailsInTests=all" ] project None
-            Assert.NotEqual(0, all.ExitCode)
+            Assert.True((all.ExitCode = 0), all.Output)
             Assert.Contains("AXG001", all.Output)
             let reduced = runBuild project None
-            Assert.NotEqual(0, reduced.ExitCode)
+            Assert.True((reduced.ExitCode = 0), reduced.Output)
             Assert.Contains("Running Axial.Guardrails analysis", reduced.Output)
             Assert.Contains("AXG001", reduced.Output)
         finally

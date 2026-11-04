@@ -118,6 +118,21 @@ files = ["src/App/Boundary.fs"]
             test <@ (Policy.resolve policy "src/App/App.fsproj" "src/App/Capabilities/Sql.fs" |> Result.toOption |> Option.get).Role = Capabilities @>
             test <@ (Policy.resolve policy "other/Other.fsproj" "other/File.fs" |> Result.toOption |> Option.get).Role = Domain @>)
 
+    [<Theory>]
+    [<InlineData("", "warn")>]
+    [<InlineData("[roles.test.rules]\n\"effects.ambient\" = \"deny\"", "deny")>]
+    [<InlineData("[roles.test.rules]\n\"effects.ambient\" = \"forbid\"", "forbid")>]
+    [<InlineData("[roles.test.rules]\n\"effects.ambient\" = \"allow\"", "allow")>]
+    let ``test-role ambient effects warn by default and deny or forbid only by opt-in`` (rules: string) (expected: string) =
+        withRepository (fun root ->
+            let text = "version = 2\n[default]\nrole = \"domain\"\n[projects]\ntest = [\"tests/**/*.fsproj\"]\n" + rules
+            let policy = parse root text |> Result.toOption |> Option.get
+            let level = (Policy.resolve policy "tests/App.Tests.fsproj" "tests/Probe.fs" |> Result.toOption |> Option.get).Rules["effects.ambient"]
+            let name = match level with Allow -> "allow" | Warn -> "warn" | Deny -> "deny" | Forbid -> "forbid"
+            test <@ name = expected @>
+            // Other roles keep their absent-means-deny default.
+            test <@ not ((Policy.resolve policy "src/App/App.fsproj" "src/App/Domain.fs" |> Result.toOption |> Option.get).Rules.ContainsKey "effects.ambient") @>)
+
     [<Fact>]
     let ``empty declared capabilities folder is valid but other unmatched paths fail`` () =
         withRepository (fun root ->
