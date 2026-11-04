@@ -100,6 +100,57 @@ let private enclosing (path: SyntaxNode list) =
             | _ -> None)
     modules, bindings
 
+/// A raw task site by Fast's syntax: a `task`/`backgroundTask` expression or a public signature annotated to return
+/// Task/ValueTask. `Guide` is the AXG014 text when the file's role and tier report the site.
+type TaskSite = { Range: range; Guide: string option }
+
+let private taskSitesIn (config: GuardrailConfig.Config) fileName (opened: Set<string>) (shadowed: System.Collections.Generic.HashSet<string>) nodes =
+    let unshadowed (text: string) = not (shadowed.Contains(text.Split('.')[0]))
+    let spells full (text: string) = unshadowed text && List.contains text (spellingsIn opened full)
+    let inScope =
+        config.EnabledGuardrails.Contains CoreGuardrail
+        && GuardrailConfig.runsInProject config TaskSurfaceSyntax.Code
+        && not (GuardrailConfig.isSkippedSource config fileName)
+    let tier = if inScope then TaskSurfaceSyntax.tier config fileName else TaskSurfaceSyntax.Off
+    // Ply and TaskBuilder.fs define their own `task` under FSharp.Control.Tasks. Full reports only FSharp.Core's
+    // builders, so Fast never claims a `task` such an open may rebind (Fast stays a subset of Full).
+    let foreignTask = opened |> Set.exists (fun name -> name = "FSharp.Control.Tasks" || name.StartsWith("FSharp.Control.Tasks.", System.StringComparison.Ordinal))
+    [ for expression in TaskSurfaceSyntax.expressions nodes do
+          match TaskSurfaceSyntax.builderName expression.Builder with
+          | Some("task" | "backgroundTask" as builder) when unshadowed builder && not (builder = "task" && foreignTask) ->
+              let guide =
+                  match tier with
+                  | TaskSurfaceSyntax.Strict -> Some(TaskSurfaceSyntax.expressionMessage builder)
+                  | TaskSurfaceSyntax.Bridge when expression.Composes -> Some(TaskSurfaceSyntax.bridgeMessage builder expression)
+                  | _ -> None
+              yield { Range = expression.Builder.Range; Guide = guide }
+          | _ -> ()
+      for signature in TaskSurfaceSyntax.signatures nodes do
+          let returned =
+              typeName signature.ReturnType |> Option.bind (fun text ->
+                  let generic = match signature.ReturnType with SynType.App _ -> true | _ -> false
+                  if spells "System.Threading.Tasks.Task" text then Some(if generic then "Task<'T>" else "Task")
+                  elif spells "System.Threading.Tasks.ValueTask" text then Some(if generic then "ValueTask<'T>" else "ValueTask")
+                  else None)
+          match returned with
+          | Some taskType ->
+              let guide = if tier = TaskSurfaceSyntax.Strict then Some(TaskSurfaceSyntax.signatureMessage signature.Name taskType) else None
+              yield { Range = signature.Range; Guide = guide }
+          | None -> () ]
+
+/// One file's raw task sites and AXG014 guides, counted as Fast reports them (for `axial check`'s trend).
+type TaskSiteCount = { Sites: int; Findings: int; Acknowledged: int }
+
+let taskSiteCount (config: GuardrailConfig.Config) fileName (source: ISourceText) tree =
+    let nodes = ParsedInput.fold (fun nodes path node -> (path, node) :: nodes) [] tree |> List.rev
+    let sites =
+        taskSitesIn config fileName (openedNamespaces nodes) (boundNames nodes) nodes
+        |> List.distinctBy (fun site -> site.Range.StartLine, site.Range.StartColumn)
+    let guided = sites |> List.filter _.Guide.IsSome
+    { Sites = sites.Length
+      Findings = guided.Length
+      Acknowledged = guided |> List.filter (fun site -> (TaskSurfaceSyntax.acknowledgement source site.Range).IsSome) |> List.length }
+
 let analyzeRule requested (config: GuardrailConfig.Config) fileName (source: ISourceText) tree =
     let wants rule = requested |> Option.forall ((=) rule)
     let nodes = ParsedInput.fold (fun nodes path node -> (path, node) :: nodes) [] tree |> List.rev
@@ -275,29 +326,11 @@ let analyzeRule requested (config: GuardrailConfig.Config) fileName (source: ISo
                 | _ -> ()
         | _ -> ()
     // AXG014: CE name and signature text only. Aliased builders and abbreviated return types are Full-only.
-    if core && wants "TaskSurface" && GuardrailConfig.runsInProject config TaskSurfaceSyntax.Code && not (GuardrailConfig.isSkippedSource config fileName) then
-        let tier = TaskSurfaceSyntax.tier config fileName
-        let report (range: range) text =
-            let message = TaskSurfaceSyntax.finding source "Axial fast/unverified hint" range text
-            findings.Add("TaskSurface", { message with Message = "[fast/unverified] " + message.Message })
-        if tier <> TaskSurfaceSyntax.Off then
-            for expression in TaskSurfaceSyntax.expressions nodes do
-                match TaskSurfaceSyntax.builderName expression.Builder with
-                | Some("task" | "backgroundTask" as builder) when unshadowed builder ->
-                    match tier with
-                    | TaskSurfaceSyntax.Strict -> report expression.Builder.Range (TaskSurfaceSyntax.expressionMessage builder)
-                    | TaskSurfaceSyntax.Bridge when expression.Composes -> report expression.Builder.Range (TaskSurfaceSyntax.bridgeMessage builder expression)
-                    | _ -> ()
-                | _ -> ()
-        if tier = TaskSurfaceSyntax.Strict then
-            for signature in TaskSurfaceSyntax.signatures nodes do
-                let returned =
-                    typeName signature.ReturnType |> Option.bind (fun text ->
-                        let generic = match signature.ReturnType with SynType.App _ -> true | _ -> false
-                        if unshadowed text && spells "System.Threading.Tasks.Task" text then Some(if generic then "Task<'T>" else "Task")
-                        elif unshadowed text && spells "System.Threading.Tasks.ValueTask" text then Some(if generic then "ValueTask<'T>" else "ValueTask")
-                        else None)
-                returned |> Option.iter (fun taskType -> report signature.Range (TaskSurfaceSyntax.signatureMessage signature.Name taskType))
+    if core && wants "TaskSurface" then
+        for site in taskSitesIn config fileName opened shadowed nodes do
+            site.Guide |> Option.iter (fun text ->
+                let message = TaskSurfaceSyntax.finding source "Axial fast/unverified hint" site.Range text
+                findings.Add("TaskSurface", { message with Message = "[fast/unverified] " + message.Message }))
     findings |> Seq.distinctBy (fun (rule, m) -> rule, m.Range.StartLine, m.Range.StartColumn) |> Seq.toList
 
 let analyze config fileName source tree = analyzeRule None config fileName source tree

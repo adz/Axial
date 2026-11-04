@@ -45,7 +45,7 @@ let private key (r: range) = r.StartLine, r.StartColumn, r.EndLine, r.EndColumn
 /// Every computation-expression application in parse order, from ParsedInput.fold nodes (nearest parent first).
 ///
 /// Branching is composition only when it decides what to await: an `if`/`match` that contains an await, or precedes
-/// the first one. Translating the one awaited result (a `match` on it, `try/with` mapping its exceptions) is what a
+/// the first one. An `if` without `else` and without an await (argument validation) never does. Translating the one awaited result (a `match` on it, `try/with` mapping its exceptions) is what a
 /// bridge is for, so `try/with` never counts as branching, though awaits in its handlers still count as awaits.
 let expressions (nodes: (SyntaxNode list * SyntaxNode) list) : Expression list =
     let owner (path: SyntaxNode list) =
@@ -57,6 +57,8 @@ let expressions (nodes: (SyntaxNode list * SyntaxNode) list) : Expression list =
         |> Option.flatten
     let awaits = System.Collections.Generic.Dictionary<_, ResizeArray<range>>()
     let branches = System.Collections.Generic.Dictionary<_, ResizeArray<range>>()
+    // `if` without `else`: argument validation that throws or falls through, deciding nothing before the await.
+    let guards = System.Collections.Generic.Dictionary<_, ResizeArray<range>>()
     let loops = System.Collections.Generic.Dictionary<_, int>()
     let add (table: System.Collections.Generic.Dictionary<_, ResizeArray<range>>) path range count =
         match owner path with
@@ -82,6 +84,7 @@ let expressions (nodes: (SyntaxNode list * SyntaxNode) list) : Expression list =
                 match owner path with
                 | Some owner -> loops[owner] <- (match loops.TryGetValue owner with | true, n -> n + 1 | _ -> 1)
                 | None -> ()
+            | SynExpr.IfThenElse(elseExpr = None) -> add guards path expr.Range 1
             | SynExpr.IfThenElse _
             | SynExpr.Match _ -> add branches path expr.Range 1
             | _ -> ()
@@ -99,7 +102,9 @@ let expressions (nodes: (SyntaxNode list * SyntaxNode) list) : Expression list =
             Range = range
             Awaits = awaited.Length
             Loops = (match loops.TryGetValue owner with | true, n -> n | _ -> 0)
-            Branches = get branches owner |> List.filter deciding |> List.length } ]
+            Branches =
+                (get branches owner |> List.filter deciding |> List.length)
+                + (get guards owner |> List.filter (fun guard -> awaited |> List.exists (fun a -> Range.rangeContainsRange guard a)) |> List.length) } ]
 
 /// The spelling of a builder expression: `task`, `backgroundTask`, `t`.
 let rec builderName = function
@@ -122,7 +127,8 @@ let rec private finalReturn = function
 /// A declared signature: module-level let, type member or abstract slot, with its annotated final return type.
 type Signature = { Name: string; Range: range; ReturnType: SynType }
 
-/// Public module-level and member bindings with a return annotation, and public abstract slots. Overrides, interface
+/// Public module-level and member bindings with a return annotation, and public abstract slots. Class `let` bindings
+/// are private to the type and never part of its surface. Overrides, interface
 /// implementations, object expressions and anything inside a private or internal module or type are skipped: their
 /// signature is not this file's public surface. Return types are syntax; the caller decides what they name.
 let signatures (nodes: (SyntaxNode list * SyntaxNode) list) : Signature list =
@@ -136,7 +142,7 @@ let signatures (nodes: (SyntaxNode list * SyntaxNode) list) : Signature list =
     [ for path, node in nodes do
           match node, path with
           | SyntaxNode.SynBinding(SynBinding(accessibility = access; headPat = head; valData = SynValData(memberFlags = flags); returnInfo = Some(SynBindingReturnInfo(typeName = returnType)))),
-            (SyntaxNode.SynModule(SynModuleDecl.Let _) | SyntaxNode.SynMemberDefn _) :: _ when isPublic access && enclosingPublic path ->
+            (SyntaxNode.SynModule(SynModuleDecl.Let _) | SyntaxNode.SynMemberDefn(SynMemberDefn.Member _)) :: _ when isPublic access && enclosingPublic path ->
               let overrides = flags |> Option.exists (fun flags -> flags.IsOverrideOrExplicitImpl)
               let named =
                   match head with
@@ -171,14 +177,17 @@ let bridgeMessage builder (expression: Expression) =
 let signatureMessage name taskType =
     $"AXG014 guide: public `{name}` returns {taskType}. {why}, and every caller inherits it. Return a `Flow<'env, 'error, 'value>` and let the host run it (`flow.StartAsTask(env, ct)`); lift inbound .NET tasks with `Flow.fromTask`."
 
-/// A guide finding; a valid note on its line or the line above keeps it visible as acknowledged.
+/// The reason of a valid `axial-note AXG014` on the finding's line or the line above.
+let acknowledgement (source: ISourceText) (range: range) =
+    Suppressions.allNotes source
+    |> List.tryFind (fun note -> note.RuleId = Some Code && note.Reason <> "" && (note.Line = range.StartLine || note.Line + 1 = range.StartLine))
+    |> Option.map _.Reason
+
+/// A guide finding; a valid note keeps it visible as acknowledged.
 let finding (source: ISourceText) kind (range: range) (text: string) : Message =
-    let note =
-        Suppressions.allNotes source
-        |> List.tryFind (fun note -> note.RuleId = Some Code && note.Reason <> "" && (note.Line = range.StartLine || note.Line + 1 = range.StartLine))
     { Type = kind
       Code = Code
       Range = range
-      Message = (match note with Some note -> $"{text} Acknowledged: {note.Reason}" | None -> text)
+      Message = (match acknowledgement source range with Some reason -> $"{text} Acknowledged: {reason}" | None -> text)
       Severity = Severity.Info
       Fixes = [] }

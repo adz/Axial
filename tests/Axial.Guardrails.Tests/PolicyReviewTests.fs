@@ -91,7 +91,7 @@ module PolicyReviewTests =
             write "App.fs" "module App\nlet run () : System.Threading.Tasks.Task<int> = task { return 1 }\n"
             let code, output = cli ["check"]
             Assert.Equal(0, code)
-            Assert.Contains("Raw Task (lexical trend, not a gate): 1 task expressions, 1 Task-returning signatures in 1 of 1 projects.", output)
+            Assert.Contains("Raw Task (AXG014 trend, not a gate): 2 AXG014 findings (0 acknowledged); 2 raw task sites in 1 of 1 projects.", output)
             Assert.Contains("App.fsproj", output)
             let code, json = cli ["check"; "--json"]
             Assert.Equal(0, code)
@@ -99,8 +99,9 @@ module PolicyReviewTests =
             let project = document.RootElement.GetProperty("rawTask")[0]
             Assert.Equal("App.fsproj", project.GetProperty("project").GetString())
             Assert.Equal("domain", project.GetProperty("role").GetString())
-            Assert.Equal(1, project.GetProperty("taskExpressions").GetInt32())
-            Assert.Equal(1, project.GetProperty("taskSignatures").GetInt32()))
+            Assert.Equal(2, project.GetProperty("findings").GetInt32())
+            Assert.Equal(0, project.GetProperty("acknowledged").GetInt32())
+            Assert.Equal(2, project.GetProperty("sites").GetInt32()))
 
     [<Theory>]
     [<InlineData("Axial.Guardrails.lock", "corrupt")>]

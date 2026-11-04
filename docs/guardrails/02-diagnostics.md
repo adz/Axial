@@ -423,7 +423,8 @@ What it reports depends on the file's resolved role (`[files]` overrides `[proje
 | `test` | Nothing, unless `AxialGuardrailsInTests=all`; then the bridge rule applies |
 
 Translating the one awaited result is what a bridge is for: a `try/with` that maps its exceptions, or a `match` on
-its result, does not count as composition. Nested lambdas and computation expressions are judged on their own.
+its result, does not count as composition. Nor does argument validation before the await: an `if` without `else`
+that contains no await. Class `let` bindings are private to the type and are not public signatures. Nested lambdas and computation expressions are judged on their own.
 
 Overrides and interface implementations are not reported: a .NET interface dictates that signature. Private and
 internal declarations are not part of the public surface.
@@ -489,14 +490,17 @@ let readBoth (client: HttpClient) (first: string) (second: string) : Flow<unit, 
 
 To hand a flow to a Task-based host, run it at the host boundary (`flow.StartAsTask(env, ct)`), not in domain code.
 For an intentional Task surface, put `// axial-note AXG014: <reason>` on the finding's line or the preceding line;
-the finding stays visible as acknowledged Info. `axial-allow-AXG014` is not accepted.
+the finding stays visible as acknowledged Info, logged below the minimal console verbosity. `axial-allow-AXG014` is
+not accepted.
 
 Full resolves the builder's type, so an aliased builder (`let t = task`) is reported and a shadowing `task` value
 of another type is not, and it follows type abbreviations and inferred return types. Fast matches the spellings
 `task`/`backgroundTask` and annotated return types that name `Task`/`ValueTask` through the file's `open`s; it skips
-names shadowed in the file and does not see aliases, abbreviations or unannotated return types. Both apply the same
-role and composition rules. `axial check` prints a per-project lexical count of task expressions and Task-returning
-signatures so the trend stays visible; it never gates.
+names shadowed in the file and does not see aliases, abbreviations or unannotated return types. A file that opens
+`FSharp.Control.Tasks` (Ply, TaskBuilder.fs) may rebind `task`: Full reports only FSharp.Core's builders, and Fast
+does not claim `task` there. A binding such as `let run () = task { ... }` has one finding, the expression; its
+inferred Task signature is not reported again. Both apply the same role and composition rules. `axial check` prints a per-project count of Fast's AXG014 findings (and of all raw task
+sites) so the trend stays visible; it never gates.
 
 AXG009–AXG012 exempt the `test` role unless `AxialGuardrailsInTests=all` enables full test analysis. Host-role projects are exempt only when their
 repository-relative project path matches that rule's `[exemptions]` list in `Axial.Guardrails.toml`.

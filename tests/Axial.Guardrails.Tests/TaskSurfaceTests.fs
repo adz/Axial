@@ -77,12 +77,23 @@ module TaskSurfaceTests =
     [<InlineData("capabilities", "let read () = task {\n    let inner = fun () -> if true then 1 else 2\n    return! System.Threading.Tasks.Task.FromResult(inner ()) }", false)>]
     [<InlineData("capabilities", "let read () = task {\n    try\n        let! value = System.Threading.Tasks.Task.FromResult 1\n        return Ok value\n    with :? System.IO.IOException as error -> return Error error.Message }", false)>]
     [<InlineData("capabilities", "let read () = task {\n    let! value = System.Threading.Tasks.Task.FromResult 1\n    match value with\n    | 1 -> return Ok value\n    | _ -> return Error \"unexpected\" }", false)>]
+    [<InlineData("capabilities", "let read (path: string) = task {\n    if isNull path then nullArg \"path\"\n    let! value = System.Threading.Tasks.Task.FromResult path\n    return value }", false)>]
+    [<InlineData("capabilities", "let read flag = task {\n    if flag then\n        do! System.Threading.Tasks.Task.Yield() }", true)>]
     [<InlineData("capabilities", "let read flag = task {\n    match flag with\n    | true -> return 0\n    | false ->\n        let! value = System.Threading.Tasks.Task.FromResult 1\n        return value }", true)>]
     let ``effect roles allow a thin bridge and guide a composing one`` (role: string) (body: string) (expected: bool) =
         withPolicy role "" [] (fun config path ->
             let findings = fast config path ("module M\n" + body + "\n")
             Assert.Equal(expected, not findings.IsEmpty)
             for finding in findings do Assert.Contains("bridge composes", finding.Message))
+
+    [<Theory>]
+    [<InlineData("open FSharp.Control.Tasks")>]
+    [<InlineData("open FSharp.Control.Tasks.Affine")>]
+    let ``Fast does not claim a task that a Ply or TaskBuilder.fs open may rebind`` (opening: string) =
+        // Full reports only FSharp.Core's builders, so these stay out of Fast to keep Fast within Full.
+        withPolicy "domain" "" [] (fun config path ->
+            Assert.Empty(fast config path ("module M\n" + opening + "\nlet run () = task { return 1 }\n"))
+            Assert.NotEmpty(fast config path ("module M\n" + opening + "\nlet run () = backgroundTask { return 1 }\n")))
 
     [<Fact>]
     let ``declared runtime files are exempt even in a domain project`` () =
@@ -113,7 +124,11 @@ module TaskSurfaceTests =
               "module M\nlet run () = System.Threading.Tasks.Task.FromResult 1\n", set [ 2 ]
               "module M\ntype B() =\n    member _.Return x = x\n    member _.Delay f = f ()\nlet task = B()\nlet run () = task { return 1 }\n", Set.empty
               "module M\nlet private run () : System.Threading.Tasks.Task = System.Threading.Tasks.Task.CompletedTask\n", Set.empty
-              "module M\nopen System.Threading.Tasks\ntype Api =\n    abstract Load: unit -> ValueTask<int>\n", Set.empty ]
+              "module M\nopen System.Threading.Tasks\ntype Api =\n    abstract Load: unit -> ValueTask<int>\n", Set.empty
+              // A class `let` is private to the type: neither mode reports its signature.
+              "module M\ntype Service() =\n    let load () : System.Threading.Tasks.Task<int> = System.Threading.Tasks.Task.FromResult 1\n    member _.Value = 1\n", Set.empty
+              // An annotated signature and its task body are two findings; an inferred one is the body's only.
+              "module M\nlet run () : System.Threading.Tasks.Task<int> = task { return 1 }\nlet inferred () =\n    task { return 2 }\n", Set.empty ]
         withPolicy "domain" "" [] (fun config path ->
             for source, fullOnly in corpus do
                 let fastLines = lines (fast config path source)
@@ -126,9 +141,10 @@ module TaskSurfaceTests =
         withPolicy "domain" "" [ "setting\tcheckpoint\ttrue" ] (fun config path ->
             let source = "module M\nlet run () = task { return 1 }\n// axial-note AXG014: interop entry point for a .NET host\nlet other () = task { return 2 }\n"
             let findings = full config path source
-            Assert.Equal(4, findings.Length)
+            // One finding per binding: the inferred Task signature of `let run () = task { }` is the expression's.
+            Assert.Equal(2, findings.Length)
             for finding in findings do Assert.Equal(FSharp.Analyzers.SDK.Severity.Info, finding.Severity)
-            Assert.Equal(2, findings |> List.filter (fun m -> m.Message.Contains "Acknowledged: interop entry point") |> List.length)
+            Assert.Equal(1, findings |> List.filter (fun m -> m.Message.Contains "Acknowledged: interop entry point") |> List.length)
             Assert.Contains(fast config path source, fun m -> m.Message.Contains "Acknowledged: interop entry point"))
 
     [<Theory>]
@@ -195,10 +211,27 @@ module TaskSurfaceTests =
             Assert.Equal(1, entries().Length))
 
     [<Theory>]
-    [<InlineData("let run () = task { return 1 }", 1, 0)>]
-    [<InlineData("// task { }\nlet text = \"task { }\"\n(* backgroundTask { } *)\nlet x = 1", 0, 0)>]
-    [<InlineData("let run () : System.Threading.Tasks.Task<int> =\n    task { return 1 }", 1, 1)>]
-    [<InlineData("type Api =\n    abstract Load: string -> ValueTask<int>\n    abstract Name: string", 0, 1)>]
-    [<InlineData("let quote = '\"'\nlet run () = backgroundTask { return 1 }", 1, 0)>]
-    let ``axial check's raw Task trend counts code not comments or strings`` (source: string) (expressions: int) (signatures: int) =
-        Assert.Equal((expressions, signatures), Axial.Tool.RawTaskCount.countSource source)
+    [<InlineData("domain", "", "let run () = task { return 1 }", 1, 0, 1)>]
+    [<InlineData("domain", "", "// task { }\nlet text = \"task { }\"\n(* backgroundTask { } *)\nlet x = 1", 0, 0, 0)>]
+    [<InlineData("domain", "", "let run () : System.Threading.Tasks.Task<int> =\n    task { return 1 }", 2, 0, 2)>]
+    [<InlineData("domain", "", "// axial-note AXG014: interop entry point for a .NET host\nlet run () = task { return 1 }", 1, 1, 1)>]
+    [<InlineData("capabilities", "", "let run () = task { return! System.Threading.Tasks.Task.FromResult 1 }", 0, 0, 1)>]
+    [<InlineData("domain", "[runtime]\nfiles = [\"Fast.fs\"]\n", "let run () = task { return 1 }", 0, 0, 1)>]
+    [<InlineData("domain", "[files]\ncapabilities = [\"Fast.fs\"]\n", "let run () = task { return 1 }", 0, 0, 1)>]
+    [<InlineData("test", "", "let run () = task {\n    do! System.Threading.Tasks.Task.Yield()\n    do! System.Threading.Tasks.Task.Yield() }", 0, 0, 1)>]
+    let ``axial check's raw Task trend counts on AXG014's scale with roles tiers and overrides``
+        (role: string) (extra: string) (body: string) (findings: int) (acknowledged: int) (sites: int) =
+        withPolicy role extra [] (fun config path ->
+            let source = "module M\n" + body + "\n"
+            let count = Axial.Tool.RawTaskCount.countSource config path source
+            Assert.Equal((findings, acknowledged, sites), (count.Findings, count.Acknowledged, count.Sites))
+            // The trend's findings are exactly Fast's AXG014 findings.
+            Assert.Equal(findings, (fast config path source).Length))
+
+    [<Fact>]
+    let ``fixing an AXG014 finding lowers the trend`` () =
+        withPolicy "domain" "" [] (fun config path ->
+            let before = Axial.Tool.RawTaskCount.countSource config path "module M\nlet run () = task { return 1 }\nlet other () = task { return 2 }\n"
+            let after = Axial.Tool.RawTaskCount.countSource config path "module M\nopen Axial\nlet run () : Flow<unit, string, int> = flow { return 1 }\nlet other () = task { return 2 }\n"
+            Assert.Equal(2, before.Findings)
+            Assert.Equal(1, after.Findings))

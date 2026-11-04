@@ -56,6 +56,17 @@ module FastModeTests =
         Assert.Contains(entries, fun e -> attr "rule" e = "ScopeFromRun" && attr "status" e = "deferred to full"))
 
     [<Fact>]
+    let ``acknowledged AXG014 guides stay out of the minimal console while open ones show`` () = withFixture (fun dir ->
+        File.WriteAllText(Path.Combine(dir, "Other.fs"), "module Other\nlet pending () = task { return 1 }\n// axial-note AXG014: interop entry point for a .NET host\nlet noted () = task { return 2 }\n")
+        let result = build dir ["-p:AxialGuardrailsMode=Fast"]
+        checkSuccess result
+        Assert.Contains("Other.fs(2,", snd result)
+        Assert.DoesNotContain("Acknowledged: interop entry point", snd result)
+        let detailed = build dir ["-p:AxialGuardrailsMode=Fast"; "-v:normal"]
+        checkSuccess detailed
+        Assert.Contains("Acknowledged: interop entry point", snd detailed))
+
+    [<Fact>]
     let ``Fast never launches the analyzer CLI and cache replays hints`` () = withFixture (fun dir ->
         let args = ["-p:AxialGuardrailsMode=Fast"; "-p:_AxialGuardrailsExe=DO_NOT_LAUNCH"; "-p:_AxialGuardrailsUsesPackagedTool=true"]
         checkSuccess (build dir args)

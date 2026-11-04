@@ -15,9 +15,10 @@ drift warning once per drift state in a build invocation (per MSBuild node), so 
 than one per project/TFM. The next build that rechecks the policy shows it again; nothing depends on the clock or on
 temporary files. It is always a warning, never an error;
 `axial check --full` and release behaviour are unchanged. Run directly, `axial check` always prints the warning and
-also a per-project raw-Task trend: lexical counts of `task { }`/`backgroundTask { }` expressions and Task-returning
-signatures per project, with its role (`--json` adds a `rawTask` array). It is a trend to watch, not a gate; AXG014
-gives the per-site guidance. In this repository, `scripts/axial <command>` builds and runs the live tool.
+also a per-project raw-Task trend on AXG014's scale: Fast's AXG014 findings in scope (with file roles, tiers,
+`[files]` overrides and `[runtime].files`), how many of them are acknowledged, and every raw `task { }` and
+Task-returning signature as a secondary count, with the project's role (`--json` adds a `rawTask` array). Fixing an
+AXG014 finding lowers it. It is a trend to watch, not a gate; AXG014 gives the per-site guidance. In this repository, `scripts/axial <command>` builds and runs the live tool.
 
 Run `axial policy review [--since <ref>] [--json]` to inspect what loosened: new or changed suppression reasons and notes, relaxed roles or rule levels, runtime/boundary/ignore/baseline additions, evaluated project settings, and changes to declared automation files or analyzer versions. Removals appear briefly as tightening. The default reference is the reviewed commit recorded in the lock; the first review needs `--since <tag-or-commit>`. If that reference predates policy files, the review reports policy introduction rather than inventing historical policy, and still compares source exceptions.
 

@@ -63,6 +63,28 @@ let private signatures (ctx: CliContext) =
 let private nodes (ctx: CliContext) =
     ParsedInput.fold (fun nodes path node -> (path, node) :: nodes) [] ctx.ParseFileResults.ParseTree |> List.rev
 
+/// Unannotated bindings whose body is a computation expression: name start -> builder range. Such a binding's
+/// inferred Task signature is the expression's finding, not a second one (`let run () = task { ... }`).
+let private inferredFromExpression (nodes: (SyntaxNode list * SyntaxNode) list) =
+    let rec body = function
+        | SynExpr.Paren(expr = inner) -> body inner
+        | SynExpr.App(funcExpr = builder; argExpr = SynExpr.ComputationExpr _) -> Some builder.Range
+        | _ -> None
+    nodes
+    |> List.choose (fun (_, node) ->
+        match node with
+        | SyntaxNode.SynBinding(SynBinding(headPat = head; returnInfo = None; expr = expr)) ->
+            let name =
+                match head with
+                | SynPat.LongIdent(longDotId = id) -> id.LongIdent |> List.tryLast |> Option.map _.idRange
+                | SynPat.Named(ident = SynIdent(ident, _)) -> Some ident.idRange
+                | _ -> None
+            match name, body expr with
+            | Some name, Some builder -> Some((name.StartLine, name.StartColumn), (builder.StartLine, builder.StartColumn))
+            | _ -> None
+        | _ -> None)
+    |> Map.ofList
+
 /// Raw candidate ranges for every tier, for note validation.
 let private collect (tier: TaskSurfaceSyntax.Tier) (ctx: CliContext) =
     let kind = "Axial Task Surface"
@@ -78,7 +100,13 @@ let private collect (tier: TaskSurfaceSyntax.Tier) (ctx: CliContext) =
     let declared =
         match tier with
         | TaskSurfaceSyntax.Strict ->
-            signatures ctx |> List.map (fun (value, taskType) -> value.DeclarationLocation, TaskSurfaceSyntax.signatureMessage value.DisplayName taskType)
+            let reported = expressions |> List.map (fun (range, _) -> range.StartLine, range.StartColumn) |> Set.ofList
+            let inferred = inferredFromExpression (nodes ctx)
+            signatures ctx
+            |> List.filter (fun (value, _) ->
+                let location = value.DeclarationLocation
+                inferred.TryFind(location.StartLine, location.StartColumn) |> Option.forall (reported.Contains >> not))
+            |> List.map (fun (value, taskType) -> value.DeclarationLocation, TaskSurfaceSyntax.signatureMessage value.DisplayName taskType)
         | _ -> []
     (expressions @ declared)
     |> List.map (fun (range, text) -> TaskSurfaceSyntax.finding ctx.SourceText kind range text)

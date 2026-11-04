@@ -397,7 +397,11 @@ public class AxialGuardrailsTask : Task
             {
                 case "Error": Log.LogError(null, code, null, file, line, column, 0, 0, finding.Value); break;
                 case "Warning": Log.LogWarning(null, code, null, file, line, column, 0, 0, finding.Value); break;
-                default: Log.LogMessage(MessageImportance.High, $"{file}({line},{column}): {(string)finding.Attribute("severity")} {code}: {finding.Value}"); break;
+                // An acknowledged guide (`axial-note`) stays in the log but out of the minimal-verbosity console.
+                default:
+                    var importance = finding.Value.Contains(" Acknowledged: ") ? MessageImportance.Normal : MessageImportance.High;
+                    Log.LogMessage(importance, $"{file}({line},{column}): {(string)finding.Attribute("severity")} {code}: {finding.Value}");
+                    break;
             }
         }
     }
