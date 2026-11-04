@@ -13,13 +13,8 @@ module PolicyReviewTests =
         info.RedirectStandardOutput <- true
         info.RedirectStandardError <- true
         for arg in args do info.ArgumentList.Add arg
-        use child = Process.Start info
-        let stdout = child.StandardOutput.ReadToEndAsync()
-        let stderr = child.StandardError.ReadToEndAsync()
-        if not (child.WaitForExit(60000)) then
-            child.Kill(true)
-            failwith "command timed out"
-        child.ExitCode, stdout.Result + stderr.Result
+        let code, stdout, stderr = TestProcess.run 60000 info
+        code, stdout + stderr
 
     let private repository action =
         let root = Path.Combine(Path.GetTempPath(), "axial-review-" + Guid.NewGuid().ToString("N"))

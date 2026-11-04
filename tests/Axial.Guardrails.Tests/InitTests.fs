@@ -22,11 +22,8 @@ module InitTests =
         for key, value in environment do info.Environment[key] <- value
         info.ArgumentList.Add(tool ())
         for arg in args do info.ArgumentList.Add(arg)
-        use child = Process.Start info
-        let output = child.StandardOutput.ReadToEndAsync()
-        let errors = child.StandardError.ReadToEndAsync()
-        child.WaitForExit()
-        child.ExitCode, output.Result, errors.Result
+        // policy baseline builds every fixture project; the tool bounds each build, this bounds the whole command.
+        TestProcess.run 600000 info
 
     let private run root args = runWithEnvironment [] root args
 
@@ -288,11 +285,8 @@ module InitTests =
             info.Environment.Remove "DOTNET_ROLL_FORWARD_TO_PRERELEASE" |> ignore
             info.ArgumentList.Add(tool ())
             info.ArgumentList.Add("help")
-            use child = Process.Start info
-            let output = child.StandardOutput.ReadToEndAsync()
-            let errors = child.StandardError.ReadToEndAsync()
-            child.WaitForExit()
-            Assert.True(child.ExitCode = 0, output.Result + errors.Result)
+            let code, output, errors = TestProcess.run 120000 info
+            Assert.True((code = 0), output + errors)
         finally Directory.Delete(root, true)
 
     [<Fact>]

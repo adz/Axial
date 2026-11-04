@@ -12,6 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="TestProcess.fs" />
     <Compile Include="AnalyzerTestContext.fs" />
     <Compile Include="SymbolIndexTests.fs" />
     <Compile Include="FullDiagnosticEquivalenceTests.fs" />

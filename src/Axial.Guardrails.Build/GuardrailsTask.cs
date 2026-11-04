@@ -501,7 +501,11 @@ public class AxialGuardrailsTask : Task
             start.EnvironmentVariables["AXIAL_GUARDRAILS_CONFIG"] = Path.GetFullPath(ConfigFile);
             start.EnvironmentVariables["AXIAL_GUARDRAILS_TIMINGS"] = Timings ? "true" : "false";
             start.EnvironmentVariables["DOTNET_ROLL_FORWARD"] = "LatestMajor";
+            // A reused MSBuild node started by the CLI's project loading would outlive it and keep its output pipes open.
+            start.EnvironmentVariables["MSBUILDDISABLENODEREUSE"] = "1";
             using (var child = new Process { StartInfo = start })
+            using (var stdoutClosed = new System.Threading.ManualResetEventSlim())
+            using (var stderrClosed = new System.Threading.ManualResetEventSlim())
             {
                 Action<string> receive = line => {
                     if (line == null) return;
@@ -516,11 +520,17 @@ public class AxialGuardrailsTask : Task
                         if (output == 0 && (line.Contains(" AXG") || line.Contains("No messages found"))) output = now;
                     }
                 };
-                child.OutputDataReceived += (_, args) => receive(args.Data);
-                child.ErrorDataReceived += (_, args) => receive(args.Data);
+                // A null line is end-of-file on that pipe.
+                child.OutputDataReceived += (_, args) => { if (args.Data == null) stdoutClosed.Set(); else receive(args.Data); };
+                child.ErrorDataReceived += (_, args) => { if (args.Data == null) stderrClosed.Set(); else receive(args.Data); };
                 child.Start(); child.BeginOutputReadLine(); child.BeginErrorReadLine();
                 if (!child.WaitForExit(600000)) { Stop(child); infrastructure.Add("Analyzer process timed out; coverage is incomplete."); }
-                child.WaitForExit(); exit = child.ExitCode;
+                // Never use the parameterless wait: it waits for end-of-file on the redirected pipes, which a descendant
+                // (for example a reused MSBuild node from project loading) can hold open forever. Drain with a bound.
+                if (!child.WaitForExit(10000)) infrastructure.Add("Analyzer process did not exit after being stopped; coverage is incomplete.");
+                if (!(stdoutClosed.Wait(10000) && stderrClosed.Wait(10000)))
+                    infrastructure.Add("Analyzer output stayed open after the process exited (a descendant holds the pipe); coverage is incomplete.");
+                exit = child.HasExited ? child.ExitCode : -1;
             }
             }
             infrastructure.AddRange(lines.Where(line => line.StartsWith("Axial.Guardrails infrastructure:", StringComparison.Ordinal)));

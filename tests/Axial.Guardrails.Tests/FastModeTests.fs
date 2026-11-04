@@ -34,10 +34,8 @@ module FastModeTests =
         start.RedirectStandardOutput <- true
         start.RedirectStandardError <- true
         for arg in ["build"; "--nologo"; "-v:minimal"; "-nodeReuse:false"; "-m:1"; "-c"; config ()] @ args do start.ArgumentList.Add arg
-        use child = Process.Start start
-        let stdout, stderr = child.StandardOutput.ReadToEndAsync(), child.StandardError.ReadToEndAsync()
-        if not (child.WaitForExit(90000)) then child.Kill true; failwith "build timed out"
-        child.ExitCode, stdout.Result + stderr.Result
+        let code, stdout, stderr = TestProcess.run 90000 start
+        code, stdout + stderr
     let private report dir = Directory.GetFiles(dir, "*.result.xml", SearchOption.AllDirectories) |> Array.exactlyOne |> XDocument.Load
     let private attr name (e: XElement) = e.Attribute(XName.Get name).Value
     let private checkSuccess (code, output) = Assert.True((code = 0), output)

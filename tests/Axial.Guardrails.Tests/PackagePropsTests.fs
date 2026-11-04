@@ -46,12 +46,9 @@ module PackagePropsTests =
         startInfo.UseShellExecute <- false
         // Simulate a caller that pins net8 when installed; analyzer launches must override this inherited policy.
         startInfo.EnvironmentVariables["DOTNET_ROLL_FORWARD"] <- "Major"
-        startInfo.RedirectStandardOutput <- true
-        startInfo.RedirectStandardError <- true
-        use child = Process.Start startInfo
-        let output = child.StandardOutput.ReadToEnd() + child.StandardError.ReadToEnd()
-        child.WaitForExit()
-        Assert.True(child.ExitCode = 0, output)
+        let code, stdout, stderr = TestProcess.run 180000 startInfo
+        let output = stdout + stderr
+        Assert.True((code = 0), output)
 
     let private writeFixtureLock dir =
         // Construct a temporary consumer fixture; never invoke a human approval command.
@@ -121,17 +118,8 @@ module PackagePropsTests =
         startInfo.RedirectStandardError <- true
         startInfo.EnvironmentVariables["MSBUILDDISABLENODEREUSE"] <- "1"
         for key, value in environment do startInfo.EnvironmentVariables[key] <- value
-        use child = Process.Start startInfo
-        let stdout = child.StandardOutput.ReadToEndAsync()
-        let stderr = child.StandardError.ReadToEndAsync()
-        let exited = child.WaitForExit(90_000)
-        if not exited then
-            child.Kill(true)
-            child.WaitForExit()
-        System.Threading.Tasks.Task.WaitAll(stdout, stderr)
-        let output = stdout.Result + "\n" + stderr.Result
-        Assert.True(exited, "Consumer build timed out and its process tree was killed:\n" + output)
-        { ExitCode = child.ExitCode; Output = output }
+        let code, stdout, stderr = TestProcess.run 90000 startInfo
+        { ExitCode = code; Output = stdout + "\n" + stderr }
 
     let private runBuildWithArgs (extraArguments: string list) (project: string) (framework: string option) =
         runBuildWithEnvironment [] extraArguments project framework
@@ -310,12 +298,9 @@ module PackagePropsTests =
             let git arguments =
                 let info = ProcessStartInfo("git")
                 info.WorkingDirectory <- dir
-                info.RedirectStandardOutput <- true
-                info.RedirectStandardError <- true
                 for argument in arguments do info.ArgumentList.Add argument
-                use child = Process.Start info
-                Assert.True(child.WaitForExit(10000))
-                Assert.True(child.ExitCode = 0, child.StandardError.ReadToEnd())
+                let code, _, errors = TestProcess.run 30000 info
+                Assert.True((code = 0), errors)
             git ["init"; "-q"]
             git ["config"; "user.email"; "tests@example.invalid"]
             git ["config"; "user.name"; "Test"]
@@ -339,16 +324,10 @@ module PackagePropsTests =
             if scenario = "json" || scenario = "json-review" then start.ArgumentList.Add "--json"
             start.RedirectStandardOutput <- true
             start.RedirectStandardError <- true
-            use child = Process.Start start
-            let stdout = child.StandardOutput.ReadToEndAsync()
-            let stderr = child.StandardError.ReadToEndAsync()
-            if not (child.WaitForExit(180000)) then
-                child.Kill(true)
-                child.WaitForExit()
-                failwith "Full check timed out"
-            let output = stdout.Result + stderr.Result
-            if List.contains scenario ["complete"; "cached"; "warning"; "hint"; "baselined"; "json"] then Assert.True(child.ExitCode = 0, output)
-            else Assert.NotEqual(0, child.ExitCode)
+            let exitCode, stdout, stderr = TestProcess.run 180000 start
+            let output = stdout + stderr
+            if List.contains scenario ["complete"; "cached"; "warning"; "hint"; "baselined"; "json"] then Assert.True((exitCode = 0), output)
+            else Assert.NotEqual(0, exitCode)
             if scenario = "incomplete" then Assert.Contains("AXGINF001", output)
             elif scenario = "record" then Assert.Contains("Full analysis coverage is incomplete:", output)
             elif scenario = "finding" then Assert.Contains("AXG001", output)
@@ -360,23 +339,18 @@ module PackagePropsTests =
             elif scenario = "review" || scenario = "json-review" then
                 Assert.Contains("policy review --check failed:", output)
                 if scenario = "json-review" then
-                    use json = System.Text.Json.JsonDocument.Parse(stdout.Result)
+                    use json = System.Text.Json.JsonDocument.Parse(stdout)
                     Assert.Equal("error", json.RootElement.GetProperty("status").GetString())
                 Assert.Empty(Directory.GetFiles(dir, "*.result.xml", SearchOption.AllDirectories))
             else
                 if scenario = "json" then
-                    use json = System.Text.Json.JsonDocument.Parse(stdout.Result)
+                    use json = System.Text.Json.JsonDocument.Parse(stdout)
                     Assert.Equal("ok", json.RootElement.GetProperty("status").GetString())
                 Assert.Contains("3 project/TFM records", output)
                 if scenario = "cached" then
-                    use repeated = Process.Start start
-                    let repeatedOut = repeated.StandardOutput.ReadToEndAsync()
-                    let repeatedErr = repeated.StandardError.ReadToEndAsync()
-                    if not (repeated.WaitForExit(180000)) then
-                        repeated.Kill(true)
-                        failwith "Repeated Full check timed out"
-                    let replay = repeatedOut.Result + repeatedErr.Result
-                    Assert.True(repeated.ExitCode = 0, replay)
+                    let repeatedCode, repeatedOut, repeatedErr = TestProcess.run 180000 start
+                    let replay = repeatedOut + repeatedErr
+                    Assert.True((repeatedCode = 0), replay)
                     Assert.Contains("3 project/TFM records", replay)
                     Assert.DoesNotContain("Running Axial.Guardrails analysis", replay)
                 for projectDirectory, framework in [dir, "net8.0"; dir, "net10.0"; other, "net10.0"] do
@@ -589,10 +563,8 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
             let command = "printf '%s|%s|%s' \"$AXIAL_QUOTE_TEST\" \"$(printf substitution)\" 'a\\b'; printf '|tail'"
             let start = factory.Invoke(null, [| box command; box false |]) :?> ProcessStartInfo
             start.EnvironmentVariables["AXIAL_QUOTE_TEST"] <- "expanded value"
-            use child = Process.Start start
-            let output = child.StandardOutput.ReadToEnd()
-            child.WaitForExit()
-            Assert.Equal(0, child.ExitCode)
+            let exitCode, output, _ = TestProcess.run 30000 start
+            Assert.Equal(0, exitCode)
             Assert.Equal("expanded value|substitution|a\\b|tail", output)
 
     [<Theory>]
@@ -851,16 +823,9 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
             info.Environment[Axial.Guardrails.GuardrailConfig.EnvironmentVariable] <- ""
             for arg in ["--roll-forward"; "LatestMajor"; cliDll (); "--project"; project; "--analyzers-path"; analyzersPath (); "--include-analyzers"; "EffectBoundary"] do
                 info.ArgumentList.Add arg
-            use child = Process.Start info
-            let output = child.StandardOutput.ReadToEndAsync()
-            let errors = child.StandardError.ReadToEndAsync()
-            let exited = child.WaitForExit(90_000)
-            if not exited then
-                child.Kill(true)
-                child.WaitForExit()
-            Assert.True(exited, "Standalone analyzer timed out.")
-            let text = output.Result + errors.Result
-            Assert.NotEqual(0, child.ExitCode)
+            let exitCode, output, errors = TestProcess.run 90000 info
+            let text = output + errors
+            Assert.NotEqual(0, exitCode)
             Assert.Contains("error AXIALGR001", text)
             Assert.Contains("policy-roles", text))
 
