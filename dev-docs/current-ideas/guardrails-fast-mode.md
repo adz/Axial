@@ -4,7 +4,10 @@
 
 Use a **parse-only, in-process MSBuild task for fast builds**, with content-keyed per-file results. Keep the complete typed analyzers and policy review in an explicit full command. Do not make a persistent typed host a prerequisite for ordinary builds.
 
-This is a proposal, not an implemented mode. The measured parse-only slice meets the edit budget; equivalent fast coverage of all existing rules does not. In particular, retaining exact AXG001 semantics on every edit within one second is **not demonstrated**. The owner must accept clearly labelled syntax hints plus explicit full checks, or relax the latency target.
+The owner accepted syntax hints plus explicit Full checks. Fast is now the package/repository default; Full remains
+explicit in CI, verification and release checkpoints. The experiment below is historical, not a performance claim
+for the shipping visitors. Equivalent fast coverage of all typed rules, especially AXG001, remains deliberately out
+of scope. See `docs/guardrails/01-guardrails.md` for the implemented coverage contract.
 
 ## Experiment scope
 
@@ -87,7 +90,7 @@ A supports all rules but retains startup, FCS and CLI failure modes (low increme
 
 ## Execution and failure contract
 
-1. **Selection is explicit.** Add `AxialGuardrailsMode=Fast|Full`, default Full during rollout in both package targets and this repository. Fast is opt-in and initially runs exactly the same typed analyzers as Full; parse-only coverage is a later slice. Resolve test roles and enabled rules from checked-in policy; never from `CI`, environment heuristics, branch names, or Release configuration. Explicit command/property overrides are user authority, not inferred policy.
+1. **Selection is explicit.** Add `AxialGuardrailsMode=Fast|Full`, default Fast after the owner's acceptance in both package targets and this repository. Fast runs parse-only advice; Full runs the exact typed checks. Resolve test roles and enabled rules from checked-in policy; never from `CI`, environment heuristics, branch names, or Release configuration. Explicit command/property overrides are user authority, not inferred policy.
 2. **Full command.** Extend today's policy-only `axial check` with `axial check --full`: obtain compiler argument snapshots for each project/TFM, run every rule, then `axial policy review --check`. It must not approve policy or generate/approve baselines. Checked-in release workflow explicitly invokes this command and requires complete coverage. `dotnet build -p:AxialGuardrailsMode=Full` runs all rules and the ordinary policy drift check; `axial check --full` additionally enforces policy review. Full is not implicitly selected by `-c Release`.
 3. **Fast runs synchronously.** Parse changed files after compilation with compiler defines, language version and ordered source lists; no ProjInfo and no second typecheck. Reuse immutable checker/parser setup within an MSBuild node, isolate FCS dependencies in a collectible/load-isolated task context, and bound cache memory. Parse errors or unsupported syntax produce a skipped-file warning, not a clean result. No background typed job silently changes build outcomes later.
 4. **Failures are distinct from findings, and fail closed.** Catch failures per analyzer/file and continue the remaining checks. Aggregate infrastructure failures and incomplete coverage into one `AXGINF001` build error per project/TFM, identifying causes and skipped checks. Task-load, host and process failures also fail the build, including under warnings-as-errors. There is no opt-out. Finding severities remain policy-controlled; incomplete coverage is recorded explicitly and never stamped as successful. This owner decision landed in slice 1 and supersedes the original warning-only proposal.
@@ -105,4 +108,4 @@ The cold-host fallback cannot promise <1 second. The selected default avoids thi
 4. Add AXG001/003/006/009/013 syntax guidance individually, with shadowing/alias tests and explicit fast/full coverage differences. Compare advice against full diagnostics. Re-measure after each visitor; obtain owner acceptance of reduced typed coverage before switching the checked-in default to Fast.
 5. Optimize full rules using shared per-file symbol/range indexes (AXG008 prototype first), with diagnostic-equivalence and memory-retention tests. Consider a warm host only if explicit full checks remain too slow; it is not needed to ship fast feedback.
 
-No product behavior, policy lock, public documentation or release notes changed in this design-only slice. `dev-docs/**` planning notes require no `scripts/verify.sh` run; implementation slices above require the repository's fail-first and full verification workflow.
+The original experiment was design-only; subsequent implementation changed the Fast default, documentation and release notes without editing the policy lock or baseline. `dev-docs/**` planning notes require no `scripts/verify.sh` run; implementation slices above require the repository's fail-first and full verification workflow.

@@ -31,6 +31,12 @@
 
 ## Guardrails policy
 
+- Fast syntax hints are the build default. Ambiguous hints are labelled `fast/unverified` and never block;
+  AXG004's shared fixture visitor retains its exact syntactic severity. Typed-only rules are deferred to Full.
+- Use `-p:AxialGuardrailsMode=Full` for typed checks; `axial check --full` additionally requires policy review and
+  complete solution project/TFM coverage. Fast results cannot satisfy Full.
+- AXG001 follows the resolved file role even in test projects. File roles override project roles; host/capability
+  files own raw effects unless `effects.ambient` is `forbid`. File-level allows remain visible to policy review.
 - The declared `test` project role selects the test analyzer set, independently of `IsTestProject` or the test SDK;
   `AxialGuardrailsInTests=all` selects all enabled analyzers for that role.
 - `[review].automation` lists repository-relative CI/verification globs. Absent or empty means no automation tracking.

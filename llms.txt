@@ -4,7 +4,7 @@ Package maturity ratings and application evidence: `/notes/package-maturity.html
 
 Package guides: `/configuration/`, `/console/`, `/filesystem/`, `/websocket/`, `/hosting/`, `/elmish/`, `/telemetry/`, and `/guardrails/`.
 
-Guardrails selects test analyzers from the declared `test` project role, not `IsTestProject`. Declare CI and verification globs in `[review].automation`; absent or empty means no automation tracking. `axial init` asks for a CI host; `--ci github|gitlab|bitbucket|other` avoids the prompt (non-interactive default: Other).
+Guardrails defaults to Fast syntax hints. Use `-p:AxialGuardrailsMode=Full` for typed checks, or `axial check --full` for typed solution coverage plus policy review. AXG001 follows the resolved file role (file overrides project), including test projects; host/capability files own raw effects. Guardrails selects the remaining test analyzers from the declared `test` project role, not `IsTestProject`. Declare CI and verification globs in `[review].automation`; absent or empty means no automation tracking. `axial init` asks for a CI host; `--ci github|gitlab|bitbucket|other` avoids the prompt (non-interactive default: Other).
 
 Axial is an asynchronous F# workflow library. Its public model is `Flow<'env,'error,'value>`: required dependencies and expected failures are visible in the workflow type.
 

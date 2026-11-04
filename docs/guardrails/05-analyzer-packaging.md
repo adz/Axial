@@ -28,7 +28,10 @@ Use `PackageDownload` during your build instead. At pack time, copy the download
 
 Add `build/{YourPackageId}.props` and `build/{YourPackageId}.targets` to the package. NuGet imports these files automatically into projects that reference the package.
 
-Use the props file to define the default severity and enabled state. Use the targets file to run the bundled CLI after `Build`, passing the bundled `analyzers/` and `cli/` directories.
+Use the props file to define the enabled state. The targets default to Fast: an in-process task loads the
+parse-only visitors and their FCS dependencies into an isolated load context. Full mode runs the bundled CLI
+after `Build`, passing the bundled `analyzers/` and `cli/` directories. Framework MSBuild uses Full because it
+cannot isolate the net8 parser payload. Both paths publish content-keyed coverage and replay cached findings.
 
 Run the CLI with an MSBuild `<Exec>` task. Set `EnvironmentVariables="DOTNET_ROLL_FORWARD=LatestMajor"` on the task,
 not on the whole build: the CLI targets .NET 8 but project loading can use MSBuild from a newer SDK. `Major` still

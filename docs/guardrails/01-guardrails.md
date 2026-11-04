@@ -14,7 +14,49 @@ Run `axial policy review [--since <ref>] [--json]` to inspect what loosened: new
 
 `axial check --full` first enforces `axial policy review --check`, then builds the single solution (`.slnx` or `.sln`) in the current directory with explicit Full mode and checkpoint enforcement. The configuration defaults to Release; use `--configuration <name>` to override it. It analyzes every enabled F# project and target framework, including frameworks normally restricted by a designated-framework setting. Exported results must match the build's expected project/TFM set and have complete Full coverage. Infrastructure failures, missing or incomplete records, and Error findings produce a nonzero exit; Warning, Hint and baselined findings retain their non-blocking severity. Build diagnostics stream to stderr, leaving `--json` stdout parseable. A first policy review still needs a human-reviewed reference recorded in the lock. The command never approves policy or generates a baseline.
 
-`AxialGuardrailsMode=Fast|Full` selects the build mode. The package and this repository default to `Full` during rollout. Both modes currently run exactly the same typed analyzers and preserve policy roles and rule severities; Fast does not yet provide parse-only analysis. Values are case-sensitive: `fast` and `FULL`, like other invalid values, fail the build. Neither `CI`, Release configuration nor branch names select a mode. Set the property explicitly, for example `dotnet build -p:AxialGuardrailsMode=Fast`. Changing modes invalidates cached analysis in either direction; result and coverage records identify their mode.
+`AxialGuardrailsMode=Fast|Full` selects the build mode. **Fast is the default** in the package and this repository.
+Fast parses changed files in-process, without the analyzer CLI or a second typecheck. It gives syntax advice, not
+complete typed coverage. Use `dotnet build -p:AxialGuardrailsMode=Full` for all typed checks, or `axial check --full`
+for the Full solution checkpoint and policy-review gate. CI explicitly builds in Full; release automation uses
+`axial check --full`. Ordinary CI builds warn about policy drift rather than requiring approval on every push.
+Values are case-sensitive: `fast`, `FULL`, and other invalid values fail. Neither `CI`, Release configuration nor
+branch names select a mode. Changing modes invalidates cached analysis in either direction; Fast can never satisfy Full.
+
+### Fast advice versus Full checks
+
+| Rule | Fast | Full |
+|---|---|---|
+| AXG001 ambient effects | Catalog spellings that resolve through the file's `open`s (fully qualified, or `IO.File` after `open System`), PascalCase members of wildcard types, and `.GetAwaiter().GetResult()` chains; replacement guidance; project role from TOML, overridden by `[files]` | Resolved symbols, aliases, overloads, scope and completed-task-read exceptions |
+| AXG003 raise in flow | Direct raise/failwith in syntactically identified `flow { }`; generic advice | Resolved error type and type-safe fix suggestions |
+| AXG004 fixtures | Shared parse-only visitor, including attributes and nested modules | Same fixture shapes |
+| AXG006 reflection formatting | Literal `%A`/`%+A` format strings at direct formatting calls | Also type-dependent interpolation, ToString and reflection targets |
+| AXG009 raw concurrency | Direct qualified constructor/API candidates; shared test/capability/runtime/declared-host exemptions | Resolved identity and policy-specific typed classification |
+| AXG013 guessed waits | In resolved test-role files: `Thread.Sleep` calls, and `Task.Delay`/`Async.Sleep` awaited directly by `do!`/`let!`, except infinite cancellation waits and the shared `waitUntil`/`occupyThread` helpers | Resolved symbols for the same shapes, cancellation-parameter overloads and timeout constants |
+| Other checks, including suppression/note integrity | Explicitly deferred to Full | Every enabled analyzer |
+
+Ambiguous syntax is labelled `[fast/unverified]` and emitted as Info, even under warnings-as-errors; it never
+blocks a build. AXG004 is labelled `[fast hint; syntax-exact]` and retains Error severity (Warning when baselined).
+Fast conservatively skips names shadowed or aliased anywhere in the file, and short names whose namespace the file
+never opens; it does not resolve aliases or receiver types (`task.Result`, `task.Wait()` are Full-only). This can
+miss valid calls outside the shadow's scope. Inactive `#if` branches do not produce advice. A hint can disagree
+with Full: do not treat the absence of Fast hints as proof that the typed rules pass.
+
+Effects belong in host or capability-role files; domain and service code should use explicit effect services.
+File roles override project roles, so a domain project can keep all raw effects in separate capability files.
+AXG001 guidance also runs in test projects unless policy allows effects. `effects.ambient = "forbid"` remains
+unsuppressible, including in host/capability files. Reasoned file-level exceptions remain visible to
+`axial policy review`; Fast does not approve them or check suppression integrity.
+
+On .NET MSBuild, a collectible, isolated load context owns FCS, FSharp.Core and the analyzer SDK; they do not
+bind to FSharp.Build's copies. Each loaded task version retains at most one such context, replacing it when its tool
+identity changes. Policy/configuration is passed explicitly per request, not through process environment variables. Per-file results are content-keyed on disk. Framework MSBuild (Visual Studio)
+cannot load the net8 parser safely: requesting Fast there explicitly falls back to out-of-process Full and says so.
+Use `dotnet build` for Fast feedback. When sources are newer than the assembly, a background warm-up loads the isolated parser and parses
+the newest source while CoreCompile runs; it writes nothing and cannot change the outcome. Without it, a one-file
+edit in a fresh build process paid about a second of FCS JIT time. Parsing uses the current `DefineConstants`, `LangVersion`, `OutputType`
+and direct `OtherFlags`, even when CoreCompile reuses an old compiler-argument snapshot. Response files in
+`OtherFlags` are not supported in Fast: they fail with `AXGINF001`, rather than allowing untracked defines into a
+successful cache entry. Supply parsing flags directly or explicitly select Full.
 
 `axial policy review --check` prints the same review and exits nonzero if anything loosened. Repositories may run it at release or merge time. After reading the review, a human runs `axial policy approve` (optionally `--yes-i-reviewed`) and commits the lock. Approval means a human read the review and records the current commit as the reviewed point; it has no signing, identity, or TTY requirement.
 
@@ -130,6 +172,9 @@ For adoption guidance, see [Installation](/getting-started/installation.html#add
 Each project/target framework writes `axial-guardrails.<TFM>.result.xml` in its intermediate output directory
 (usually under `obj`). The report contains findings and a rule/file coverage matrix. `ran` records that the
 entry point completed, including when policy makes it return no findings; `skipped` includes a failure reason.
+In Fast reports, `deferred to full` identifies typed-only rules; it is intentional Fast coverage, never Full coverage.
+Fast per-file `cacheHit` attributes show which files were reparsed. Parse errors and parse/visitor exceptions fail
+closed, retain other available findings and never stamp incomplete coverage.
 Only complete coverage for the current input fingerprint can produce a reusable stamp. Cache hits replay findings,
 including warnings and acknowledged Info; unreadable, truncated, or mismatched reports rerun analysis.
 
@@ -148,8 +193,12 @@ Source and configuration contents are rehashed on every request. Binary digest r
 local filesystems (ext, XFS, Btrfs, tmpfs and overlay) verifies device, inode, size and kernel-managed nanosecond
 change time, not just a restorable modification timestamp. A changed identity triggers content hashing; other
 platforms/filesystems rehash. This assumes ordinary filesystem writers, not privileged manipulation of filesystem
-metadata. Tool, reference, ordered compiler arguments, policy, source order and target-framework inputs all
-participate in the analysis fingerprint.
+metadata. Tool, ordered compiler arguments, policy, source order and target-framework inputs all participate in the
+analysis fingerprint. Full additionally fingerprints references and its analyzer CLI; Fast does not consume either.
+Protected-input discovery skips `.git`, `.livedocs`, legacy `.fsdocs`, `node_modules`, `artifacts`, `bin`, `obj`, and
+`output`. Explicit MSBuild imports remain inputs even under these directories. On supported local Linux filesystems,
+a content-validated directory-inventory snapshot checks kernel change times to discover added/removed files without
+recursively enumerating unchanged trees; protected file contents are still rehashed. Other platforms enumerate.
 
 ### Verify the analyzer runs
 
@@ -251,9 +300,10 @@ See the [diagnostic reference](/guardrails/diagnostics.html) for an example.
 | `AXG007` | `ResourceFromFiber` | A forked flow that returns a scoped resource it acquired, which the fiber releases before `Fiber.join` returns it |
 | `AXG008` | `ScopeFromRun` | A run returning a scope-owned `Queue.makeScoped`, `Hub.makeScoped` or `Hub.subscribe` result, or a cache tied to its creating runtime |
 
-`AXG001`, `AXG003`, `AXG005`, `AXG006`, `AXG007`, and `AXG008` run outside the declared `test` project role.
-Test-role projects select Fixture, WaitForFacts, RawConcurrency, and SuppressionIntegrity by default, since direct
-effects and exceptions are often necessary for setup and assertions. Declare `[projects]` with
+`AXG003`, `AXG005`, `AXG006`, `AXG007`, and `AXG008` run outside the declared `test` project role.
+Test-role projects select EffectBoundary, Fixture, WaitForFacts, RawConcurrency, and SuppressionIntegrity by default.
+AXG001 follows the resolved file role; isolate raw setup effects in host/capability-role files or explicitly allow
+them in policy. Exceptions remain available for setup and assertions. Declare `[projects]` with
 `test = ["tests/**/*.fsproj"]` (or use `test` as the default role). This selection does not depend on
 `IsTestProject` or Microsoft.NET.Test.Sdk; file-role overrides do not change the project-wide analyzer set.
 Analyzers resolve the project role in-process; no policy-tool process is launched to select the set.
@@ -263,14 +313,14 @@ Non-test analyzers return before walking symbols or typed trees when the reduced
 Both this setting and the TOML policy
 invalidate cached analysis when changed.
 
-`AXG002`, `RawConcurrency`, and `WaitForFacts` also run in test projects by default. Raw task bridges remain
+`AXG001`, `AXG002`, `RawConcurrency`, and `WaitForFacts` also run in test projects by default. Raw task bridges remain
 exempt in the test role unless `AxialGuardrailsInTests=all`. `lock`, `Monitor` and `Interlocked` are not reported anywhere.
 
 For AXG010, when the exception value is irrelevant, catch the specific type(s), for example
 `| :? FileNotFoundException ->`; a typed catch need not use the value. Do not force the exception into a return
 value to silence the guide. Host boundary projects can declare an `AXG010` exemption as described above.
 
-Guide findings (AXG010 and awaited-delay AXG013) warn in ordinary builds. A valid
+In Full mode, guide findings (AXG010 and awaited-delay AXG013) warn in ordinary builds. A valid
 `// axial-note AXGnnn: <reason>` on the finding's line or the preceding line changes a guide finding to visible Info.
 Invalid notes warn under AXG002. Verification and release builds set `AxialGuardrailsCheckpoint=true` to reject
 unacknowledged guides and invalid notes; noted findings remain Info. Ordinary Release builds are not checkpoints.
