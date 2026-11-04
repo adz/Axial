@@ -113,6 +113,38 @@ public static string Run(string input) {
         Assert.Empty(Directory.GetFiles(dir, "*.stamp", SearchOption.AllDirectories)))
 
     [<Fact>]
+    let ``Fast warm-up failures never change the synchronous outcome`` () = withFixture (fun dir ->
+        let plugin = Path.Combine(dir, "plugin")
+        Directory.CreateDirectory plugin |> ignore
+        File.WriteAllText(Path.Combine(plugin, "Plugin.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net8.0</TargetFramework><AssemblyName>WarmFast</AssemblyName></PropertyGroup></Project>")
+        File.WriteAllText(Path.Combine(plugin, "Runner.cs"), """using System.Xml.Linq;
+namespace Axial.Guardrails {
+public static class FastRunner {
+public static void Warm(string input) { throw new System.InvalidOperationException("warm-up exploded"); }
+public static string Run(string input) {
+ var root = new XElement("fast");
+ foreach (var source in XElement.Parse(input).Elements("file"))
+  foreach (var rule in new [] {"EffectBoundary", "RaiseInFlow", "Fixture", "ReflectionFormatting", "RawConcurrency", "WaitForFacts"})
+   root.Add(new XElement("coverage", new XAttribute("file", source.Value), new XAttribute("rule", rule), new XAttribute("status", "ran")));
+ return root.ToString();
+}}}
+""".Trim())
+        checkSuccess (build dir ["plugin/Plugin.csproj"])
+        let assembly = Path.Combine(plugin, "bin", config (), "net8.0", "WarmFast.dll")
+        let result = build dir ["-p:_AxialGuardrailsFastAssembly=" + assembly; "-warnaserror"]
+        checkSuccess result
+        Assert.DoesNotContain("warm-up exploded", snd result)
+        Assert.Equal("true", attr "complete" (report dir).Root)
+        Assert.Single(Directory.GetFiles(dir, "*.stamp", SearchOption.AllDirectories)) |> ignore)
+
+    [<Fact>]
+    let ``Fast timings separate load policy parse and visitor phases`` () = withFixture (fun dir ->
+        checkSuccess (build dir ["-p:AxialGuardrailsTimings=true"])
+        let timings = Directory.GetFiles(dir, "*.timings.xml", SearchOption.AllDirectories) |> Array.exactlyOne |> XDocument.Load
+        let phases = timings.Root.Elements() |> Seq.map _.Name.LocalName |> Set.ofSeq
+        for phase in ["fast-total"; "fast-load"; "fast-config"; "fast-parse"; "fast-visit"] do Assert.Contains(phase, phases))
+
+    [<Fact>]
     let ``corrupt MSBuild task assembly reports AXGINF001 rather than silently dropping analysis`` () = withFixture (fun dir ->
         let broken = Path.Combine(dir, "BrokenTask.dll")
         File.WriteAllText(broken, "not an assembly")

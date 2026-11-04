@@ -20,7 +20,7 @@ module FastSyntaxTests =
         File.WriteAllText(Path.Combine(dir, "Fast.fs"), "module M\n")
         File.WriteAllText(policy, $"version = 2\n[default]\nrole = \"{role}\"\n")
         try
-            let config = GuardrailConfig.parse [ "guardrail\tAxial"; "setting\tinTests\tall"; $"setting\tpolicyRoot\t{dir}"; $"setting\tpolicyFile\t{policy}"; $"setting\tprojectPath\t{dir}/Tests.fsproj" ]
+            let config = GuardrailConfig.parse [ "guardrail\tAxial"; "guardrail\tAxial.Console"; "guardrail\tAxial.FileSystem"; "setting\tinTests\tall"; $"setting\tpolicyRoot\t{dir}"; $"setting\tpolicyFile\t{policy}"; $"setting\tprojectPath\t{dir}/Tests.fsproj" ]
             action config (Path.Combine(dir, "Fast.fs"))
         finally Directory.Delete(dir, true)
     let private analyzeFor code source = withConfig (if code = "AXG013" then "test" else "domain") (fun config file -> FastSyntax.analyze config file (SourceText.ofString source) (parse [] source))
@@ -31,7 +31,7 @@ module FastSyntaxTests =
     [<InlineData("AXG003", "let value = flow { return raise (System.Exception()) }")>]
     [<InlineData("AXG006", "let value x = sprintf \"%+A\" x")>]
     [<InlineData("AXG009", "let value () = System.Threading.Tasks.Task.Run(fun () -> ())")>]
-    [<InlineData("AXG013", "let value () = System.Threading.Tasks.Task.Delay(20)")>]
+    [<InlineData("AXG013", "let value () = task { do! System.Threading.Tasks.Task.Delay(20) }")>]
     let ``syntax advice is unverified and never an ambiguous blocking diagnostic`` code body =
         let source = "module M\n" + body + "\n"
         let findings = analyzeFor code source |> List.map snd |> List.filter (fun m -> m.Code = code)
@@ -44,6 +44,7 @@ module FastSyntaxTests =
     [<InlineData("let System = obj()\nlet x = System.DateTime.UtcNow", "AXG001")>]
     [<InlineData("let flow = obj()\nlet x = flow { return raise (System.Exception()) }", "AXG003")>]
     [<InlineData("let raise x = x\nlet x = flow { return raise 1 }", "AXG003")>]
+    [<InlineData("let x = flow { let! v = Flow.fromTask (fun _ -> task { return raise (System.Exception()) }) in return v }", "AXG003")>]
     [<InlineData("let sprintf x y = x\nlet x = sprintf \"%A\" 1", "AXG006")>]
     [<InlineData("module Task = CustomTask\nlet x = Task.Run(fun () -> ())", "AXG009")>]
     [<InlineData("module Task = CustomTask\nlet x = Task.Delay(20)", "AXG013")>]
@@ -55,14 +56,48 @@ module FastSyntaxTests =
     [<InlineData("AXG003", "let x = flow { return failwith \"no\" }")>]
     [<InlineData("AXG006", "let x = sprintf \"%A\" 1")>]
     [<InlineData("AXG004", "let fixture = obj()\n[<Xunit.Fact>]\nlet test () = ()")>]
-    [<InlineData("AXG009", "let x = Task.Run(fun () -> ())")>]
-    [<InlineData("AXG013", "let x = Task.Delay(20)")>]
+    [<InlineData("AXG009", "let x = System.Threading.Tasks.Task.Run(fun () -> ())")>]
+    [<InlineData("AXG013", "let x = task { do! System.Threading.Tasks.Task.Delay(20) }")>]
     let ``inactive conditional syntax produces no advice`` code body =
         let source = "module M\n#if ACTIVE\n" + body + "\n#endif\n"
         withConfig (if code = "AXG013" then "test" else "domain") (fun config file ->
             let run defines = FastSyntax.analyze config file (SourceText.ofString source) (parse defines source)
             Assert.DoesNotContain(run [], fun (_, m) -> m.Code = code)
             Assert.Contains(run ["ACTIVE"], fun (_, m) -> m.Code = code))
+
+    [<Theory>]
+    [<InlineData("open System\nlet c = { new System.IDisposable with member _.Dispose() = ignore DateTimeOffset.UtcNow }")>]
+    [<InlineData("let run () = async { return 1 } |> Async.RunSynchronously")>]
+    [<InlineData("open System\nlet read () = IO.File.ReadAllText \"x\"")>]
+    [<InlineData("let wait (work: System.Threading.Tasks.Task<int>) = work.GetAwaiter().GetResult()")>]
+    let ``AXG001 advice reaches object expressions pipelines partial namespaces and awaiter chains`` body =
+        Assert.Contains(analyzeFor "AXG001" ("module M\n" + body + "\n"), fun (_, m) -> m.Code = "AXG001")
+
+    [<Fact>]
+    let ``many opens stay linear and still resolve relative namespaces`` () =
+        let opens = [ for i in 1 .. 40 -> $"open System.Generated{i}" ] |> String.concat "\n"
+        let source = "module M\n" + opens + "\nopen System\nlet read () = IO.File.ReadAllText \"x\"\n"
+        let watch = System.Diagnostics.Stopwatch.StartNew()
+        Assert.Contains(analyzeFor "AXG001" source, fun (_, m) -> m.Code = "AXG001")
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds 10.0, string watch.Elapsed)
+
+    [<Theory>]
+    [<InlineData("let read () = Console.ReadLine()")>]
+    [<InlineData("open System\nopen Axial\nlet console = Console.live")>]
+    [<InlineData("let wait (work: System.Threading.Tasks.Task<int>) = work.Result")>]
+    let ``AXG001 advice needs an opened namespace and a BCL member shape`` body =
+        Assert.DoesNotContain(analyzeFor "AXG001" ("module M\n" + body + "\n"), fun (_, m) -> m.Code = "AXG001")
+
+    [<Theory>]
+    [<InlineData("open System.Threading.Tasks\nlet t () = task { do! Task.Delay 20 }", true)>]
+    [<InlineData("let t () = async { do! Async.Sleep 20 }", true)>]
+    [<InlineData("open System.Threading\nlet t () = Thread.Sleep 1", true)>]
+    [<InlineData("let t () = System.Threading.Tasks.Task.Delay 20", false)>]
+    [<InlineData("open System.Threading\nopen System.Threading.Tasks\nlet t (ct: CancellationToken) = task { do! Task.Delay(Timeout.Infinite, ct) }", false)>]
+    [<InlineData("let t () = async { do! Async.Sleep System.Threading.Timeout.Infinite }", false)>]
+    let ``AXG013 advice mirrors awaited delays and cancellation waits`` body expected =
+        let found = analyzeFor "AXG013" ("module M\n" + body + "\n") |> List.exists (fun (_, m) -> m.Code = "AXG013")
+        Assert.Equal(expected, found)
 
     [<Theory>]
     [<InlineData("let value = 1", 0)>]
@@ -130,7 +165,11 @@ module FastSyntaxTests =
             "AXG009", "domain", "module M\nlet work () = System.Threading.Tasks.Task.Run(fun () -> ())\ntype T = System.Threading.Tasks.Task\nlet other () = T.Run(fun () -> ())\n"
             "AXG009", "domain", "module M\nlet safe = System.Threading.Tasks.Task.CompletedTask\n"
             "AXG013", "test", "module M\nlet work () = task { do! System.Threading.Tasks.Task.Delay 20 }\nlet unawaited () = System.Threading.Tasks.Task.Delay 20\n"
-            "AXG013", "test", "module M\nlet cancelled (ct: System.Threading.CancellationToken) = task { do! System.Threading.Tasks.Task.Delay(System.Threading.Timeout.Infinite, ct) }\n" ]
+            "AXG013", "test", "module M\nlet cancelled (ct: System.Threading.CancellationToken) = task { do! System.Threading.Tasks.Task.Delay(System.Threading.Timeout.Infinite, ct) }\n"
+            "AXG001", "domain", "module M\nopen System\nlet clock = { new IDisposable with member _.Dispose() = ignore DateTimeOffset.UtcNow }\nlet read () = IO.File.ReadAllText \"x\"\n"
+            "AXG001", "domain", "module M\nlet run () = async { return 1 } |> Async.RunSynchronously\nlet wait (work: System.Threading.Tasks.Task<int>) = work.GetAwaiter().GetResult()\n"
+            "AXG001", "domain", "module M\nlet blocked (work: System.Threading.Tasks.Task<int>) = work.Result\n"
+            "AXG013", "test", "module M\nopen System.Threading\nlet poll () = Thread.Sleep 1\nlet slow () = async { do! Async.Sleep 20 }\n" ]
         let counts = System.Collections.Generic.Dictionary<string, int * int * int>()
         for code, role, source in corpus do
             withConfig role (fun config path ->
@@ -157,6 +196,8 @@ module FastSyntaxTests =
         let output = Path.Combine(AppContext.BaseDirectory, "../../..", "gr-fast-corpus-metrics.json")
         File.WriteAllText(Path.GetFullPath output, json)
         Assert.True(counts["AXG004"] = (1,0,0))
+        // Ambiguous syntax is skipped rather than guessed: no rule may claim a site the typed rule rejects.
+        for KeyValue(code, (_, fp, _)) in counts do Assert.True((fp = 0), $"{code} Fast false positives: {fp}")
 
     [<Theory>]
     [<InlineData("syntax")>]
