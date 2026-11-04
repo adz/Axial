@@ -597,17 +597,21 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
                 Assert.DoesNotContain("warning AXGINF001", result.Output)
             finally Directory.Delete(dir, true)
 
-    [<Theory>]
-    [<InlineData("AxialGuardrailsCheckPolicy")>]
-    let ``tool launch overrides inherited runtime policy only for its child`` (targetName: string) =
-        let xml = System.Xml.Linq.XDocument.Load(Path.Combine(repoRoot (), "src", "Axial.Guardrails", "build", "Axial.Guardrails.targets"))
-        let target =
-            xml.Descendants(System.Xml.Linq.XName.Get "Target")
-            |> Seq.find (fun node -> node.Attribute(System.Xml.Linq.XName.Get "Name").Value = targetName)
-        let launch = target.Descendants(System.Xml.Linq.XName.Get "Exec") |> Seq.exactlyOne
-        let environment = launch.Attribute(System.Xml.Linq.XName.Get "EnvironmentVariables")
-        Assert.True(environment <> null, $"{targetName} must override inherited Major/Disable runtime policy for its child")
-        Assert.Contains("DOTNET_ROLL_FORWARD=LatestMajor", environment.Value.Split(';'))
+    [<Fact>]
+    let ``policy tool child receives LatestMajor despite inherited Major`` () =
+        if not (OperatingSystem.IsWindows()) then
+            let dir = Path.Combine(Path.GetTempPath(), "axial-policy-runtime-" + Guid.NewGuid().ToString("N"))
+            Directory.CreateDirectory dir |> ignore
+            try
+                writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework>" "module Consumer\nlet value = 1\n"
+                writeV2Policy dir "domain" "warn"
+                let script = Path.Combine(dir, "policy.sh")
+                File.WriteAllText(script, "printf '%s' \"$DOTNET_ROLL_FORWARD\" > policy-runtime.txt\necho 'Axial policy check passed.'\n")
+                let project = Path.Combine(dir, "Consumer.fsproj")
+                let result = runBuildWithEnvironment [ "DOTNET_ROLL_FORWARD", "Major" ] [ "-p:AxialGuardrailsMode=Fast"; $"-p:_AxialGuardrailsPolicyExe=sh {script}" ] project None
+                Assert.True(result.ExitCode = 0, result.Output)
+                Assert.Equal("LatestMajor", File.ReadAllText(Path.Combine(dir, "policy-runtime.txt")))
+            finally Directory.Delete(dir, true)
 
     [<Fact>]
     let ``analyzer child receives LatestMajor despite inherited Major`` () =
@@ -659,12 +663,13 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
             Assert.NotEqual(0, checkpoint.ExitCode)
             Assert.Contains("error AXG010", checkpoint.Output)
             File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet f () = try failwith \"bad\" with _ -> () // axial-note AXG010: best effort observer\n")
-            let noted = runBuildWithArgs [ "-p:AxialGuardrailsCheckpoint=true" ] project None
+            // Acknowledged Info is logged below the minimal console verbosity.
+            let noted = runBuildWithArgs [ "-p:AxialGuardrailsCheckpoint=true"; "-v:normal" ] project None
             Assert.True(noted.ExitCode = 0, noted.Output)
             Assert.Contains("info axg010", noted.Output.ToLowerInvariant())
             Assert.Contains("best effort observer", noted.Output)
             Assert.DoesNotContain("AXG002", noted.Output)
-            let repeated = runBuildWithArgs [ "-p:AxialGuardrailsCheckpoint=true" ] project None
+            let repeated = runBuildWithArgs [ "-p:AxialGuardrailsCheckpoint=true"; "-v:normal" ] project None
             Assert.True(repeated.ExitCode = 0, repeated.Output)
             Assert.DoesNotContain("Running Axial.Guardrails analysis", repeated.Output)
             Assert.Contains("info axg010", repeated.Output.ToLowerInvariant())
