@@ -91,7 +91,7 @@ public static string Run(string input) {
  foreach (var source in XElement.Parse(input).Elements("file")) {
   bool bad = Path.GetFileName(source.Value) == "Program.fs";
   if (bad) root.Add(new XElement("failure", new XAttribute("file", source.Value), "FAULT\nsecond-line cause"));
-  foreach (var rule in new [] {"EffectBoundary", "RaiseInFlow", "Fixture", "ReflectionFormatting", "RawConcurrency", "WaitForFacts"}) {
+  foreach (var rule in new [] {"EffectBoundary", "RaiseInFlow", "Fixture", "ReflectionFormatting", "RawConcurrency", "WaitForFacts", "TaskSurface"}) {
    if (bad && ("FAULT" == "parser crash" || rule == "Fixture")) continue;
    var entry = new XElement("coverage", new XAttribute("file", source.Value), new XAttribute("rule", rule), new XAttribute("status", "ran"));
    if (!bad && rule == "EffectBoundary") entry.Add(new XElement("finding", new XAttribute("code", "AXG001"), new XAttribute("severity", "Info"), new XAttribute("line", 2), new XAttribute("column", 0), "kept available finding"));
@@ -124,7 +124,7 @@ public static void Warm(string input) { throw new System.InvalidOperationExcepti
 public static string Run(string input) {
  var root = new XElement("fast");
  foreach (var source in XElement.Parse(input).Elements("file"))
-  foreach (var rule in new [] {"EffectBoundary", "RaiseInFlow", "Fixture", "ReflectionFormatting", "RawConcurrency", "WaitForFacts"})
+  foreach (var rule in new [] {"EffectBoundary", "RaiseInFlow", "Fixture", "ReflectionFormatting", "RawConcurrency", "WaitForFacts", "TaskSurface"})
    root.Add(new XElement("coverage", new XAttribute("file", source.Value), new XAttribute("rule", rule), new XAttribute("status", "ran")));
  return root.ToString();
 }}}
@@ -197,23 +197,66 @@ public static string Run(string input) {
         Assert.Contains("AXG001", output))
 
     [<Fact>]
-    let ``Fast exact fixture errors block and cached findings still block`` () = withFixture (fun dir ->
+    let ``Fast exact fixture findings warn and cached findings still warn`` () = withFixture (fun dir ->
         File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nopen System\ntype FactAttribute() = inherit Attribute()\nlet fixture = obj()\n[<Fact>]\nlet test () = ()\n")
         let args = ["-p:AxialGuardrailsMode=Fast"]
         let first = build dir args
-        Assert.NotEqual(0, fst first)
-        Assert.Contains("error AXG004", snd first)
+        checkSuccess first
+        Assert.Contains("warning AXG004", snd first)
+        Assert.DoesNotContain("error AXG004", snd first)
         Assert.Contains("syntax-exact", snd first)
         let cached = build dir args
-        Assert.NotEqual(0, fst cached)
-        Assert.Contains("error AXG004", snd cached)
+        checkSuccess cached
+        Assert.Contains("warning AXG004", snd cached)
         Assert.DoesNotContain("Running Axial.Guardrails analysis", snd cached))
 
     [<Fact>]
     let ``Fast ambiguous hints never block warnings as errors`` () = withFixture (fun dir ->
+        File.WriteAllText(Path.Combine(dir, "Other.fs"), "module Other\nlet run () = task { return 1 }\n")
         let result = build dir ["-p:AxialGuardrailsMode=Fast"; "-warnaserror"; "-p:TreatWarningsAsErrors=true"]
         checkSuccess result
-        Assert.Contains("fast/unverified", snd result))
+        Assert.Contains("fast/unverified", snd result)
+        Assert.Contains("AXG014", snd result))
+
+    [<Fact>]
+    let ``Full AXG014 guides never block even at a checkpoint under warnings as errors`` () = withFixture (fun dir ->
+        File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet run () = task { return 1 }\n")
+        let result = build dir ["-p:AxialGuardrailsMode=Full"; "-p:AxialGuardrailsCheckpoint=true"; "-warnaserror"; "-p:TreatWarningsAsErrors=true"]
+        checkSuccess result
+        Assert.Contains("AXG014", snd result)
+        Assert.DoesNotContain("error AXG014", snd result)
+        Assert.DoesNotContain("warning AXG014", snd result)
+        Assert.Equal("true", attr "complete" (report dir).Root))
+
+    [<Fact>]
+    let ``skipped sources warn on every build including cache replays`` () = withFixture (fun dir ->
+        let plugin = Path.Combine(dir, "plugin")
+        Directory.CreateDirectory plugin |> ignore
+        File.WriteAllText(Path.Combine(plugin, "Plugin.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net8.0</TargetFramework><AssemblyName>SkipFast</AssemblyName></PropertyGroup></Project>")
+        File.WriteAllText(Path.Combine(plugin, "Runner.cs"), """using System.IO;
+using System.Xml.Linq;
+namespace Axial.Guardrails {
+public static class FastRunner {
+public static string Run(string input) {
+ var root = new XElement("fast");
+ foreach (var source in XElement.Parse(input).Elements("file")) {
+  foreach (var rule in new [] {"EffectBoundary", "RaiseInFlow", "Fixture", "ReflectionFormatting", "RawConcurrency", "WaitForFacts", "TaskSurface"})
+   root.Add(new XElement("coverage", new XAttribute("file", source.Value), new XAttribute("rule", rule), new XAttribute("status", "ran")));
+  if (Path.GetFileName(source.Value) == "Other.fs") root.Add(new XElement("skip", new XAttribute("file", source.Value), new XAttribute("reason", "project path is unusable")));
+ }
+ return root.ToString();
+}}}
+""".Trim())
+        checkSuccess (build dir ["plugin/Plugin.csproj"])
+        let assembly = Path.Combine(plugin, "bin", config (), "net8.0", "SkipFast.dll")
+        let args = ["-p:_AxialGuardrailsFastAssembly=" + assembly]
+        for attempt in 1 .. 2 do
+            let result = build dir args
+            checkSuccess result
+            Assert.Contains("warning AXGINF002", snd result)
+            Assert.Contains("project path is unusable", snd result)
+            if attempt = 2 then Assert.DoesNotContain("Running Axial.Guardrails analysis", snd result)
+        Assert.Single(Directory.GetFiles(dir, "*.stamp", SearchOption.AllDirectories)) |> ignore)
 
     [<Fact>]
     let ``concurrent Fast builds of the same project publish valid reusable coverage`` () = withFixture (fun dir ->

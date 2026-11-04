@@ -13,7 +13,7 @@
     <AxialGuardrailsTimings Condition="'$(AxialGuardrailsTimings)' == ''">false</AxialGuardrailsTimings>
     <_AxialGuardrailsForce>false</_AxialGuardrailsForce>
     <_AxialGuardrailsFingerprintMilliseconds>0</_AxialGuardrailsFingerprintMilliseconds>
-    <_AxialGuardrailsRules>EffectBoundary;RaiseInFlow;Fixture;DiscardedCancellation;ReflectionFormatting;ResourceFromFiber;ScopeFromRun;RawConcurrency;SwallowedException;UncancellableWork;DiscardedWork;WaitForFacts;SuppressionIntegrity</_AxialGuardrailsRules>
+    <_AxialGuardrailsRules>EffectBoundary;RaiseInFlow;Fixture;DiscardedCancellation;ReflectionFormatting;ResourceFromFiber;ScopeFromRun;RawConcurrency;SwallowedException;UncancellableWork;DiscardedWork;WaitForFacts;TaskSurface;SuppressionIntegrity</_AxialGuardrailsRules>
   </PropertyGroup>
 
   <!-- Not stamped: an obsolete setting must be visible on every build, including incremental rebuilds and builds
@@ -154,7 +154,8 @@
           Inputs="@(_AxialGuardrailsPolicyInputs);$(_AxialGuardrailsPolicyToolAssembly)"
           Outputs="$(_AxialGuardrailsPolicyCheckStamp)">
     <Error Condition="!Exists('$(_AxialGuardrailsPolicyToolAssembly)')" Text="Axial.Guardrails policy tool is missing: $(_AxialGuardrailsPolicyToolAssembly). Restore/reinstall the package." />
-    <Exec Command="$(_AxialGuardrailsPolicyExe) check" WorkingDirectory="$(_AxialGuardrailsPolicyRoot)"
+    <!-- Build mode prints at most one policy-drift line per build across projects/TFMs: a warning, never an error. -->
+    <Exec Command="$(_AxialGuardrailsPolicyExe) check --build" WorkingDirectory="$(_AxialGuardrailsPolicyRoot)"
           EnvironmentVariables="DOTNET_ROLL_FORWARD=LatestMajor" />
     <WriteLinesToFile File="$(_AxialGuardrailsPolicyCheckStamp)" Lines="@(_AxialGuardrailsPolicyFingerprintHash->'%(FileHash)')" Overwrite="true" />
   </Target>

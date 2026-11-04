@@ -251,13 +251,6 @@ let private appendGenerated (output: string) (entry: BaselineEntry) =
                 else line)
         File.WriteAllLines(output, if found then updated else updated @ [ prefix ]))
 
-let private warned = Collections.Generic.HashSet<string>()
-
-let private warnSkipped fileName explanation =
-    lock gate (fun () ->
-        if warned.Add fileName then
-            eprintfn "Axial.Guardrails: skipping source '%s': %s" fileName explanation)
-
 /// Resolve a compiler-supplied path against an explicit base instead of the process current directory.
 let private sourceBaseDirectory (config: Config) =
     config.ProjectPath
@@ -277,10 +270,8 @@ let sourceClassification (config: Config) fileName =
 
 let isSkippedSource (config: Config) fileName =
     match sourceClassification config fileName with
-    | Some(Policy.ExternalSource) -> true
-    | Some(Policy.InvalidSource explanation) ->
-        warnSkipped fileName explanation
-        true
+    | Some(Policy.ExternalSource)
+    | Some(Policy.InvalidSource _) -> true
     | _ -> false
 
 let private tryRelative root path =
@@ -297,24 +288,25 @@ let resolvedFilePolicy (config: Config) fileName =
             match Policy.resolve policy projectFile file with
             | Ok resolved -> Some resolved
             | Error error -> invalidArg "policy" error
-        | Policy.ExternalSource, _ -> None
-        | Policy.InvalidSource explanation, _ ->
-            warnSkipped fileName explanation
-            None
-        | _, None ->
-            warnSkipped project "project path is unusable"
-            None
+        | Policy.ExternalSource, _
+        | Policy.InvalidSource _, _
+        | _, None -> None
     | _ -> None
 
 let resolvedPolicy config (ctx: CliContext) = resolvedFilePolicy config ctx.FileName
 
+/// Whether `[runtime].files` declares this source: the runtime implements Flow on top of raw tasks.
+let isRuntimeFile (config: Config) fileName =
+    match config.Policy, config.PolicyRoot with
+    | Some policy, Some root ->
+        (try Some(Path.GetFullPath fileName) with _ -> None)
+        |> Option.exists (fun full -> policy.Runtime |> List.exists (fun file -> Path.GetFullPath(Path.Combine(root, file)) = full))
+    | _ -> false
+
 /// Raw-concurrency placement exemptions do not require typed facts; Fast and Full share them.
 let exemptsRawConcurrency (config: Config) fileName =
     let role = resolvedFilePolicy config fileName |> Option.map _.Role
-    let runtime =
-        match config.Policy, config.PolicyRoot with
-        | Some policy, Some root -> policy.Runtime |> List.exists (fun file -> Path.GetFullPath(Path.Combine(root, file)) = Path.GetFullPath fileName)
-        | _ -> false
+    let runtime = isRuntimeFile config fileName
     let host =
         match role, config.Policy, config.PolicyRoot, config.ProjectPath with
         | Some Policy.Host, Some policy, Some root, Some project ->
@@ -354,7 +346,8 @@ let analyzers =
       { Name = "SwallowedException"; Codes = [ "AXG010" ]; RunsInTests = false }
       { Name = "UncancellableWork"; Codes = [ "AXG011" ]; RunsInTests = false }
       { Name = "DiscardedWork"; Codes = [ "AXG012" ]; RunsInTests = false }
-      { Name = "WaitForFacts"; Codes = [ "AXG013" ]; RunsInTests = true } ]
+      { Name = "WaitForFacts"; Codes = [ "AXG013" ]; RunsInTests = true }
+      { Name = "TaskSurface"; Codes = [ "AXG014" ]; RunsInTests = false } ]
 
 let private testSetCodes = analyzers |> List.filter _.RunsInTests |> List.collect _.Codes |> Set.ofList
 
@@ -383,6 +376,19 @@ let private resolvableFullPath (config: Config) (fileName: string) =
         Some(Path.GetFullPath(fileName, basePath))
     with _ -> None
 
+/// Why a repository source cannot be checked (an unusable source or project path), if it cannot. Hosts record this in
+/// their build report so every build, including cache replays and reused build nodes, shows it as a warning; an
+/// external source is out of scope, not skipped.
+let skipReason (config: Config) fileName =
+    match sourceClassification config fileName with
+    | Some(Policy.InvalidSource explanation) -> Some $"source path is unusable: {explanation}"
+    | Some Policy.ExternalSource -> None
+    | _ when (resolvableFullPath config fileName).IsNone -> Some "source path is unusable"
+    | _ ->
+        match config.Policy, config.PolicyRoot, config.ProjectPath with
+        | Some _, Some root, Some project when (tryRelative root project).IsNone -> Some "project path is unusable"
+        | _ -> None
+
 let isBoundaryFile (config: Config) fileName =
     config.BoundaryFiles.Contains "*"
     || (resolvableFullPath config fileName |> Option.exists config.BoundaryFiles.Contains)
@@ -390,10 +396,7 @@ let isBoundaryFile (config: Config) fileName =
 let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: Message list) : Message list =
     if isSkippedSource config ctx.FileName then [] else
     let sourcePath = resolvableFullPath config ctx.FileName
-    if sourcePath.IsNone then
-        warnSkipped ctx.FileName "source path is unusable"
-        []
-    else
+    if sourcePath.IsNone then [] else
     let policy = resolvedPolicy config ctx
     let level = policy |> Option.bind (fun resolved -> resolved.Rules.TryFind "effects.ambient") |> Option.defaultValue Policy.Deny
     if not (config.EnabledGuardrails.Contains guardrail) then
@@ -421,7 +424,7 @@ let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: 
 
         findings
         |> List.map (fun (message, entry) ->
-            let tiered = Set.contains message.Code (set [ "AXG009"; "AXG010"; "AXG011"; "AXG012"; "AXG013" ]) || message.Type = "Axial Note Integrity"
+            let tiered = Set.contains message.Code (set [ "AXG009"; "AXG010"; "AXG011"; "AXG012"; "AXG013"; "AXG014" ]) || message.Type = "Axial Note Integrity"
             let candidate = not tiered && (not (message.Code = "AXG001") || level <> Policy.Allow)
                             && (config.BaselineRule |> Option.forall ((=) message.Code))
             if candidate then config.BaselineOutput |> Option.iter (fun output -> appendGenerated output entry)

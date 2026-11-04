@@ -66,6 +66,42 @@ module PolicyReviewTests =
             Assert.Contains("axial policy review", output)
             Assert.Equal(1, output.Split("WARNING").Length - 1))
 
+    [<Fact>]
+    let ``build checks print one drift line per drift state while direct checks always warn`` () =
+        repository (fun _ write _ cli ->
+            write "App.fs" "module App\n// axial-allow-AXG001: foreign boundary\n"
+            let warnings (output: string) = output.Split("WARNING").Length - 1
+            let first = cli ["check"; "--build"]
+            Assert.Equal(0, fst first)
+            Assert.Equal(1, warnings (snd first))
+            for _ in 1 .. 3 do
+                let repeated = cli ["check"; "--build"]
+                Assert.Equal(0, fst repeated)
+                Assert.Equal(0, warnings (snd repeated))
+                Assert.DoesNotContain("Raw Task", snd repeated)
+            let direct = cli ["check"]
+            Assert.Equal(1, warnings (snd direct))
+            // A different drift state is a new notice.
+            write "App.fs" "module App\n// axial-allow-AXG001: another foreign boundary\n"
+            Assert.Equal(1, warnings (snd (cli ["check"; "--build"]))))
+
+    [<Fact>]
+    let ``check reports a per-project raw Task trend in text and json`` () =
+        repository (fun _ write _ cli ->
+            write "App.fs" "module App\nlet run () : System.Threading.Tasks.Task<int> = task { return 1 }\n"
+            let code, output = cli ["check"]
+            Assert.Equal(0, code)
+            Assert.Contains("Raw Task (lexical trend, not a gate): 1 task expressions, 1 Task-returning signatures in 1 of 1 projects.", output)
+            Assert.Contains("App.fsproj", output)
+            let code, json = cli ["check"; "--json"]
+            Assert.Equal(0, code)
+            let document = System.Text.Json.JsonDocument.Parse(json.Trim())
+            let project = document.RootElement.GetProperty("rawTask")[0]
+            Assert.Equal("App.fsproj", project.GetProperty("project").GetString())
+            Assert.Equal("domain", project.GetProperty("role").GetString())
+            Assert.Equal(1, project.GetProperty("taskExpressions").GetInt32())
+            Assert.Equal(1, project.GetProperty("taskSignatures").GetInt32()))
+
     [<Theory>]
     [<InlineData("Axial.Guardrails.lock", "corrupt")>]
     [<InlineData("Axial.Guardrails.toml", "broken")>]

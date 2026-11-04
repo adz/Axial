@@ -40,6 +40,9 @@ let private parsingOptions (input: XElement) paths =
         if not errors.IsEmpty then invalidOp ("Compiler parsing options failed: " + (errors |> List.map _.Message |> String.concat "; "))
         { options with SourceFiles = paths }
 
+// XML 1.0 cannot carry every character an unusable path or exception message may contain.
+let private xmlSafe (value: string) = String(value |> Seq.map (fun ch -> if System.Xml.XmlConvert.IsXmlChar ch then ch else '\uFFFD') |> Seq.toArray)
+
 /// The seams exercise the production failure boundary without process-wide fault-injection settings.
 let runWith
     (parseFile: string -> ISourceText -> FSharpParsingOptions -> FSharp.Compiler.Syntax.ParsedInput)
@@ -50,19 +53,24 @@ let runWith
     let timing = input.Attribute(xn "timings") |> Option.ofObj |> Option.exists (fun a -> a.Value = "true")
     let result = XElement(xn "fast")
     let phases = System.Collections.Generic.Dictionary<string, float>()
+    let record name milliseconds =
+        if timing then lock phases (fun () -> phases[name] <- (match phases.TryGetValue name with | true, v -> v | _ -> 0.0) + milliseconds)
     let timed name (work: unit -> 'T) =
         if not timing then work () else
-        let watch = System.Diagnostics.Stopwatch.StartNew()
-        try work () finally lock phases (fun () -> phases[name] <- (match phases.TryGetValue name with | true, v -> v | _ -> 0.0) + watch.Elapsed.TotalMilliseconds)
+        let started = System.Diagnostics.Stopwatch.GetTimestamp()
+        try work () finally record name (System.Diagnostics.Stopwatch.GetElapsedTime(started).TotalMilliseconds)
     // Policy parsing does not depend on the parser, so overlap it with cache checks and the first (JIT-bound) parse.
     let config = System.Threading.Tasks.Task.Run(fun () -> timed "config" (fun () -> GuardrailConfig.parse (File.ReadAllLines(get "config"))))
     let paths = input.Elements(xn "file") |> Seq.map _.Value |> Seq.toArray
     let parsing = lazy (timed "options" (fun () -> parsingOptions input paths))
+    let cacheDirectory = get "cache"
+    let current = System.Collections.Generic.HashSet<string>(StringComparer.Ordinal)
     for path in paths do
         try
             let text = File.ReadAllText path
             let key = digest (get "context" + "\n" + path + "\n" + text)
-            let cachePath = Path.Combine(get "cache", key + ".xml")
+            current.Add key |> ignore
+            let cachePath = Path.Combine(cacheDirectory, key + ".xml")
             let cached =
                 try
                     let envelope = XDocument.Load cachePath
@@ -74,26 +82,34 @@ let runWith
                 | Some body -> XElement(body), true
                 | None ->
                     let source = SourceText.ofString text
-                    let parseWatch = if timing then Some(System.Diagnostics.Stopwatch.StartNew()) else None
-                    let tree = timed "parse" (fun () -> parseFile path source parsing.Value)
-                    parseWatch |> Option.iter _.Stop()
+                    let options = parsing.Value
+                    let started = System.Diagnostics.Stopwatch.GetTimestamp()
+                    let tree = parseFile path source options
+                    let parseMilliseconds = System.Diagnostics.Stopwatch.GetElapsedTime(started).TotalMilliseconds
+                    record "parse" parseMilliseconds
                     let config = config.GetAwaiter().GetResult()
                     let body = XElement(xn "file")
                     let mutable complete = true
                     for rule in FastSyntax.rules do
                         let entry = XElement(xn "coverage", attribute "file" path, attribute "rule" rule, attribute "status" "ran")
-                        let watch = if timing then Some(System.Diagnostics.Stopwatch.StartNew()) else None
-                        parseWatch |> Option.iter (fun w -> entry.SetAttributeValue(xn "parseMilliseconds", w.Elapsed.TotalMilliseconds))
+                        if timing then entry.SetAttributeValue(xn "parseMilliseconds", parseMilliseconds)
+                        let started = System.Diagnostics.Stopwatch.GetTimestamp()
                         try
-                            for _, finding in timed "visit" (fun () -> visit (Some rule) config path source tree) do
+                            for _, finding in visit (Some rule) config path source tree do
                                 entry.Add(XElement(xn "finding", attribute "code" finding.Code, attribute "severity" (string finding.Severity), attribute "line" finding.Range.StartLine, attribute "column" finding.Range.StartColumn, finding.Message))
                         with error ->
                             complete <- false
                             entry.SetAttributeValue(xn "status", "skipped")
                             entry.SetAttributeValue(xn "reason", error.Message)
                             result.Add(XElement(xn "failure", attribute "file" path, rule + ": " + error.Message))
-                        watch |> Option.iter (fun w -> w.Stop(); entry.SetAttributeValue(xn "milliseconds", w.Elapsed.TotalMilliseconds))
+                        let milliseconds = System.Diagnostics.Stopwatch.GetElapsedTime(started).TotalMilliseconds
+                        record "visit" milliseconds
+                        if timing then entry.SetAttributeValue(xn "milliseconds", milliseconds)
                         body.Add entry
+                    // Cached with the findings so that every build, including replays, warns about the skipped source.
+                    match GuardrailConfig.skipReason config path with
+                    | Some reason -> body.Add(XElement(xn "skip", attribute "file" path, attribute "reason" (xmlSafe reason)))
+                    | None -> ()
                     if complete then
                         let envelope = XDocument(XElement(xn "cached", attribute "key" key, attribute "digest" (digest (body.ToString())), XElement(body)))
                         atomic cachePath envelope
@@ -107,10 +123,18 @@ let runWith
                     entry.SetAttributeValue(xn "milliseconds", 0)
                     entry.SetAttributeValue(xn "parseMilliseconds", 0)
                 result.Add(XElement entry)
+            for skip in body.Elements(xn "skip") do result.Add(XElement skip)
         with error ->
             result.Add(XElement(xn "failure", attribute "file" path, error.Message))
     // Policy errors are infrastructure failures even when every file was a cache hit.
     config.GetAwaiter().GetResult() |> ignore
+    // The per-file cache holds only the current request's entries: edited, removed and renamed files leave nothing.
+    try
+        if Directory.Exists cacheDirectory then
+            for file in Directory.GetFiles(cacheDirectory, "*.xml") do
+                if not (current.Contains(Path.GetFileNameWithoutExtension file)) then
+                    try File.Delete file with :? IOException | :? UnauthorizedAccessException -> ()
+    with :? IOException | :? UnauthorizedAccessException -> ()
     for KeyValue(name, milliseconds) in phases do result.SetAttributeValue(xn (name + "Milliseconds"), milliseconds)
     result.ToString()
 

@@ -59,6 +59,10 @@ let track (rule: string) (analyzer: Analyzer<CliContext>) : Analyzer<CliContext>
                                      attribute "status" (if skipped then "skipped" else "ran"),
                                      attribute "reason" reason)
                 timer |> Option.iter (fun watch -> entry.Add(attribute "milliseconds" watch.Elapsed.TotalMilliseconds))
+                // The build replays this record as a warning on every build, including cache hits.
+                match (try GuardrailConfig.skipReason (GuardrailConfig.load ()) ctx.FileName with _ -> None) with
+                | Some skip -> entry.Add(XElement(XName.Get "skip", attribute "file" ctx.FileName, attribute "reason" skip))
+                | None -> ()
                 for finding in findings do
                     entry.Add(XElement(XName.Get "finding",
                                        attribute "code" finding.Code,

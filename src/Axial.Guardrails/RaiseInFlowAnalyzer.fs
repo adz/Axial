@@ -14,7 +14,8 @@ open FSharp.Compiler.Symbols
 open FSharp.Compiler.Text
 open Axial.Guardrails.Suppressions
 
-let private bannedIdents =
+/// The exception-raising names AXG003 reports; Fast's syntax advice uses the same set.
+let raiseNames =
     set [ "raise"; "failwith"; "failwithf"; "invalidOp"; "invalidArg"; "reraise" ]
 
 /// The identifier a `SynExpr.App` chain is ultimately applying, e.g. `raise` in `raise (Foo x)`
@@ -52,7 +53,7 @@ let rec private findRaises caughtLocally (expr: SynExpr) : RaiseFinding list =
                @ (whenExpr |> Option.toList |> List.collect (findRaises caughtLocally))))
     | SynExpr.App(_, _, funcExpr, argExpr, range) ->
         match headIdent expr with
-        | Some ident when Set.contains ident bannedIdents ->
+        | Some ident when Set.contains ident raiseNames ->
             { Range = range; Ident = ident; ArgumentRange = argExpr.Range; CaughtLocally = caughtLocally }
             :: findRaises caughtLocally argExpr
         | _ -> findRaises caughtLocally funcExpr @ findRaises caughtLocally argExpr

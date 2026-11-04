@@ -29,6 +29,8 @@
     <Compile Include="PolicyReviewTests.fs" />
     <Compile Include="PackagePropsTests.fs" />
     <Compile Include="FastModeTests.fs" />
+    <!-- Before the last file: a test SDK Exe runs the last file's top-level values only from its entry point. -->
+    <Compile Include="TaskSurfaceTests.fs" />
     <Compile Include="FastSyntaxTests.fs" />
   </ItemGroup>
 

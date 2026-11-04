@@ -23,7 +23,7 @@ let private rangesForRule (ctx: CliContext) ruleId =
     | "AXG013" -> WaitForFactsAnalyzer.rawRanges ctx
     | _ -> []
 
-let private knownRuleIds = set [ for number in 1 .. 13 -> sprintf "AXG%03d" number ]
+let private knownRuleIds = set [ for number in 1 .. 14 -> sprintf "AXG%03d" number ]
 
 let private message (sourceText: ISourceText) (range: range) (text: string) : Message =
     let line = sourceText.GetLineString(range.StartLine - 1)
@@ -64,7 +64,7 @@ let private findingForDirective (ctx: CliContext) directive =
         Some(report $"Remove this suppression or replace its unknown rule id `{ruleId}` with the diagnostic id it is intended to allow.")
     | Some _ when directive.Reason = "" ->
         Some(report "Add a non-empty reason explaining why this intentional boundary cannot use the recommended API.")
-    | Some ruleId when Set.contains ruleId (set [ "AXG009"; "AXG010"; "AXG011"; "AXG012"; "AXG013" ]) ->
+    | Some ruleId when Set.contains ruleId (set [ "AXG009"; "AXG010"; "AXG011"; "AXG012"; "AXG013"; "AXG014" ]) ->
         Some(report "Remove this allowance: tiered rules cannot be suppressed. Only guide findings accept `axial-note AXGnnn: reason` acknowledgements.")
     | Some _ when directive.FileWide && not (isLeadingComment ctx.SourceText directive.Line) ->
         Some(report "Move this file-wide suppression into the leading comment block, before the first declaration.")
@@ -85,11 +85,12 @@ let private findingForNote (config: Config) (ctx: CliContext) (note: Directive) 
             let guides = WaitForFactsAnalyzer.guideRanges ctx
             WaitForFactsAnalyzer.analyzeWithConfig config ctx
             |> List.choose (fun m -> if guides |> List.exists (fun r -> r.Start = m.Range.Start && r.End = m.Range.End) then Some m.Range else None)
+        | Some "AXG014" -> TaskSurfaceAnalyzer.liveRanges config ctx
         | _ -> []
     if note.Reason <> "" && live |> List.exists (fun r -> coversLine note.Line r.StartLine) then None
     else
         let diagnostic = message ctx.SourceText (rangeOfLine ctx.SourceText note.Line)
-                            "Remove this invalid note: for AXG010 put the note as the first line inside the handler body, immediately before its first expression (not above 'with' or the pattern). For AXG013 use the finding's line or the preceding line. Block findings cannot be acknowledged."
+                            "Remove this invalid note: for AXG010 put the note as the first line inside the handler body, immediately before its first expression (not above 'with' or the pattern). For AXG013 and AXG014 use the finding's line or the preceding line. Block findings cannot be acknowledged."
         Some { diagnostic with Type = "Axial Note Integrity"; Severity = if config.Checkpoint then Severity.Error else Severity.Warning }
 
 [<CliAnalyzer("SuppressionIntegrity",

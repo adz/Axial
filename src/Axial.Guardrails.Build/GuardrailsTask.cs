@@ -52,7 +52,7 @@ public class AxialGuardrailsTask : Task
     }
     public string[] Defines { get; set; } = Array.Empty<string>();
     public string LangVersion { get; set; } = "preview";
-    static readonly string[] FastRules = { "EffectBoundary", "RaiseInFlow", "Fixture", "ReflectionFormatting", "RawConcurrency", "WaitForFacts" };
+    static readonly string[] FastRules = { "EffectBoundary", "RaiseInFlow", "Fixture", "ReflectionFormatting", "RawConcurrency", "WaitForFacts", "TaskSurface" };
     static readonly object FastGate = new object();
     static object fastContext;
     static string fastIdentity;
@@ -382,6 +382,10 @@ public class AxialGuardrailsTask : Task
     }
     void Findings(XElement root)
     {
+        // A skipped source is visible on every build, cache replays included; the report carries the record.
+        foreach (var skip in root.Descendants("skip").Select(e => ((string)e.Attribute("file"), (string)e.Attribute("reason"))).Distinct())
+            Log.LogWarning(null, "AXGINF002", null, skip.Item1, 0, 0, 0, 0,
+                $"Axial.Guardrails skipped this source: {skip.Item2}. No rule checked it; fix the path or exclude the file.");
         foreach (var entry in root.Elements("coverage"))
         foreach (var finding in entry.Elements("finding"))
         {
@@ -481,6 +485,7 @@ public class AxialGuardrailsTask : Task
                 }
                 root.SetAttributeValue("isolated", (string)fast.Attribute("isolated") ?? "false");
                 root.Add(fast.Elements("coverage"));
+                root.Add(fast.Elements("skip"));
                 infrastructure.AddRange(fast.Elements("failure").Select(e => $"Fast parse/visitor failed for {(string)e.Attribute("file")}: {e.Value}"));
                 foreach (var path in SourcePaths())
                 foreach (var rule in Rules.Where(r => !FastRules.Contains(r)))

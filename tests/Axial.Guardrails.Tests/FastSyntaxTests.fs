@@ -223,6 +223,6 @@ module FastSyntaxTests =
                 FastSyntax.analyzeRule rule config path source tree
             let result = FastRunner.runWith parseFile visit (request.ToString()) |> XElement.Parse
             Assert.Single(result.Elements(XName.Get "failure")) |> ignore
-            Assert.Equal((if fault = "visitor crash" then 12 else 6), result.Elements(XName.Get "coverage") |> Seq.length)
+            Assert.Equal((if fault = "visitor crash" then 14 else 7), result.Elements(XName.Get "coverage") |> Seq.length)
             Assert.Single(Directory.GetFiles(Path.Combine(dir, "cache"))) |> ignore
         finally Directory.Delete(dir, true)

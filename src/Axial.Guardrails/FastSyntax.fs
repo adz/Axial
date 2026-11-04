@@ -6,7 +6,7 @@ open FSharp.Compiler.Syntax
 open FSharp.Compiler.Text
 open EffectCatalog
 
-let rules = [ "EffectBoundary"; "RaiseInFlow"; "Fixture"; "ReflectionFormatting"; "RawConcurrency"; "WaitForFacts" ]
+let rules = [ "EffectBoundary"; "RaiseInFlow"; "Fixture"; "ReflectionFormatting"; "RawConcurrency"; "WaitForFacts"; "TaskSurface" ]
 
 let private names (ids: Ident list) = ids |> List.map _.idText |> String.concat "."
 let rec private name = function
@@ -55,10 +55,12 @@ let private openedNamespaces nodes =
     // A relative open resolves against an earlier open as written. Combining with derived entries instead grows the
     // set exponentially in the number of opens (a 30-open file exhausted memory).
     let written = ResizeArray<string>()
+    let seen = System.Collections.Generic.HashSet<string>()
     for _, node in nodes do
         let add text =
-            opened <- written |> Seq.fold (fun result prefix -> Set.add (prefix + "." + text) result) (Set.add text opened)
-            written.Add text
+            if seen.Add text then
+                opened <- written |> Seq.fold (fun result prefix -> Set.add (prefix + "." + text) result) (Set.add text opened)
+                written.Add text
         match node with
         | SyntaxNode.SynModule(SynModuleDecl.Open(target = SynOpenDeclTarget.ModuleOrNamespace(longId = id))) ->
             let text = names id.LongIdent
@@ -136,17 +138,17 @@ let analyzeRule requested (config: GuardrailConfig.Config) fileName (source: ISo
     let policy = GuardrailConfig.resolvedFilePolicy config fileName
     let role = policy |> Option.map _.Role
     let level = policy |> Option.bind (fun p -> p.Rules.TryFind "effects.ambient") |> Option.defaultValue Policy.Deny
-    let insideFlow path =
-        path |> List.exists (function
-            | SyntaxNode.SynExpr(SynExpr.App(funcExpr = func; argExpr = SynExpr.ComputationExpr _)) -> name func = Some "flow" && unshadowed "flow"
-            | _ -> false)
+    // Some true for a flow computation, Some false for any other computation expression.
+    let flowComputation = function
+        | SyntaxNode.SynExpr(SynExpr.App(funcExpr = func; argExpr = SynExpr.ComputationExpr _)) -> Some(name func = Some "flow" && unshadowed "flow")
+        | _ -> None
+    let insideFlow path = path |> List.exists (fun node -> flowComputation node = Some true)
     // A raise belongs to the nearest enclosing computation or lambda: inside a nested task/async it is that
     // builder's exception (Flow.fromTask converts it), not a flow bypass.
     let directlyInFlow path =
         path |> List.tryPick (function
-            | SyntaxNode.SynExpr(SynExpr.App(funcExpr = func; argExpr = SynExpr.ComputationExpr _)) -> Some(name func = Some "flow" && unshadowed "flow")
             | SyntaxNode.SynExpr(SynExpr.Lambda _ | SynExpr.MatchLambda _) -> Some false
-            | _ -> None)
+            | node -> flowComputation node)
         |> Option.defaultValue false
     let hint code range text =
         { Type = "Axial fast/unverified hint"; Code = code; Range = range; Message = "[fast/unverified] " + text
@@ -170,7 +172,8 @@ let analyzeRule requested (config: GuardrailConfig.Config) fileName (source: ISo
                 let count = match remaining.TryGetValue fingerprint with true, count -> count | _ -> 0
                 let baselined = count > 0
                 if baselined then remaining[fingerprint] <- count - 1
-                findings.Add("Fixture", { finding with Message = "[fast hint; syntax-exact] " + finding.Message; Severity = if baselined then Severity.Warning else Severity.Error })
+                // Ordinary (Fast) builds never fail on guidance: exact fixture findings warn; Full keeps policy severity.
+                findings.Add("Fixture", { finding with Message = "[fast hint; syntax-exact] " + finding.Message + (if baselined then " (baselined)" else ""); Severity = Severity.Warning })
     let effectFile = level <> Policy.Allow && (level = Policy.Forbid || (role <> Some Policy.Capabilities && role <> Some Policy.Host))
     let reportEffects path (expr: SynExpr) (candidates: EffectRule seq) =
         for rule in Seq.distinct candidates do
@@ -230,7 +233,7 @@ let analyzeRule requested (config: GuardrailConfig.Config) fileName (source: ISo
                                 if text.StartsWith(prefix, System.StringComparison.Ordinal) && text.Length > prefix.Length
                                    && System.Char.IsUpper text[prefix.Length] then yield rule ]
                 if core then
-                    if wants "RaiseInFlow" && directlyInFlow path && List.contains text ["raise"; "failwith"; "failwithf"; "invalidArg"; "invalidOp"; "nullArg"] then
+                    if wants "RaiseInFlow" && directlyInFlow path && RaiseInFlowAnalyzer.raiseNames.Contains text then
                         add "RaiseInFlow" "AXG003" expr.Range "A direct raise in flow bypasses typed errors. Use Flow.fail for a typed failure, or Flow.die for a defect; Full checks the error type."
                     let raw =
                         [ "System.Threading.Thread"; "System.Threading.CancellationTokenSource"; "System.Threading.Tasks.Task"; "System.Threading.Tasks.TaskCompletionSource" ]
@@ -271,6 +274,30 @@ let analyzeRule requested (config: GuardrailConfig.Config) fileName (source: ISo
                         add "ReflectionFormatting" "AXG006" expr.Range "Structural %A formatting can require runtime reflection. Use explicit formatting or a typed renderer."
                 | _ -> ()
         | _ -> ()
+    // AXG014: CE name and signature text only. Aliased builders and abbreviated return types are Full-only.
+    if core && wants "TaskSurface" && GuardrailConfig.runsInProject config TaskSurfaceSyntax.Code && not (GuardrailConfig.isSkippedSource config fileName) then
+        let tier = TaskSurfaceSyntax.tier config fileName
+        let report (range: range) text =
+            let message = TaskSurfaceSyntax.finding source "Axial fast/unverified hint" range text
+            findings.Add("TaskSurface", { message with Message = "[fast/unverified] " + message.Message })
+        if tier <> TaskSurfaceSyntax.Off then
+            for expression in TaskSurfaceSyntax.expressions nodes do
+                match TaskSurfaceSyntax.builderName expression.Builder with
+                | Some("task" | "backgroundTask" as builder) when unshadowed builder ->
+                    match tier with
+                    | TaskSurfaceSyntax.Strict -> report expression.Builder.Range (TaskSurfaceSyntax.expressionMessage builder)
+                    | TaskSurfaceSyntax.Bridge when expression.Composes -> report expression.Builder.Range (TaskSurfaceSyntax.bridgeMessage builder expression)
+                    | _ -> ()
+                | _ -> ()
+        if tier = TaskSurfaceSyntax.Strict then
+            for signature in TaskSurfaceSyntax.signatures nodes do
+                let returned =
+                    typeName signature.ReturnType |> Option.bind (fun text ->
+                        let generic = match signature.ReturnType with SynType.App _ -> true | _ -> false
+                        if unshadowed text && spells "System.Threading.Tasks.Task" text then Some(if generic then "Task<'T>" else "Task")
+                        elif unshadowed text && spells "System.Threading.Tasks.ValueTask" text then Some(if generic then "ValueTask<'T>" else "ValueTask")
+                        else None)
+                returned |> Option.iter (fun taskType -> report signature.Range (TaskSurfaceSyntax.signatureMessage signature.Name taskType))
     findings |> Seq.distinctBy (fun (rule, m) -> rule, m.Range.StartLine, m.Range.StartColumn) |> Seq.toList
 
 let analyze config fileName source tree = analyzeRule None config fileName source tree
