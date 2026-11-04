@@ -10,9 +10,10 @@ description: Use Axial.Guardrails to detect ambient effects, exceptions in workf
 
 `axial check` compares the repository policy, baseline, and analyzer configuration with `Axial.Guardrails.lock`. Policy drift produces one loud warning with a change count and an instruction to run `axial policy review`, but exits zero. Corrupt locks and unreadable policy still fail; analyzer errors still fail builds. The lock is tamper-evident, not a security boundary; enforcement is the repository's choice.
 
-Builds run the same check per project and target framework (`axial check --build`), but print the drift warning
-at most once per drift state across all of them, so a solution build shows one line rather than one per project/TFM.
-The claim lasts 30 minutes; a later build after that shows it again. It is always a warning, never an error;
+Builds run the same check per project and target framework (`axial check --build`), but the build task shows the
+drift warning once per drift state in a build invocation (per MSBuild node), so a solution build shows one line rather
+than one per project/TFM. The next build that rechecks the policy shows it again; nothing depends on the clock or on
+temporary files. It is always a warning, never an error;
 `axial check --full` and release behaviour are unchanged. Run directly, `axial check` always prints the warning and
 also a per-project raw-Task trend: lexical counts of `task { }`/`backgroundTask { }` expressions and Task-returning
 signatures per project, with its role (`--json` adds a `rawTask` array). It is a trend to watch, not a gate; AXG014

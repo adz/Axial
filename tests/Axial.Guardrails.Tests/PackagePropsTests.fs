@@ -1023,6 +1023,25 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
         else Assert.DoesNotContain("Running Axial.Guardrails analysis", result.Output)
 
     [<Fact>]
+    let ``a build shows one drift warning across target frameworks and a later drift shows again`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-drift-once-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumerProject dir "<TargetFrameworks>net8.0;net10.0</TargetFrameworks>" "module Consumer\nlet value = 1\n"
+            writeV2Policy dir "domain" "warn"
+            let policy = Path.Combine(dir, "Axial.Guardrails.toml")
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            for drift in [ "# drift\n"; "# more drift\n" ] do
+                File.AppendAllText(policy, drift)
+                let result = runBuildWithArgs [ "-p:AxialGuardrailsMode=Fast" ] project None
+                Assert.True(result.ExitCode = 0, result.Output)
+                // The build summary repeats each warning once and counts it: the only warning is the one drift line.
+                Assert.Contains("Policy changed since the last review:", result.Output)
+                Assert.True(result.Output.Contains " 1 Warning(s)", result.Output)
+        finally
+            Directory.Delete(dir, true)
+
+    [<Fact>]
     let ``a corrupt policy cache cannot hide policy drift`` () =
         let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-policy-cache-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore

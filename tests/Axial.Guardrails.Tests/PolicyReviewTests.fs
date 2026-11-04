@@ -62,23 +62,28 @@ module PolicyReviewTests =
             Assert.Equal(1, output.Split("WARNING").Length - 1))
 
     [<Fact>]
-    let ``build checks print one drift line per drift state while direct checks always warn`` () =
+    let ``build checks always report drift with a stable state digest and keep no temporary state`` () =
         repository (fun _ write _ cli ->
             write "App.fs" "module App\n// axial-allow-AXG001: foreign boundary\n"
             let warnings (output: string) = output.Split("WARNING").Length - 1
+            let state (output: string) =
+                output.Split('\n') |> Array.filter (fun line -> line.StartsWith "Policy drift state: ") |> Array.exactlyOne
+            // The build task dedupes per build; the tool itself never hides drift and never depends on earlier runs.
             let first = cli ["check"; "--build"]
             Assert.Equal(0, fst first)
             Assert.Equal(1, warnings (snd first))
-            for _ in 1 .. 3 do
+            for _ in 1 .. 2 do
                 let repeated = cli ["check"; "--build"]
                 Assert.Equal(0, fst repeated)
-                Assert.Equal(0, warnings (snd repeated))
+                Assert.Equal(1, warnings (snd repeated))
+                Assert.Equal(state (snd first), state (snd repeated))
                 Assert.DoesNotContain("Raw Task", snd repeated)
             let direct = cli ["check"]
             Assert.Equal(1, warnings (snd direct))
-            // A different drift state is a new notice.
+            Assert.DoesNotContain("Policy drift state", snd direct)
+            // A different drift state has a different digest.
             write "App.fs" "module App\n// axial-allow-AXG001: another foreign boundary\n"
-            Assert.Equal(1, warnings (snd (cli ["check"; "--build"]))))
+            Assert.NotEqual<string>(state (snd first), state (snd (cli ["check"; "--build"]))))
 
     [<Fact>]
     let ``check reports a per-project raw Task trend in text and json`` () =

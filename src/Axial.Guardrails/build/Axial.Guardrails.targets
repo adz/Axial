@@ -154,9 +154,9 @@
           Inputs="@(_AxialGuardrailsPolicyInputs);$(_AxialGuardrailsPolicyToolAssembly)"
           Outputs="$(_AxialGuardrailsPolicyCheckStamp)">
     <Error Condition="!Exists('$(_AxialGuardrailsPolicyToolAssembly)')" Text="Axial.Guardrails policy tool is missing: $(_AxialGuardrailsPolicyToolAssembly). Restore/reinstall the package." />
-    <!-- Build mode prints at most one policy-drift line per build across projects/TFMs: a warning, never an error. -->
-    <Exec Command="$(_AxialGuardrailsPolicyExe) check --build" WorkingDirectory="$(_AxialGuardrailsPolicyRoot)"
-          EnvironmentVariables="DOTNET_ROLL_FORWARD=LatestMajor" />
+    <!-- The task shows the policy-drift warning once per drift state in a build across projects/TFMs (in each build
+         node): a warning, never an error. A malformed lock or policy still fails. -->
+    <AxialGuardrailsTask Action="PolicyCheck" Command="$(_AxialGuardrailsPolicyExe) check --build" WorkingDirectory="$(_AxialGuardrailsPolicyRoot)" />
     <WriteLinesToFile File="$(_AxialGuardrailsPolicyCheckStamp)" Lines="@(_AxialGuardrailsPolicyFingerprintHash->'%(FileHash)')" Overwrite="true" />
   </Target>
 

@@ -10,7 +10,7 @@ module Program =
   1. axial init [--ci github|gitlab|bitbucket|other]
   2. axial check [--full [--configuration <name>]]
      Without --full: compares policy with the lock (drift warns, never fails) and prints a per-project raw-Task
-     trend (lexical counts; --json field rawTask). Builds run `check --build`: one drift line per build, no trend.
+     trend (lexical counts; --json field rawTask). Builds run `check --build` (no trend); the build shows one drift line per drift state.
      --full checks policy review first, then builds every solution project/TFM in Full mode
      (Release by default), requires complete coverage and rejects Error findings.
      Never writes a lock or baseline.
@@ -57,27 +57,6 @@ Approval means a human read the review. The first review requires --since <ref>.
     let private emit asJson ok message = emitWith None asJson ok message
     let private root () = Directory.GetCurrentDirectory()
 
-    /// Every project/TFM of a build runs `check --build`; the drift notice is claimed once per drift state, so one
-    /// build prints at most one line. A claim older than the window lets a later build show it again.
-    let private driftNoticeDue (summary: string) =
-        try
-            let digest (text: string) = Security.Cryptography.SHA256.HashData(Text.Encoding.UTF8.GetBytes text) |> Convert.ToHexString
-            let directory = Path.Combine(Path.GetTempPath(), "axial-guardrails-drift")
-            Directory.CreateDirectory directory |> ignore
-            let marker = Path.Combine(directory, digest (Path.GetFullPath(root())) + "-" + digest summary)
-            let claim () =
-                try
-                    (new FileStream(marker, FileMode.CreateNew)).Dispose()
-                    true
-                with :? IOException -> false
-            if claim () then true
-            elif DateTime.UtcNow - File.GetLastWriteTimeUtc marker > TimeSpan.FromMinutes 30.0 then
-                try File.Delete marker with :? IOException -> ()
-                claim ()
-            else false
-        // Never let deduplication hide drift.
-        with :? IOException | :? UnauthorizedAccessException -> true
-
     let private rawTaskSummary () =
         let repo = root()
         let policy =
@@ -92,7 +71,9 @@ Approval means a human read the review. The first review requires --since <ref>.
             + ",\"taskExpressions\":" + string count.TaskExpressions + ",\"taskSignatures\":" + string count.TaskSignatures + "}")
         |> String.concat "," |> fun content -> "[" + content + "]"
 
-    /// `build` is the per-project build invocation: no trend summary, and at most one drift line per build.
+    /// `build` is the per-project build invocation: no trend summary. Every project/TFM of a build runs it; the build
+    /// task shows its drift warning once per drift state in a build, keyed by the digest line printed here. A direct
+    /// check always warns.
     let private check asJson build =
         match inspect(root()), parseLock(Path.Combine(root(),LockName)) with
         | Error e, _ | _, Error e -> emit asJson false e
@@ -102,11 +83,12 @@ Approval means a human read the review. The first review requires --since <ref>.
             let extra = if build then [] else [ "rawTask", rawTaskJson counts ]
             let withTrend message = if build || asJson then message else message + "\n" + RawTaskCount.format counts
             if isEmpty changes then emitWithExtra extra None asJson true (withTrend "Axial policy check passed.\nThe lock is tamper-evident, not a security boundary. Enforcement is the repository's choice.")
-            elif build && not (driftNoticeDue (formatSummary changes)) then
-                emitWithExtra extra (Some changes) asJson true "Axial policy check: the policy-drift notice was already shown for this change."
             else
                 let count = changes.RulesDowngraded.Length + changes.BaselineAdded.Length + changes.SuppressionsAdded.Length + changes.BoundariesAdded.Length + (changes.ProtectedChanged |> List.filter ((<>) LockName) |> List.length)
-                emitWithExtra extra (Some changes) asJson true (withTrend $"WARNING: Policy changed since the last review: {max 1 count} changes. Run `axial policy review`.")
+                let warning = $"WARNING: Policy changed since the last review: {max 1 count} changes. Run `axial policy review`."
+                let digest () = Security.Cryptography.SHA256.HashData(Text.Encoding.UTF8.GetBytes(formatSummary changes)) |> Convert.ToHexString
+                let message = if build then warning + "\nPolicy drift state: " + digest () else withTrend warning
+                emitWithExtra extra (Some changes) asJson true message
 
     let private fullCheck asJson configuration =
         let directory = Path.Combine(Path.GetTempPath(), "axial-full-check-" + Guid.NewGuid().ToString("N"))

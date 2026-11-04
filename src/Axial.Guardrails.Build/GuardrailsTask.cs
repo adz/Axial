@@ -434,6 +434,63 @@ public class AxialGuardrailsTask : Task
         }
         else child.Kill();
     }
+    // Runs a child with every wait bounded and returns its exit code (-1 if it never exited); failures name `subject`.
+    // Never use the parameterless WaitForExit: it waits for end-of-file on the redirected pipes, which a descendant
+    // (for example a reused MSBuild node from project loading) can hold open forever.
+    static int RunBounded(ProcessStartInfo start, int timeout, Action<string> receive, List<string> failures, string subject, string consequence)
+    {
+        using (var child = new Process { StartInfo = start })
+        using (var stdoutClosed = new System.Threading.ManualResetEventSlim())
+        using (var stderrClosed = new System.Threading.ManualResetEventSlim())
+        {
+            // A null line is end-of-file on that pipe.
+            child.OutputDataReceived += (_, args) => { if (args.Data == null) stdoutClosed.Set(); else receive(args.Data); };
+            child.ErrorDataReceived += (_, args) => { if (args.Data == null) stderrClosed.Set(); else receive(args.Data); };
+            child.Start(); child.BeginOutputReadLine(); child.BeginErrorReadLine();
+            if (!child.WaitForExit(timeout)) { Stop(child); failures.Add($"{subject} process timed out{consequence}"); }
+            if (!child.WaitForExit(10000)) failures.Add($"{subject} process did not exit after being stopped{consequence}");
+            if (!(stdoutClosed.Wait(10000) && stderrClosed.Wait(10000)))
+                failures.Add($"{subject} output stayed open after the process exited (a descendant holds the pipe){consequence}");
+            return child.HasExited ? child.ExitCode : -1;
+        }
+    }
+    static readonly object policyNoticeGate = new object();
+    // Every project/TFM of a build checks the policy lock. Drift is backpressure, never a gate: the warning is shown
+    // once per policy root and drift state in one build invocation. The engine's build-lifetime registry dedupes it
+    // in each build node, with no clock or temporary-file state; a later build shows it again.
+    void PolicyCheck()
+    {
+        var start = CreateStartInfo(Command, RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        start.WorkingDirectory = WorkingDirectory;
+        start.EnvironmentVariables["DOTNET_ROLL_FORWARD"] = "LatestMajor";
+        var lines = new List<string>();
+        var failures = new List<string>();
+        var exit = RunBounded(start, 300000, line => { lock (lines) lines.Add(line); }, failures, "Axial policy check", "");
+        string[] output;
+        lock (lines) output = lines.ToArray();
+        if (failures.Count != 0 || exit != 0)
+        {
+            Log.LogError($"Axial policy check failed (exit code {exit}). {string.Join(" ", failures)} {string.Join(Environment.NewLine, output)}".Trim());
+            return;
+        }
+        const string warning = "WARNING: ";
+        var notices = output.Where(line => line.StartsWith(warning, StringComparison.Ordinal)).ToArray();
+        foreach (var line in output.Where(line => !line.StartsWith(warning, StringComparison.Ordinal)))
+            Log.LogMessage(MessageImportance.Low, line);
+        if (notices.Length == 0) return;
+        // The tool's build output names the drift state, so the key changes when the drift does.
+        var key = "AxialGuardrailsPolicyDrift|" + Path.GetFullPath(WorkingDirectory) + "|" + string.Join("\n", output);
+        lock (policyNoticeGate)
+        {
+            if (BuildEngine4.GetRegisteredTaskObject(key, RegisteredTaskObjectLifetime.Build) != null)
+            {
+                Log.LogMessage(MessageImportance.Low, "Axial policy check: the policy-drift notice was already shown in this build.");
+                return;
+            }
+            BuildEngine4.RegisterTaskObject(key, new object(), RegisteredTaskObjectLifetime.Build, false);
+        }
+        foreach (var notice in notices) Log.LogWarning(notice.Substring(warning.Length));
+    }
     bool InputsUnchanged()
     {
         try
@@ -503,35 +560,18 @@ public class AxialGuardrailsTask : Task
             start.EnvironmentVariables["DOTNET_ROLL_FORWARD"] = "LatestMajor";
             // A reused MSBuild node started by the CLI's project loading would outlive it and keep its output pipes open.
             start.EnvironmentVariables["MSBUILDDISABLENODEREUSE"] = "1";
-            using (var child = new Process { StartInfo = start })
-            using (var stdoutClosed = new System.Threading.ManualResetEventSlim())
-            using (var stderrClosed = new System.Threading.ManualResetEventSlim())
-            {
-                Action<string> receive = line => {
-                    if (line == null) return;
-                    lock (lines)
-                    {
-                        lines.Add(line);
-                        if (watch == null) return;
-                        var now = watch.Elapsed.TotalMilliseconds;
-                        if (loaded == 0 && line.Contains("Registered ")) loaded = now;
-                        if (checking == 0 && line.Contains("Checking project ")) checking = now;
-                        if (checkedAt == 0 && line.Contains("Checking file ")) checkedAt = now;
-                        if (output == 0 && (line.Contains(" AXG") || line.Contains("No messages found"))) output = now;
-                    }
-                };
-                // A null line is end-of-file on that pipe.
-                child.OutputDataReceived += (_, args) => { if (args.Data == null) stdoutClosed.Set(); else receive(args.Data); };
-                child.ErrorDataReceived += (_, args) => { if (args.Data == null) stderrClosed.Set(); else receive(args.Data); };
-                child.Start(); child.BeginOutputReadLine(); child.BeginErrorReadLine();
-                if (!child.WaitForExit(600000)) { Stop(child); infrastructure.Add("Analyzer process timed out; coverage is incomplete."); }
-                // Never use the parameterless wait: it waits for end-of-file on the redirected pipes, which a descendant
-                // (for example a reused MSBuild node from project loading) can hold open forever. Drain with a bound.
-                if (!child.WaitForExit(10000)) infrastructure.Add("Analyzer process did not exit after being stopped; coverage is incomplete.");
-                if (!(stdoutClosed.Wait(10000) && stderrClosed.Wait(10000)))
-                    infrastructure.Add("Analyzer output stayed open after the process exited (a descendant holds the pipe); coverage is incomplete.");
-                exit = child.HasExited ? child.ExitCode : -1;
-            }
+            exit = RunBounded(start, 600000, line => {
+                lock (lines)
+                {
+                    lines.Add(line);
+                    if (watch == null) return;
+                    var now = watch.Elapsed.TotalMilliseconds;
+                    if (loaded == 0 && line.Contains("Registered ")) loaded = now;
+                    if (checking == 0 && line.Contains("Checking project ")) checking = now;
+                    if (checkedAt == 0 && line.Contains("Checking file ")) checkedAt = now;
+                    if (output == 0 && (line.Contains(" AXG") || line.Contains("No messages found"))) output = now;
+                }
+            }, infrastructure, "Analyzer", "; coverage is incomplete.");
             }
             infrastructure.AddRange(lines.Where(line => line.StartsWith("Axial.Guardrails infrastructure:", StringComparison.Ordinal)));
             foreach (var path in Directory.GetFiles(runDirectory, "*.xml")) root.Add(XElement.Load(path));
@@ -617,6 +657,7 @@ public class AxialGuardrailsTask : Task
             if (Action == "Warm") Warm();
             else if (Action == "Inventory") Inventory();
             else if (Action == "Hash") Hash();
+            else if (Action == "PolicyCheck") PolicyCheck();
             else if (!Replay())
             {
                 // Serialize report/stamp publication across independent builds of this project/TFM.
