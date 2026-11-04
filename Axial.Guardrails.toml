@@ -73,6 +73,11 @@ files = [
     "src/Axial/Stream.fs",
 ]
 
+# AXG001 now runs in test-role files by default. This repository's tests exercise live capabilities (files,
+# processes, clocks, sockets) directly, as before; keep that explicit rather than baselining ~520 sites.
+[roles.test.rules]
+"effects.ambient" = "allow"
+
 [boundaries]
 files = [
     "benchmarks/Axial.Benchmarks/Common.fs",
