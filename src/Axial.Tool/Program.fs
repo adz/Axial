@@ -244,7 +244,7 @@ Approval means a human read the review. The first review requires --since <ref>.
                     if projects.Length = 0 then failwith "No F# projects found for baseline generation."
                     for project in projects do
                         let code, output, errors = Command.run repo "dotnet"
-                                                    ["build"; project; "--nologo"; "-v:q"; "-m:1"; "-nodeReuse:false";
+                                                    ["build"; project; "--nologo"; "-v:q"; "-m:1"; "-nodeReuse:false"; "-p:AxialGuardrailsMode=Full";
                                                      "-p:_AxialGuardrailsBaselineProposalDirectory=" + proposal;
                                                      "-p:_AxialGuardrailsBaselineRuleCode=" + diagnostic] 180000 false
                         let incomplete =

@@ -66,7 +66,7 @@
 
   <Target Name="AxialGuardrailsValidateConfiguredTool"
           BeforeTargets="AxialGuardrailsWriteInputFingerprint"
-          Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails' and '$(_AxialRepoSkipGuardrails)' != 'true' and '$(MSBuildProjectExtension)' == '.fsproj'">
+          Condition="'$(AxialGuardrailsMode)' == 'Full' and '$(MSBuildProjectName)' != 'Axial.Guardrails' and '$(_AxialRepoSkipGuardrails)' != 'true' and '$(MSBuildProjectExtension)' == '.fsproj'">
     <Error Condition="'$(_AxialGuardrailsToolVersion)' == ''"
            Text="Could not find the fsharp-analyzers version in $(_AxialGuardrailsToolManifest)." />
     <Error Condition="!Exists('$(_AxialGuardrailsConfiguredToolAssembly)')"

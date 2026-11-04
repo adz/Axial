@@ -41,10 +41,11 @@ jobs:
         run: bash scripts/check-release-notes.sh
 
       - name: Build
-        # Also runs Axial.Guardrails (see Directory.Build.targets) against every project it builds.
+        # Full typed coverage on every push. Policy review/approval remains a release gate:
+        # pending human review must not make ordinary main pushes red.
         run: |
           bash scripts/ensure-guardrails-built.sh Release
-          dotnet build Axial.slnx --configuration Release --no-restore --nologo -v minimal
+          dotnet build Axial.slnx --configuration Release --no-restore --nologo -v minimal -p:AxialGuardrailsMode=Full
 
       - name: Test
         run: dotnet test Axial.slnx --configuration Release --no-build --nologo -v minimal
