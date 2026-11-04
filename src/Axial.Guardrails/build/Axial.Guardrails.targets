@@ -5,7 +5,11 @@
   <UsingTask TaskName="AxialGuardrailsTask" AssemblyFile="$(_AxialGuardrailsTaskAssembly)" Condition="'$(_AxialGuardrailsTaskHost)' != 'true'" />
   <UsingTask TaskName="AxialGuardrailsTask" AssemblyFile="$(_AxialGuardrailsTaskAssembly)" TaskFactory="TaskHostFactory" Condition="'$(_AxialGuardrailsTaskHost)' == 'true'" />
   <PropertyGroup>
-    <AxialGuardrailsMode Condition="'$(AxialGuardrailsMode)' == ''">Full</AxialGuardrailsMode>
+    <AxialGuardrailsMode Condition="'$(AxialGuardrailsMode)' == ''">Fast</AxialGuardrailsMode>
+    <!-- Framework MSBuild cannot isolate this net8 FCS payload. Run exact checks out of process instead. -->
+    <_AxialGuardrailsFrameworkFallback Condition="'$(MSBuildRuntimeType)' == 'Full' and '$(AxialGuardrailsMode)' == 'Fast'">true</_AxialGuardrailsFrameworkFallback>
+    <_AxialGuardrailsEffectiveMode>$(AxialGuardrailsMode)</_AxialGuardrailsEffectiveMode>
+    <_AxialGuardrailsEffectiveMode Condition="'$(_AxialGuardrailsFrameworkFallback)' == 'true'">Full</_AxialGuardrailsEffectiveMode>
     <AxialGuardrailsTimings Condition="'$(AxialGuardrailsTimings)' == ''">false</AxialGuardrailsTimings>
     <_AxialGuardrailsForce>false</_AxialGuardrailsForce>
     <_AxialGuardrailsFingerprintMilliseconds>0</_AxialGuardrailsFingerprintMilliseconds>
@@ -38,6 +42,7 @@
       build runs the identical check a package consumer gets, with no separate script.
     -->
     <_AxialGuardrailsAnalyzersPath Condition="'$(_AxialGuardrailsAnalyzersPath)' == ''">$(MSBuildThisFileDirectory)..\analyzers</_AxialGuardrailsAnalyzersPath>
+    <_AxialGuardrailsFastAssembly Condition="'$(_AxialGuardrailsFastAssembly)' == ''">$([MSBuild]::NormalizePath($(_AxialGuardrailsAnalyzersPath), Axial.Guardrails.Analyzers.dll))</_AxialGuardrailsFastAssembly>
     <_AxialGuardrailsToolPath Condition="'$(_AxialGuardrailsToolPath)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory)..\cli))</_AxialGuardrailsToolPath>
     <_AxialGuardrailsToolAssembly Condition="'$(_AxialGuardrailsToolAssembly)' == ''">$([MSBuild]::NormalizePath($(_AxialGuardrailsToolPath), FSharp.Analyzers.Cli.dll))</_AxialGuardrailsToolAssembly>
     <_AxialGuardrailsUsesPackagedTool Condition="'$(_AxialGuardrailsExe)' == ''">true</_AxialGuardrailsUsesPackagedTool>
@@ -87,8 +92,7 @@
     <_AxialGuardrailsPolicyInputs Include="$(MSBuildProjectFullPath);$(MSBuildAllProjects)" />
     <_AxialGuardrailsPolicyInputs Include="$(AxialGuardrailsBaselineFile)" Condition="Exists('$(AxialGuardrailsBaselineFile)')" />
     <_AxialGuardrailsPolicyInputs Include="$(_AxialGuardrailsPolicyFile);$(_AxialGuardrailsLockFile)" Condition="'$(_AxialGuardrailsPolicyRoot)' != ''" />
-    <_AxialGuardrailsProtectedInputs Include="$(_AxialGuardrailsPolicyGlobRoot)\Directory.Build.props;$(_AxialGuardrailsPolicyGlobRoot)\Directory.Build.targets;$(_AxialGuardrailsPolicyGlobRoot)\**\*.props;$(_AxialGuardrailsPolicyGlobRoot)\**\*.targets;$(_AxialGuardrailsPolicyGlobRoot)\**\.editorconfig;$(_AxialGuardrailsPolicyGlobRoot)\**\*.globalconfig;$(_AxialGuardrailsPolicyGlobRoot)\tests\Axial.Guardrails*\**\*.fs;$(_AxialGuardrailsPolicyGlobRoot)\tests\Axial.Guardrails*\**\*.fsproj" Condition="'$(_AxialGuardrailsPolicyRoot)' != ''" Exclude="$(_AxialGuardrailsPolicyGlobRoot)\**\bin\**;$(_AxialGuardrailsPolicyGlobRoot)\**\obj\**;$(_AxialGuardrailsPolicyGlobRoot)\artifacts\**" />
-    <_AxialGuardrailsPolicyInputs Include="@(_AxialGuardrailsProtectedInputs)" />
+
     <_AxialGuardrailsPolicyInputs Include="$(ProjectAssetsFile)" Condition="Exists('$(ProjectAssetsFile)')" />
     <_AxialGuardrailsPolicyInputs Include="@(EditorConfigFiles);@(AnalyzerConfigFiles)" />
   </ItemGroup>
@@ -97,15 +101,39 @@
        SDK assembly-attribute files are timestamp-volatile but semantically represented by the fingerprint below. -->
   <!-- The checked-in v2 policy is authoritative. The lock check runs before analyzer configuration and emits the
        same loud categorized summary in every environment. -->
+  <Target Name="AxialGuardrailsValidateTask" BeforeTargets="AxialGuardrailsValidatePolicyCache;AxialGuardrailsWriteInputFingerprint"
+          DependsOnTargets="AxialGuardrailsEnsureBuilt" Condition="'$(AxialGuardrailsEnabled)' == 'true'">
+    <Delete Files="$(_AxialGuardrailsStampFile)" Condition="!Exists('$(_AxialGuardrailsTaskAssembly)')" />
+    <Error Code="AXGINF001" Condition="!Exists('$(_AxialGuardrailsTaskAssembly)')" Text="Guardrails task-load failure: $(_AxialGuardrailsTaskAssembly) is missing." />
+    <GetAssemblyIdentity AssemblyFiles="$(_AxialGuardrailsTaskAssembly)" ContinueOnError="WarnAndContinue">
+      <Output TaskParameter="Assemblies" ItemName="_AxialGuardrailsTaskIdentity" />
+    </GetAssemblyIdentity>
+    <Delete Files="$(_AxialGuardrailsStampFile)" Condition="'@(_AxialGuardrailsTaskIdentity)' == ''" />
+    <Error Code="AXGINF001" Condition="'@(_AxialGuardrailsTaskIdentity)' == ''" Text="Guardrails task-load failure: $(_AxialGuardrailsTaskAssembly) is not a loadable assembly." />
+  </Target>
+
+  <!-- Mutable inputs are rehashed sequentially by the task (Memoize is false): GetFileHash's parallel loop waits for
+       thread-pool threads in a fresh MSBuild process, which made the no-op gate's latency erratic. -->
   <Target Name="AxialGuardrailsValidatePolicyCache"
           BeforeTargets="AxialGuardrailsCheckPolicy"
           Condition="'$(AxialGuardrailsEnabled)' == 'true' and '$(_AxialGuardrailsPolicyRoot)' != ''">
+    <!-- One traversal, using the policy inventory's generated-directory exclusions. Do not enumerate globs
+         on every project/TFM graph evaluation. New files are still discovered on every active build. -->
+    <Error Code="AXGINF001" Condition="!Exists('$(_AxialGuardrailsTaskAssembly)')" Text="Guardrails task-load failure: $(_AxialGuardrailsTaskAssembly) is missing." />
+    <PropertyGroup><_AxialGuardrailsTaskEntered>false</_AxialGuardrailsTaskEntered></PropertyGroup>
+    <AxialGuardrailsTask Action="Inventory" WorkingDirectory="$(_AxialGuardrailsPolicyGlobRoot)" MemoFile="$(IntermediateOutputPath)axial-guardrails.$(TargetFramework).inventory.xml">
+      <Output TaskParameter="Entered" PropertyName="_AxialGuardrailsTaskEntered" />
+      <Output TaskParameter="InventoryFiles" ItemName="_AxialGuardrailsProtectedInputs" />
+    </AxialGuardrailsTask>
+    <Delete Files="$(_AxialGuardrailsStampFile)" Condition="'$(_AxialGuardrailsTaskEntered)' != 'true'" />
+    <Error Code="AXGINF001" Condition="'$(_AxialGuardrailsTaskEntered)' != 'true'" Text="Guardrails task-load failure: MSBuild could not load $(_AxialGuardrailsTaskAssembly)." />
     <ItemGroup>
+      <_AxialGuardrailsPolicyInputs Include="@(_AxialGuardrailsProtectedInputs)" />
       <_AxialGuardrailsExistingPolicyInput Include="@(_AxialGuardrailsPolicyInputs)" Condition="Exists('%(Identity)')" />
     </ItemGroup>
-    <GetFileHash Files="@(_AxialGuardrailsExistingPolicyInput)" Algorithm="SHA256">
-      <Output TaskParameter="Items" ItemName="_AxialGuardrailsPolicyInputHash" />
-    </GetFileHash>
+    <AxialGuardrailsTask Action="Hash" Files="@(_AxialGuardrailsExistingPolicyInput)">
+      <Output TaskParameter="Hashed" ItemName="_AxialGuardrailsPolicyInputHash" />
+    </AxialGuardrailsTask>
     <ItemGroup>
       <_AxialGuardrailsPolicyFingerprintLine Include="@(_AxialGuardrailsPolicyInputHash->'%(FullPath)|%(FileHash)')" />
     </ItemGroup>
@@ -135,50 +163,60 @@
           BeforeTargets="AxialGuardrailsEffectBoundaryCheck"
           DependsOnTargets="AxialGuardrailsEnsureBuilt;AxialGuardrailsWriteConfig"
           Condition="'$(AxialGuardrailsEnabled)' == 'true' and ('$(TargetFrameworks)' == '' or '$(TargetFramework)' != '')">
+    <Delete Files="$(_AxialGuardrailsStampFile)" Condition="!Exists('$(_AxialGuardrailsTaskAssembly)') or ('$(_AxialGuardrailsEffectiveMode)' == 'Fast' and !Exists('$(_AxialGuardrailsFastAssembly)'))" />
+    <Error Code="AXGINF001" Condition="!Exists('$(_AxialGuardrailsTaskAssembly)')" Text="Guardrails task-load failure: $(_AxialGuardrailsTaskAssembly) is missing. Restore/reinstall the package." />
+    <Error Code="AXGINF001" Condition="'$(_AxialGuardrailsEffectiveMode)' == 'Fast' and !Exists('$(_AxialGuardrailsFastAssembly)')" Text="Fast task-load failure: $(_AxialGuardrailsFastAssembly) is missing. Restore/reinstall the package." />
     <PropertyGroup Condition="'$(AxialGuardrailsTimings)' == 'true'">
       <_AxialGuardrailsFingerprintStart>$([System.DateTime]::UtcNow.Ticks)</_AxialGuardrailsFingerprintStart>
     </PropertyGroup>
     <WriteLinesToFile File="$(_AxialGuardrailsFscArgsFile)" Lines="@(FscCommandLineArgs)" Overwrite="true" WriteOnlyWhenDifferent="true" Condition="'@(FscCommandLineArgs)' != ''" />
-    <Error Condition="'$(_AxialGuardrailsUsesPackagedTool)' != 'true' and '@(_AxialGuardrailsConfiguredToolInput)' == ''"
+    <Error Condition="'$(_AxialGuardrailsEffectiveMode)' == 'Full' and '$(_AxialGuardrailsUsesPackagedTool)' != 'true' and '@(_AxialGuardrailsConfiguredToolInput)' == ''"
            Text="An overridden _AxialGuardrailsExe requires _AxialGuardrailsConfiguredToolInput items naming its manifest and assemblies." />
     <ItemGroup>
       <_AxialGuardrailsSourceInputs Include="@(Compile)" />
       <_AxialGuardrailsSourceInputs Remove="$(GeneratedAssemblyInfoFile);$(TargetFrameworkMonikerAssemblyAttributesPath)" />
       <_AxialGuardrailsVolatileSource Include="$(GeneratedAssemblyInfoFile);$(TargetFrameworkMonikerAssemblyAttributesPath)" Condition="Exists('%(Identity)')" />
       <!-- Match CoreCompile's inputs: project references use stable reference assemblies when available. -->
-      <_AxialGuardrailsReferenceInputs Include="@(ReferencePathWithRefAssemblies);@(ReferencePath)" />
+      <_AxialGuardrailsReferenceInputs Include="@(ReferencePathWithRefAssemblies);@(ReferencePath)" Condition="'$(_AxialGuardrailsEffectiveMode)' == 'Full'" />
     </ItemGroup>
-    <GetFileHash Files="@(_AxialGuardrailsSourceInputs)" Algorithm="SHA256" Condition="'@(_AxialGuardrailsSourceInputs)' != ''">
-      <Output TaskParameter="Items" ItemName="_AxialGuardrailsSourceHash" />
-    </GetFileHash>
-    <GetFileHash Files="@(_AxialGuardrailsVolatileSource)" Algorithm="SHA256" Condition="'@(_AxialGuardrailsVolatileSource)' != ''">
-      <Output TaskParameter="Items" ItemName="_AxialGuardrailsVolatileSourceHash" />
-    </GetFileHash>
+    <AxialGuardrailsTask Action="Hash" Files="@(_AxialGuardrailsSourceInputs)" Condition="'@(_AxialGuardrailsSourceInputs)' != ''">
+      <Output TaskParameter="Hashed" ItemName="_AxialGuardrailsSourceHash" />
+    </AxialGuardrailsTask>
+    <AxialGuardrailsTask Action="Hash" Files="@(_AxialGuardrailsVolatileSource)" Condition="'@(_AxialGuardrailsVolatileSource)' != ''">
+      <Output TaskParameter="Hashed" ItemName="_AxialGuardrailsVolatileSourceHash" />
+    </AxialGuardrailsTask>
     <!-- Reference outputs may be rewritten with a fresh timestamp by an otherwise no-op project-reference build.
          Hash their deterministic contents so that such rewrites do not invalidate the analysis result. -->
     <ItemGroup>
       <!-- Do not marshal ResolveReferences' unrelated metadata through the task host. -->
       <_AxialGuardrailsDigestInputs Include="@(_AxialGuardrailsReferenceInputs);@(_AxialGuardrailsToolInputs)" KeepMetadata="AxialGuardrailsDigestInput" />
     </ItemGroup>
+    <PropertyGroup><_AxialGuardrailsTaskEntered>false</_AxialGuardrailsTaskEntered></PropertyGroup>
     <AxialGuardrailsTask Action="Hash" Files="@(_AxialGuardrailsDigestInputs)" Memoize="true" MemoFile="$(IntermediateOutputPath)axial-guardrails.$(TargetFramework).digests.xml">
+      <Output TaskParameter="Entered" PropertyName="_AxialGuardrailsTaskEntered" />
       <Output TaskParameter="Hashed" ItemName="_AxialGuardrailsReferenceHash" />
     </AxialGuardrailsTask>
+    <Delete Files="$(_AxialGuardrailsStampFile)" Condition="'$(_AxialGuardrailsTaskEntered)' != 'true'" />
+    <Error Code="AXGINF001" Condition="'$(_AxialGuardrailsTaskEntered)' != 'true'" Text="Guardrails task-load failure: MSBuild could not load $(_AxialGuardrailsTaskAssembly)." />
     <ItemGroup>
       <_AxialGuardrailsContentInputs Include="@(_AxialGuardrailsPolicyInputs);@(EditorConfigFiles);@(AnalyzerConfigFiles);$(_AxialGuardrailsConfigFile)" Condition="Exists('%(Identity)')" />
       <_AxialGuardrailsContentInputs Include="$(_AxialGuardrailsFscArgsFile)" Condition="Exists('$(_AxialGuardrailsFscArgsFile)')" />
 
     </ItemGroup>
-    <GetFileHash Files="@(_AxialGuardrailsContentInputs)" Algorithm="SHA256" Condition="'@(_AxialGuardrailsContentInputs)' != ''">
-      <Output TaskParameter="Items" ItemName="_AxialGuardrailsContentHash" />
-    </GetFileHash>
+    <AxialGuardrailsTask Action="Hash" Files="@(_AxialGuardrailsContentInputs)" Condition="'@(_AxialGuardrailsContentInputs)' != ''">
+      <Output TaskParameter="Hashed" ItemName="_AxialGuardrailsContentHash" />
+    </AxialGuardrailsTask>
     <ItemGroup>
       <_AxialGuardrailsFingerprintLine Include="Schema=2-mode" />
-      <_AxialGuardrailsFingerprintLine Include="Mode=$(AxialGuardrailsMode)" />
+      <_AxialGuardrailsFingerprintLine Include="Mode=$(_AxialGuardrailsEffectiveMode)" />
+      <_AxialGuardrailsFingerprintLine Include="FastAssembly=$(_AxialGuardrailsFastAssembly)" />
       <_AxialGuardrailsFingerprintLine Include="Rules=$(_AxialGuardrailsRules)" />
       <_AxialGuardrailsFingerprintLine Include="TargetFramework=$(TargetFramework)" />
       <_AxialGuardrailsFingerprintLine Include="AxialGuardrailsInTests=$(AxialGuardrailsInTests)" />
       <_AxialGuardrailsFingerprintLine Include="DefineConstants=$(DefineConstants)" />
       <_AxialGuardrailsFingerprintLine Include="LangVersion=$(LangVersion)" />
+      <_AxialGuardrailsFingerprintLine Include="OtherFlags=$(OtherFlags)" />
+      <_AxialGuardrailsFingerprintLine Include="OutputType=$(OutputType)" />
       <_AxialGuardrailsFingerprintLine Include="TreatWarningsAsErrors=$(TreatWarningsAsErrors)" />
       <_AxialGuardrailsFingerprintLine Include="WarningsAsErrors=$(WarningsAsErrors)" />
       <_AxialGuardrailsFingerprintLine Include="WarningsNotAsErrors=$(WarningsNotAsErrors)" />
@@ -261,15 +299,28 @@
        overridden command cannot be inferred safely, so its importer must identify the manifest/assemblies it uses. -->
   <ItemGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'">
     <_AxialGuardrailsToolInputs Include="$(_AxialGuardrailsAnalyzersPath)\*.dll" />
-    <_AxialGuardrailsToolInputs Include="$(_AxialGuardrailsToolPath)*.dll" Condition="'$(_AxialGuardrailsUsesPackagedTool)' == 'true'" />
-    <_AxialGuardrailsToolInputs Include="@(_AxialGuardrailsConfiguredToolInput);$(_AxialGuardrailsTaskAssembly)" />
+    <_AxialGuardrailsToolInputs Include="$(_AxialGuardrailsToolPath)*.dll" Condition="'$(_AxialGuardrailsEffectiveMode)' == 'Full' and '$(_AxialGuardrailsUsesPackagedTool)' == 'true'" />
+    <_AxialGuardrailsToolInputs Include="@(_AxialGuardrailsConfiguredToolInput)" Condition="'$(_AxialGuardrailsEffectiveMode)' == 'Full'" />
+    <_AxialGuardrailsToolInputs Include="$(_AxialGuardrailsTaskAssembly)" />
+    <_AxialGuardrailsToolInputs Include="$(_AxialGuardrailsFastAssembly)" Condition="'$(_AxialGuardrailsEffectiveMode)' == 'Fast'" />
   </ItemGroup>
+
+  <!-- Fast latency only: when sources are newer than the assembly, start loading/JIT-warming the isolated parser on a
+       background thread while CoreCompile runs. It writes nothing; AxialGuardrailsEffectBoundaryCheck below is the
+       complete synchronous analysis and reports every failure. An unloadable task fails here, before compilation. -->
+  <Target Name="AxialGuardrailsFastWarm"
+          BeforeTargets="CoreCompile" DependsOnTargets="AxialGuardrailsValidateTask"
+          Inputs="@(Compile)" Outputs="@(IntermediateAssembly)"
+          Condition="'$(AxialGuardrailsEnabled)' == 'true' and '$(_AxialGuardrailsEffectiveMode)' == 'Fast' and Exists('$(_AxialGuardrailsFastAssembly)') and Exists('$(_AxialGuardrailsTaskAssembly)') and ('$(TargetFrameworks)' == '' or '$(TargetFramework)' != '') and ('$(_AxialGuardrailsFullCheckDirectory)' != '' or '$(_AxialGuardrailsDesignatedTargetFramework)' == '' or '$(TargetFramework)' == '$(_AxialGuardrailsDesignatedTargetFramework)')">
+    <AxialGuardrailsTask Action="Warm" ContinueOnError="true" FastAssembly="$(_AxialGuardrailsFastAssembly)" OtherFlags="$(OtherFlags)" OutputType="$(OutputType)" Defines="$(DefineConstants)" LangVersion="$(LangVersion)"
+          ConfigFile="$(_AxialGuardrailsConfigFile)" Files="@(Compile)" ResultFile="$(IntermediateOutputPath)axial-guardrails.$(TargetFramework).result.xml" />
+  </Target>
 
   <Target Name="AxialGuardrailsEffectBoundaryCheck"
           AfterTargets="Build"
           Condition="'$(AxialGuardrailsEnabled)' == 'true' and ('$(TargetFrameworks)' == '' or '$(TargetFramework)' != '') and ('$(_AxialGuardrailsFullCheckDirectory)' != '' or '$(_AxialGuardrailsDesignatedTargetFramework)' == '' or '$(TargetFramework)' == '$(_AxialGuardrailsDesignatedTargetFramework)')"
           >
-    <Error Condition="!Exists('$(_AxialGuardrailsAnalyzersPath)\Axial.Guardrails.Analyzers.dll')"
+    <Error Code="AXGINF001" Condition="!Exists('$(_AxialGuardrailsAnalyzersPath)\Axial.Guardrails.Analyzers.dll')"
            Text="Axial.Guardrails analyzer folder is missing or incomplete: $(_AxialGuardrailsAnalyzersPath). Restore/reinstall the package or fix the configured analyzer path." />
     <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')" />
     <PropertyGroup>
@@ -285,7 +336,9 @@
            request replay findings and export full coverage; only baseline proposals need fresh side effects. -->
       <_AxialGuardrailsForce Condition="'$(_AxialGuardrailsBaselineProposalDirectory)' != ''">true</_AxialGuardrailsForce>
     </PropertyGroup>
-    <AxialGuardrailsTask Action="Run" Mode="$(AxialGuardrailsMode)" Project="$(MSBuildProjectFullPath)" TargetFramework="$(TargetFramework)"
+    <Message Condition="'$(_AxialGuardrailsFrameworkFallback)' == 'true'" Importance="high" Text="Axial.Guardrails: Framework MSBuild uses out-of-process Full analysis; Fast requires dotnet MSBuild." />
+    <PropertyGroup><_AxialGuardrailsTaskEntered>false</_AxialGuardrailsTaskEntered></PropertyGroup>
+    <AxialGuardrailsTask Action="Run" Mode="$(_AxialGuardrailsEffectiveMode)" FastAssembly="$(_AxialGuardrailsFastAssembly)" OtherFlags="$(OtherFlags)" OutputType="$(OutputType)" Defines="$(DefineConstants)" LangVersion="$(LangVersion)" Project="$(MSBuildProjectFullPath)" TargetFramework="$(TargetFramework)"
           Command="$(_AxialGuardrailsExe) $(_AxialGuardrailsAnalysisInput) --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; --code-root &quot;$(MSBuildProjectDirectory)&quot;"
           WorkingDirectory="$(MSBuildProjectDirectory)" ConfigFile="$(_AxialGuardrailsConfigFile)"
           Files="@(Compile)" Rules="$(_AxialGuardrailsRules)"
@@ -293,7 +346,11 @@
           StampFile="$(_AxialGuardrailsStampFile)" ResultFile="$(IntermediateOutputPath)axial-guardrails.$(TargetFramework).result.xml"
           Timings="$(AxialGuardrailsTimings)" TimingsFile="$(IntermediateOutputPath)axial-guardrails.$(TargetFramework).timings.xml"
           CoverageFile="$(_AxialGuardrailsProposalCoverageFile)"
-          FingerprintMilliseconds="$(_AxialGuardrailsFingerprintMilliseconds)" Force="$(_AxialGuardrailsForce)" />
+          FingerprintMilliseconds="$(_AxialGuardrailsFingerprintMilliseconds)" Force="$(_AxialGuardrailsForce)">
+      <Output TaskParameter="Entered" PropertyName="_AxialGuardrailsTaskEntered" />
+    </AxialGuardrailsTask>
+    <Delete Files="$(_AxialGuardrailsStampFile)" Condition="'$(_AxialGuardrailsTaskEntered)' != 'true'" />
+    <Error Code="AXGINF001" Condition="'$(_AxialGuardrailsTaskEntered)' != 'true'" Text="Guardrails task-load failure: MSBuild could not load $(_AxialGuardrailsTaskAssembly)." />
     <!-- A fresh directory belongs to one full-check invocation; cached reports were validated and replayed above. -->
     <PropertyGroup Condition="'$(_AxialGuardrailsFullCheckDirectory)' != ''">
       <_AxialGuardrailsFullCheckProject>$([System.Guid]::NewGuid())</_AxialGuardrailsFullCheckProject>

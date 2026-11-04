@@ -136,11 +136,12 @@ let private collectFindings rules (ctx: CliContext) : (EffectRule * FSharp.Compi
         |> Option.map (fun rule -> rule, symbolUse.Range))
     |> Seq.toList
 
-let rawFindings (ctx: CliContext) : (EffectRule * FSharp.Compiler.Text.range) list =
-    let rules = (GuardrailConfig.load ()).Rules
-    SymbolIndex.memo ctx ("AXG001.findings", rules) (fun () -> collectFindings rules ctx)
+let rawFindingsWithConfig (config: GuardrailConfig.Config) (ctx: CliContext) : (EffectRule * FSharp.Compiler.Text.range) list =
+    SymbolIndex.memo ctx ("AXG001.findings", config.Rules) (fun () -> collectFindings config.Rules ctx)
 
-let private toMessage (rule: EffectRule) (range: FSharp.Compiler.Text.Range) : Message =
+let rawFindings ctx = rawFindingsWithConfig (GuardrailConfig.load ()) ctx
+
+let toMessage (rule: EffectRule) (range: FSharp.Compiler.Text.Range) : Message =
     { Type = "Axial Effect Boundary"
       Message =
         $"This call {rule.Message}. (1) Use {rule.Replacement}; add the Axial capability/service to your env. "
@@ -153,6 +154,17 @@ let private toMessage (rule: EffectRule) (range: FSharp.Compiler.Text.Range) : M
       // replacing only this expression is therefore not mechanically safe.
       Fixes = [] }
 
+let analyzeWithConfig (config: GuardrailConfig.Config) (ctx: CliContext) =
+    let resolved = GuardrailConfig.resolvedPolicy config ctx
+    let effectFile = resolved |> Option.exists (fun policy -> policy.Role = Policy.Capabilities || policy.Role = Policy.Host)
+    let level = resolved |> Option.bind (fun policy -> policy.Rules.TryFind "effects.ambient") |> Option.defaultValue Policy.Deny
+    // Effect-role files own raw effects, except where policy forbids them outright.
+    if GuardrailConfig.isSkippedSource config ctx.FileName || (effectFile && level <> Policy.Forbid) then [] else
+    rawFindingsWithConfig config ctx
+    |> List.collect (fun (rule, range) ->
+        if level <> Policy.Forbid && isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText range.StartLine "AXG001" then []
+        else GuardrailConfig.applyWith config rule.Guardrail ctx [ toMessage rule range ])
+
 [<CliAnalyzer("EffectBoundary",
               "Flags direct use of ambient .NET effects (clock, randomness, GUIDs, console, filesystem, "
               + "process, environment, HTTP clients, blocking waits) that bypass Axial's explicit service boundary.",
@@ -160,19 +172,6 @@ let private toMessage (rule: EffectRule) (range: FSharp.Compiler.Text.Range) : M
 let effectBoundaryAnalyzer (ctx: CliContext) =
     let run (ctx: CliContext) =
         async {
-            let config = GuardrailConfig.load ()
-            let resolved = GuardrailConfig.resolvedPolicy config ctx
-            let capabilityFile = resolved |> Option.exists (fun policy -> policy.Role = Policy.Capabilities)
-            let level = resolved |> Option.bind (fun policy -> policy.Rules.TryFind "effects.ambient") |> Option.defaultValue Policy.Deny
-            let messages =
-                if GuardrailConfig.isSkippedSource config ctx.FileName || capabilityFile then [] else
-                rawFindings ctx
-                |> List.collect (fun (rule, range) ->
-                    if level <> Policy.Forbid && isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText range.StartLine "AXG001" then
-                        []
-                    else
-                        GuardrailConfig.apply rule.Guardrail ctx [ toMessage rule range ])
-
-            return messages
+            return analyzeWithConfig (GuardrailConfig.load ()) ctx
         }
     Execution.track "EffectBoundary" run ctx

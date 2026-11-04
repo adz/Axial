@@ -7,6 +7,8 @@ using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -14,13 +16,227 @@ using Microsoft.Build.Utilities;
 public class AxialGuardrailsTask : Task
 {
     public string Action { get; set; }
-    public string Mode { get; set; } = "Full";
+    public string Mode { get; set; } = "Fast";
+    public string FastAssembly { get; set; }
+    public string OtherFlags { get; set; } = "";
+    public string OutputType { get; set; } = "Library";
+    static IEnumerable<string> SplitArguments(string text)
+    {
+        var token = new StringBuilder();
+        bool quoted = false, started = false;
+        for (int i = 0; i < text.Length; i++)
+        {
+            var ch = text[i];
+            if (ch == '\\')
+            {
+                int start = i;
+                while (i < text.Length && text[i] == '\\') i++;
+                int count = i - start;
+                if (i < text.Length && text[i] == '"')
+                {
+                    token.Append('\\', count / 2);
+                    if (count % 2 != 0) token.Append('"'); else quoted = !quoted;
+                }
+                else { token.Append('\\', count); i--; }
+                started = true;
+            }
+            else if (ch == '"') { quoted = !quoted; started = true; }
+            else if (char.IsWhiteSpace(ch) && !quoted)
+            {
+                if (started) { yield return token.ToString(); token.Clear(); started = false; }
+            }
+            else { token.Append(ch); started = true; }
+        }
+        if (quoted) throw new FormatException("Unterminated quote in F# OtherFlags.");
+        if (started) yield return token.ToString();
+    }
+    public string[] Defines { get; set; } = Array.Empty<string>();
+    public string LangVersion { get; set; } = "preview";
+    static readonly string[] FastRules = { "EffectBoundary", "RaiseInFlow", "Fixture", "ReflectionFormatting", "RawConcurrency", "WaitForFacts" };
+    static readonly object FastGate = new object();
+    static object fastContext;
+    static string fastIdentity;
+    static Assembly fastAssemblyLoaded;
+    static Type fastContextType;
+    double fastLoadMilliseconds;
+
+    // Keep the shipped task netstandard-compatible. Emit only the BCL load-context subclass on Core MSBuild;
+    // overriding Load (not merely Resolving) prevents fallback to FSharp.Build's already-loaded FSharp.Core.
+    static Type IsolatedContextType(Type contextType)
+    {
+        var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Axial.Guardrails.Isolation"), AssemblyBuilderAccess.RunAndCollect);
+        var builder = assembly.DefineDynamicModule("Isolation").DefineType("AxialFastLoadContext", TypeAttributes.Public | TypeAttributes.Sealed, contextType);
+        var directory = builder.DefineField("directory", typeof(string), FieldAttributes.Private | FieldAttributes.InitOnly);
+        var constructor = builder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new[] { typeof(string) });
+        var il = constructor.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Ldstr, "Axial.Guardrails.Fast"); il.Emit(OpCodes.Ldc_I4_1);
+        il.Emit(OpCodes.Call, contextType.GetConstructor(new[] { typeof(string), typeof(bool) }));
+        il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Ldarg_1); il.Emit(OpCodes.Stfld, directory); il.Emit(OpCodes.Ret);
+        var load = builder.DefineMethod("Load", MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig, typeof(Assembly), new[] { typeof(AssemblyName) });
+        il = load.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Ldarg_1); il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Ldfld, directory);
+        il.Emit(OpCodes.Call, typeof(AxialGuardrailsTask).GetMethod(nameof(LoadFastDependency))); il.Emit(OpCodes.Ret);
+        builder.DefineMethodOverride(load, contextType.GetMethod("Load", BindingFlags.Instance | BindingFlags.NonPublic));
+        return builder.CreateTypeInfo().AsType();
+    }
+
+    // Only BCL objects cross the boundary. FSharp.Core, FCS and the SDK resolve beside the analyzer,
+    // never against FSharp.Build's copies in MSBuild's default context. Bound to one context per node.
+    public static Assembly LoadFastDependency(object context, AssemblyName name, string directory)
+    {
+        var path = Path.Combine(directory, name.Name + ".dll");
+        return File.Exists(path) ? (Assembly)context.GetType().GetMethod("LoadFromAssemblyPath").Invoke(context, new object[] { path }) : null;
+    }
+    XElement FastRequest(string contextKey) =>
+        new XElement("request", new XAttribute("config", Path.GetFullPath(ConfigFile)), new XAttribute("context", contextKey),
+            new XAttribute("cache", Path.GetFullPath(ResultFile + ".files")), new XAttribute("langVersion", LangVersion ?? "preview"), new XAttribute("timings", Timings ? "true" : "false"),
+            SourcePaths().Select(p => new XElement("file", p)), Defines.Select(d => new XElement("define", d)),
+            Defines.Select(d => "--define:" + d).Concat(string.IsNullOrWhiteSpace(LangVersion) ? Array.Empty<string>() : new[] { "--langversion:" + LangVersion })
+                .Concat(new[] { "--target:" + (string.Equals(OutputType, "Exe", StringComparison.OrdinalIgnoreCase) || string.Equals(OutputType, "WinExe", StringComparison.OrdinalIgnoreCase) ? "exe" : "library") })
+                .Concat(SplitArguments(OtherFlags ?? "").Select(a => a.StartsWith("@", StringComparison.Ordinal)
+                    ? throw new NotSupportedException("Fast cannot fingerprint response files in F# OtherFlags; supply parsing flags directly or explicitly use Full.") : a))
+                .Select(a => new XElement("argument", a)));
+
+    // One isolated context per task version and node, replaced when anything it may load changes. Files beside the
+    // analyzer are its load set: a verified kernel identity proves unchanged contents, otherwise they are rehashed.
+    static MethodInfo FastEntry(string fastAssembly, string name)
+    {
+        var path = Path.GetFullPath(fastAssembly);
+        var directory = Path.GetDirectoryName(path);
+        var identity = string.Join("\n", Directory.GetFiles(directory, "*.dll").OrderBy(p => p, StringComparer.Ordinal)
+            .Select(p => p + "|" + (Identity(p) ?? Digest(p))));
+        lock (FastGate)
+        {
+            if (fastContext == null || fastIdentity != identity)
+            {
+                if (fastContext != null) fastContext.GetType().GetMethod("Unload").Invoke(fastContext, null);
+                fastContext = null; fastAssemblyLoaded = null; fastIdentity = null;
+                var type = Type.GetType("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib")
+                    ?? Type.GetType("System.Runtime.Loader.AssemblyLoadContext, System.Runtime.Loader", true);
+                if (fastContextType == null) fastContextType = IsolatedContextType(type);
+                var context = Activator.CreateInstance(fastContextType, new object[] { directory });
+                try
+                {
+                    fastAssemblyLoaded = (Assembly)type.GetMethod("LoadFromAssemblyPath").Invoke(context, new object[] { path });
+                    fastContext = context; fastIdentity = identity;
+                }
+                catch { fastAssemblyLoaded = null; type.GetMethod("Unload").Invoke(context, null); throw; }
+            }
+            return fastAssemblyLoaded.GetType("Axial.Guardrails.FastRunner", true).GetMethod(name) ?? throw new MissingMethodException("FastRunner." + name);
+        }
+    }
+
+    XElement Fast()
+    {
+        var paths = SourcePaths();
+        var sourceSet = new HashSet<string>(paths);
+        var contextKey = string.Join("\n", RequestInputs.Where(i => !sourceSet.Contains(i.GetMetadata("FullPath"))).Select(i => i.GetMetadata("FullPath") + "|" + i.GetMetadata("FileHash")))
+            + string.Join("\n", paths) + string.Join(";", Defines) + LangVersion + OtherFlags + OutputType + Digest(FastAssembly);
+        using (var sha = SHA256.Create()) contextKey = BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(contextKey))).Replace("-", "");
+        var request = FastRequest(contextKey).ToString();
+        var loadWatch = System.Diagnostics.Stopwatch.StartNew();
+        var run = FastEntry(FastAssembly, "Run");
+        fastLoadMilliseconds = loadWatch.Elapsed.TotalMilliseconds;
+        return XElement.Parse((string)run.Invoke(null, new object[] { request }));
+    }
+
+    // Before CoreCompile, so JIT and policy/parser warm-up overlap the compiler. It changes no output or cache: the
+    // synchronous Run after Build repeats all work and reports every load, parse and visitor failure.
+    void Warm()
+    {
+        string request, fastAssembly = FastAssembly;
+        try { request = FastRequest("").ToString(); } catch (Exception) { return; }
+        var thread = new System.Threading.Thread(() =>
+        {
+            try { FastEntry(fastAssembly, "Warm").Invoke(null, new object[] { request }); }
+            catch (Exception) { /* Latency only; see above. */ }
+        }) { IsBackground = true, Name = "Axial.Guardrails Fast warm-up" };
+        thread.Start();
+    }
     public string Project { get; set; } = "";
     public string TargetFramework { get; set; } = "";
     public ITaskItem[] Files { get; set; } = Array.Empty<ITaskItem>();
     public bool Memoize { get; set; }
     public string MemoFile { get; set; }
     [Output] public ITaskItem[] Hashed { get; set; }
+    [Output] public ITaskItem[] InventoryFiles { get; set; }
+    const string InventorySchema = "axial-guardrails-inventory 3";
+    static string Checksum(IEnumerable<string> lines)
+    {
+        using (var sha = SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(string.Join("\n", lines)))).Replace("-", "");
+    }
+    static bool Protected(string root, string file)
+    {
+        var name = Path.GetFileName(file);
+        var relative = file.Substring(root.TrimEnd(Path.DirectorySeparatorChar).Length + 1).Replace('\\', '/');
+        return file.EndsWith(".props", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".targets", StringComparison.OrdinalIgnoreCase)
+            || name == ".editorconfig" || file.EndsWith(".globalconfig", StringComparison.OrdinalIgnoreCase)
+            || (relative.StartsWith("tests/Axial.Guardrails", StringComparison.Ordinal) && (file.EndsWith(".fs", StringComparison.Ordinal) || file.EndsWith(".fsproj", StringComparison.Ordinal)));
+    }
+    void Inventory()
+    {
+        var root = Path.GetFullPath(WorkingDirectory);
+        // Directory change times detect entry additions/removals, while file contents are still rehashed by the caller.
+        // The snapshot is plain checksummed lines: a no-op build validates thousands of directories cheaply.
+        // On platforms without verified directory identities, enumerate rather than trusting mtimes.
+        var rootIdentity = Identity(root);
+        if (rootIdentity != null && !string.IsNullOrEmpty(MemoFile) && File.Exists(MemoFile))
+        {
+            try
+            {
+                var lines = File.ReadAllLines(MemoFile);
+                var device = string.Join(":", rootIdentity.Split(':').Take(2)) + ":";
+                if (lines.Length > 3 && lines[0] == InventorySchema && lines[1] == root && lines[lines.Length - 1] == Checksum(lines.Take(lines.Length - 1)))
+                {
+                    var files = new List<ITaskItem>();
+                    var valid = true;
+                    for (int i = 2; valid && i < lines.Length - 1; i++)
+                    {
+                        var line = lines[i];
+                        if (line.StartsWith("F\t", StringComparison.Ordinal)) files.Add(new TaskItem(line.Substring(2)));
+                        else
+                        {
+                            var separator = line.IndexOf('\t', 2);
+                            var identity = line.Substring(2, separator - 2);
+                            valid = line.StartsWith("D\t", StringComparison.Ordinal) && identity.StartsWith(device, StringComparison.Ordinal)
+                                && Identity(line.Substring(separator + 1), true) == identity;
+                        }
+                    }
+                    if (valid) { InventoryFiles = files.ToArray(); return; }
+                }
+            }
+            catch (Exception) { /* A corrupt snapshot is an inventory miss. */ }
+        }
+        var skipped = new HashSet<string> { ".git", ".livedocs", ".fsdocs", "node_modules", "artifacts", "bin", "obj", "output" };
+        var directories = new List<string>();
+        var complete = rootIdentity != null;
+        var result = new List<ITaskItem>();
+        var pending = new Stack<string>(); pending.Push(root);
+        while (pending.Count != 0)
+        {
+            var directory = pending.Pop();
+            var before = Identity(directory);
+            foreach (var file in Directory.EnumerateFiles(directory))
+                if (Protected(root, file)) result.Add(new TaskItem(file));
+            foreach (var child in Directory.EnumerateDirectories(directory))
+                if (!skipped.Contains(Path.GetFileName(child)) && (File.GetAttributes(child) & FileAttributes.ReparsePoint) == 0) pending.Push(child);
+            // An identity that changed during enumeration cannot vouch for this listing.
+            if (before == null || before != Identity(directory)) complete = false;
+            else directories.Add("D\t" + before + "\t" + directory);
+        }
+        InventoryFiles = result.OrderBy(i => i.ItemSpec, StringComparer.Ordinal).ToArray();
+        if (!string.IsNullOrEmpty(MemoFile) && complete)
+        {
+            var lines = new List<string> { InventorySchema, root };
+            lines.AddRange(directories);
+            lines.AddRange(InventoryFiles.Select(f => "F\t" + f.ItemSpec));
+            lines.Add(Checksum(lines));
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(MemoFile)));
+            var temporary = MemoFile + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try { File.WriteAllLines(temporary, lines); Publish(temporary, MemoFile); }
+            finally { if (File.Exists(temporary)) File.Delete(temporary); }
+        }
+    }
     public string ResultFile { get; set; }
     public string StampFile { get; set; }
     public string Fingerprint { get; set; }
@@ -36,6 +252,7 @@ public class AxialGuardrailsTask : Task
     public bool Force { get; set; }
     public double FingerprintMilliseconds { get; set; }
     [Output] public bool CacheHit { get; set; }
+    [Output] public bool Entered { get; set; }
 
     // Linux statx exposes inode change time: unlike mtime, an ordinary writer cannot restore it.
     // Never use mtime/length alone. Unsupported filesystems/platforms simply rehash.
@@ -57,14 +274,14 @@ public class AxialGuardrailsTask : Task
     [DllImport("libc", SetLastError = true)]
     static extern int statx(int directory, string path, int flags, uint mask, out Statx data);
 
-    static string Identity(string path)
+    static string Identity(string path, bool verifiedFileSystem = false)
     {
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) return null;
         try
         {
             FileSystem fileSystem;
-            if (IntPtr.Size != 8 || statfs(path, out fileSystem) != 0 ||
-                !new long[] { 0xef53, 0x58465342, 0x9123683e, 0x01021994, 0x794c7630 }.Contains(fileSystem.Type)) return null;
+            if (IntPtr.Size != 8 || (!verifiedFileSystem && (statfs(path, out fileSystem) != 0 ||
+                !new long[] { 0xef53, 0x58465342, 0x9123683e, 0x01021994, 0x794c7630 }.Contains(fileSystem.Type)))) return null;
             Statx value;
             if (statx(-100, path, 0, 0x7ff, out value) != 0 || (value.Mask & 0x380) != 0x380 || value.ChangeNanoseconds == 0) return null;
             return $"{value.DeviceMajor}:{value.DeviceMinor}:{value.Inode}:{value.Size}:{value.ChangeSeconds}:{value.ChangeNanoseconds}";
@@ -80,7 +297,9 @@ public class AxialGuardrailsTask : Task
     static bool IsDigest(string value) => value != null && value.Length == 64 && value.All(c => "0123456789ABCDEF".IndexOf(c) >= 0);
     static void Publish(string temporary, string path)
     {
-        if (File.Exists(path)) File.Replace(temporary, path, null); else File.Move(temporary, path);
+        // Both writers may observe a missing destination. A losing atomic move retries as replacement.
+        try { File.Move(temporary, path); }
+        catch (IOException) when (File.Exists(path)) { File.Replace(temporary, path, null); }
     }
     static void Atomic(string path, XDocument document)
     {
@@ -143,7 +362,7 @@ public class AxialGuardrailsTask : Task
         var ran = Coverage(root);
         var paths = SourcePaths();
         return entries.Length == paths.Length * Rules.Length && ran.Count == entries.Length &&
-            entries.All(e => (string)e.Attribute("status") == "ran") &&
+            entries.All(e => (string)e.Attribute("status") == (Mode == "Fast" && !FastRules.Contains((string)e.Attribute("rule")) ? "deferred to full" : "ran")) &&
             paths.All(path => Rules.All(rule => ran.Contains((path, rule))));
     }
     bool LoadCache(out XDocument cached)
@@ -211,16 +430,32 @@ public class AxialGuardrailsTask : Task
         }
         else child.Kill();
     }
-    void Run()
+    bool InputsUnchanged()
+    {
+        try
+        {
+            return !RequestInputs.Any(item => {
+                var path = item.GetMetadata("FullPath");
+                var identity = item.GetMetadata("VerifiedIdentity");
+                return !(identity != "" && identity == Identity(path)) && Digest(path) != item.GetMetadata("FileHash");
+            });
+        }
+        catch (IOException) { return false; }
+        catch (UnauthorizedAccessException) { return false; }
+    }
+    // The stamp names the result's digest, so a replay never observes a half-published concurrent run.
+    bool Replay()
     {
         XDocument cached;
-        if (LoadCache(out cached))
-        {
-            CacheHit = true;
-            Findings(cached.Root);
-            WriteTimings(cached.Root, null);
-            return;
-        }
+        if (!LoadCache(out cached)) return false;
+        CacheHit = true;
+        Findings(cached.Root);
+        WriteTimings(cached.Root, null);
+        return true;
+    }
+    void Run()
+    {
+        if (Replay()) return;
         if (File.Exists(StampFile)) File.Delete(StampFile);
         Log.LogMessage(MessageImportance.High, "Running Axial.Guardrails analysis.");
         var runDirectory = Path.GetFullPath(ResultFile + "." + Guid.NewGuid().ToString("N") + ".run");
@@ -234,6 +469,26 @@ public class AxialGuardrailsTask : Task
         var lines = new List<string>();
         try
         {
+            if (Mode == "Fast")
+            {
+                var fast = Fast();
+                if (Timings)
+                {
+                    phases["fast-total"] = watch.Elapsed.TotalMilliseconds;
+                    phases["fast-load"] = fastLoadMilliseconds;
+                    foreach (var phase in fast.Attributes().Where(a => a.Name.LocalName.EndsWith("Milliseconds", StringComparison.Ordinal)))
+                        phases["fast-" + phase.Name.LocalName.Substring(0, phase.Name.LocalName.Length - "Milliseconds".Length)] = (double)phase;
+                }
+                root.SetAttributeValue("isolated", (string)fast.Attribute("isolated") ?? "false");
+                root.Add(fast.Elements("coverage"));
+                infrastructure.AddRange(fast.Elements("failure").Select(e => $"Fast parse/visitor failed for {(string)e.Attribute("file")}: {e.Value}"));
+                foreach (var path in SourcePaths())
+                foreach (var rule in Rules.Where(r => !FastRules.Contains(r)))
+                    root.Add(new XElement("coverage", new XAttribute("file", path), new XAttribute("rule", rule), new XAttribute("status", "deferred to full")));
+                exit = 0;
+            }
+            else
+            {
             var windows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
             var start = CreateStartInfo(Command + (Timings ? " --verbosity diagnostic" : ""), windows);
             start.WorkingDirectory = WorkingDirectory;
@@ -262,9 +517,10 @@ public class AxialGuardrailsTask : Task
                 if (!child.WaitForExit(600000)) { Stop(child); infrastructure.Add("Analyzer process timed out; coverage is incomplete."); }
                 child.WaitForExit(); exit = child.ExitCode;
             }
+            }
             infrastructure.AddRange(lines.Where(line => line.StartsWith("Axial.Guardrails infrastructure:", StringComparison.Ordinal)));
             foreach (var path in Directory.GetFiles(runDirectory, "*.xml")) root.Add(XElement.Load(path));
-            MissingCoverage(root, "Analyzer process did not report this rule/file");
+            MissingCoverage(root, Mode == "Fast" ? "Fast parser/visitor did not report this rule/file" : "Analyzer process did not report this rule/file");
             Findings(root);
             var complete = infrastructure.Count == 0 && Complete(root) && (exit == 0 || exit == 254 || exit == -2);
             // 254 is ambiguous in the upstream CLI: only findings plus complete rule/file coverage establish success.
@@ -273,11 +529,7 @@ public class AxialGuardrailsTask : Task
                 complete = false;
                 infrastructure.Add($"Analyzer process failed (exit code {exit}); coverage is incomplete. {string.Join(" ", lines.Skip(Math.Max(0, lines.Count - 4)))}");
             }
-            if (complete && RequestInputs.Any(item => {
-                var path = item.GetMetadata("FullPath");
-                var identity = item.GetMetadata("VerifiedIdentity");
-                return !(identity != "" && identity == Identity(path)) && Digest(path) != item.GetMetadata("FileHash");
-            }))
+            if (complete && !InputsUnchanged())
             {
                 complete = false;
                 infrastructure.Add("Analysis inputs changed during execution; discard this coverage and rerun.");
@@ -305,6 +557,7 @@ public class AxialGuardrailsTask : Task
         }
         catch (Exception error)
         {
+            while (error is TargetInvocationException && error.InnerException != null) error = error.InnerException;
             infrastructure.Add("Analyzer infrastructure failed; coverage is incomplete: " + error.Message);
             root.SetAttributeValue("complete", "false");
             root.SetAttributeValue("failure", error.Message);
@@ -320,10 +573,10 @@ public class AxialGuardrailsTask : Task
         }
         if (infrastructure.Count != 0)
         {
-            var skipped = root.Elements("coverage").Where(e => (string)e.Attribute("status") != "ran").ToArray();
+            var skipped = root.Elements("coverage").Where(e => (string)e.Attribute("status") != "ran" && (string)e.Attribute("status") != "deferred to full").ToArray();
             var examples = string.Join("; ", skipped.Take(3).Select(e => $"{(string)e.Attribute("rule")} skipped {(string)e.Attribute("file")}: {(string)e.Attribute("reason")}"));
             var message = string.Join(" ", infrastructure) + $" {skipped.Length} skipped rule/file checks. " + examples;
-            Log.LogError(null, "AXGINF001", null, null, 0, 0, 0, 0, message);
+            Log.LogError(null, "AXGINF001", null, null, 0, 0, 0, 0, message.Replace('\r', ' ').Replace('\n', ' '));
         }
     }
     static void CleanupRunDirectory(string path, Action<string> remove, Action<string> diagnostic)
@@ -343,7 +596,29 @@ public class AxialGuardrailsTask : Task
     }
     public override bool Execute()
     {
-        if (Action == "Hash") Hash(); else Run();
+        Entered = true;
+        try
+        {
+            if (Action == "Warm") Warm();
+            else if (Action == "Inventory") Inventory();
+            else if (Action == "Hash") Hash();
+            else if (!Replay())
+            {
+                // Serialize report/stamp publication across independent builds of this project/TFM.
+                // TFM-specific result paths keep unrelated frameworks independent.
+                string key;
+                using (var sha = SHA256.Create()) key = BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(Path.GetFullPath(ResultFile)))).Replace("-", "");
+                using (var mutex = new System.Threading.Mutex(false, "AxialGuardrails-" + key))
+                {
+                    bool owned;
+                    try { owned = mutex.WaitOne(600000); }
+                    catch (System.Threading.AbandonedMutexException) { owned = true; }
+                    if (!owned) throw new TimeoutException("Waiting for concurrent Guardrails analysis timed out.");
+                    try { Run(); } finally { mutex.ReleaseMutex(); }
+                }
+            }
+        }
+        catch (Exception error) { Log.LogError(null, "AXGINF001", null, Project, 0, 0, 0, 0, "Guardrails task failed: " + error.Message.Replace('\r', ' ').Replace('\n', ' ')); }
         return !Log.HasLoggedErrors;
     }
 }

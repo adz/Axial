@@ -11,6 +11,7 @@
     <!-- Keep this task in C#: loading it must not load FSharp.Core into MSBuild. -->
     <Compile Include="GuardrailsTask.cs" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.11.4" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="System.Reflection.Emit" Version="4.7.0" PrivateAssets="all" ExcludeAssets="runtime" />
   </ItemGroup>
   <!-- A rebuilt task gets a new load path even in a reusable MSBuild node. -->
   <Target Name="PublishContentHashedTask" AfterTargets="Build">

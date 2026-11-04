@@ -48,7 +48,7 @@ module PolicyLock =
         if childProcess.ExitCode = 0 then
             output.Split('\000',StringSplitOptions.RemoveEmptyEntries) |> Array.map(fun path -> Path.Combine(root,path)) |> Array.filter File.Exists
         else
-            let skipped = set [ ".git"; ".livedocs"; "artifacts"; "bin"; "obj"; "output" ]
+            let skipped = set [ ".git"; ".livedocs"; ".fsdocs"; "node_modules"; "artifacts"; "bin"; "obj"; "output" ]
             let rec walk directory = seq {
                 yield! Directory.EnumerateFiles(directory)
                 for child in Directory.EnumerateDirectories(directory) do

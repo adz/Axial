@@ -229,7 +229,7 @@ let fingerprint (sourceText: ISourceText) (message: Message) =
     |> Convert.ToHexString
     |> _.ToLowerInvariant()
 
-let private relativeFile (config: Config) fileName =
+let relativeFile (config: Config) fileName =
     Path.GetRelativePath(config.BaselineRoot, fileName).Replace('\\', '/')
 
 let private appendGenerated (output: string) (entry: BaselineEntry) =
@@ -289,22 +289,40 @@ let private tryRelative root path =
 
 /// Applies the enabled guardrail and legacy baseline policy. Tiered findings and note validation retain their
 /// resolved severity and never generate baseline entries.
-let resolvedPolicy (config: Config) (ctx: CliContext) =
+let resolvedFilePolicy (config: Config) fileName =
     match config.Policy, config.PolicyRoot, config.ProjectPath with
     | Some policy, Some root, Some project ->
-        match classifyConfiguredSource config root ctx.FileName, tryRelative root project with
+        match classifyConfiguredSource config root fileName, tryRelative root project with
         | Policy.RepositorySource file, Some projectFile ->
             match Policy.resolve policy projectFile file with
             | Ok resolved -> Some resolved
             | Error error -> invalidArg "policy" error
         | Policy.ExternalSource, _ -> None
         | Policy.InvalidSource explanation, _ ->
-            warnSkipped ctx.FileName explanation
+            warnSkipped fileName explanation
             None
         | _, None ->
             warnSkipped project "project path is unusable"
             None
     | _ -> None
+
+let resolvedPolicy config (ctx: CliContext) = resolvedFilePolicy config ctx.FileName
+
+/// Raw-concurrency placement exemptions do not require typed facts; Fast and Full share them.
+let exemptsRawConcurrency (config: Config) fileName =
+    let role = resolvedFilePolicy config fileName |> Option.map _.Role
+    let runtime =
+        match config.Policy, config.PolicyRoot with
+        | Some policy, Some root -> policy.Runtime |> List.exists (fun file -> Path.GetFullPath(Path.Combine(root, file)) = Path.GetFullPath fileName)
+        | _ -> false
+    let host =
+        match role, config.Policy, config.PolicyRoot, config.ProjectPath with
+        | Some Policy.Host, Some policy, Some root, Some project ->
+            let relative = Path.GetRelativePath(root, Path.GetFullPath project).Replace('\\', '/')
+            policy.Exemptions.TryFind "AXG009" |> Option.defaultValue [] |> List.exists (fun pattern -> Policy.matchesGlob pattern relative)
+        | _ -> false
+    let test = role = Some Policy.Test && not (String.Equals(config.InTests, "all", StringComparison.OrdinalIgnoreCase))
+    runtime || host || test || role = Some Policy.Capabilities
 
 // Only the declared project role selects the reduced set; file-role overrides cannot opt a project out.
 let usesTestAnalyzerSet (config: Config) =
@@ -324,7 +342,7 @@ type AnalyzerEntry = { Name: string; Codes: string list; RunsInTests: bool }
 
 /// The single registry of CLI analyzers. A tracked name missing here fails closed instead of being skipped.
 let analyzers =
-    [ { Name = "EffectBoundary"; Codes = [ "AXG001" ]; RunsInTests = false }
+    [ { Name = "EffectBoundary"; Codes = [ "AXG001" ]; RunsInTests = true }
       { Name = "SuppressionIntegrity"; Codes = [ "AXG002" ]; RunsInTests = true }
       { Name = "RaiseInFlow"; Codes = [ "AXG003" ]; RunsInTests = false }
       { Name = "Fixture"; Codes = [ "AXG004" ]; RunsInTests = true }
@@ -352,6 +370,9 @@ let shouldRunAnalyzer config rule =
     | Some analyzer -> Ok(analyzer.RunsInTests || not selecting)
     | None when not selecting -> Ok true
     | None -> Error $"analyzer {rule} is not registered in GuardrailConfig.analyzers, so the test analyzer set cannot select it"
+
+/// Whether a project reports a code: all codes outside the reduced test set, otherwise only the test set's.
+let runsInProject config code = not (usesTestAnalyzerSet config) || reportsInTestSet code
 
 let private resolvableFullPath (config: Config) (fileName: string) =
     try
@@ -382,10 +403,9 @@ let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: 
         for entry in config.Baseline do
             remaining[(entry.RuleId, entry.File, entry.Fingerprint)] <- entry.Count
 
-        let testSet = usesTestAnalyzerSet config
         let findings =
             messages
-            |> List.filter (fun message -> not testSet || reportsInTestSet message.Code)
+            |> List.filter (fun message -> runsInProject config message.Code)
             |> List.map (fun message ->
                 let entry =
                     { RuleId = message.Code.ToUpperInvariant()

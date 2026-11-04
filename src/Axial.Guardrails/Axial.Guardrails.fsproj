@@ -74,11 +74,14 @@
     <Compile Include="ResourceFromFiberAnalyzer.fs" />
     <Compile Include="ScopeFromRunAnalyzer.fs" />
     <Compile Include="WaitForFactsAnalyzer.fs" />
+    <Compile Include="FixtureSyntax.fs" />
     <Compile Include="FixtureAnalyzer.fs" />
     <Compile Include="DiscardedCancellationAnalyzer.fs" />
     <Compile Include="ReflectionFormattingAnalyzer.fs" />
     <Compile Include="ConcurrencyHazardsAnalyzer.fs" />
     <Compile Include="SuppressionIntegrityAnalyzer.fs" />
+    <Compile Include="FastSyntax.fs" />
+    <Compile Include="FastRunner.fs" />
   </ItemGroup>
 
   <ItemGroup>

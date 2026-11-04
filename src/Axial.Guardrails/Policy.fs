@@ -129,7 +129,7 @@ module Policy =
                         | Error message, _ | _, Error message -> error <- Some message
         match error with Some message -> Error message | None -> Ok entries
 
-    let private globRegex (pattern: string) =
+    let private compileGlob (pattern: string) =
         let output = StringBuilder("^")
         let mutable index = 0
         while index < pattern.Length do
@@ -149,6 +149,10 @@ module Policy =
                 output.Append(Regex.Escape(string pattern[index])) |> ignore
                 index <- index + 1
         Regex(output.Append('$').ToString(), RegexOptions.CultureInvariant)
+
+    // Role resolution matches every source file against every pattern; compile each glob once per process.
+    let private globs = System.Collections.Concurrent.ConcurrentDictionary<string, Regex>(StringComparer.Ordinal)
+    let private globRegex (pattern: string) = globs.GetOrAdd(pattern, compileGlob)
 
     /// Match a repository-relative path using policy glob syntax.
     let matchesGlob pattern (path: string) = (globRegex pattern).IsMatch(path)
@@ -192,7 +196,7 @@ module Policy =
         not escaped && insideRoot canonicalRootPath current
 
     let private filesUnder root =
-        let skipped = set [ ".git"; ".livedocs"; "artifacts"; "bin"; "obj"; "output" ]
+        let skipped = set [ ".git"; ".livedocs"; ".fsdocs"; "node_modules"; "artifacts"; "bin"; "obj"; "output" ]
         let rec walk directory = seq {
             yield! Directory.EnumerateFiles(directory)
             for child in Directory.EnumerateDirectories(directory) do
@@ -229,7 +233,13 @@ module Policy =
     let private validatePattern root allFiles allowEmpty pattern =
         normalizePath "policy" pattern
         |> Result.bind (fun normalized ->
-            let matches = allFiles |> Array.filter (fun (path: string) -> (globRegex normalized).IsMatch(path))
+            let matches =
+                // A literal path matches only itself (filesUnder sorts ordinally): avoid testing it against every file.
+                if normalized.IndexOfAny([| '*'; '?' |]) < 0 then
+                    if Array.BinarySearch(allFiles, normalized, StringComparer.Ordinal) >= 0 then [| normalized |] else [||]
+                else
+                    let matcher = globRegex normalized
+                    allFiles |> Array.filter (fun (path: string) -> matcher.IsMatch(path))
             match matches |> Array.tryFind (fun path -> not(resolvedInsideRoot root (Path.Combine(root, path.Replace('/', Path.DirectorySeparatorChar))))) with
             | Some escaped -> Error $"policy path '{pattern}' matches '{escaped}', which resolves outside the repository root"
             | None when not allowEmpty && matches.Length = 0 -> Error $"policy path '{pattern}' matches nothing"
