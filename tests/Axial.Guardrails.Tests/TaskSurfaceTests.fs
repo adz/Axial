@@ -187,6 +187,9 @@ module TaskSurfaceTests =
                 let skip = result.Elements(XName.Get "skip") |> Seq.exactlyOne
                 Assert.Equal(source, skip.Attribute(XName.Get "file").Value)
                 Assert.Contains("project path is unusable", skip.Attribute(XName.Get "reason").Value)
+                // The file is still analyzed, under the default policy: the warning must not claim it was skipped.
+                Assert.Contains("analyzed under the default policy", skip.Attribute(XName.Get "reason").Value)
+                Assert.DoesNotContain("no rule checked", skip.Attribute(XName.Get "reason").Value)
                 let hits = result.Elements(XName.Get "coverage") |> Seq.map (fun e -> e.Attribute(XName.Get "cacheHit").Value) |> Seq.distinct |> Seq.exactlyOne
                 Assert.Equal((if attempt = 1 then "false" else "true"), hits))
 
