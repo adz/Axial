@@ -434,7 +434,7 @@ Reported in domain code:
 open System.Net.Http
 open System.Threading.Tasks
 
-let fetchTitle (client: HttpClient) (url: string) : Task<string> =
+let fetchTitleTask (client: HttpClient) (url: string) : Task<string> =
     task {
         let! body = client.GetStringAsync url
         return body.Trim()
@@ -461,7 +461,7 @@ Reported in a capability: the bridge sequences two calls inside the task.
 open System.Net.Http
 open Axial
 
-let readBoth (client: HttpClient) (first: string) (second: string) : Flow<unit, string, string> =
+let readBothInOneTask (client: HttpClient) (first: string) (second: string) : Flow<unit, string, string> =
     Flow.fromTask (fun ct ->
         task {
             let! a = client.GetStringAsync(first, ct)
