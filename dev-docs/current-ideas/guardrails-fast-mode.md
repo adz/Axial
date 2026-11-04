@@ -83,6 +83,7 @@ B used a long-lived .NET subprocess with stdin request/response, retained checke
 | AXG006 reflection formatting | Obvious `%A`/`%+A` syntax candidates only | Type-dependent interpolation, union/record ToString and actual reflection targets |
 | AXG009 raw concurrency | Direct qualified constructor/API syntax candidates | Actual symbol identity and typed classification |
 | AXG013 guessed waits | Direct qualified Task.Delay/Async.Sleep syntax candidates in configured test-role files | Existing symbol matching, cancellation waits and timeout constants |
+| AXG014 task surface (added later) | `task`/`backgroundTask` by unshadowed name; annotated return types spelling `Task`/`ValueTask` through opens; shared role/composition visitor (`TaskSurfaceSyntax`) | Builder resolved to TaskBuilder/BackgroundTaskBuilder (aliases), abbreviations, inferred return types. Always Info in both modes |
 
 Syntax candidates must not masquerade as exact existing diagnostics: attach a `fast/unverified` classification, do not block builds on ambiguous names, and retain the owning AXG rule's guidance. Shadowing, aliases and inactive conditional-compilation branches need explicit tests. Do not pass dummy typed contexts to existing analyzers in shipping code; extract parse-only visitors behind a separate contract. Full mode runs every existing analyzer, including suppression integrity and rules not listed here.
 

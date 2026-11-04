@@ -10,6 +10,14 @@ description: Use Axial.Guardrails to detect ambient effects, exceptions in workf
 
 `axial check` compares the repository policy, baseline, and analyzer configuration with `Axial.Guardrails.lock`. Policy drift produces one loud warning with a change count and an instruction to run `axial policy review`, but exits zero. Corrupt locks and unreadable policy still fail; analyzer errors still fail builds. The lock is tamper-evident, not a security boundary; enforcement is the repository's choice.
 
+Builds run the same check per project and target framework (`axial check --build`), but print the drift warning
+at most once per drift state across all of them, so a solution build shows one line rather than one per project/TFM.
+The claim lasts 30 minutes; a later build after that shows it again. It is always a warning, never an error;
+`axial check --full` and release behaviour are unchanged. Run directly, `axial check` always prints the warning and
+also a per-project raw-Task trend: lexical counts of `task { }`/`backgroundTask { }` expressions and Task-returning
+signatures per project, with its role (`--json` adds a `rawTask` array). It is a trend to watch, not a gate; AXG014
+gives the per-site guidance. In this repository, `scripts/axial <command>` builds and runs the live tool.
+
 Run `axial policy review [--since <ref>] [--json]` to inspect what loosened: new or changed suppression reasons and notes, relaxed roles or rule levels, runtime/boundary/ignore/baseline additions, evaluated project settings, and changes to declared automation files or analyzer versions. Removals appear briefly as tightening. The default reference is the reviewed commit recorded in the lock; the first review needs `--since <tag-or-commit>`. If that reference predates policy files, the review reports policy introduction rather than inventing historical policy, and still compares source exceptions.
 
 `axial check --full` first enforces `axial policy review --check`, then builds the single solution (`.slnx` or `.sln`) in the current directory with explicit Full mode and checkpoint enforcement. The configuration defaults to Release; use `--configuration <name>` to override it. It analyzes every enabled F# project and target framework, including frameworks normally restricted by a designated-framework setting. Exported results must match the build's expected project/TFM set and have complete Full coverage. Infrastructure failures, missing or incomplete records, and Error findings produce a nonzero exit; Warning, Hint and baselined findings retain their non-blocking severity. Build diagnostics stream to stderr, leaving `--json` stdout parseable. A first policy review still needs a human-reviewed reference recorded in the lock. The command never approves policy or generates a baseline.
@@ -32,10 +40,12 @@ branch names select a mode. Changing modes invalidates cached analysis in either
 | AXG006 reflection formatting | Literal `%A`/`%+A` format strings at direct formatting calls | Also type-dependent interpolation, ToString and reflection targets |
 | AXG009 raw concurrency | Direct qualified constructor/API candidates; shared test/capability/runtime/declared-host exemptions | Resolved identity and policy-specific typed classification |
 | AXG013 guessed waits | In resolved test-role files: `Thread.Sleep` calls, and `Task.Delay`/`Async.Sleep` awaited directly by `do!`/`let!`, except infinite cancellation waits and the shared `waitUntil`/`occupyThread` helpers | Resolved symbols for the same shapes, cancellation-parameter overloads and timeout constants |
+| AXG014 task surface | `task`/`backgroundTask` by name (unshadowed) and annotated return types spelling `Task`/`ValueTask` through the file's `open`s; same roles and composition rule as Full | Resolved builder type (aliases such as `let t = task`), abbreviations and inferred return types |
 | Other checks, including suppression/note integrity | Explicitly deferred to Full | Every enabled analyzer |
 
 Ambiguous syntax is labelled `[fast/unverified]` and emitted as Info, even under warnings-as-errors; it never
-blocks a build. AXG004 is labelled `[fast hint; syntax-exact]` and retains Error severity (Warning when baselined).
+blocks a build. AXG004 is labelled `[fast hint; syntax-exact]` and is a Warning in Fast, baselined or not: guidance
+never fails an ordinary build. Full keeps AXG004's policy severity (Error unless baselined).
 Fast conservatively skips names shadowed or aliased anywhere in the file, and short names whose namespace the file
 never opens; it does not resolve aliases or receiver types (`task.Result`, `task.Wait()` are Full-only). This can
 miss valid calls outside the shadow's scope. Inactive `#if` branches do not produce advice. A hint can disagree
@@ -43,8 +53,10 @@ with Full: do not treat the absence of Fast hints as proof that the typed rules 
 
 Effects belong in host or capability-role files; domain and service code should use explicit effect services.
 File roles override project roles, so a domain project can keep all raw effects in separate capability files.
-AXG001 guidance also runs in test projects unless policy allows effects. `effects.ambient = "forbid"` remains
-unsuppressible, including in host/capability files. Reasoned file-level exceptions remain visible to
+AXG001 guidance also runs in test projects: in the `test` role it is a **warning by default**, because tests
+exercise live effects for setup and assertions. Set `[roles.test.rules]` `"effects.ambient"` to `deny` or `forbid`
+to opt in to errors, or `allow` to silence it. Host and capability files are exempt from AXG001 in both Fast and Full.
+`effects.ambient = "forbid"` remains unsuppressible, including in host/capability files. Reasoned file-level exceptions remain visible to
 `axial policy review`; Fast does not approve them or check suppression integrity.
 
 On .NET MSBuild, a collectible, isolated load context owns FCS, FSharp.Core and the analyzer SDK; they do not
@@ -177,6 +189,9 @@ Fast per-file `cacheHit` attributes show which files were reparsed. Parse errors
 closed, retain other available findings and never stamp incomplete coverage.
 Only complete coverage for the current input fingerprint can produce a reusable stamp. Cache hits replay findings,
 including warnings and acknowledged Info; unreadable, truncated, or mismatched reports rerun analysis.
+A source the analyzers cannot classify (an unusable source or project path) is recorded as a `skip` in the report and
+shown as warning `AXGINF002` on every build, cache replays and reused build nodes included. Fast's per-file cache
+under `axial-guardrails.<TFM>.result.xml.files` keeps only the entries of the current request.
 
 Analyzer exceptions leave other rules running; process failures and incomplete coverage leave no complete stamp.
 `AXGINF001` fails the build with one MSBuild error per project/target framework, naming the cause, skipped-check
@@ -297,10 +312,11 @@ See the [diagnostic reference](/guardrails/diagnostics.html) for an example.
 | `AXG011` | `UncancellableWork` | `CancellationToken.None` outside `Cancellation.never`, the one definition that owns it |
 | `AXG012` | `DiscardedWork` | Typed Task/ValueTask/Fiber discards |
 | `AXG013` | `WaitForFacts` | Blocking sleeps (error) and directly awaited delays (guide) in test-role code |
+| `AXG014` | `TaskSurface` | Raw `task { }` and Task/ValueTask-returning public signatures in domain/service code; composing task bridges elsewhere (guide, always Info) |
 | `AXG007` | `ResourceFromFiber` | A forked flow that returns a scoped resource it acquired, which the fiber releases before `Fiber.join` returns it |
 | `AXG008` | `ScopeFromRun` | A run returning a scope-owned `Queue.makeScoped`, `Hub.makeScoped` or `Hub.subscribe` result, or a cache tied to its creating runtime |
 
-`AXG003`, `AXG005`, `AXG006`, `AXG007`, and `AXG008` run outside the declared `test` project role.
+`AXG003`, `AXG005`, `AXG006`, `AXG007`, `AXG008`, and `AXG014` run outside the declared `test` project role.
 Test-role projects select EffectBoundary, Fixture, WaitForFacts, RawConcurrency, and SuppressionIntegrity by default.
 AXG001 follows the resolved file role; isolate raw setup effects in host/capability-role files or explicitly allow
 them in policy. Exceptions remain available for setup and assertions. Declare `[projects]` with
@@ -338,7 +354,7 @@ Referencing a package turns its guardrail on: a rule that recommends `IHttp` is 
 
 | Guardrail | Rules |
 | --- | --- |
-| `Axial` | Ambient clock reads, `Stopwatch`, `Task.Delay`, `Thread.Sleep`, `Environment.ProcessorCount`, ordinary and cryptographic randomness, GUIDs, `TimeZoneInfo.Local`, blocking waits, and `AXG002`–`AXG013` |
+| `Axial` | Ambient clock reads, `Stopwatch`, `Task.Delay`, `Thread.Sleep`, `Environment.ProcessorCount`, ordinary and cryptographic randomness, GUIDs, `TimeZoneInfo.Local`, blocking waits, and `AXG002`–`AXG014` |
 | `Axial.Configuration` | Ambient environment state |
 | `Axial.Console` | `System.Console` |
 | `Axial.FileSystem` | `System.IO.File` and `System.IO.Directory` |
@@ -379,3 +395,4 @@ or a visible guide acknowledgement — is on the [diagnostics reference](/guardr
 - [`AXG007`](/guardrails/diagnostics.html#axg007-keep-resources-acquired-by-a-fiber): resources returned from fibers.
 - [`AXG013`](/guardrails/diagnostics.html#axg013-wait-for-facts-not-time): blocking test sleeps (error) and awaited delays (guide). Runs only in policy role `test`; legacy `test.wait-for-facts` levels do not change the tiers. Workflow clock sleeps are out of scope.
 - [`AXG008`](/guardrails/diagnostics.html#axg008-keep-scope-owned-services-inside-their-run): scoped queues and hubs, subscriptions, and caches returned by a run. Unscoped `Queue.make` (including its shorthands) and `Hub.make` are allowed.
+- [`AXG014`](/guardrails/diagnostics.html#axg014-keep-raw-task-at-the-edge): raw Task in domain/service code and composing task bridges (guide, never blocks).

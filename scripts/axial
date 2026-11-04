@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+# Run this repository's live Axial tool (policy check, review, init) after an incremental build of the analyzer and
+# tool, e.g. `scripts/axial check`, `scripts/axial check --full`, `scripts/axial policy review --since v0.11.3`.
+# Build output goes to stderr so `--json` stdout stays parseable.
+
+set -euo pipefail
+
+root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+"$root_dir/scripts/ensure-guardrails-built.sh" Release >&2
+cd "$root_dir"
+exec dotnet --roll-forward Major "$root_dir/artifacts/bin/Axial.Tool/release/Axial.Tool.dll" "$@"

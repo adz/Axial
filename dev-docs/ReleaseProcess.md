@@ -30,7 +30,8 @@ dotnet livedocs history-check
    `axial policy approve --yes-i-reviewed`) and commits `Axial.Guardrails.lock`. Approval records the current commit as
    the reviewed point; do not make unreviewed policy changes afterward. Run `axial policy review --check` before tagging.
    The lock is tamper-evident, not a security boundary; enforcement is the repository's choice. Axial chooses to refuse
-   publication when this check finds loosening after the reviewed point.
+   publication when this check finds loosening after the reviewed point. In this checkout, `scripts/axial <command>`
+   runs the live tool (it builds the analyzer and tool incrementally first), e.g. `scripts/axial policy review`.
 5. Push `main`, then create and push the release tag. The workflow builds and runs the tool from that tag's own
    checkout, including when resuming a release, and checks policy before packaging or publishing.
 

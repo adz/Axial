@@ -26,6 +26,8 @@ and prove new tests can fail; see [`dev-docs/VERIFICATION.md`](dev-docs/VERIFICA
 Guardrails remain open day to day: agents may add valid suppressions or notes with a reason and report them to the
 human. Policy drift warns; analyzer errors still fail. Use `axial policy review` to inspect accumulated loosening
 (`--since <ref>` for a first review). The lock is tamper-evident; enforcement is the repository's choice.
+In this repository run the live tool as `scripts/axial <command>` (for example `scripts/axial check`, which also prints
+the per-project raw-Task trend); it builds the analyzer and tool incrementally first.
 A human reads the review, runs `axial policy approve`, and commits the lock before release; agents must not run
 approval or baseline commands or edit the lock. Release automation runs `axial policy review --check`.
 

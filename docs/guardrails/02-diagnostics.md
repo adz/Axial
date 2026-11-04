@@ -406,6 +406,98 @@ let retained () = System.Threading.Tasks.Task.FromResult 1
 
 This is an error. Await the task or retain and join the fiber; neither `axial-allow` nor `axial-note` exempts it.
 
+## AXG014: Keep raw Task at the edge
+
+`AXG014` (`TaskSurface`) is guidance, never a gate. A raw `Task` escapes Flow's cancellation, supervision and
+testability: nothing owns it, cancels it or replaces it in a test. The rule nudges code toward `flow { }` and keeps
+the remaining Task use in thin, one-call bridges. Its findings are Info in every mode, including Full checkpoints and
+`axial check --full`, and under warnings-as-errors.
+
+What it reports depends on the file's resolved role (`[files]` overrides `[projects]`):
+
+| Role | Reported |
+| --- | --- |
+| `domain`, `services` | Every `task { }` and `backgroundTask { }` expression, and every public function, value, member or abstract slot whose return type is `Task`, `Task<'T>`, `ValueTask` or `ValueTask<'T>` |
+| `capabilities`, `host` | Only a task expression that composes: more than one `let!`/`do!`/`use!`/`match!`/`return!`, a loop, or an `if`/`match` that decides what to await (it contains an await or comes before the first one) in its own body |
+| `[runtime].files` | Nothing: the runtime implements Flow on raw tasks |
+| `test` | Nothing, unless `AxialGuardrailsInTests=all`; then the bridge rule applies |
+
+Translating the one awaited result is what a bridge is for: a `try/with` that maps its exceptions, or a `match` on
+its result, does not count as composition. Nested lambdas and computation expressions are judged on their own.
+
+Overrides and interface implementations are not reported: a .NET interface dictates that signature. Private and
+internal declarations are not part of the public surface.
+
+Reported in domain code:
+
+```fsharp
+open System.Net.Http
+open System.Threading.Tasks
+
+let fetchTitle (client: HttpClient) (url: string) : Task<string> =
+    task {
+        let! body = client.GetStringAsync url
+        return body.Trim()
+    }
+```
+
+Fixed: the logic is a flow, and the one .NET call is lifted with `Flow.fromTask`, which passes the flow's
+cancellation token. In domain code, prefer a capability or service (`Axial.HttpClient.IHttp` here) over a raw client.
+
+```fsharp
+open System.Net.Http
+open Axial
+
+let fetchTitle (client: HttpClient) (url: string) : Flow<unit, string, string> =
+    flow {
+        let! body = Flow.fromTask (fun ct -> client.GetStringAsync(url, ct))
+        return body.Trim()
+    }
+```
+
+Reported in a capability: the bridge sequences two calls inside the task.
+
+```fsharp
+open System.Net.Http
+open Axial
+
+let readBoth (client: HttpClient) (first: string) (second: string) : Flow<unit, string, string> =
+    Flow.fromTask (fun ct ->
+        task {
+            let! a = client.GetStringAsync(first, ct)
+            let! b = client.GetStringAsync(second, ct)
+            return a + b
+        })
+```
+
+Fixed: each bridge is one awaited call, and the composition is a flow.
+
+```fsharp
+open System.Net.Http
+open Axial
+
+let get (client: HttpClient) (url: string) : Flow<unit, string, string> =
+    Flow.fromTask (fun ct -> client.GetStringAsync(url, ct))
+
+let readBoth (client: HttpClient) (first: string) (second: string) : Flow<unit, string, string> =
+    flow {
+        let! a = get client first
+        let! b = get client second
+        return a + b
+    }
+```
+
+To hand a flow to a Task-based host, run it at the host boundary (`flow.StartAsTask(env, ct)`), not in domain code.
+For an intentional Task surface, put `// axial-note AXG014: <reason>` on the finding's line or the preceding line;
+the finding stays visible as acknowledged Info. `axial-allow-AXG014` is not accepted.
+
+Full resolves the builder's type, so an aliased builder (`let t = task`) is reported and a shadowing `task` value
+of another type is not, and it follows type abbreviations and inferred return types. Fast matches the spellings
+`task`/`backgroundTask` and annotated return types that name `Task`/`ValueTask` through the file's `open`s; it skips
+names shadowed in the file and does not see aliases, abbreviations or unannotated return types. Both apply the same
+role and composition rules. `axial check` prints a per-project lexical count of task expressions and Task-returning
+signatures so the trend stays visible; it never gates.
+
 AXG009–AXG012 exempt the `test` role unless `AxialGuardrailsInTests=all` enables full test analysis. Host-role projects are exempt only when their
 repository-relative project path matches that rule's `[exemptions]` list in `Axial.Guardrails.toml`.
 The table accepts only `AXG009`, `AXG010`, `AXG011`, and `AXG012`, each an array of project-path globs.
@@ -421,13 +513,13 @@ AXG012 = ["tools/**/*.fsproj"]
 
 These lists do not change finding severities or exempt other rules.
 AXG001–008 retain their boundary-allowance and baseline behavior. AXG009–013 do not accept allowances or baseline
-severity downgrades. Only guide findings (AXG010 and awaited-delay AXG013) accept `axial-note`; no boundary
+severity downgrades. Only guide findings (AXG010, awaited-delay AXG013 and AXG014) accept `axial-note`; no boundary
 membership or finding approval is needed. AXG002 warns about malformed, empty, unknown, misplaced, or stale notes,
 and notes on block findings. Invalid notes become errors at checkpoints. No automatic fix is offered: choosing
 ownership, cancellation, or exception reporting changes behavior.
 
 The verification build and release workflow set `AxialGuardrailsCheckpoint=true`. Ordinary builds, including
-ordinary Release builds, do not enable it automatically. At checkpoints, unacknowledged guide findings become errors;
+ordinary Release builds, do not enable it automatically. At checkpoints, unacknowledged AXG010 and AXG013 guide findings become errors (AXG014 stays Info);
 acknowledged findings remain Info with their reasons. Build output shows current findings; `axial policy review`
 separately lists added notes and suppressions, changed reasons, and policy loosening since the reviewed commit.
 Suppressions and notes stay active pending human review. `axial check` warns on policy drift; corrupt policy still
