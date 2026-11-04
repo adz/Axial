@@ -376,17 +376,20 @@ let private resolvableFullPath (config: Config) (fileName: string) =
         Some(Path.GetFullPath(fileName, basePath))
     with _ -> None
 
-/// Why a repository source cannot be checked (an unusable source or project path), if it cannot. Hosts record this in
-/// their build report so every build, including cache replays and reused build nodes, shows it as a warning; an
-/// external source is out of scope, not skipped.
+/// Why a repository source cannot be checked as configured, as a sentence for warning AXGINF002, if it cannot. Hosts
+/// record this in their build report so every build, including cache replays and reused build nodes, shows it. An
+/// unusable source path means no rule checked the file; an unusable project path means the file was analyzed under the
+/// default policy instead of its project's role. An external source is out of scope, not skipped.
 let skipReason (config: Config) fileName =
+    let skipped detail = Some $"source path is unusable{detail}, so no rule checked this source; fix the path or exclude the file"
     match sourceClassification config fileName with
-    | Some(Policy.InvalidSource explanation) -> Some $"source path is unusable: {explanation}"
+    | Some(Policy.InvalidSource explanation) -> skipped $": {explanation}"
     | Some Policy.ExternalSource -> None
-    | _ when (resolvableFullPath config fileName).IsNone -> Some "source path is unusable"
+    | _ when (resolvableFullPath config fileName).IsNone -> skipped ""
     | _ ->
         match config.Policy, config.PolicyRoot, config.ProjectPath with
-        | Some _, Some root, Some project when (tryRelative root project).IsNone -> Some "project path is unusable"
+        | Some _, Some root, Some project when (tryRelative root project).IsNone ->
+            Some "project path is unusable, so this source was analyzed under the default policy rather than its project's role; fix the project path"
         | _ -> None
 
 let isBoundaryFile (config: Config) fileName =

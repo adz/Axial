@@ -385,7 +385,7 @@ public class AxialGuardrailsTask : Task
         // A skipped source is visible on every build, cache replays included; the report carries the record.
         foreach (var skip in root.Descendants("skip").Select(e => ((string)e.Attribute("file"), (string)e.Attribute("reason"))).Distinct())
             Log.LogWarning(null, "AXGINF002", null, skip.Item1, 0, 0, 0, 0,
-                $"Axial.Guardrails skipped this source: {skip.Item2}. No rule checked it; fix the path or exclude the file.");
+                $"Axial.Guardrails: {skip.Item2}.");
         foreach (var entry in root.Elements("coverage"))
         foreach (var finding in entry.Elements("finding"))
         {

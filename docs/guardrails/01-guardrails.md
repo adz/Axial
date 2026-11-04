@@ -191,7 +191,9 @@ closed, retain other available findings and never stamp incomplete coverage.
 Only complete coverage for the current input fingerprint can produce a reusable stamp. Cache hits replay findings,
 including warnings and acknowledged Info; unreadable, truncated, or mismatched reports rerun analysis.
 A source the analyzers cannot classify (an unusable source or project path) is recorded as a `skip` in the report and
-shown as warning `AXGINF002` on every build, cache replays and reused build nodes included. Fast's per-file cache
+shown as warning `AXGINF002` on every build, cache replays and reused build nodes included. With an unusable
+source path no rule checks the file; with an unusable project path the file is analyzed under the default policy
+instead of its project's role. Fast's per-file cache
 under `axial-guardrails.<TFM>.result.xml.files` keeps only the entries of the current request.
 
 Analyzer exceptions leave other rules running; process failures and incomplete coverage leave no complete stamp.
