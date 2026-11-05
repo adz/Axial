@@ -7,11 +7,6 @@ cd "$root_dir"
 
 output_dir="artifacts/package"
 
-bash scripts/ensure-guardrails-built.sh Release
-
-mkdir -p "$output_dir"
-find "$output_dir" -maxdepth 1 -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -delete
-
 VERSION=""
 while getopts "v:" opt; do
   case $opt in
@@ -24,6 +19,12 @@ version_args=()
 if [[ -n "$VERSION" ]]; then
   version_args+=("-p:Version=$VERSION")
 fi
+
+# Same version as the packs below, so they reuse this build instead of rebuilding the analyzer and tool.
+bash scripts/ensure-guardrails-built.sh Release "${version_args[@]}"
+
+mkdir -p "$output_dir"
+find "$output_dir" -maxdepth 1 -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -delete
 
 projects=(
   "src/Axial/Axial.fsproj"

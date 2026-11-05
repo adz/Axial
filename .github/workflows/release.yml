@@ -72,7 +72,7 @@ jobs:
           ref: ${{ steps.version.outputs.tag }}
           fetch-depth: 0
 
-      - name: Review release policy
+      - name: Build the axial tool
         run: |
           dotnet tool restore
           dotnet restore

@@ -56,8 +56,9 @@
       set AxialGuardrailsCheckpoint to reject unacknowledged guides and invalid notes. The CLI's treat-as-error
       option would also promote acknowledged Info, so severity is resolved in the analyzer using the rules file.
 
-      Test projects run Fixture, WaitForFacts, RawConcurrency and SuppressionIntegrity by default: ambient effect rules flag File and DateTimeOffset
-      that tests legitimately use for setup and assertions. Set AxialGuardrailsInTests to all to
+      Test projects run EffectBoundary, Fixture, WaitForFacts, RawConcurrency and SuppressionIntegrity by default.
+      AXG001 warns there rather than erroring (the test role's default effects.ambient level), because tests
+      legitimately use File and DateTimeOffset for setup and assertions. Set AxialGuardrailsInTests to all to
       run every enabled guardrail in a test-role project. The checked-in policy, not the test SDK,
       declares that role; analyzers resolve it in-process from their existing policy input.
     -->
@@ -107,7 +108,7 @@
   <Target Name="AxialGuardrailsValidateTask" BeforeTargets="AxialGuardrailsValidatePolicyCache;AxialGuardrailsWriteInputFingerprint"
           DependsOnTargets="AxialGuardrailsEnsureBuilt" Condition="'$(AxialGuardrailsEnabled)' == 'true'">
     <Delete Files="$(_AxialGuardrailsStampFile)" Condition="!Exists('$(_AxialGuardrailsTaskAssembly)')" />
-    <Error Code="AXGINF001" Condition="!Exists('$(_AxialGuardrailsTaskAssembly)')" Text="Guardrails task-load failure: $(_AxialGuardrailsTaskAssembly) is missing." />
+    <Error Code="AXGINF001" Condition="!Exists('$(_AxialGuardrailsTaskAssembly)')" Text="Guardrails task-load failure: $(_AxialGuardrailsTaskAssembly) is missing. Restore/reinstall the package." />
     <GetAssemblyIdentity AssemblyFiles="$(_AxialGuardrailsTaskAssembly)" ContinueOnError="WarnAndContinue">
       <Output TaskParameter="Assemblies" ItemName="_AxialGuardrailsTaskIdentity" />
     </GetAssemblyIdentity>
@@ -122,7 +123,6 @@
           Condition="'$(AxialGuardrailsEnabled)' == 'true' and '$(_AxialGuardrailsPolicyRoot)' != ''">
     <!-- One traversal, using the policy inventory's generated-directory exclusions. Do not enumerate globs
          on every project/TFM graph evaluation. New files are still discovered on every active build. -->
-    <Error Code="AXGINF001" Condition="!Exists('$(_AxialGuardrailsTaskAssembly)')" Text="Guardrails task-load failure: $(_AxialGuardrailsTaskAssembly) is missing." />
     <PropertyGroup><_AxialGuardrailsTaskEntered>false</_AxialGuardrailsTaskEntered></PropertyGroup>
     <AxialGuardrailsTask Action="Inventory" WorkingDirectory="$(_AxialGuardrailsPolicyGlobRoot)" MemoFile="$(IntermediateOutputPath)axial-guardrails.$(TargetFramework).inventory.xml">
       <Output TaskParameter="Entered" PropertyName="_AxialGuardrailsTaskEntered" />
@@ -167,8 +167,8 @@
           BeforeTargets="AxialGuardrailsEffectBoundaryCheck"
           DependsOnTargets="AxialGuardrailsEnsureBuilt;AxialGuardrailsWriteConfig"
           Condition="'$(AxialGuardrailsEnabled)' == 'true' and ('$(TargetFrameworks)' == '' or '$(TargetFramework)' != '')">
-    <Delete Files="$(_AxialGuardrailsStampFile)" Condition="!Exists('$(_AxialGuardrailsTaskAssembly)') or ('$(_AxialGuardrailsEffectiveMode)' == 'Fast' and !Exists('$(_AxialGuardrailsFastAssembly)'))" />
-    <Error Code="AXGINF001" Condition="!Exists('$(_AxialGuardrailsTaskAssembly)')" Text="Guardrails task-load failure: $(_AxialGuardrailsTaskAssembly) is missing. Restore/reinstall the package." />
+    <!-- AxialGuardrailsValidateTask has already failed the build if the task assembly is missing. -->
+    <Delete Files="$(_AxialGuardrailsStampFile)" Condition="'$(_AxialGuardrailsEffectiveMode)' == 'Fast' and !Exists('$(_AxialGuardrailsFastAssembly)')" />
     <Error Code="AXGINF001" Condition="'$(_AxialGuardrailsEffectiveMode)' == 'Fast' and !Exists('$(_AxialGuardrailsFastAssembly)')" Text="Fast task-load failure: $(_AxialGuardrailsFastAssembly) is missing. Restore/reinstall the package." />
     <PropertyGroup Condition="'$(AxialGuardrailsTimings)' == 'true'">
       <_AxialGuardrailsFingerprintStart>$([System.DateTime]::UtcNow.Ticks)</_AxialGuardrailsFingerprintStart>
