@@ -151,6 +151,15 @@ let taskSiteCount (config: GuardrailConfig.Config) fileName (source: ISourceText
       Findings = guided.Length
       Acknowledged = guided |> List.filter (fun site -> (TaskSurfaceSyntax.acknowledgement source site.Range).IsSome) |> List.length }
 
+/// The `taskSites` record that Fast and Full add to a file's TaskSurface coverage in the build result, so the
+/// result (and every cache replay of it) carries `axial check`'s trend. Both modes record Fast's count.
+let taskSites config fileName source tree =
+    let count = taskSiteCount config fileName source tree
+    System.Xml.Linq.XElement(System.Xml.Linq.XName.Get "taskSites",
+                             System.Xml.Linq.XAttribute(System.Xml.Linq.XName.Get "findings", count.Findings),
+                             System.Xml.Linq.XAttribute(System.Xml.Linq.XName.Get "acknowledged", count.Acknowledged),
+                             System.Xml.Linq.XAttribute(System.Xml.Linq.XName.Get "sites", count.Sites))
+
 let analyzeRule requested (config: GuardrailConfig.Config) fileName (source: ISourceText) tree =
     let wants rule = requested |> Option.forall ((=) rule)
     let nodes = ParsedInput.fold (fun nodes path node -> (path, node) :: nodes) [] tree |> List.rev

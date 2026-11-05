@@ -122,7 +122,11 @@ let analyzeWithConfig (config: GuardrailConfig.Config) (ctx: CliContext) : Messa
 /// Ranges of current findings, for `axial-note AXG014` validation.
 let liveRanges (config: GuardrailConfig.Config) (ctx: CliContext) = analyzeWithConfig config ctx |> List.map _.Range
 
+/// Full records Fast's trend count, so `axial check` reads the same scale whichever mode built last.
+let private trend (ctx: CliContext) =
+    [ FastSyntax.taskSites (GuardrailConfig.load ()) ctx.FileName ctx.SourceText ctx.ParseFileResults.ParseTree ]
+
 [<CliAnalyzer("TaskSurface", "Guides raw Task out of domain code and keeps task bridges thin.",
               "https://github.com/adz/Axial/blob/main/docs/guardrails/02-diagnostics.md#axg014-keep-raw-task-at-the-edge")>]
 let taskSurfaceAnalyzer: Analyzer<CliContext> =
-    fun ctx -> Execution.track "TaskSurface" (fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) ctx }) ctx
+    fun ctx -> Execution.trackWith trend "TaskSurface" (fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) ctx }) ctx

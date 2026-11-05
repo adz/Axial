@@ -97,6 +97,7 @@ let runWith
                         try
                             for _, finding in visit (Some rule) config path source tree do
                                 entry.Add(XElement(xn "finding", attribute "code" finding.Code, attribute "severity" (string finding.Severity), attribute "line" finding.Range.StartLine, attribute "column" finding.Range.StartColumn, finding.Message))
+                            if rule = "TaskSurface" then entry.Add(FastSyntax.taskSites config path source tree)
                         with error ->
                             complete <- false
                             entry.SetAttributeValue(xn "status", "skipped")

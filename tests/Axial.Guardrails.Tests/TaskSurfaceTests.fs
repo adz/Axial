@@ -222,19 +222,34 @@ module TaskSurfaceTests =
     [<InlineData("domain", "[runtime]\nfiles = [\"Fast.fs\"]\n", "let run () = task { return 1 }", 0, 0, 1)>]
     [<InlineData("domain", "[files]\ncapabilities = [\"Fast.fs\"]\n", "let run () = task { return 1 }", 0, 0, 1)>]
     [<InlineData("test", "", "let run () = task {\n    do! System.Threading.Tasks.Task.Yield()\n    do! System.Threading.Tasks.Task.Yield() }", 0, 0, 1)>]
-    let ``axial check's raw Task trend counts on AXG014's scale with roles tiers and overrides``
+    let ``the recorded raw Task trend counts on AXG014's scale with roles tiers and overrides``
         (role: string) (extra: string) (body: string) (findings: int) (acknowledged: int) (sites: int) =
         withPolicy role extra [] (fun config path ->
             let source = "module M\n" + body + "\n"
-            let count = Axial.Tool.RawTaskCount.countSource config path source
-            Assert.Equal((findings, acknowledged, sites), (count.Findings, count.Acknowledged, count.Sites))
+            let record = FastSyntax.taskSites config path (SourceText.ofString source) (parse path source)
+            let count name = int (record.Attribute(XName.Get name).Value)
+            Assert.Equal((findings, acknowledged, sites), (count "findings", count "acknowledged", count "sites"))
             // The trend's findings are exactly Fast's AXG014 findings.
             Assert.Equal(findings, (fast config path source).Length))
 
     [<Fact>]
-    let ``fixing an AXG014 finding lowers the trend`` () =
-        withPolicy "domain" "" [] (fun config path ->
-            let before = Axial.Tool.RawTaskCount.countSource config path "module M\nlet run () = task { return 1 }\nlet other () = task { return 2 }\n"
-            let after = Axial.Tool.RawTaskCount.countSource config path "module M\nopen Axial\nlet run () : Flow<unit, string, int> = flow { return 1 }\nlet other () = task { return 2 }\n"
-            Assert.Equal(2, before.Findings)
-            Assert.Equal(1, after.Findings))
+    let ``the Fast result records each file's trend counts, replays them from the cache and lowers them on a fix`` () =
+        withDirectory (fun dir ->
+            let source = Path.Combine(dir, "App.fs")
+            let policy = Path.Combine(dir, "Axial.Guardrails.toml")
+            File.WriteAllText(policy, "version = 2\n[default]\nrole = \"domain\"\n")
+            let config = Path.Combine(dir, "rules")
+            File.WriteAllLines(config, [ "guardrail\tAxial"; $"setting\tpolicyRoot\t{dir}"; $"setting\tpolicyFile\t{policy}"; $"setting\tprojectPath\t{dir}/App.fsproj" ])
+            let recorded () =
+                let result = FastRunner.runWith realParse FastSyntax.analyzeRule (fastRequest dir config [ source ]) |> XElement.Parse
+                let entry = result.Elements(XName.Get "coverage") |> Seq.filter (fun e -> e.Attribute(XName.Get "rule").Value = "TaskSurface") |> Seq.exactlyOne
+                let record = entry.Element(XName.Get "taskSites")
+                let count name = int (record.Attribute(XName.Get name).Value)
+                // The recorded findings are the AXG014 findings the same entry reports.
+                Assert.Equal(entry.Elements(XName.Get "finding") |> Seq.length, count "findings")
+                entry.Attribute(XName.Get "cacheHit").Value, (count "findings", count "acknowledged", count "sites")
+            File.WriteAllText(source, "module App\nlet run () = task { return 1 }\n// axial-note AXG014: interop entry point for a .NET host\nlet other () = task { return 2 }\n")
+            Assert.Equal(("false", (2, 1, 2)), recorded ())
+            Assert.Equal(("true", (2, 1, 2)), recorded ())
+            File.WriteAllText(source, "module App\nopen Axial\nlet run () : Flow<unit, string, int> = flow { return 1 }\n// axial-note AXG014: interop entry point for a .NET host\nlet other () = task { return 2 }\n")
+            Assert.Equal(("false", (1, 1, 1)), recorded ()))

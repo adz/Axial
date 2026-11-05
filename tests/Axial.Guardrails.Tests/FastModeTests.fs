@@ -228,6 +228,27 @@ public static string Run(string input) {
         Assert.Contains("AXG014", snd result))
 
     [<Fact>]
+    let ``Fast and Full results record the same raw Task trend and cache replays keep it`` () = withFixture (fun dir ->
+        File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet value = 1\n")
+        File.WriteAllText(Path.Combine(dir, "Other.fs"), "module Other\nlet pending () = task { return 1 }\n// axial-note AXG014: interop entry point for a .NET host\nlet noted () = task { return 2 }\n")
+        let trend (doc: XDocument) =
+            let records = doc.Root.Elements(XName.Get "coverage") |> Seq.filter (fun e -> attr "rule" e = "TaskSurface") |> Seq.map (fun e -> e.Element(XName.Get "taskSites")) |> Seq.toList
+            Assert.NotEmpty records
+            Assert.DoesNotContain(null, records)
+            let total name = records |> List.sumBy (fun e -> int (attr name e))
+            total "findings", total "acknowledged", total "sites"
+        checkSuccess (build dir ["-p:AxialGuardrailsMode=Fast"])
+        let fast = report dir
+        Assert.Equal((2, 1, 2), trend fast)
+        let replay = build dir ["-p:AxialGuardrailsMode=Fast"]
+        checkSuccess replay
+        Assert.DoesNotContain("Running Axial.Guardrails analysis", snd replay)
+        Assert.True(XNode.DeepEquals(fast, report dir))
+        checkSuccess (build dir ["-p:AxialGuardrailsMode=Full"])
+        Assert.Equal("Full", attr "mode" (report dir).Root)
+        Assert.Equal((2, 1, 2), trend (report dir)))
+
+    [<Fact>]
     let ``Full AXG014 guides never block even at a checkpoint under warnings as errors`` () = withFixture (fun dir ->
         File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet run () = task { return 1 }\n")
         let result = build dir ["-p:AxialGuardrailsMode=Full"; "-p:AxialGuardrailsCheckpoint=true"; "-warnaserror"; "-p:TreatWarningsAsErrors=true"]

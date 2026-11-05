@@ -29,7 +29,8 @@ let private attribute name (value: obj) =
     let safe = match value with :? string as text -> box (xmlText text) | _ -> value
     XAttribute(XName.Get name, safe)
 
-let track (rule: string) (analyzer: Analyzer<CliContext>) : Analyzer<CliContext> =
+/// `record` adds per-file data to the rule's coverage entry (TaskSurface: `axial check`'s trend counts).
+let trackWith (record: CliContext -> XElement list) (rule: string) (analyzer: Analyzer<CliContext>) : Analyzer<CliContext> =
     fun ctx -> async {
         // Invalid user configuration is not an analyzer failure.
         GuardrailConfig.rejectRemovedSeverity ()
@@ -41,16 +42,16 @@ let track (rule: string) (analyzer: Analyzer<CliContext>) : Analyzer<CliContext>
                 match GuardrailConfig.shouldRunAnalyzer (GuardrailConfig.load ()) rule with
                 | Ok true ->
                     let! findings = analyzer ctx
-                    return Ok findings
+                    return Ok(findings, record ctx)
                 // A policy-selected empty result is complete coverage, not an infrastructure skip.
-                | Ok false -> return Ok []
+                | Ok false -> return Ok([], record ctx)
                 | Error reason -> return Error reason
             with error -> return Error error.Message
         }
-        let findings, skipped, reason =
+        let findings, records, skipped, reason =
             match outcome with
-            | Ok findings -> findings, false, ""
-            | Error reason -> [], true, reason
+            | Ok(findings, records) -> findings, records, false, ""
+            | Error reason -> [], [], true, reason
         if not (String.IsNullOrEmpty directory) then
             try
                 let entry = XElement(XName.Get "coverage",
@@ -65,6 +66,7 @@ let track (rule: string) (analyzer: Analyzer<CliContext>) : Analyzer<CliContext>
                 match GuardrailConfig.skipReason (GuardrailConfig.load ()) ctx.FileName with
                 | Some skip -> entry.Add(XElement(XName.Get "skip", attribute "file" ctx.FileName, attribute "reason" skip))
                 | None -> ()
+                for element in records do entry.Add element
                 for finding in findings do
                     entry.Add(XElement(XName.Get "finding",
                                        attribute "code" finding.Code,
@@ -86,3 +88,5 @@ let track (rule: string) (analyzer: Analyzer<CliContext>) : Analyzer<CliContext>
             Console.Error.WriteLine($"Axial.Guardrails infrastructure: {rule} skipped {ctx.FileName}: {reason}")
         return findings
     }
+
+let track rule analyzer = trackWith (fun _ -> []) rule analyzer

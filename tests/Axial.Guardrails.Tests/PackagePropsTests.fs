@@ -532,11 +532,11 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
         for file in Directory.GetFiles(root, "*.fs") do
             let text = File.ReadAllText file
             entries <- entries @ matches "CliAnalyzer\\(\"([^\"]+)\"" text
-            tracked <- tracked @ matches "Execution.track \"([^\"]+)\"" text
+            tracked <- tracked @ matches "Execution.track(?:With \\w+)? \"([^\"]+)\"" text
             // Check each entry's body, not merely the aggregate set.
             for block in System.Text.RegularExpressions.Regex.Split(text, "\\[<CliAnalyzer") |> Array.skip 1 do
                 let name = matches "^\\(\"([^\"]+)\"" block |> List.exactlyOne
-                Assert.Contains($"Execution.track \"{name}\"", block)
+                Assert.Matches($"Execution.track(?:With \\w+)? \"{name}\"", block)
         let xml = System.Xml.Linq.XDocument.Load(Path.Combine(root, "build", "Axial.Guardrails.targets"))
         let rules = (xml.Descendants(System.Xml.Linq.XName.Get "_AxialGuardrailsRules") |> Seq.exactlyOne).Value.Split(';') |> Array.toList
         Assert.NotEmpty entries

@@ -80,9 +80,9 @@
     <Compile Include="DiscardedCancellationAnalyzer.fs" />
     <Compile Include="ReflectionFormattingAnalyzer.fs" />
     <Compile Include="ConcurrencyHazardsAnalyzer.fs" />
+    <Compile Include="FastSyntax.fs" />
     <Compile Include="TaskSurfaceAnalyzer.fs" />
     <Compile Include="SuppressionIntegrityAnalyzer.fs" />
-    <Compile Include="FastSyntax.fs" />
     <Compile Include="FastRunner.fs" />
   </ItemGroup>
 
