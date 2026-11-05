@@ -467,7 +467,12 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
             if recordFailure then
                 let file = Path.Combine(plugin, "Plugin.fs")
                 let text = File.ReadAllText file
-                File.WriteAllText(file, text.Replace("return failwith (\"injected rule failure\" + string (char 1))", "let directory = System.Environment.GetEnvironmentVariable \"AXIAL_GUARDRAILS_RUN\" in System.IO.Directory.Delete(directory, true); System.IO.File.WriteAllText(directory, \"blocked\"); return []"))
+                // The rule's own record cannot be serialized (U+0001 in an analyzer-supplied element), so only its
+                // publication fails; the shared run directory and the other rules' records are untouched.
+                let injected = "let analyzer: Analyzer<CliContext> = Axial.Guardrails.Execution.track \"InjectedFailure\" (fun _ -> async { return failwith (\"injected rule failure\" + string (char 1)) })"
+                let unrecordable = "let analyzer: Analyzer<CliContext> = Axial.Guardrails.Execution.trackWith (fun _ -> [ System.Xml.Linq.XElement(System.Xml.Linq.XName.Get \"unrecordable\", \"bad\" + string (char 1)) ]) \"InjectedFailure\" (fun _ -> async { return [] })"
+                Assert.Contains(injected, text)
+                File.WriteAllText(file, text.Replace(injected, unrecordable))
             let compiled = runBuild (Path.Combine(plugin, "Plugin.fsproj")) None
             Assert.True(compiled.ExitCode = 0, compiled.Output)
             writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework><TreatWarningsAsErrors>true</TreatWarningsAsErrors>" "module Consumer\nlet value = 1\n"
@@ -483,7 +488,23 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
             if recordFailure then
                 Assert.True(result.Output.Contains "InjectedFailure could not record", result.Output)
                 Assert.Contains("Program.fs", result.Output)
+                Assert.Contains("invalid character", result.Output)
+                Assert.Contains("retained finding", result.Output)
                 Assert.Empty(Directory.GetFiles(dir, "axial-guardrails.net10.0.stamp", SearchOption.AllDirectories))
+                let report = Directory.GetFiles(dir, "axial-guardrails.*.result.xml", SearchOption.AllDirectories) |> Array.exactlyOne
+                let document = System.Xml.Linq.XDocument.Load report
+                Assert.Equal("false", document.Root.Attribute(System.Xml.Linq.XName.Get "complete").Value)
+                let coverage = document.Root.Elements(System.Xml.Linq.XName.Get "coverage") |> Seq.toArray
+                let attr (name: string) (entry: System.Xml.Linq.XElement) = match entry.Attribute(System.Xml.Linq.XName.Get name) with null -> "" | value -> value.Value
+                let program (entry: System.Xml.Linq.XElement) = (attr "file" entry).EndsWith("Program.fs")
+                // Only the injected rule's own record is missing; every other rule's record was published.
+                Assert.DoesNotContain(coverage, fun entry -> attr "rule" entry = "InjectedFailure" && program entry)
+                Assert.DoesNotContain(coverage, fun entry -> attr "status" entry = "skipped")
+                let retained = coverage |> Array.filter (fun entry -> attr "rule" entry = "InjectedFinding" && program entry) |> Array.exactlyOne
+                Assert.Equal("ran", attr "status" retained)
+                Assert.Contains("retained finding", retained.ToString())
+                Assert.Contains(coverage, fun entry -> attr "rule" entry = "EffectBoundary" && program entry && attr "status" entry = "ran")
+                Assert.Empty(Directory.GetDirectories(dir, "*.run", SearchOption.AllDirectories))
             else
                 Assert.Contains("retained finding", result.Output)
                 Assert.Contains("InjectedFailure skipped", result.Output)
