@@ -85,20 +85,58 @@ module PolicyReviewTests =
             write "App.fs" "module App\n// axial-allow-AXG001: another foreign boundary\n"
             Assert.NotEqual<string>(state (snd first), state (snd (cli ["check"; "--build"]))))
 
+    /// The Guardrails result a Fast build of App.fsproj writes under `directory`, from the real Fast runner.
+    let private recordResult (root: string) (directory: string) =
+        let source = Path.Combine(root, "App.fs")
+        let rules = Path.Combine(root, "obj", "rules")
+        Directory.CreateDirectory(Path.GetDirectoryName rules) |> ignore
+        let policy, project, cache = Path.Combine(root, "obj", "build.toml"), Path.Combine(root, "App.fsproj"), Path.Combine(root, "obj", "cache")
+        // The build's policy view: the fixture's default role (its `clock.datetime` rule is not a build rule).
+        File.WriteAllText(policy, "version = 2\n[default]\nrole = \"domain\"\n")
+        File.WriteAllLines(rules, [ "guardrail\tAxial"; $"setting\tpolicyRoot\t{root}"; $"setting\tpolicyFile\t{policy}"; $"setting\tprojectPath\t{project}" ])
+        let request = $"<request config=\"{rules}\" context=\"test\" cache=\"{cache}\" langVersion=\"preview\"><file>{source}</file></request>"
+        let checker = FSharp.Compiler.CodeAnalysis.FSharpChecker.Create()
+        let parse (path: string) (source: FSharp.Compiler.Text.ISourceText) (options: FSharp.Compiler.CodeAnalysis.FSharpParsingOptions) = checker.ParseFile(path, source, options) |> Async.RunSynchronously |> _.ParseTree
+        let fast = Axial.Guardrails.FastRunner.runWith parse Axial.Guardrails.FastSyntax.analyzeRule request |> System.Xml.Linq.XElement.Parse
+        let result = System.Xml.Linq.XElement(System.Xml.Linq.XName.Get "result", fast.Elements(System.Xml.Linq.XName.Get "coverage"))
+        for name, value in [ "schema", "1"; "mode", "Fast"; "project", project; "targetFramework", "net8.0"; "complete", "true" ] do
+            result.SetAttributeValue(System.Xml.Linq.XName.Get name, value)
+        let path = Path.Combine(root, directory, "axial-guardrails.net8.0.result.xml")
+        Directory.CreateDirectory(Path.GetDirectoryName path) |> ignore
+        result.Save path
+        path
+
     [<Fact>]
-    let ``check reports a per-project raw Task trend in text and json`` () =
-        repository (fun _ write _ cli ->
+    let ``check reports the per-project raw Task trend recorded by the latest build in text and json`` () =
+        repository (fun root write _ cli ->
             write "App.fs" "module App\nlet run () : System.Threading.Tasks.Task<int> = task { return 1 }\n"
+            // No build, no trend: the tool reports it rather than computing one.
+            let code, output = cli ["check"]
+            Assert.Equal(0, code)
+            Assert.Contains("App.fsproj", output)
+            Assert.Contains("not built yet — run a build", output)
+            let code, json = cli ["check"; "--json"]
+            Assert.Equal(0, code)
+            let project = System.Text.Json.JsonDocument.Parse(json.Trim()).RootElement.GetProperty("rawTask")[0]
+            Assert.False(project.GetProperty("built").GetBoolean())
+            Assert.Equal(System.Text.Json.JsonValueKind.Null, project.GetProperty("findings").ValueKind)
+            // An older record of an earlier source, then the latest build's record.
+            write "App.fs" "module App\nlet run () = 1\n"
+            let older = recordResult root "artifacts/obj/App/debug"
+            File.SetLastWriteTimeUtc(older, DateTime.UtcNow.AddMinutes -5.0)
+            write "App.fs" "module App\nlet run () : System.Threading.Tasks.Task<int> = task { return 1 }\n"
+            recordResult root "obj/Debug/net8.0" |> ignore
             let code, output = cli ["check"]
             Assert.Equal(0, code)
             Assert.Contains("Raw Task (AXG014 trend, not a gate): 2 AXG014 findings (0 acknowledged); 2 raw task sites in 1 of 1 projects.", output)
-            Assert.Contains("App.fsproj", output)
+            Assert.DoesNotContain("not built yet", output)
             let code, json = cli ["check"; "--json"]
             Assert.Equal(0, code)
             let document = System.Text.Json.JsonDocument.Parse(json.Trim())
             let project = document.RootElement.GetProperty("rawTask")[0]
             Assert.Equal("App.fsproj", project.GetProperty("project").GetString())
             Assert.Equal("domain", project.GetProperty("role").GetString())
+            Assert.True(project.GetProperty("built").GetBoolean())
             Assert.Equal(2, project.GetProperty("findings").GetInt32())
             Assert.Equal(0, project.GetProperty("acknowledged").GetInt32())
             Assert.Equal(2, project.GetProperty("sites").GetInt32()))

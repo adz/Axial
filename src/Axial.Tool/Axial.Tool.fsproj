@@ -17,17 +17,11 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="FullCheck.targets" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Compile Include="../Axial.Guardrails/Policy.fs" Link="Policy.fs" />
     <Compile Include="Command.fs" />
     <Compile Include="PolicyLock.fs" />
     <Compile Include="RawTaskCount.fs" />
     <Compile Include="PolicyReview.fs" />
     <Compile Include="Program.fs" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- The raw-Task trend reuses Fast's AXG014 visitor and policy semantics rather than a separate detector. -->
-    <ProjectReference Include="../Axial.Guardrails/Axial.Guardrails.fsproj" />
-    <PackageReference Include="FSharp.Analyzers.SDK" Version="0.37.2" />
-    <!-- FCS requires its exact FSharp.Core, as the analyzer project pins it. -->
-    <PackageReference Update="FSharp.Core" Version="10.1.201" />
   </ItemGroup>
 </Project>

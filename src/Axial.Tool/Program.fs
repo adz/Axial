@@ -10,7 +10,9 @@ module Program =
   1. axial init [--ci github|gitlab|bitbucket|other]
   2. axial check [--full [--configuration <name>]]
      Without --full: compares policy with the lock (drift warns, never fails) and prints a per-project raw-Task
-     trend (AXG014 findings in scope and all raw task sites; --json field rawTask). Builds run `check --build` (no trend); the build shows one drift line per drift state.
+     trend read from each project's latest Guardrails build result (AXG014 findings in scope and all raw task
+     sites; a project without one is "not built yet"; --json field rawTask). Builds run `check --build` (no trend);
+     the build shows one drift line per drift state.
      --full checks policy review first, then builds every solution project/TFM in Full mode
      (Release by default), requires complete coverage and rejects Error findings.
      Never writes a lock or baseline.
@@ -67,8 +69,9 @@ Approval means a human read the review. The first review requires --since <ref>.
     let private rawTaskJson (counts: RawTaskCount.ProjectCount list) =
         counts
         |> List.map (fun count ->
-            "{\"project\":" + jsonString count.Project + ",\"role\":" + jsonString count.Role
-            + ",\"findings\":" + string count.Findings + ",\"acknowledged\":" + string count.Acknowledged + ",\"sites\":" + string count.Sites + "}")
+            let number f = count.Counts |> Option.map (f >> string) |> Option.defaultValue "null"
+            "{\"project\":" + jsonString count.Project + ",\"role\":" + jsonString count.Role + ",\"built\":" + (if count.Counts.IsSome then "true" else "false")
+            + ",\"findings\":" + number _.Findings + ",\"acknowledged\":" + number _.Acknowledged + ",\"sites\":" + number _.Sites + "}")
         |> String.concat "," |> fun content -> "[" + content + "]"
 
     /// `build` is the per-project build invocation: no trend summary. Every project/TFM of a build runs it; the build

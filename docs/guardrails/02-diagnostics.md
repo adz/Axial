@@ -500,7 +500,7 @@ names shadowed in the file and does not see aliases, abbreviations or unannotate
 `FSharp.Control.Tasks` (Ply, TaskBuilder.fs) may rebind `task`: Full reports only FSharp.Core's builders, and Fast
 does not claim `task` there. A binding such as `let run () = task { ... }` has one finding, the expression; its
 inferred Task signature is not reported again. Both apply the same role and composition rules. `axial check` prints a per-project count of Fast's AXG014 findings (and of all raw task
-sites) so the trend stays visible; it never gates.
+sites), recorded by the latest build, so the trend stays visible; it never gates.
 
 AXG009–AXG012 exempt the `test` role unless `AxialGuardrailsInTests=all` enables full test analysis. Host-role projects are exempt only when their
 repository-relative project path matches that rule's `[exemptions]` list in `Axial.Guardrails.toml`.

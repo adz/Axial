@@ -520,6 +520,14 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
         finally Directory.Delete(dir, true)
 
     [<Fact>]
+    let ``the policy tool references no analyzer or compiler service, so its packages stay lean`` () =
+        // The raw-Task trend is read from build results; the tool never parses F# itself.
+        let references = typeof<Axial.Tool.PolicyLock.Snapshot>.Assembly.GetReferencedAssemblies() |> Array.map _.Name
+        Assert.DoesNotContain("FSharp.Compiler.Service", references)
+        Assert.DoesNotContain("FSharp.Analyzers.SDK", references)
+        Assert.DoesNotContain("Axial.Guardrails.Analyzers", references)
+
+    [<Fact>]
     let ``slice1 every CLI entry point is tracked and included in the coverage contract`` () =
         let root = Path.Combine(repoRoot (), "src", "Axial.Guardrails")
         let matches pattern text =
