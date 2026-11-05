@@ -9,7 +9,7 @@
     <PackageId>Axial.Guardrails</PackageId>
     <Authors>Adam Davies</Authors>
     <PackageMaturity>Incubating</PackageMaturity>
-    <Description>FSharp.Analyzers.SDK analyzer that flags direct use of ambient effects (clock, randomness, GUIDs, console, filesystem, process, environment) so they stay explicit, mockable services instead of hidden dependencies.</Description>
+    <Description>Build-time guardrails for F# code using Axial: flags ambient effects (clock, randomness, GUIDs, console, filesystem, process, environment), exceptions in flows, shared test fixtures, raw concurrency and other effect-boundary mistakes. Fast syntax advice runs on every build and never fails it on guidance; Full mode and `axial check --full` (Axial.Tool) run the complete typed checks against a checked-in, reviewed policy.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

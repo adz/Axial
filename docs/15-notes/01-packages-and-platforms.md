@@ -26,6 +26,7 @@ runtime.
 | `Axial.Telemetry` | Yes | No | No | .NET `System.Diagnostics` and OpenTelemetry integration. |
 | `Axial.Telemetry.JavaScript` | No | Yes | Yes | Fable JavaScript span export; configure an exporter appropriate to the host. |
 | `Axial.Guardrails` | — | — | — | Build-time FSharp.Analyzers.SDK analyzer (`net8.0`). Runs during compilation of any project, including Fable ones, to flag direct ambient effects; not a runtime dependency. |
+| `Axial.Tool` (experimental) | — | — | — | .NET tool (`net8.0`) that installs the `axial` command: `axial init`, `axial check`, `axial check --full` and policy review for `Axial.Guardrails`. Install with `dotnet tool install Axial.Tool`; not a project dependency. |
 
 Each guide installs the package it teaches at first use: [Configuration](/configuration/), [Console](/console/console.html), [FileSystem](/filesystem/filesystem.html) and [Files](/filesystem/files.html), [WebSocket](/websocket/websocket.html), [Process](/process/), [HttpClient](/http/), [Hosting](/hosting/) ([Node](/hosting/node.html) and [Browser](/hosting/browser.html) for Fable), [Telemetry](/telemetry/index.html), and [Elmish flows](/elmish/elmish.html).
 
