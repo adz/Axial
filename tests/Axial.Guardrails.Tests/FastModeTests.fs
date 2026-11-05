@@ -198,12 +198,22 @@ public static string Run(string input) {
         Assert.Empty(Directory.GetFiles(dir, "*.stamp", SearchOption.AllDirectories)))
 
     [<Fact>]
-    let ``Framework fallback uses effective Full mode even with global Fast property`` () = withFixture (fun dir ->
-        let code, output = build dir ["-p:AxialGuardrailsMode=Fast"; "-p:_AxialGuardrailsFrameworkFallback=true"]
-        Assert.NotEqual(0, code)
-        Assert.Contains("Framework MSBuild uses out-of-process Full", output)
+    let ``Framework fallback runs Full but caps findings at Fast severity outside checkpoints`` () = withFixture (fun dir ->
+        // Simulates Visual Studio's MSBuild requesting Fast; real Framework MSBuild is not available here.
+        let fallback = ["-p:AxialGuardrailsMode=Fast"; "-p:_AxialGuardrailsFrameworkFallback=true"]
+        let capped = build dir fallback
+        checkSuccess capped
+        Assert.Contains("Framework MSBuild uses out-of-process Full", snd capped)
         Assert.Equal("Full", attr "mode" (report dir).Root)
-        Assert.Contains("AXG001", output))
+        Assert.Contains("warning AXG001", snd capped)
+        Assert.DoesNotContain("error AXG001", snd capped)
+        // A checkpoint keeps policy severity, as does an explicit Full build.
+        let code, output = build dir (fallback @ ["-p:AxialGuardrailsCheckpoint=true"])
+        Assert.NotEqual(0, code)
+        Assert.Contains("error AXG001", output)
+        let code, output = build dir ["-p:AxialGuardrailsMode=Full"]
+        Assert.NotEqual(0, code)
+        Assert.Contains("error AXG001", output))
 
     [<Fact>]
     let ``Fast exact fixture findings warn and cached findings still warn`` () = withFixture (fun dir ->

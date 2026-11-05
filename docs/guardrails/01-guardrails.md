@@ -68,7 +68,10 @@ On .NET MSBuild, a collectible, isolated load context owns FCS, FSharp.Core and 
 bind to FSharp.Build's copies. Each loaded task version retains at most one such context, replacing it when its tool
 identity changes. Policy/configuration is passed explicitly per request, not through process environment variables. Per-file results are content-keyed on disk. Framework MSBuild (Visual Studio)
 cannot load the net8 parser safely: requesting Fast there explicitly falls back to out-of-process Full and says so.
-Use `dotnet build` for Fast feedback. When sources are newer than the assembly, a background warm-up loads the isolated parser and parses
+Outside checkpoints that fallback reports no more severely than Fast: Error findings (for example AXG001 or AXG004
+at `deny`) become warnings, so a Visual Studio build fails on guidance no more than `dotnet build` does. The targets
+pass this to the analyzers explicitly (`severityCap` in the rules file); with `AxialGuardrailsCheckpoint=true` the
+fallback keeps policy severity. Use `dotnet build` for Fast feedback. When sources are newer than the assembly, a background warm-up loads the isolated parser and parses
 the newest source while CoreCompile runs; it writes nothing and cannot change the outcome. Without it, a one-file
 edit in a fresh build process paid about a second of FCS JIT time. Parsing uses the current `DefineConstants`, `LangVersion`, `OutputType`
 and direct `OtherFlags`, even when CoreCompile reuses an old compiler-argument snapshot. Response files in

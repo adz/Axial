@@ -39,10 +39,11 @@ let trackWith (record: CliContext -> XElement list) (rule: string) (analyzer: An
         let timer = if timed then Some(Stopwatch.StartNew()) else None
         let! outcome = async {
             try
-                match GuardrailConfig.shouldRunAnalyzer (GuardrailConfig.load ()) rule with
+                let config = GuardrailConfig.load ()
+                match GuardrailConfig.shouldRunAnalyzer config rule with
                 | Ok true ->
                     let! findings = analyzer ctx
-                    return Ok(findings, record ctx)
+                    return Ok(GuardrailConfig.capSeverity config findings, record ctx)
                 // A policy-selected empty result is complete coverage, not an infrastructure skip.
                 | Ok false -> return Ok([], record ctx)
                 | Error reason -> return Error reason

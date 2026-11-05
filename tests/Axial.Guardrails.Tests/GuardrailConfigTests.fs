@@ -24,6 +24,16 @@ module GuardrailConfigTests =
         }
 
     [<Fact>]
+    let ``severityCap Fast turns Error findings into warnings and rejects unknown caps`` () =
+        let capped = GuardrailConfig.parse [ "setting\tseverityCap\tFast" ]
+        test <@ capped.FastSeverityCap && not (GuardrailConfig.parse []).FastSeverityCap @>
+        let message severity =
+            { Type = "t"; Message = "m"; Code = "AXG001"; Severity = severity; Range = FSharp.Compiler.Text.Range.range0; Fixes = [] }
+        test <@ GuardrailConfig.capSeverity capped [ message Severity.Error; message Severity.Info ] |> List.map _.Severity = [ Severity.Warning; Severity.Info ] @>
+        test <@ GuardrailConfig.capSeverity GuardrailConfig.defaults [ message Severity.Error ] |> List.map _.Severity = [ Severity.Error ] @>
+        raises<System.ArgumentException> <@ GuardrailConfig.parse [ "setting\tseverityCap\tfast" ] @>
+
+    [<Fact>]
     let ``parse reads enabled guardrails, severities, and contributed rules`` () =
         let config =
             GuardrailConfig.parse

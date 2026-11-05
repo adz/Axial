@@ -10,6 +10,9 @@
     <_AxialGuardrailsFrameworkFallback Condition="'$(MSBuildRuntimeType)' == 'Full' and '$(AxialGuardrailsMode)' == 'Fast'">true</_AxialGuardrailsFrameworkFallback>
     <_AxialGuardrailsEffectiveMode>$(AxialGuardrailsMode)</_AxialGuardrailsEffectiveMode>
     <_AxialGuardrailsEffectiveMode Condition="'$(_AxialGuardrailsFrameworkFallback)' == 'true'">Full</_AxialGuardrailsEffectiveMode>
+    <!-- The fallback was asked for Fast, so outside checkpoints it reports no more severely than Fast would: Error
+         findings become warnings. Passed to the analyzers explicitly in the rules file. -->
+    <_AxialGuardrailsSeverityCap Condition="'$(_AxialGuardrailsFrameworkFallback)' == 'true' and '$(AxialGuardrailsCheckpoint)' != 'true'">Fast</_AxialGuardrailsSeverityCap>
     <AxialGuardrailsTimings Condition="'$(AxialGuardrailsTimings)' == ''">false</AxialGuardrailsTimings>
     <_AxialGuardrailsForce>false</_AxialGuardrailsForce>
     <_AxialGuardrailsFingerprintMilliseconds>0</_AxialGuardrailsFingerprintMilliseconds>
@@ -282,6 +285,7 @@
       <_AxialGuardrailsConfigLine Include="@(_AxialGuardrailsBaselineEntry->'baseline&#9;%(Identity)')" />
       <_AxialGuardrailsConfigLine Include="setting&#9;checkpoint&#9;$(AxialGuardrailsCheckpoint)" />
       <_AxialGuardrailsConfigLine Include="setting&#9;inTests&#9;$(AxialGuardrailsInTests)" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;severityCap&#9;$(_AxialGuardrailsSeverityCap)" Condition="'$(_AxialGuardrailsSeverityCap)' != ''" />
       <_AxialGuardrailsConfigLine Include="setting&#9;baselineOutput&#9;$(_AxialGuardrailsProposalFile)" Condition="'$(_AxialGuardrailsProposalFile)' != ''" />
       <_AxialGuardrailsConfigLine Include="setting&#9;baselineRule&#9;$(_AxialGuardrailsBaselineRuleCode)" Condition="'$(_AxialGuardrailsProposalFile)' != ''" />
       <_AxialGuardrailsConfigLine Include="setting&#9;baselineRoot&#9;$(_AxialGuardrailsBaselineRoot)" />
@@ -338,6 +342,7 @@
       <_AxialGuardrailsForce Condition="'$(_AxialGuardrailsBaselineProposalDirectory)' != ''">true</_AxialGuardrailsForce>
     </PropertyGroup>
     <Message Condition="'$(_AxialGuardrailsFrameworkFallback)' == 'true'" Importance="high" Text="Axial.Guardrails: Framework MSBuild uses out-of-process Full analysis; Fast requires dotnet MSBuild." />
+    <Message Condition="'$(_AxialGuardrailsSeverityCap)' == 'Fast'" Importance="high" Text="Axial.Guardrails: as in Fast, findings warn and never fail this build; checkpoints keep policy severity." />
     <PropertyGroup><_AxialGuardrailsTaskEntered>false</_AxialGuardrailsTaskEntered></PropertyGroup>
     <AxialGuardrailsTask Action="Run" Mode="$(_AxialGuardrailsEffectiveMode)" FastAssembly="$(_AxialGuardrailsFastAssembly)" OtherFlags="$(OtherFlags)" OutputType="$(OutputType)" Defines="$(DefineConstants)" LangVersion="$(LangVersion)" Project="$(MSBuildProjectFullPath)" TargetFramework="$(TargetFramework)"
           Command="$(_AxialGuardrailsExe) $(_AxialGuardrailsAnalysisInput) --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; --code-root &quot;$(MSBuildProjectDirectory)&quot;"

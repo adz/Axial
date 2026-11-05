@@ -5,7 +5,7 @@
 ///   guardrail  <name>
 ///   boundary   <absolute file path>
 ///   baseline   <rule id>  <repository-relative file>  <fingerprint>[ x<count>]
-///   setting    baselineRoot|baselineOutput|nativeAot|checkpoint  <value>
+///   setting    baselineRoot|baselineOutput|nativeAot|checkpoint|severityCap  <value>
 ///   rule       <id>  <guardrail>  <category>  <match>  <scope>  <message>  <replacement>
 module Axial.Guardrails.GuardrailConfig
 
@@ -32,6 +32,8 @@ type Config =
       EnabledGuardrails: Set<string>
       NativeAot: bool
       Checkpoint: bool
+      /// Framework MSBuild's Full fallback for a Fast request: findings report no more severely than Fast (no Error).
+      FastSeverityCap: bool
       InTests: string
       AllRules: EffectRule list
       BoundaryFiles: Set<string>
@@ -56,6 +58,7 @@ let defaults: Config =
     { EnabledGuardrails = builtInGuardrails
       NativeAot = false
       Checkpoint = false
+      FastSeverityCap = false
       InTests = ""
       AllRules = builtInRules
       // Direct analyzer hosts (not the MSBuild package) have no project item graph; preserve rule-unit-test support.
@@ -154,6 +157,11 @@ let parse (lines: string seq) : Config =
     { EnabledGuardrails = enabled
       NativeAot = nativeAot
       Checkpoint = setting "checkpoint" |> Option.exists (fun value -> String.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
+      FastSeverityCap =
+        match setting "severityCap" with
+        | None | Some "" -> false
+        | Some "Fast" -> true
+        | Some other -> invalidArg "lines" $"Unknown Guardrails severityCap '{other}'"
       InTests = setting "inTests" |> Option.defaultValue ""
       AllRules = builtInRules @ contributed
       BoundaryFiles =
@@ -449,6 +457,12 @@ let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: 
                 else Severity.Error
             { message with Message = (if tiered then message.Message else text); Severity = severity })
         |> List.filter (fun message -> message.Code <> "AXG001" || level <> Policy.Allow)
+
+/// Fast never reports a finding as an Error, so the capped fallback turns Error findings into warnings.
+let capSeverity (config: Config) (messages: Message list) =
+    if config.FastSeverityCap then
+        messages |> List.map (fun message -> if message.Severity = Severity.Error then { message with Severity = Severity.Warning } else message)
+    else messages
 
 let apply (guardrail: string) (ctx: CliContext) (messages: Message list) = applyWith (load ()) guardrail ctx messages
 
