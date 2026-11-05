@@ -80,6 +80,12 @@ let runWith
             let body, hit =
                 match cached with
                 | Some body -> XElement(body), true
+                // A source the build generated is not parsed: its coverage is complete and has no findings.
+                | None when GuardrailConfig.isGeneratedSource (config.GetAwaiter().GetResult()) path ->
+                    let body = XElement(xn "file")
+                    for rule in FastSyntax.rules do
+                        body.Add(XElement(xn "coverage", attribute "file" path, attribute "rule" rule, attribute "status" GuardrailConfig.ExcludedGeneratedStatus))
+                    body, false
                 | None ->
                     let source = SourceText.ofString text
                     let options = parsing.Value

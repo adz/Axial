@@ -346,6 +346,11 @@ public class AxialGuardrailsTask : Task
         }
     }
     string[] SourcePaths() => Files.Select(f => f.GetMetadata("FullPath")).Distinct().ToArray();
+    // Compile items under the project's intermediate output directory, resolved by the targets. The rules file lists
+    // the same paths, so the analyzers record them as excluded; any other status for them is incomplete coverage.
+    public ITaskItem[] ExcludedFiles { get; set; } = Array.Empty<ITaskItem>();
+    const string ExcludedGenerated = "excluded (generated)";
+    HashSet<string> ExcludedPaths() => new HashSet<string>(ExcludedFiles.Select(f => f.GetMetadata("FullPath")));
     static HashSet<(string, string)> Coverage(XElement root) => new HashSet<(string, string)>(
         root.Elements("coverage").Select(e => ((string)e.Attribute("file"), (string)e.Attribute("rule"))));
     void MissingCoverage(XElement root, string reason)
@@ -361,8 +366,10 @@ public class AxialGuardrailsTask : Task
         var entries = root.Elements("coverage").ToArray();
         var ran = Coverage(root);
         var paths = SourcePaths();
+        var excluded = ExcludedPaths();
         return entries.Length == paths.Length * Rules.Length && ran.Count == entries.Length &&
-            entries.All(e => (string)e.Attribute("status") == (Mode == "Fast" && !FastRules.Contains((string)e.Attribute("rule")) ? "deferred to full" : "ran")) &&
+            entries.All(e => (string)e.Attribute("status") == (excluded.Contains((string)e.Attribute("file")) ? ExcludedGenerated
+                : Mode == "Fast" && !FastRules.Contains((string)e.Attribute("rule")) ? "deferred to full" : "ran")) &&
             paths.All(path => Rules.All(rule => ran.Contains((path, rule))));
     }
     bool LoadCache(out XDocument cached)
@@ -548,9 +555,10 @@ public class AxialGuardrailsTask : Task
                 root.Add(fast.Elements("coverage"));
                 root.Add(fast.Elements("skip"));
                 infrastructure.AddRange(fast.Elements("failure").Select(e => $"Fast parse/visitor failed for {(string)e.Attribute("file")}: {e.Value}"));
+                var excluded = ExcludedPaths();
                 foreach (var path in SourcePaths())
                 foreach (var rule in Rules.Where(r => !FastRules.Contains(r)))
-                    root.Add(new XElement("coverage", new XAttribute("file", path), new XAttribute("rule", rule), new XAttribute("status", "deferred to full")));
+                    root.Add(new XElement("coverage", new XAttribute("file", path), new XAttribute("rule", rule), new XAttribute("status", excluded.Contains(path) ? ExcludedGenerated : "deferred to full")));
                 exit = 0;
             }
             else

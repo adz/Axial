@@ -41,24 +41,26 @@ let trackWith (record: CliContext -> XElement list) (rule: string) (analyzer: An
             try
                 let config = GuardrailConfig.load ()
                 match GuardrailConfig.shouldRunAnalyzer config rule with
+                // A generated source is complete coverage with no findings; its records (trend counts) are omitted.
+                | Ok _ when GuardrailConfig.isGeneratedSource config ctx.FileName -> return Ok([], [], true)
                 | Ok true ->
                     let! findings = analyzer ctx
-                    return Ok(GuardrailConfig.capSeverity config findings, record ctx)
+                    return Ok(GuardrailConfig.capSeverity config findings, record ctx, false)
                 // A policy-selected empty result is complete coverage, not an infrastructure skip.
-                | Ok false -> return Ok([], record ctx)
+                | Ok false -> return Ok([], record ctx, false)
                 | Error reason -> return Error reason
             with error -> return Error error.Message
         }
-        let findings, records, skipped, reason =
+        let findings, records, generated, skipped, reason =
             match outcome with
-            | Ok(findings, records) -> findings, records, false, ""
-            | Error reason -> [], [], true, reason
+            | Ok(findings, records, generated) -> findings, records, generated, false, ""
+            | Error reason -> [], [], false, true, reason
         if not (String.IsNullOrEmpty directory) then
             try
                 let entry = XElement(XName.Get "coverage",
                                      attribute "rule" rule,
                                      attribute "file" (Path.GetFullPath ctx.FileName),
-                                     attribute "status" (if skipped then "skipped" else "ran"),
+                                     attribute "status" (if skipped then "skipped" elif generated then GuardrailConfig.ExcludedGeneratedStatus else "ran"),
                                      attribute "reason" reason)
                 timer |> Option.iter (fun watch -> entry.Add(attribute "milliseconds" watch.Elapsed.TotalMilliseconds))
                 // The build replays this record as a warning on every build, including cache hits. A failure here is

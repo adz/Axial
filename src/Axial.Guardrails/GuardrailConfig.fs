@@ -4,6 +4,7 @@
 ///
 ///   guardrail  <name>
 ///   boundary   <absolute file path>
+///   generated  <absolute file path>   (a compile item under the project's intermediate output directory)
 ///   baseline   <rule id>  <repository-relative file>  <fingerprint>[ x<count>]
 ///   setting    baselineRoot|baselineOutput|nativeAot|checkpoint|severityCap  <value>
 ///   rule       <id>  <guardrail>  <category>  <match>  <scope>  <message>  <replacement>
@@ -37,6 +38,9 @@ type Config =
       InTests: string
       AllRules: EffectRule list
       BoundaryFiles: Set<string>
+      /// Compile items the build generated under its intermediate output directory. No rule checks them, and their
+      /// coverage is recorded as `excluded (generated)`: the consumer cannot edit generated code.
+      GeneratedFiles: Set<string>
       BaselineRoot: string
       Baseline: BaselineEntry list
       BaselineOutput: string option
@@ -63,6 +67,7 @@ let defaults: Config =
       AllRules = builtInRules
       // Direct analyzer hosts (not the MSBuild package) have no project item graph; preserve rule-unit-test support.
       BoundaryFiles = Set.singleton "*"
+      GeneratedFiles = Set.empty
       BaselineRoot = Directory.GetCurrentDirectory()
       Baseline = []
       BaselineOutput = None
@@ -111,6 +116,14 @@ let parse (lines: string seq) : Config =
         entries
         |> List.choose (function
             | _, _, [| "boundary"; path |] when path.Trim() <> "" ->
+                try Some(Path.GetFullPath(path.Trim())) with _ -> None
+            | _ -> None)
+        |> Set.ofList
+
+    let generated =
+        entries
+        |> List.choose (function
+            | _, _, [| "generated"; path |] when path.Trim() <> "" ->
                 try Some(Path.GetFullPath(path.Trim())) with _ -> None
             | _ -> None)
         |> Set.ofList
@@ -168,6 +181,7 @@ let parse (lines: string seq) : Config =
         match policy, policyRoot with
         | Some parsed, Some root -> parsed.Boundaries |> List.map (fun path -> Path.GetFullPath(Path.Combine(root, path))) |> Set.ofList
         | _ -> boundaries
+      GeneratedFiles = generated
       BaselineRoot = setting "baselineRoot" |> Option.defaultValue (Directory.GetCurrentDirectory())
       Baseline = baseline
       BaselineOutput = setting "baselineOutput" |> Option.filter ((<>) "")
@@ -276,11 +290,30 @@ let sourceClassification (config: Config) fileName =
     config.PolicyRoot
     |> Option.map (fun root -> classifyConfiguredSource config root fileName)
 
+let private resolvableFullPath (config: Config) (fileName: string) =
+    try
+        let basePath =
+            match sourceBaseDirectory config with
+            | Some directory -> directory
+            | None -> defaultArg config.PolicyRoot config.BaselineRoot
+        Some(Path.GetFullPath(fileName, basePath))
+    with _ -> None
+
+/// Whether the build declared this source as generated (see `GeneratedFiles`).
+let isGeneratedSource (config: Config) fileName =
+    not config.GeneratedFiles.IsEmpty
+    && (resolvableFullPath config fileName |> Option.exists config.GeneratedFiles.Contains)
+
+/// Coverage status of a source the build declared as generated; it counts as complete coverage.
+[<Literal>]
+let ExcludedGeneratedStatus = "excluded (generated)"
+
 let isSkippedSource (config: Config) fileName =
-    match sourceClassification config fileName with
-    | Some(Policy.ExternalSource)
-    | Some(Policy.InvalidSource _) -> true
-    | _ -> false
+    isGeneratedSource config fileName
+    || (match sourceClassification config fileName with
+        | Some(Policy.ExternalSource)
+        | Some(Policy.InvalidSource _) -> true
+        | _ -> false)
 
 let private tryRelative root path =
     try Some(Path.GetRelativePath(root, Path.GetFullPath path).Replace('\\', '/'))
@@ -375,14 +408,6 @@ let shouldRunAnalyzer config rule =
 /// Whether a project reports a code: all codes outside the reduced test set, otherwise only the test set's.
 let runsInProject config code = not (usesTestAnalyzerSet config) || reportsInTestSet code
 
-let private resolvableFullPath (config: Config) (fileName: string) =
-    try
-        let basePath =
-            match sourceBaseDirectory config with
-            | Some directory -> directory
-            | None -> defaultArg config.PolicyRoot config.BaselineRoot
-        Some(Path.GetFullPath(fileName, basePath))
-    with _ -> None
 
 /// Why a repository source cannot be checked as configured, as a sentence for warning AXGINF002, if it cannot. Hosts
 /// record this in their build report so every build, including cache replays and reused build nodes, shows it. An
@@ -390,6 +415,7 @@ let private resolvableFullPath (config: Config) (fileName: string) =
 /// default policy instead of its project's role. An external source is out of scope, not skipped.
 let skipReason (config: Config) fileName =
     let skipped detail = Some $"source path is unusable{detail}, so no rule checked this source; fix the path or exclude the file"
+    if isGeneratedSource config fileName then None else
     match sourceClassification config fileName with
     | Some(Policy.InvalidSource explanation) -> skipped $": {explanation}"
     | Some Policy.ExternalSource -> None

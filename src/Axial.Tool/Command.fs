@@ -51,7 +51,8 @@ module Coverage =
         attribute "complete" report.Root = Some "true" &&
         (mode |> Option.forall (fun requested -> attribute "mode" report.Root = Some requested)) &&
         (report.Root.Elements(XName.Get "coverage") |> Seq.forall (fun entry ->
-            attribute "status" entry = Some "ran" &&
+            // A source generated under the project's intermediate output directory is excluded by the build.
+            (attribute "status" entry = Some "ran" || attribute "status" entry = Some "excluded (generated)") &&
             (mode |> Option.forall (fun requested -> attribute "mode" entry = Some requested))))
 
     let identity path =
