@@ -347,7 +347,8 @@ public class AxialGuardrailsTask : Task
     }
     string[] SourcePaths() => Files.Select(f => f.GetMetadata("FullPath")).Distinct().ToArray();
     // Compile items under the project's intermediate output directory, resolved by the targets. The rules file lists
-    // the same paths, so the analyzers record them as excluded; any other status for them is incomplete coverage.
+    // the same paths, so the analyzers record them as excluded. A runner that checked one anyway ("ran") still covers
+    // it; a skipped or missing record is incomplete coverage.
     public ITaskItem[] ExcludedFiles { get; set; } = Array.Empty<ITaskItem>();
     const string ExcludedGenerated = "excluded (generated)";
     HashSet<string> ExcludedPaths() => new HashSet<string>(ExcludedFiles.Select(f => f.GetMetadata("FullPath")));
@@ -368,8 +369,9 @@ public class AxialGuardrailsTask : Task
         var paths = SourcePaths();
         var excluded = ExcludedPaths();
         return entries.Length == paths.Length * Rules.Length && ran.Count == entries.Length &&
-            entries.All(e => (string)e.Attribute("status") == (excluded.Contains((string)e.Attribute("file")) ? ExcludedGenerated
-                : Mode == "Fast" && !FastRules.Contains((string)e.Attribute("rule")) ? "deferred to full" : "ran")) &&
+            entries.All(e => excluded.Contains((string)e.Attribute("file"))
+                ? (string)e.Attribute("status") == ExcludedGenerated || (string)e.Attribute("status") == "ran"
+                : (string)e.Attribute("status") == (Mode == "Fast" && !FastRules.Contains((string)e.Attribute("rule")) ? "deferred to full" : "ran")) &&
             paths.All(path => Rules.All(rule => ran.Contains((path, rule))));
     }
     bool LoadCache(out XDocument cached)
@@ -662,7 +664,7 @@ public class AxialGuardrailsTask : Task
         }
         if (infrastructure.Count != 0)
         {
-            var skipped = root.Elements("coverage").Where(e => (string)e.Attribute("status") != "ran" && (string)e.Attribute("status") != "deferred to full").ToArray();
+            var skipped = root.Elements("coverage").Where(e => (string)e.Attribute("status") != "ran" && (string)e.Attribute("status") != "deferred to full" && (string)e.Attribute("status") != ExcludedGenerated).ToArray();
             var examples = string.Join("; ", skipped.Take(3).Select(e => $"{(string)e.Attribute("rule")} skipped {(string)e.Attribute("file")}: {(string)e.Attribute("reason")}"));
             var message = string.Join(" ", infrastructure) + $" {skipped.Length} skipped rule/file checks. " + examples;
             Log.LogError(null, "AXGINF001", null, null, 0, 0, 0, 0, message.Replace('\r', ' ').Replace('\n', ' '));

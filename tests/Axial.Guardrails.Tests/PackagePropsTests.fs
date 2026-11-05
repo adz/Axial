@@ -164,8 +164,9 @@ module PackagePropsTests =
                 Directory.GetFiles(dir, "*.result.xml", SearchOption.AllDirectories)
                 |> Array.exactlyOne |> System.Xml.Linq.XDocument.Load
             let attribute name = (report ()).Root.Attribute(System.Xml.Linq.XName.Get name).Value
+            // Normal verbosity: a cached Fast AXG001 is Info, which replays below the minimal console.
             let build mode environment extra =
-                let args = extra @ (mode |> Option.map (fun value -> ["-p:AxialGuardrailsMode=" + value]) |> Option.defaultValue [])
+                let args = "-v:normal" :: extra @ (mode |> Option.map (fun value -> ["-p:AxialGuardrailsMode=" + value]) |> Option.defaultValue [])
                 let result = runBuildWithEnvironment environment args project None
                 Assert.True(result.ExitCode = 0, result.Output)
                 Assert.Contains("AXG001", result.Output)
@@ -480,7 +481,7 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
             Assert.True(result.Output.Contains("error AXGINF001"), result.Output)
             Assert.DoesNotContain("warning AXGINF001", result.Output)
             if recordFailure then
-                Assert.Contains("InjectedFailure could not record", result.Output)
+                Assert.True(result.Output.Contains "InjectedFailure could not record", result.Output)
                 Assert.Contains("Program.fs", result.Output)
                 Assert.Empty(Directory.GetFiles(dir, "axial-guardrails.net10.0.stamp", SearchOption.AllDirectories))
             else

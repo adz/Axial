@@ -70,7 +70,8 @@ module FastModeTests =
     let ``Fast never launches the analyzer CLI and cache replays hints`` () = withFixture (fun dir ->
         let args = ["-p:AxialGuardrailsMode=Fast"; "-p:_AxialGuardrailsExe=DO_NOT_LAUNCH"; "-p:_AxialGuardrailsUsesPackagedTool=true"]
         checkSuccess (build dir args)
-        let second = build dir args
+        // A cached Info replays at normal verbosity, below the minimal console.
+        let second = build dir (args @ ["-v:normal"])
         checkSuccess second
         Assert.Contains("fast/unverified", snd second)
         Assert.DoesNotContain("Running Axial.Guardrails analysis", snd second))
@@ -242,7 +243,8 @@ public static string Run(string input) {
         File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet value = 1\n")
         File.WriteAllText(Path.Combine(dir, "Other.fs"), "module Other\nlet pending () = task { return 1 }\n// axial-note AXG014: interop entry point for a .NET host\nlet noted () = task { return 2 }\n")
         let trend (doc: XDocument) =
-            let records = doc.Root.Elements(XName.Get "coverage") |> Seq.filter (fun e -> attr "rule" e = "TaskSurface") |> Seq.map (fun e -> e.Element(XName.Get "taskSites")) |> Seq.toList
+            // Generated sources under obj/ (AssemblyInfo) are excluded and carry no trend record.
+            let records = doc.Root.Elements(XName.Get "coverage") |> Seq.filter (fun e -> attr "rule" e = "TaskSurface" && attr "status" e <> "excluded (generated)") |> Seq.map (fun e -> e.Element(XName.Get "taskSites")) |> Seq.toList
             Assert.NotEmpty records
             Assert.DoesNotContain(null, records)
             let total name = records |> List.sumBy (fun e -> int (attr name e))
