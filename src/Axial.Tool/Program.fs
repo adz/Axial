@@ -114,12 +114,19 @@ Approval means a human read the review. The first review requires --since <ref>.
                             emit asJson false ("Full analysis coverage collector is missing: " + expectedTarget + ". Reinstall Axial.Tool.")
                         else
                             Directory.CreateDirectory directory |> ignore
-                            let code, _, _ = Command.run (root()) "dotnet"
-                                                [ "build"; solutions[0]; "--configuration"; configuration; "--nologo"; "-v"; "minimal"; "-nodeReuse:false"
-                                                  "-p:AxialGuardrailsMode=Full"; "-p:AxialGuardrailsCheckpoint=true"
-                                                  "-p:_AxialGuardrailsBaselineProposalDirectory="; "-p:_AxialGuardrailsBaselineRuleCode="
-                                                  "-p:CustomAfterMicrosoftCommonTargets=" + expectedTarget
-                                                  "-p:_AxialGuardrailsFullCheckDirectory=" + directory ] 1800000 true
+                            // The collector takes the CustomAfterMicrosoftCommonTargets hook and imports a consumer's
+                            // own value from the environment instead of dropping it.
+                            let chained =
+                                match Environment.GetEnvironmentVariable "CustomAfterMicrosoftCommonTargets" with
+                                | null | "" -> []
+                                | consumer -> [ "-p:_AxialFullCheckChainedTargets=" + consumer ]
+                            let arguments =
+                                [ "build"; solutions[0]; "--configuration"; configuration; "--nologo"; "-v"; "minimal"; "-nodeReuse:false"
+                                  "-p:AxialGuardrailsMode=Full"; "-p:AxialGuardrailsCheckpoint=true"
+                                  "-p:_AxialGuardrailsBaselineProposalDirectory="; "-p:_AxialGuardrailsBaselineRuleCode="
+                                  "-p:CustomAfterMicrosoftCommonTargets=" + expectedTarget
+                                  "-p:_AxialGuardrailsFullCheckDirectory=" + directory ] @ chained
+                            let code, _, _ = Command.run (root()) "dotnet" arguments 1800000 true
                             if code <> 0 then emit asJson false "Full analysis failed (findings, build failure, or incomplete coverage); see build diagnostics."
                             else
                                 let reports = Directory.GetFiles(directory, "*.xml", SearchOption.AllDirectories)
@@ -129,8 +136,12 @@ Approval means a human read the review. The first review requires --since <ref>.
                                 | Some path -> emit asJson false ("Full analysis coverage is incomplete: " + path)
                                 | None ->
                                     let actual = reports |> Array.map Coverage.identity |> Set.ofArray
+                                    // The checkpoint certifies complete Full coverage; ordinary builds only warn (AXGINF002).
+                                    let skipped = reports |> Seq.collect Coverage.skips |> Seq.distinct |> Seq.map (fun (file, reason) -> $"  {file}: {reason}") |> Seq.toList
                                     if expected.IsEmpty || actual <> expected || reports.Length <> actual.Count then
                                         emit asJson false ("Full analysis coverage is incomplete: expected project/TFM records do not match exported records. Missing: " + String.concat ", " (Set.difference expected actual))
+                                    elif not skipped.IsEmpty then
+                                        emit asJson false (String.concat "\n" ("Full analysis skipped sources (AXGINF002); the full checkpoint requires every source to be checked:" :: skipped))
                                     elif reports |> Array.exists Coverage.errors then
                                         emit asJson false "Full analysis reported Error findings."
                                     else emit asJson true ("Full analysis passed for " + string reports.Length + " project/TFM records.\n" + PolicyReview.format review)

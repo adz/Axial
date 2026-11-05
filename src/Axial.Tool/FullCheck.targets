@@ -5,4 +5,6 @@
     <PropertyGroup><_AxialExpectedFile>$(_AxialGuardrailsFullCheckDirectory)/$([System.Guid]::NewGuid()).expected</_AxialExpectedFile></PropertyGroup>
     <WriteLinesToFile File="$(_AxialExpectedFile)" Lines="$(MSBuildProjectFullPath)|$(TargetFramework)" Overwrite="true" />
   </Target>
+  <!-- The full check sets CustomAfterMicrosoftCommonTargets to this file; chain the consumer's own value. -->
+  <Import Project="$(_AxialFullCheckChainedTargets)" Condition="'$(_AxialFullCheckChainedTargets)' != '' and Exists('$(_AxialFullCheckChainedTargets)')" />
 </Project>

@@ -63,3 +63,10 @@ module Coverage =
     let errors path =
         XDocument.Load(path: string).Descendants(XName.Get "finding")
         |> Seq.exists (fun finding -> attribute "severity" finding = Some "Error")
+
+    /// Sources the analyzers could not check as configured (build warning AXGINF002), as (file, reason) pairs.
+    let skips path =
+        XDocument.Load(path: string).Descendants(XName.Get "skip")
+        |> Seq.map (fun skip -> defaultArg (attribute "file" skip) "", defaultArg (attribute "reason" skip) "")
+        |> Seq.distinct
+        |> Seq.toList

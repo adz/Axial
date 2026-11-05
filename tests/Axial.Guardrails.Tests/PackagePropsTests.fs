@@ -255,6 +255,8 @@ module PackagePropsTests =
     [<InlineData("json")>]
     [<InlineData("review")>]
     [<InlineData("json-review")>]
+    [<InlineData("skip")>]
+    [<InlineData("chained")>]
     let ``slice2 full check covers all TFMs fails closed and never writes policy`` scenario =
         let dir = Path.Combine(Path.GetTempPath(), "axial-full-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
@@ -279,6 +281,10 @@ module PackagePropsTests =
             if scenario = "hint" then
                 let hint = """<Target Name="ExportHint" AfterTargets="AxialGuardrailsEffectBoundaryCheck" Condition="'$(_AxialGuardrailsFullCheckProject)' != ''"><XmlPoke XmlInputPath="$(_AxialGuardrailsFullCheckDirectory)/$(_AxialGuardrailsFullCheckProject)/$(TargetFramework).xml" Query="//finding/@severity" Value="Hint" /></Target>"""
                 File.WriteAllText(consumer, (File.ReadAllText consumer).Replace("</Project>", hint + "</Project>"))
+            if scenario = "skip" then
+                // An AXGINF002 record warns in ordinary builds; the checkpoint must reject it.
+                let skip = """<Target Name="ExportSkip" AfterTargets="AxialGuardrailsEffectBoundaryCheck" Condition="'$(_AxialGuardrailsFullCheckProject)' != ''"><PropertyGroup><_Export>$(_AxialGuardrailsFullCheckDirectory)/$(_AxialGuardrailsFullCheckProject)/$(TargetFramework).xml</_Export></PropertyGroup><WriteLinesToFile File="$(_Export)" Lines="$([MSBuild]::Escape($([System.IO.File]::ReadAllText('$(_Export)').Replace('&lt;/result&gt;', '&lt;skip file=&quot;Skipped.fs&quot; reason=&quot;source path is unusable&quot; /&gt;&lt;/result&gt;'))))" Overwrite="true" /></Target>"""
+                File.WriteAllText(consumer, (File.ReadAllText consumer).Replace("</Project>", skip + "</Project>"))
             if scenario = "missing" then
                 let path = Path.Combine(other, "Consumer.fsproj")
                 File.WriteAllText(path, (File.ReadAllText path).Replace("</Project>", "<Target Name=\"AxialGuardrailsEffectBoundaryCheck\" /></Project>"))
@@ -322,11 +328,16 @@ module PackagePropsTests =
                 start.ArgumentList.Add "--configuration"
                 start.ArgumentList.Add "Release"
             if scenario = "json" || scenario = "json-review" then start.ArgumentList.Add "--json"
+            let chainedMarker = Path.Combine(dir, "chained.marker")
+            if scenario = "chained" then
+                let chained = Path.Combine(dir, "Consumer.After.targets")
+                File.WriteAllText(chained, $"""<Project><Target Name="ConsumerAfter" BeforeTargets="Build"><Touch Files="{xmlEscape chainedMarker}" AlwaysCreate="true" /></Target></Project>""")
+                start.EnvironmentVariables["CustomAfterMicrosoftCommonTargets"] <- chained
             start.RedirectStandardOutput <- true
             start.RedirectStandardError <- true
             let exitCode, stdout, stderr = TestProcess.run 180000 start
             let output = stdout + stderr
-            if List.contains scenario ["complete"; "cached"; "warning"; "hint"; "baselined"; "json"] then Assert.True((exitCode = 0), output)
+            if List.contains scenario ["complete"; "cached"; "warning"; "hint"; "baselined"; "json"; "chained"] then Assert.True((exitCode = 0), output)
             else Assert.NotEqual(0, exitCode)
             if scenario = "incomplete" then Assert.Contains("AXGINF001", output)
             elif scenario = "record" then Assert.Contains("Full analysis coverage is incomplete:", output)
@@ -336,6 +347,9 @@ module PackagePropsTests =
                 let exported = Directory.GetDirectories(dir, "exported", SearchOption.AllDirectories) |> Array.collect (fun path -> Directory.GetFiles(path, "*.xml"))
                 Assert.Equal(2, exported.Length)
             elif scenario = "multiple" then Assert.Contains("exactly one solution", output)
+            elif scenario = "skip" then
+                Assert.Contains("Full analysis skipped sources (AXGINF002)", output)
+                Assert.Contains("Skipped.fs: source path is unusable", output)
             elif scenario = "review" || scenario = "json-review" then
                 Assert.Contains("policy review --check failed:", output)
                 if scenario = "json-review" then
@@ -363,6 +377,7 @@ module PackagePropsTests =
                 for report in reports do Assert.True(Axial.Tool.Coverage.complete (Some "Full") report)
                 if scenario = "baselined" then
                     Assert.Contains("severity=\"Warning\"", File.ReadAllText(Path.Combine(dir, "exported", "net10.0.xml")))
+                if scenario = "chained" then Assert.True(File.Exists chainedMarker, "consumer CustomAfterMicrosoftCommonTargets was not imported")
             Assert.Equal<byte>(lockBytes, File.ReadAllBytes lockPath)
             Assert.Equal<byte>(baselineBytes, File.ReadAllBytes baselinePath)
         finally Directory.Delete(dir, true)
