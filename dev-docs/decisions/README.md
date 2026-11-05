@@ -275,3 +275,30 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
 - The blocking runner enters through the existing `StartAsValueTask` boundary and consumes a completed outcome
   directly. Async interop timings depend on preceding benchmark cases; changing the runner's call shape must be
   measured with the same benchmark inventory and order before attributing a regression to that shape.
+
+## 2026-11-05: Guardrails are backpressure, not gates
+
+Folded from the implemented Guardrails sketches (fast mode, review, exceptionless rules, protected files). The
+consumer contract is `docs/guardrails/01-guardrails.md`; these are the reasons behind it.
+
+- **Influence, not infer.** Policy is the checked-in `Axial.Guardrails.toml`, baseline and lock. Roles come from
+  explicit `[files]` > `[projects]` > `[default]` (`domain`) assignments, never from project names, test SDKs, `CI`,
+  branch names or Release configuration. Mode is the explicit `AxialGuardrailsMode`; the Framework MSBuild fallback
+  passes its severity cap to the analyzers explicitly (`severityCap`), not by detection inside them.
+- **Guidance never fails an ordinary build.** Fast is the default: a parse-only, in-process task with no second
+  typecheck. Measured, the typed CLI spent 17–25 s per one-file edit, mostly in FCS and rules; a warm typed host
+  still missed the budget, so there is no persistent host. Fast findings are warnings or hints. Policy drift warns.
+  Error findings fail Full builds, `axial check --full` and releases.
+- **Infrastructure fails closed.** Incomplete coverage, task-load or process failures are `AXGINF001` with no opt-out
+  and no reusable stamp. A source the analyzers cannot classify warns (`AXGINF002`) and fails the full checkpoint.
+  Fast coverage never satisfies Full.
+- **Review, not approval-as-authority.** A local check cannot stop an agent that can change how it compiles, so the
+  lock is tamper-evident, not a security boundary, and does not gate builds. `axial policy review --check` runs at a
+  point the repository chooses (Axial: release). `axial policy approve` means a human read the review; agents never
+  approve, generate baselines or edit the lock. No signing, TTY checks, bot identities or CI-only policy.
+- **Block where certain, guide where heuristic.** An error rule holds without exception: fix the rule's scope or move
+  the code into a role-scoped file (raw primitives live in declared runtime/capability files), rather than adding
+  per-site suppressions. Heuristic rules guide; `axial-note` acknowledges a guide and keeps it in review, and
+  checkpoints reject unacknowledged ones. `forbid` cannot be suppressed. Baselines only shrink.
+- **New rules target bugs we actually had** (raw concurrency, swallowed failures, uncancellable or discarded work,
+  timed waits in tests), each concurrency fix with a torture scenario, rather than more anti-tamper machinery.
