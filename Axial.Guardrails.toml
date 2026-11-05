@@ -61,11 +61,13 @@ ignore = [
 [runtime]
 files = [
     "src/Axial/App.fs",
+    "src/Axial/BindError.fs",
     "src/Axial/Cache.fs",
     "src/Axial/Concurrency.fs",
     "src/Axial/Core.fs",
     "src/Axial/Flow.fs",
     "src/Axial/Hub.fs",
+    "src/Axial/Interop.fs",
     "src/Axial/Parallelism.fs",
     "src/Axial/Platform.fs",
     "src/Axial/Queue.fs",

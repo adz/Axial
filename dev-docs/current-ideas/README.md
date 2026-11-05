@@ -8,7 +8,6 @@ Active sketches:
 - `flow-stream-proving.md` — prove resource-safe, portable `FlowStream` semantics through concrete transport slices
 - `flow-transport-packages.md` — package and API direction for transports, framing, networking, serial, WebSocket, streaming HTTP/SSE, and compression
 - `platform-env-class.md` — a base environment class so applications stop re-implementing every platform `IHas*` interface
-- `guardrails-move-aware-review.md` — backlog: match policy allowances, notes and project settings by content, not path, so moves are not loosening
 - `fsharp-compiler-adapter.md` — pooled-resource combinator for `core Axial`, and an `Axial.FSharpCompiler` adapter, prompted by FsLiveDocs' Axial adoption
 
 Sketches for other projects belong in their own repositories.
