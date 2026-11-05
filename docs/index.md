@@ -261,6 +261,14 @@ poll
 - **[Axial](/getting-started/)**: typed async workflows with explicit dependencies, concurrency, resources, and streams.
 - **[Axial.Process](/process/)**: run external commands and pipelines as flows, with streamed output and cancellation.
 - **[Axial.HttpClient](/http/)**: an HTTP client with typed requests, responses, and retry policies.
+- **[Axial.FileSystem](/filesystem/)**: file and directory access with typed errors, streaming traversal, atomic writes, and the append log.
+- **[Axial.Console](/console/)**: standard streams, redirection state, and terminal control as an explicit service.
+- **[Axial.Configuration](/configuration/)**: layered environment, command-line, JSON, and browser configuration decoded by a Reified schema.
+- **[Axial.WebSocket](/websocket/)**: typed WebSocket client sessions, sends, receives, and errors.
+- **[Axial.Hosting](/hosting/)**: host adapters for Generic Host, ASP.NET Core, GenHttp, Node, browsers, and service managers.
+- **[Axial.ElmishFlows](/elmish/)**: Elmish 5 commands and subscriptions backed by flows.
+- **[Axial.Telemetry](/telemetry/)**: .NET and Fable JavaScript tracing, fiber spans, metrics, and dumps.
+- **[Axial.Guardrails](/guardrails/)**: an analyzer that steers code toward flows and explicit effects, with fast hints on every build.
 
 [View all packages →](/packages/)
 
