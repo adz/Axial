@@ -1292,3 +1292,55 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
             Assert.DoesNotContain("GeneratedAmbient.fs", authored.Output)
         finally
             Directory.Delete(dir, true)
+
+    /// Lib is referenced by two projects with different global properties, so one build builds it twice.
+    let private writeRepeatedReferenceFixture (dir: string) (libSource: string) =
+        let project name (source: string) (references: string) =
+            let projectDir = Path.Combine(dir, name)
+            Directory.CreateDirectory projectDir |> ignore
+            writeConsumerProject projectDir "<TargetFramework>net10.0</TargetFramework>" source
+            let path = Path.Combine(projectDir, name + ".fsproj")
+            File.Move(Path.Combine(projectDir, "Consumer.fsproj"), path)
+            File.WriteAllText(path, File.ReadAllText(path).Replace("    <Compile Include=\"Program.fs\" />", "    <Compile Include=\"Program.fs\" />\n" + references))
+        project "Lib" libSource ""
+        project "App1" "module App1\nlet value = 1\n" "    <ProjectReference Include=\"../Lib/Lib.fsproj\" />\n"
+        project "App2" "module App2\nlet value = 2\n" "    <ProjectReference Include=\"../Lib/Lib.fsproj\" AdditionalProperties=\"AxialRepeatedReference=true\" />\n"
+        File.WriteAllText(Path.Combine(dir, "Repeated.slnx"), "<Solution><Project Path=\"App1/App1.fsproj\" /><Project Path=\"App2/App2.fsproj\" /></Solution>")
+        writeV2Policy dir "domain" "warn"
+        Path.Combine(dir, "Repeated.slnx")
+
+    [<Fact>]
+    let ``a project built repeatedly in one build shows each warning once and a cached rebuild still shows it`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-repeated-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            let solution = writeRepeatedReferenceFixture dir "module Lib\nlet now () = System.DateTimeOffset.UtcNow\n"
+            for cached in [ false; true ] do
+                let result = runBuild solution None
+                Assert.True((result.ExitCode = 0), result.Output)
+                if cached then Assert.DoesNotContain("Running Axial.Guardrails analysis", result.Output)
+                // The build summary repeats each logged warning once and counts it: one logged AXG001 is two lines.
+                Assert.True(result.Output.Contains " 1 Warning(s)", result.Output)
+                Assert.True((countOccurrences "warning AXG001" result.Output = 2), result.Output)
+        finally
+            Directory.Delete(dir, true)
+
+    [<Fact>]
+    let ``cached Info findings replay below minimal verbosity while fresh ones stay visible`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-cached-info-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework>" "module Consumer\nlet run () : System.Threading.Tasks.Task<int> = System.Threading.Tasks.Task.FromResult 1\n"
+            writeV2Policy dir "domain" "warn"
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let fresh = runBuild project None
+            assertAnalysisRan true fresh
+            Assert.True((countOccurrences "Info AXG014" fresh.Output = 1), fresh.Output)
+            let cached = runBuild project None
+            assertAnalysisRan false cached
+            Assert.DoesNotContain("AXG014", cached.Output)
+            let detailed = runBuildWithArgs [ "-v:n" ] project None
+            assertAnalysisRan false detailed
+            Assert.Contains("Info AXG014", detailed.Output)
+        finally
+            Directory.Delete(dir, true)

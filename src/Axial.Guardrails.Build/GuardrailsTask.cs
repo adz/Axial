@@ -387,12 +387,32 @@ public class AxialGuardrailsTask : Task
         }
         catch { return false; }
     }
-    void Findings(XElement root)
+    static readonly object findingsGate = new object();
+    // One build can build a project/TFM several times: references with different global properties (for example
+    // AdditionalProperties) create separate project instances that share its intermediate directory, so each replays the
+    // same result. The engine's build-lifetime registry shows a result's warnings and Info once per build invocation in
+    // each build node; a later build replays them again. Errors are logged by every instance, so each one still fails.
+    bool AlreadyReported()
     {
+        var engine = BuildEngine as IBuildEngine4;
+        if (engine == null) return false;
+        var key = "AxialGuardrailsFindings|" + Path.GetFullPath(ResultFile) + "|" + Mode + "|" + Fingerprint;
+        lock (findingsGate)
+        {
+            if (engine.GetRegisteredTaskObject(key, RegisteredTaskObjectLifetime.Build) != null) return true;
+            engine.RegisterTaskObject(key, new object(), RegisteredTaskObjectLifetime.Build, false);
+            return false;
+        }
+    }
+    void Findings(XElement root, bool cached)
+    {
+        var repeated = AlreadyReported();
+        if (repeated) Log.LogMessage(MessageImportance.Low, "Axial.Guardrails: this project/TFM's findings were already reported in this build; errors are repeated.");
         // A skipped source is visible on every build, cache replays included; the report carries the record.
-        foreach (var skip in root.Descendants("skip").Select(e => ((string)e.Attribute("file"), (string)e.Attribute("reason"))).Distinct())
-            Log.LogWarning(null, "AXGINF002", null, skip.Item1, 0, 0, 0, 0,
-                $"Axial.Guardrails: {skip.Item2}.");
+        if (!repeated)
+            foreach (var skip in root.Descendants("skip").Select(e => ((string)e.Attribute("file"), (string)e.Attribute("reason"))).Distinct())
+                Log.LogWarning(null, "AXGINF002", null, skip.Item1, 0, 0, 0, 0,
+                    $"Axial.Guardrails: {skip.Item2}.");
         foreach (var entry in root.Elements("coverage"))
         foreach (var finding in entry.Elements("finding"))
         {
@@ -403,10 +423,12 @@ public class AxialGuardrailsTask : Task
             switch ((string)finding.Attribute("severity"))
             {
                 case "Error": Log.LogError(null, code, null, file, line, column, 0, 0, finding.Value); break;
-                case "Warning": Log.LogWarning(null, code, null, file, line, column, 0, 0, finding.Value); break;
-                // An acknowledged guide (`axial-note`) stays in the log but out of the minimal-verbosity console.
+                case "Warning": if (!repeated) Log.LogWarning(null, code, null, file, line, column, 0, 0, finding.Value); break;
+                // An acknowledged guide (`axial-note`) and a cached Info stay in the log but out of the minimal-verbosity
+                // console: Info never fails a build, and a fresh analysis already showed it.
                 default:
-                    var importance = finding.Value.Contains(" Acknowledged: ") ? MessageImportance.Normal : MessageImportance.High;
+                    if (repeated) break;
+                    var importance = cached || finding.Value.Contains(" Acknowledged: ") ? MessageImportance.Normal : MessageImportance.High;
                     Log.LogMessage(importance, $"{file}({line},{column}): {(string)finding.Attribute("severity")} {code}: {finding.Value}");
                     break;
             }
@@ -521,7 +543,7 @@ public class AxialGuardrailsTask : Task
         XDocument cached;
         if (!LoadCache(out cached)) return false;
         CacheHit = true;
-        Findings(cached.Root);
+        Findings(cached.Root, true);
         WriteTimings(cached.Root, null);
         return true;
     }
@@ -588,7 +610,7 @@ public class AxialGuardrailsTask : Task
             infrastructure.AddRange(lines.Where(line => line.StartsWith("Axial.Guardrails infrastructure:", StringComparison.Ordinal)));
             foreach (var path in Directory.GetFiles(runDirectory, "*.xml")) root.Add(XElement.Load(path));
             MissingCoverage(root, Mode == "Fast" ? "Fast parser/visitor did not report this rule/file" : "Analyzer process did not report this rule/file");
-            Findings(root);
+            Findings(root, false);
             var complete = infrastructure.Count == 0 && Complete(root) && (exit == 0 || exit == 254 || exit == -2);
             // 254 is ambiguous in the upstream CLI: only findings plus complete rule/file coverage establish success.
             if (exit != 0 && !(complete && root.Descendants("finding").Any(f => (string)f.Attribute("severity") == "Error")))
