@@ -15,10 +15,19 @@ module internal Diagnostics =
             with _ -> "Host callback failed"
         report options { Name = name; Error = Some error; Rendered = rendered }
 
+    let private render cause =
+        try Cause.prettyPrint (fun error -> match box error with null -> "null" | value -> value.GetType().Name) cause
+        // axial-note AXG010: rendering failure must not prevent original defects from reaching OnDefect below.
+        with _ -> "Cause rendering failed"
+
     let cause name options cause =
-        let rendered =
-            try Cause.prettyPrint (fun error -> match box error with null -> "null" | value -> value.GetType().Name) cause
-            // axial-note AXG010: rendering failure must not prevent original defects from reaching OnDefect below.
-            with _ -> "Cause rendering failed"
+        let rendered = render cause
         for defect in Cause.defects cause do
             report options { Name = name; Error = Some defect; Rendered = rendered }
+
+    /// Reports every defect in a cause, and a typed failure no callback could take, unless the cause is a pure
+    /// interruption. Interruption is how a command, stream, subscription or service is cancelled, so it is silent.
+    let causeUnlessInterrupted name options (failure: Cause<'error>) =
+        if not (List.isEmpty (Cause.defects failure)) then cause name options failure
+        elif not (List.isEmpty (Cause.failures failure)) then
+            report options { Name = name; Error = None; Rendered = render failure }

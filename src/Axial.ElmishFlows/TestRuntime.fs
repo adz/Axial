@@ -29,6 +29,7 @@ type TestRuntime<'env> internal (clock: ManualClock, environment: 'env) =
     member _.Runtime = runtime
     member _.Dispatched = messages.ToArray() |> Array.toList
     member _.Defects = errors.ToArray() |> Array.toList
+    member internal _.QueuedDeliveries = deliveries.Count
     member _.Drain() =
         let mutable callback = Unchecked.defaultof<unit -> unit>
         while deliveries.TryDequeue(&callback) do callback ()
@@ -117,39 +118,59 @@ module ElmishRuntime =
 
     /// <summary>Starts a long-lived service flow owned by the runtime, outside the Elmish program.</summary>
     /// <remarks>
+    /// <para>
     /// The service runs as a fiber named <paramref name="name" /> in the runtime's root scope, with the runtime's
     /// environment, so <c>Stop</c>/<c>StopAndWait</c> (or disposal) interrupts it and runs its finalizers. Call it once
     /// after <c>ElmishRuntime.start</c> or <c>startLayer</c> returns, before the Elmish program starts, so the service
-    /// does not depend on <c>init</c> or <c>update</c>. A defect is reported to <c>OnDefect</c> under the service name;
-    /// interruption is silent. A service that finishes is not restarted, and its name can then be started again.
-    /// The service cannot fail with a typed error: handle that inside the flow, for example by publishing it to a hub
-    /// the program subscribes to.
+    /// does not depend on <c>init</c> or <c>update</c>.
+    /// </para>
+    /// <para>
+    /// A service is expected to run until the runtime stops. A defect is reported to <c>OnDefect</c> under the service
+    /// name, and so is a service that completes while the runtime is still running, with <c>Error = None</c>, because
+    /// a pipeline that ends early leaves the program waiting for events that never come. Interruption, and completion
+    /// once the runtime is stopping, are silent. A service is not restarted; once it has ended its name can be started
+    /// again. The service cannot fail with a typed error: handle that inside the flow, for example by publishing it to
+    /// a hub the program subscribes to.
+    /// </para>
+    /// <para>
+    /// <c>Cmd.OfFlow.start</c> also forks a <c>Flow&lt;'env, Never, unit&gt;</c> in the root scope, but it is an
+    /// Elmish command: it starts only when the program runs it from <c>init</c> or <c>update</c>, it is expected to
+    /// finish, nothing tracks its name, and the program cannot tell whether it started. <c>startService</c> is called
+    /// by the host, outside the program, enforces one running service per name, and returns whether it started.
+    /// </para>
     /// </remarks>
     /// <param name="name">The service fiber's diagnostic name; one running service per name.</param>
     /// <param name="service">The <c>Flow&lt;'env, Never, unit&gt;</c> to run for the program's lifetime.</param>
     /// <param name="runtime">The runtime that owns the service.</param>
     /// <returns>
-    /// <c>true</c> when the service was started; <c>false</c> when a service with this name is still running or the
-    /// runtime is stopping.
+    /// <c>Ok ()</c> when the service was started; <c>Error ServiceStartError.DuplicateName</c> while a service with
+    /// this name is still running, and <c>Error ServiceStartError.RuntimeStopping</c> once the runtime is stopping.
     /// </returns>
-    let startService (name: string) (service: Flow<'env, Never, unit>) (runtime: ElmishRuntime<'env>) : bool =
-        if not (runtime.ClaimService name) then false
-        else
+    let startService
+        (name: string)
+        (service: Flow<'env, Never, unit>)
+        (runtime: ElmishRuntime<'env>)
+        : Result<unit, ServiceStartError> =
+        runtime.ClaimService name
+        |> Result.bind (fun () ->
             let job : Flow<'env, Never, unit> =
                 flow {
                     let! fiber = Flow.forkNamed name (Flow.annotate "elmish.service" name service)
                     let! outcome = Fiber.awaitExit fiber
                     match outcome with
-                    | Exit.Success () -> ()
-                    | Exit.Failure cause ->
-                        if not (List.isEmpty (Cause.defects cause)) || not (Cause.isInterrupted cause) then
-                            Diagnostics.cause name runtime.Options cause
+                    | Exit.Success () ->
+                        if not runtime.IsStopping then
+                            Diagnostics.report runtime.Options
+                                { Name = name
+                                  Error = None
+                                  Rendered = "The service completed while the runtime was running; a service should run until the runtime stops." }
+                    | Exit.Failure cause -> Diagnostics.causeUnlessInterrupted name runtime.Options cause
                 }
                 |> Flow.ensuring (Flow.delay (fun () -> runtime.ReleaseService name; Flow.ok ()))
-            if runtime.Enqueue job then true
+            if runtime.Enqueue job then Ok ()
             else
                 runtime.ReleaseService name
-                false
+                Error ServiceStartError.RuntimeStopping)
 
     /// Creates a runtime with queued dispatch and captured defects for tests.
     let test (clock: ManualClock) (environment: 'env) = new TestRuntime<'env>(clock, environment)

@@ -73,8 +73,8 @@ module StreamCommandTests =
         use test = ElmishRuntime.test clock ()
         let older : FlowStream<unit, string, string> = FlowStream.fromSeq [ "a1"; "a2" ]
         TestRuntime.run (Cmd.OfFlowStream.latest "key" test.Runtime older id (fun error -> "error:" + error)) test
-        // Wait until the older stream has posted its elements, without delivering them.
-        Assert.True(SpinWait.SpinUntil((fun () -> test.Runtime.Pending = 0 && test.Runtime.Registry.LiveFiberCount = 0), 5000))
+        // Wait until the older stream has posted its first element, without delivering it.
+        Assert.True(SpinWait.SpinUntil((fun () -> test.QueuedDeliveries = 1), 5000))
         let newer : FlowStream<unit, string, string> = FlowStream.fromSeq [ "b1" ]
         TestRuntime.run (Cmd.OfFlowStream.latest "key" test.Runtime newer id (fun error -> "error:" + error)) test
         Assert.True(TestRuntime.settle (TimeSpan.FromSeconds 5.0) test)
@@ -156,20 +156,13 @@ module StreamCommandTests =
     let ``stopping the runtime interrupts the stream and drops undelivered elements`` () =
         let deliveries = ConcurrentQueue<unit -> unit>()
         let messages = ConcurrentQueue<int>()
-        let released = signal ()
-        let emitted = signal ()
         use runtime = owner deliveries.Enqueue (fun defect -> failwith defect.Rendered)
         let endless : FlowStream<unit, string, int> =
-            FlowStream.singleton 1
-            |> FlowStream.append (FlowStream.fromFlow (flow {
-                do! Flow.scopeFinalizer (mark released)
-                do! mark emitted
-                return! Flow.never
-            }))
+            FlowStream.singleton 1 |> FlowStream.append (FlowStream.fromFlow Flow.never)
         for start in Cmd.OfFlowStream.latest "endless" runtime endless id (fun _ -> -1) do start messages.Enqueue
-        Assert.True(emitted.Task.Wait(5000))
+        // The stream waits for its first element to reach update, so stop finds it suspended on that delivery.
+        Assert.True(SpinWait.SpinUntil((fun () -> deliveries.Count = 1), 5000))
         Assert.True(runtime.StopAndWait(TimeSpan.FromSeconds 5.0))
-        Assert.True(released.Task.Wait(5000))
         let mutable callback = Unchecked.defaultof<unit -> unit>
         while deliveries.TryDequeue(&callback) do callback ()
         Assert.Empty(messages)
@@ -185,3 +178,52 @@ module StreamCommandTests =
         Assert.Equal(0, runtime.Pending)
         Assert.Empty(messages)
         Assert.Equal(0, runtime.LatestCount)
+
+    [<Fact>]
+    let ``a stream keeps at most one element waiting in Post and delivers every element`` () =
+        let deliveries = ConcurrentQueue<unit -> unit>()
+        let messages = ConcurrentQueue<int>()
+        let mutable mostWaiting = 0
+        let post (callback: unit -> unit) =
+            deliveries.Enqueue callback
+            let waiting = deliveries.Count
+            let mutable seen = Volatile.Read(&mostWaiting)
+            while waiting > seen && Interlocked.CompareExchange(&mostWaiting, waiting, seen) <> seen do
+                seen <- Volatile.Read(&mostWaiting)
+        use runtime = owner post (fun defect -> failwith defect.Rendered)
+        let numbers : FlowStream<unit, string, int> = FlowStream.fromSeq [ 1 .. 200 ]
+        for start in Cmd.OfFlowStream.latest "fast" runtime numbers id (fun _ -> -1) do start messages.Enqueue
+        let watch = Diagnostics.Stopwatch.StartNew()
+        while runtime.LatestCount > 0 && watch.ElapsedMilliseconds < 10000L do
+            // A slow UI thread: the stream must wait for update instead of flooding the dispatcher.
+            Thread.Sleep 1
+            let mutable callback = Unchecked.defaultof<unit -> unit>
+            if deliveries.TryDequeue(&callback) then callback ()
+        Assert.Equal(0, runtime.LatestCount)
+        Assert.Equal<int>([| 1 .. 200 |], messages.ToArray())
+        Assert.Equal(1, Volatile.Read(&mostWaiting))
+
+    [<Fact>]
+    let ``a typed failure still waiting in Post when the runtime stops is dropped`` () =
+        let deliveries = ConcurrentQueue<unit -> unit>()
+        let messages = ConcurrentQueue<string>()
+        use runtime = owner deliveries.Enqueue (fun defect -> failwith defect.Rendered)
+        let failing : FlowStream<unit, string, string> = FlowStream.fromFlow (Flow.fail "broken")
+        for start in Cmd.OfFlowStream.latest "failing" runtime failing id (fun error -> "error:" + error) do start messages.Enqueue
+        Assert.True(SpinWait.SpinUntil((fun () -> deliveries.Count = 1), 5000))
+        Assert.True(runtime.StopAndWait(TimeSpan.FromSeconds 5.0))
+        let mutable callback = Unchecked.defaultof<unit -> unit>
+        while deliveries.TryDequeue(&callback) do callback ()
+        Assert.Empty(messages)
+
+    [<Fact>]
+    let ``a Latest command result still waiting in Post when the runtime stops is dropped`` () =
+        let deliveries = ConcurrentQueue<unit -> unit>()
+        let messages = ConcurrentQueue<int>()
+        use runtime = owner deliveries.Enqueue (fun defect -> failwith defect.Rendered)
+        for start in Cmd.OfFlow.Latest.perform "load" runtime (Flow.succeed 1) id do start messages.Enqueue
+        Assert.True(SpinWait.SpinUntil((fun () -> deliveries.Count = 1), 5000))
+        Assert.True(runtime.StopAndWait(TimeSpan.FromSeconds 5.0))
+        let mutable callback = Unchecked.defaultof<unit -> unit>
+        while deliveries.TryDequeue(&callback) do callback ()
+        Assert.Empty(messages)

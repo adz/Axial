@@ -150,8 +150,11 @@ A service that lives as long as the program — a search pipeline, a poller, a c
 not to a never-completing command. `Cmd.OfFlow.perform` needs a success message, so running `Flow.never` through it
 forces an unreachable `onSuccess`. Start the service with `ElmishRuntime.startService` after the runtime starts and
 before the Elmish program does. It runs as a named fiber in the runtime's root scope with the runtime's environment;
-`Stop`/`StopAndWait` interrupts it and runs its finalizers, and a defect goes to `OnDefect` under the service name.
-`startService` returns `false` if a service with that name is still running or the runtime is stopping:
+`Stop`/`StopAndWait` interrupts it and runs its finalizers. A defect goes to `OnDefect` under the service name, and so
+does a service that completes while the runtime is still running, since a service should last as long as the runtime.
+`startService` returns `Error ServiceStartError.DuplicateName` if a service with that name is still running, and
+`Error ServiceStartError.RuntimeStopping` once the runtime is stopping. Unlike `Cmd.OfFlow.start`, which `update` runs
+and which is expected to finish, a service is started by the host, one per name, and reports whether it started:
 
 ```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.ElmishFlows.Tests"
 open Axial
@@ -168,9 +171,12 @@ let searchPipeline : Flow<SearchEnvironment, Never, unit> =
             |> FlowStream.runDrain
     }
 
-let startServices (runtime: ElmishRuntime<SearchEnvironment>) =
-    if not (runtime |> ElmishRuntime.startService "search-pipeline" searchPipeline) then
-        failwith "search pipeline already running"
+let startServices (runtime: ElmishRuntime<SearchEnvironment>) : Result<unit, string> =
+    runtime
+    |> ElmishRuntime.startService "search-pipeline" searchPipeline
+    |> Result.mapError (function
+        | ServiceStartError.DuplicateName -> "the search pipeline is already running"
+        | ServiceStartError.RuntimeStopping -> "the runtime is stopping")
 ```
 
 The program then talks to the service through what the environment holds: it offers requests to the queue and

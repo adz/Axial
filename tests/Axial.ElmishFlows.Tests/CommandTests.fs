@@ -261,3 +261,69 @@ module CommandTests =
         Assert.True(SpinWait.SpinUntil((fun () -> messages.Count = 1000), 30000))
         Assert.Equal(1000, postCount)
         Assert.Equal(1000, messages.ToArray() |> Array.distinct |> Array.length)
+
+    [<Fact>]
+    let ``attempt success dispatches nothing and reports no defect`` () =
+        let messages = ConcurrentQueue<string>()
+        let defects = ConcurrentQueue<CommandDefect>()
+        let mutable posts = 0
+        use owner = runtime (fun callback -> Interlocked.Increment(&posts) |> ignore; callback ()) defects.Enqueue
+        let saved : Flow<unit, string, unit> = Flow.ok ()
+        for start in Cmd.OfFlow.attempt "save" owner saved (fun error -> "error:" + error) do start messages.Enqueue
+        Assert.True(SpinWait.SpinUntil((fun () -> owner.Pending = 0 && owner.Registry.LiveFiberCount = 0), 5000))
+        Assert.Empty(messages)
+        Assert.Empty(defects)
+        Assert.Equal(0, Volatile.Read(&posts))
+
+    [<Fact>]
+    let ``attempt typed failure dispatches onError`` () =
+        let messages = ConcurrentQueue<string>()
+        use owner = runtime (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
+        let saved : Flow<unit, string, unit> = Flow.fail "disk full"
+        for start in Cmd.OfFlow.attempt "save" owner saved (fun error -> "error:" + error) do start messages.Enqueue
+        Assert.True(SpinWait.SpinUntil((fun () -> messages.Count = 1), 5000))
+        Assert.Equal<string>([| "error:disk full" |], messages.ToArray())
+
+    [<Fact>]
+    let ``attempt defect reaches OnDefect without dispatch`` () =
+        let messages = ConcurrentQueue<string>()
+        let defects = ConcurrentQueue<CommandDefect>()
+        use owner = runtime (fun callback -> callback ()) defects.Enqueue
+        let saved : Flow<unit, string, unit> = Flow.die (InvalidOperationException "save exploded")
+        for start in Cmd.OfFlow.attempt "save" owner saved (fun error -> "error:" + error) do start messages.Enqueue
+        Assert.True(SpinWait.SpinUntil((fun () -> defects.Count = 1), 5000))
+        Assert.Equal("save", defects.ToArray().[0].Name)
+        Assert.Contains("save exploded", defects.ToArray().[0].Rendered)
+        Assert.Empty(messages)
+
+    [<Fact>]
+    let ``Latest attempt success dispatches nothing and releases its key`` () =
+        let messages = ConcurrentQueue<string>()
+        let defects = ConcurrentQueue<CommandDefect>()
+        use owner = runtime (fun callback -> callback ()) defects.Enqueue
+        let saved : Flow<unit, string, unit> = Flow.ok ()
+        for start in Cmd.OfFlow.Latest.attempt "save" owner saved (fun error -> "error:" + error) do start messages.Enqueue
+        Assert.True(SpinWait.SpinUntil((fun () -> owner.Pending = 0 && owner.Registry.LiveFiberCount = 0 && owner.LatestCount = 0), 5000))
+        Assert.Empty(messages)
+        Assert.Empty(defects)
+
+    [<Fact>]
+    let ``only a pure interruption goes unreported`` () =
+        let defects = ConcurrentQueue<CommandDefect>()
+        let options =
+            { Post = (fun callback -> callback ()); OnDefect = defects.Enqueue; HistoryCapacity = 8; Clock = None; LogSink = None }
+        let report (cause: Cause<string>) =
+            defects.Clear()
+            Diagnostics.causeUnlessInterrupted "probe" options cause
+            defects.ToArray() |> Array.toList
+        Assert.Empty(report Cause.Interrupt)
+        Assert.Empty(report (Cause.Then(Cause.Interrupt, Cause.Interrupt)))
+        match report (Cause.Both(Cause.Interrupt, Cause.Die(InvalidOperationException "release failed"))) with
+        | [ defect ] -> Assert.Contains("release failed", defect.Rendered)
+        | other -> failwithf "expected one defect, got %d" other.Length
+        // A typed failure the command could not map (a composite) is reported without an exception.
+        match report (Cause.Both(Cause.Fail "left", Cause.Fail "right")) with
+        | [ defect ] ->
+            Assert.Equal("probe", defect.Name)
+            Assert.True(defect.Error.IsNone)
+        | other -> failwithf "expected one report, got %d" other.Length

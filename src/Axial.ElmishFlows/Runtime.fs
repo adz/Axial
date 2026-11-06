@@ -34,6 +34,14 @@ module internal RuntimeOptions =
         | Some clock -> Flow.withClock clock source
         | None -> source
 
+/// <summary>Why <c>ElmishRuntime.startService</c> did not start a service.</summary>
+[<RequireQualifiedAccess>]
+type ServiceStartError =
+    /// A service with the same name is still running.
+    | DuplicateName
+    /// The runtime is stopping or has stopped, so it no longer starts work.
+    | RuntimeStopping
+
 /// Owns the root scope for all commands in one Elmish program.
 [<Sealed>]
 type ElmishRuntime<'env> internal (options: ElmishRuntimeOptions) =
@@ -84,7 +92,7 @@ type ElmishRuntime<'env> internal (options: ElmishRuntimeOptions) =
     member internal _.DeliverIfCurrent(key: string, version: int64, dispatch: unit -> unit) =
         lock gate (fun () ->
             match latest.TryGetValue key with
-            | true, (v, _) when v = version ->
+            | true, (v, _) when v = version && not stopping ->
                 latest.Remove key |> ignore
                 dispatch ()
             | _ -> ())
@@ -95,7 +103,11 @@ type ElmishRuntime<'env> internal (options: ElmishRuntimeOptions) =
             | true, (v, _) when v = version && not stopping -> dispatch ()
             | _ -> ())
     member internal _.ClaimService(name: string) =
-        lock gate (fun () -> not stopping && not (isStopped ()) && services.Add name)
+        lock gate (fun () ->
+            if stopping || isStopped () then Error ServiceStartError.RuntimeStopping
+            elif services.Add name then Ok ()
+            else Error ServiceStartError.DuplicateName)
+    member internal _.IsStopping = lock gate (fun () -> stopping || isStopped ())
     member internal _.ReleaseService(name: string) =
         lock gate (fun () -> services.Remove name |> ignore)
     member internal _.Complete(key: string, version: int64) =

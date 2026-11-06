@@ -42,9 +42,7 @@ module Sub =
                             | Exit.Failure(Cause.Fail error) ->
                                 try deliver (onError error)
                                 with error -> Diagnostics.exceptionFrom name runtime.Options error
-                            | Exit.Failure cause ->
-                                if not (List.isEmpty (Cause.defects cause)) || not (Cause.isInterrupted cause) then
-                                    Diagnostics.cause name runtime.Options cause
+                            | Exit.Failure cause -> Diagnostics.causeUnlessInterrupted name runtime.Options cause
                     }
                 runtime.Enqueue job |> ignore
                 // Elmish disposes subscriptions on its dispatch (UI) thread, so Dispose must not block: it requests the
