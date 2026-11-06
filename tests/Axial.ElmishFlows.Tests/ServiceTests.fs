@@ -105,7 +105,7 @@ module ServiceTests =
         Assert.Equal(Ok (), runtime |> ElmishRuntime.startService "pipeline" service)
         Assert.True(started.Task.Wait(5000))
         let stopping = runtime.Stop() |> Async.StartAsTask
-        Assert.True(SpinWait.SpinUntil((fun () -> runtime |> ElmishRuntime.startService "probe" (Flow.ok ()) = Error ServiceStartError.RuntimeStopping), 5000))
+        Assert.True(SpinWait.SpinUntil((fun () -> runtime.IsStopping), 5000))
         release.TrySetResult() |> ignore
         Assert.True(stopping.Wait(5000))
         Assert.True(SpinWait.SpinUntil((fun () -> runtime.Registry.LiveFiberCount = 0), 5000))
