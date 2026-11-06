@@ -277,6 +277,7 @@ module PackagePropsTests =
     [<InlineData("generated")>]
     [<InlineData("unguarded")>]
     [<InlineData("optedout")>]
+    [<InlineData("propsmissing")>]
     let ``slice2 full check covers all TFMs fails closed and never writes policy`` scenario =
         let dir = Path.Combine(Path.GetTempPath(), "axial-full-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
@@ -287,7 +288,8 @@ module PackagePropsTests =
             let other = Path.Combine(dir, "Other")
             Directory.CreateDirectory other |> ignore
             writeConsumerProject other "<TargetFramework>net10.0</TargetFramework>" "module Other\nlet value = 1\n"
-            // A plain F# project without Axial.Guardrails: listed as guidance unless it explicitly opts out.
+            // A plain F# project without Axial.Guardrails fails the check unless it explicitly opts out; so does one that
+            // uses the package's targets but whose props were not imported.
             let plainProject =
                 if scenario = "unguarded" || scenario = "optedout" then
                     let plain = Path.Combine(dir, "Plain")
@@ -296,6 +298,13 @@ module PackagePropsTests =
                     File.WriteAllText(Path.Combine(plain, "Plain.fsproj"), $"""<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework>{optOut}</PropertyGroup><ItemGroup><Compile Include="Plain.fs" /></ItemGroup></Project>""")
                     File.WriteAllText(Path.Combine(plain, "Plain.fs"), "module Plain\nlet value = 2\n")
                     "<Folder Name=\"/Plain/\"><Project Path=\"Plain/Plain.fsproj\" /></Folder>"
+                elif scenario = "propsmissing" then
+                    let plain = Path.Combine(dir, "Plain")
+                    Directory.CreateDirectory plain |> ignore
+                    writeConsumerProject plain "<TargetFramework>net10.0</TargetFramework>" "module Plain\nlet value = 2\n"
+                    let path = Path.Combine(plain, "Consumer.fsproj")
+                    File.WriteAllLines(path, File.ReadAllLines path |> Array.filter (fun line -> not (line.Contains "Axial.Guardrails.props")))
+                    "<Folder Name=\"/Plain/\"><Project Path=\"Plain/Consumer.fsproj\" /></Folder>"
                 else ""
             File.WriteAllText(Path.Combine(dir, "Consumer.slnx"), "<Solution><Project Path=\"Consumer.fsproj\" /><Folder Name=\"/Other/\"><Project Path=\"Other/Consumer.fsproj\" /></Folder>" + plainProject + "</Solution>")
             // Full checks must override the ordinary designated-framework optimization.
@@ -369,7 +378,7 @@ module PackagePropsTests =
             start.RedirectStandardError <- true
             let exitCode, stdout, stderr = TestProcess.run 180000 start
             let output = stdout + stderr
-            if List.contains scenario ["complete"; "cached"; "warning"; "hint"; "baselined"; "json"; "chained"; "generated"; "unguarded"; "optedout"] then Assert.True((exitCode = 0), output)
+            if List.contains scenario ["complete"; "cached"; "warning"; "hint"; "baselined"; "json"; "chained"; "generated"; "optedout"] then Assert.True((exitCode = 0), output)
             else Assert.NotEqual(0, exitCode)
             if scenario = "incomplete" then Assert.Contains("AXGINF001", output)
             elif scenario = "record" then Assert.Contains("Full analysis coverage is incomplete:", output)
@@ -379,6 +388,12 @@ module PackagePropsTests =
                 let exported = Directory.GetDirectories(dir, "exported", SearchOption.AllDirectories) |> Array.collect (fun path -> Directory.GetFiles(path, "*.xml"))
                 Assert.Equal(2, exported.Length)
             elif scenario = "multiple" then Assert.Contains("exactly one solution", output)
+            elif scenario = "unguarded" || scenario = "propsmissing" then
+                Assert.Contains("Full analysis did not check 1 F# project(s) in the solution because Axial.Guardrails is not active in them:", output)
+                let listed = if scenario = "propsmissing" then "Consumer.fsproj" else "Plain.fsproj"
+                Assert.Contains("  " + Path.Combine("Plain", listed), output)
+                Assert.Contains("or opt the project out explicitly with <AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>", output)
+                Assert.DoesNotContain("Full analysis coverage is incomplete", output)
             elif scenario = "skip" then
                 Assert.Contains("Full analysis skipped sources (AXGINF002)", output)
                 Assert.Contains("Skipped.fs: source path is unusable", output)
@@ -414,10 +429,7 @@ module PackagePropsTests =
                     for framework in ["net8.0"; "net10.0"] do
                         Assert.Contains("status=\"excluded (generated)\"", File.ReadAllText(Path.Combine(dir, "exported", framework + ".xml")))
                 if scenario = "chained" then Assert.True(File.Exists chainedMarker, "consumer CustomAfterMicrosoftCommonTargets was not imported")
-                if scenario = "unguarded" then
-                    Assert.Contains("1 F# project(s) in the solution do not reference Axial.Guardrails", output)
-                    Assert.Contains(Path.Combine("Plain", "Plain.fsproj"), output)
-                else Assert.DoesNotContain("do not reference Axial.Guardrails", output)
+                Assert.DoesNotContain("Axial.Guardrails is not active", output)
             Assert.Equal<byte>(lockBytes, File.ReadAllBytes lockPath)
             Assert.Equal<byte>(baselineBytes, File.ReadAllBytes baselinePath)
         finally Directory.Delete(dir, true)

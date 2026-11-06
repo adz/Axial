@@ -127,20 +127,21 @@ Approval means a human read the review. The first review requires --since <ref>.
                                   "-p:CustomAfterMicrosoftCommonTargets=" + expectedTarget
                                   "-p:_AxialGuardrailsFullCheckDirectory=" + directory ] @ chained
                             let code, _, _ = Command.run (root()) "dotnet" arguments 1800000 true
+                            // Projects whose Axial.Guardrails props were not imported and that did not opt out. They
+                            // are expected like every other F# project, so they fail the check; this names them.
                             let unguarded =
                                 Directory.GetFiles(directory, "*.unguarded")
-                                |> Array.map (File.ReadAllText >> _.Trim() >> fun path -> Path.GetRelativePath(root(), path))
+                                |> Array.map (File.ReadAllText >> _.Trim())
                                 |> Set.ofArray
-                            // Guidance only: an unreferenced project is listed once per check and never fails it.
-                            let emit asJson ok message =
-                                if unguarded.IsEmpty then emit asJson ok message
-                                else
-                                    let projects = unguarded |> Seq.map (fun path -> "  " + path) |> Seq.toList
-                                    let header =
-                                        "WARNING: " + string unguarded.Count + " F# project(s) in the solution do not reference Axial.Guardrails, so Full analysis did not check them. "
-                                        + "Add the package, or opt out with <AxialGuardrailsEnabled>false</AxialGuardrailsEnabled> in the project file:"
-                                    emit asJson ok (message + "\n" + String.concat "\n" (header :: projects))
-                            if code <> 0 then emit asJson false "Full analysis failed (findings, build failure, or incomplete coverage); see build diagnostics."
+                            let unguardedMessage =
+                                let projects = unguarded |> Seq.map (fun path -> "  " + Path.GetRelativePath(root(), path)) |> Seq.toList
+                                String.concat "\n" (
+                                    ("Full analysis did not check " + string unguarded.Count + " F# project(s) in the solution because Axial.Guardrails is not active in them:")
+                                    :: projects
+                                    @ [ "Reference the Axial.Guardrails package in each project (and keep its build assets, so its props are imported), or opt the project out explicitly with <AxialGuardrailsEnabled>false</AxialGuardrailsEnabled> in its project file." ])
+                            if code <> 0 then
+                                let unguardedLines = if unguarded.IsEmpty then "" else "\n" + unguardedMessage
+                                emit asJson false ("Full analysis failed (findings, build failure, or incomplete coverage); see build diagnostics." + unguardedLines)
                             else
                                 let reports = Directory.GetFiles(directory, "*.xml", SearchOption.AllDirectories)
                                 let expected = Directory.GetFiles(directory, "*.expected") |> Array.map (File.ReadAllText >> _.Trim()) |> Set.ofArray
@@ -151,8 +152,13 @@ Approval means a human read the review. The first review requires --since <ref>.
                                     let actual = reports |> Array.map Coverage.identity |> Set.ofArray
                                     // The checkpoint certifies complete Full coverage; ordinary builds only warn (AXGINF002).
                                     let skipped = reports |> Seq.collect Coverage.skips |> Seq.distinct |> Seq.map (fun (file, reason) -> $"  {file}: {reason}") |> Seq.toList
-                                    if expected.IsEmpty || actual <> expected || reports.Length <> actual.Count then
-                                        emit asJson false ("Full analysis coverage is incomplete: expected project/TFM records do not match exported records. Missing: " + String.concat ", " (Set.difference expected actual))
+                                    let missing = Set.difference expected actual
+                                    let isUnguarded (identity: string) = unguarded.Contains(identity.Split('|').[0])
+                                    let otherMissing = missing |> Set.filter (isUnguarded >> not)
+                                    if expected.IsEmpty || not otherMissing.IsEmpty || not (Set.isSubset actual expected) || reports.Length <> actual.Count then
+                                        let unguardedLines = if unguarded.IsEmpty then "" else "\n" + unguardedMessage
+                                        emit asJson false ("Full analysis coverage is incomplete: expected project/TFM records do not match exported records. Missing: " + String.concat ", " otherMissing + unguardedLines)
+                                    elif not unguarded.IsEmpty then emit asJson false unguardedMessage
                                     elif not skipped.IsEmpty then
                                         emit asJson false (String.concat "\n" ("Full analysis skipped sources (AXGINF002); the full checkpoint requires every source to be checked:" :: skipped))
                                     elif reports |> Array.exists Coverage.errors then

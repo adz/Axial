@@ -1,12 +1,14 @@
 <Project>
   <!-- Independent of the analyzer target: an overridden/skipped analyzer must leave a gap.
        Ship a stable, content-fingerprinted import instead of a new temporary import on every check. -->
-  <Target Name="AxialFullCheckExpected" BeforeTargets="Build" Condition="'$(MSBuildProjectExtension)' == '.fsproj' and '$(TargetFramework)' != '' and '$(AxialGuardrailsEnabled)' == 'true' and '$(_AxialRepoSkipGuardrails)' != 'true'">
+  <Target Name="AxialFullCheckExpected" BeforeTargets="Build" Condition="'$(MSBuildProjectExtension)' == '.fsproj' and '$(TargetFramework)' != '' and '$(AxialGuardrailsEnabled)' != 'false' and '$(_AxialRepoSkipGuardrails)' != 'true'">
     <PropertyGroup><_AxialExpectedFile>$(_AxialGuardrailsFullCheckDirectory)/$([System.Guid]::NewGuid()).expected</_AxialExpectedFile></PropertyGroup>
     <WriteLinesToFile File="$(_AxialExpectedFile)" Lines="$(MSBuildProjectFullPath)|$(TargetFramework)" Overwrite="true" />
   </Target>
-  <!-- Axial.Guardrails.props sets AxialGuardrailsEnabled; empty means the project does not reference the package and
-       did not opt out with AxialGuardrailsEnabled=false. The check lists these as guidance, never as a failure. -->
+  <!-- Axial.Guardrails.props sets AxialGuardrailsEnabled; empty means the props were not imported (the project does not
+       reference the package, or its build assets were excluded) and it did not opt out with
+       AxialGuardrailsEnabled=false. Such a project is still expected above, so it fails the check; this record only
+       names it in the error. -->
   <Target Name="AxialFullCheckUnguarded" BeforeTargets="Build" Condition="'$(MSBuildProjectExtension)' == '.fsproj' and '$(TargetFramework)' != '' and '$(AxialGuardrailsEnabled)' == '' and '$(_AxialRepoSkipGuardrails)' != 'true'">
     <PropertyGroup><_AxialUnguardedFile>$(_AxialGuardrailsFullCheckDirectory)/$([System.Guid]::NewGuid()).unguarded</_AxialUnguardedFile></PropertyGroup>
     <WriteLinesToFile File="$(_AxialUnguardedFile)" Lines="$(MSBuildProjectFullPath)" Overwrite="true" />
