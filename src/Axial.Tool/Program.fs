@@ -127,6 +127,19 @@ Approval means a human read the review. The first review requires --since <ref>.
                                   "-p:CustomAfterMicrosoftCommonTargets=" + expectedTarget
                                   "-p:_AxialGuardrailsFullCheckDirectory=" + directory ] @ chained
                             let code, _, _ = Command.run (root()) "dotnet" arguments 1800000 true
+                            let unguarded =
+                                Directory.GetFiles(directory, "*.unguarded")
+                                |> Array.map (File.ReadAllText >> _.Trim() >> fun path -> Path.GetRelativePath(root(), path))
+                                |> Set.ofArray
+                            // Guidance only: an unreferenced project is listed once per check and never fails it.
+                            let emit asJson ok message =
+                                if unguarded.IsEmpty then emit asJson ok message
+                                else
+                                    let projects = unguarded |> Seq.map (fun path -> "  " + path) |> Seq.toList
+                                    let header =
+                                        "WARNING: " + string unguarded.Count + " F# project(s) in the solution do not reference Axial.Guardrails, so Full analysis did not check them. "
+                                        + "Add the package, or opt out with <AxialGuardrailsEnabled>false</AxialGuardrailsEnabled> in the project file:"
+                                    emit asJson ok (message + "\n" + String.concat "\n" (header :: projects))
                             if code <> 0 then emit asJson false "Full analysis failed (findings, build failure, or incomplete coverage); see build diagnostics."
                             else
                                 let reports = Directory.GetFiles(directory, "*.xml", SearchOption.AllDirectories)

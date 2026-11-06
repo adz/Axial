@@ -27,6 +27,12 @@ Run `axial policy review [--since <ref>] [--json]` to inspect what loosened: new
 
 `axial check --full` first enforces `axial policy review --check`, then builds the single solution (`.slnx` or `.sln`) in the current directory with explicit Full mode and checkpoint enforcement. The configuration defaults to Release; use `--configuration <name>` to override it. It analyzes every enabled F# project and target framework, including frameworks normally restricted by a designated-framework setting. Exported results must match the build's expected project/TFM set and have complete Full coverage. Infrastructure failures, missing or incomplete records, skipped sources (`AXGINF002`, which ordinary builds only warn about; the message names each file and reason), and Error findings produce a nonzero exit; Warning, Hint and baselined findings retain their non-blocking severity. Build diagnostics stream to stderr, leaving `--json` stdout parseable. The check uses MSBuild's `CustomAfterMicrosoftCommonTargets` hook to collect coverage; a value set in the environment is imported from it rather than replaced. A first policy review still needs a human-reviewed reference recorded in the lock. The command never approves policy or generates a baseline.
 
+An F# project in the solution that does not reference `Axial.Guardrails` is not analyzed. `axial check --full` lists
+each such project once, after its result, in a `WARNING: ... do not reference Axial.Guardrails` message, so a library
+is not left unchecked without notice. The warning never changes the exit code. Add the package to the project, or opt
+it out with `<AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>` in its project file to remove it from the list.
+C# and other non-F# projects are not listed.
+
 `AxialGuardrailsMode=Fast|Full` selects the build mode. **Fast is the default** in the package and this repository.
 Fast parses changed files in-process, without the analyzer CLI or a second typecheck. It gives syntax advice, not
 complete typed coverage. Use `dotnet build -p:AxialGuardrailsMode=Full` for all typed checks, or `axial check --full`

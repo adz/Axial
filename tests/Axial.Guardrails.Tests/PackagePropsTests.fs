@@ -275,6 +275,8 @@ module PackagePropsTests =
     [<InlineData("skip")>]
     [<InlineData("chained")>]
     [<InlineData("generated")>]
+    [<InlineData("unguarded")>]
+    [<InlineData("optedout")>]
     let ``slice2 full check covers all TFMs fails closed and never writes policy`` scenario =
         let dir = Path.Combine(Path.GetTempPath(), "axial-full-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
@@ -285,7 +287,17 @@ module PackagePropsTests =
             let other = Path.Combine(dir, "Other")
             Directory.CreateDirectory other |> ignore
             writeConsumerProject other "<TargetFramework>net10.0</TargetFramework>" "module Other\nlet value = 1\n"
-            File.WriteAllText(Path.Combine(dir, "Consumer.slnx"), "<Solution><Project Path=\"Consumer.fsproj\" /><Folder Name=\"/Other/\"><Project Path=\"Other/Consumer.fsproj\" /></Folder></Solution>")
+            // A plain F# project without Axial.Guardrails: listed as guidance unless it explicitly opts out.
+            let plainProject =
+                if scenario = "unguarded" || scenario = "optedout" then
+                    let plain = Path.Combine(dir, "Plain")
+                    Directory.CreateDirectory plain |> ignore
+                    let optOut = if scenario = "optedout" then "<AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>" else ""
+                    File.WriteAllText(Path.Combine(plain, "Plain.fsproj"), $"""<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework>{optOut}</PropertyGroup><ItemGroup><Compile Include="Plain.fs" /></ItemGroup></Project>""")
+                    File.WriteAllText(Path.Combine(plain, "Plain.fs"), "module Plain\nlet value = 2\n")
+                    "<Folder Name=\"/Plain/\"><Project Path=\"Plain/Plain.fsproj\" /></Folder>"
+                else ""
+            File.WriteAllText(Path.Combine(dir, "Consumer.slnx"), "<Solution><Project Path=\"Consumer.fsproj\" /><Folder Name=\"/Other/\"><Project Path=\"Other/Consumer.fsproj\" /></Folder>" + plainProject + "</Solution>")
             // Full checks must override the ordinary designated-framework optimization.
             let consumer = Path.Combine(dir, "Consumer.fsproj")
             File.WriteAllText(consumer, (File.ReadAllText consumer).Replace("</Project>", "<PropertyGroup><_AxialGuardrailsDesignatedTargetFramework>net8.0</_AxialGuardrailsDesignatedTargetFramework></PropertyGroup></Project>"))
@@ -357,7 +369,7 @@ module PackagePropsTests =
             start.RedirectStandardError <- true
             let exitCode, stdout, stderr = TestProcess.run 180000 start
             let output = stdout + stderr
-            if List.contains scenario ["complete"; "cached"; "warning"; "hint"; "baselined"; "json"; "chained"; "generated"] then Assert.True((exitCode = 0), output)
+            if List.contains scenario ["complete"; "cached"; "warning"; "hint"; "baselined"; "json"; "chained"; "generated"; "unguarded"; "optedout"] then Assert.True((exitCode = 0), output)
             else Assert.NotEqual(0, exitCode)
             if scenario = "incomplete" then Assert.Contains("AXGINF001", output)
             elif scenario = "record" then Assert.Contains("Full analysis coverage is incomplete:", output)
@@ -402,6 +414,10 @@ module PackagePropsTests =
                     for framework in ["net8.0"; "net10.0"] do
                         Assert.Contains("status=\"excluded (generated)\"", File.ReadAllText(Path.Combine(dir, "exported", framework + ".xml")))
                 if scenario = "chained" then Assert.True(File.Exists chainedMarker, "consumer CustomAfterMicrosoftCommonTargets was not imported")
+                if scenario = "unguarded" then
+                    Assert.Contains("1 F# project(s) in the solution do not reference Axial.Guardrails", output)
+                    Assert.Contains(Path.Combine("Plain", "Plain.fsproj"), output)
+                else Assert.DoesNotContain("do not reference Axial.Guardrails", output)
             Assert.Equal<byte>(lockBytes, File.ReadAllBytes lockPath)
             Assert.Equal<byte>(baselineBytes, File.ReadAllBytes baselinePath)
         finally Directory.Delete(dir, true)
