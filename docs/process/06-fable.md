@@ -20,8 +20,8 @@ let workflow =
     |> toFlow
 ```
 
-An interpreter implements `IProcess.Execute`, returning a lazy `Flow<unit, ProcessError, ProcessResult>` and
-awaiting the supplied observer serially with backpressure. It must not start work while constructing the Flow.
+An interpreter implements `IProcess.Execute` and `IProcess.Launch`. `Execute` returns a lazy
+`Flow<unit, ProcessError, ProcessResult>` and awaits the supplied observer serially with backpressure. It must not start work while constructing the Flow.
 Streaming constructors need no clock member in the environment: the supervised producer reads the runtime clock.
 
 `workflow` above is construction-only: it builds a specification and a Flow that asks for `IProcess` when run, and
@@ -35,6 +35,10 @@ type WorkerProcess(execute: ProcessSpec -> Async<ProcessResult>) =
     interface IProcess with
         member _.Execute(specification, observe) =
             Flow.fromAsync (execute specification)
+
+        // A worker has no desktop to hand a detached launch to.
+        member _.Launch(_) =
+            Flow.fail (ProcessError.StartFailed { Command = "launch"; Message = "Not available in a worker." })
 ```
 
 `Flow.fromAsync` treats a worker exception as a defect; use `Flow.attemptAsync` and map the exception into

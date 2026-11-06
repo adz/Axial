@@ -152,6 +152,8 @@ type TestProcess() =
     let mutable outputs: ProcessOutput list = []
     let closeRequests = ResizeArray<int * StopRequest>()
     let signalRequests = ResizeArray<int * StopRequest>()
+    let launches = ResizeArray<ProcessLaunch>()
+    let mutable launchHandler: (ProcessLaunch -> Flow<unit, ProcessError, unit>) option = None
     let mutable processId = 4242
 
     let mutable resultHandler: ProcessSpec -> ProcessResult =
@@ -164,6 +166,13 @@ type TestProcess() =
     member _.RunSpecs: IReadOnlyList<ProcessSpec> = specs
     member _.CloseRequests: IReadOnlyList<int * StopRequest> = closeRequests
     member _.SignalRequests: IReadOnlyList<int * StopRequest> = signalRequests
+    /// Every detached launch requested, in order. Launches never call <c>RunHandler</c>.
+    member _.Launches: IReadOnlyList<ProcessLaunch> = launches
+
+    /// Replaces the default launch result (success) — for example, to return <c>ProcessError.StartFailed</c>.
+    member _.LaunchHandler
+        with get () = launchHandler
+        and set value = launchHandler <- value
 
     member _.ProcessId
         with get () = processId
@@ -185,6 +194,7 @@ type TestProcess() =
         specs.Clear()
         closeRequests.Clear()
         signalRequests.Clear()
+        launches.Clear()
 
     static member Result(exitCode: int, stdOut: string, ?stdErr: string) : ProcessResult =
         let stdErr = defaultArg stdErr ""
@@ -242,6 +252,14 @@ type TestProcess() =
 
                         return resultHandler specification
                     })
+
+        member _.Launch(launch) =
+            Flow.delay (fun () ->
+                launches.Add launch
+
+                match launchHandler with
+                | Some handler -> handler launch
+                | None -> Flow.ok ())
 
 #if !FABLE_COMPILER
 type internal ProcessFailureException(error: ProcessError) =

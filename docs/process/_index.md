@@ -59,6 +59,7 @@ including their cancellation and cleanup. It does not invoke a shell unless you 
 - [Handle failures and inspect results](failures-and-transcripts.html)
 - [Write a script or use shell syntax](scripts.html)
 - [Use stdin, routes, fan-in, or parallel commands](dsl-recipes.html)
+- [Open an editor, file manager or URL](launching-desktop-programs.html)
 - [Use Axial.Process from Fable](fable.html)
 
 ## Reference

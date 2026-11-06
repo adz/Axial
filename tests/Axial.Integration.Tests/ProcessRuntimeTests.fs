@@ -203,7 +203,8 @@ module ProcessExecutionClockTests =
                             service.Execute(specification, fun output -> async {
                                 entered.TrySetResult output |> ignore
                                 do! Async.AwaitTask release.Task
-                            }) }
+                            })
+                        member _.Launch(launch) = service.Launch launch }
                 let running =
                     shText ("printf " + label) |> toFlow
                     |> Flow.withClock clock
@@ -448,7 +449,8 @@ module ProcessExecutionClockTests =
                         service.Execute(specification, fun output -> async {
                             match observed.TryGetValue(output.Text.Trim()) with
                             | true, signal -> signal.TrySetResult output |> ignore
-                            | _ -> () }) }
+                            | _ -> () })
+                    member _.Launch(launch) = service.Launch launch }
             let waitObserved label (pending: Task<'a>) = task {
                 try return! pending.WaitAsync(TimeSpan.FromSeconds 10.)
                 with error -> return raise (Exception(label, error))

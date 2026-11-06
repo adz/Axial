@@ -25,7 +25,8 @@ let run (round: Round) : Flow<unit, Never, Check list> =
                     do! observe {Stage=0;ObservedChannel=OutputChannel.StdOut;OriginalChannel=OutputChannel.StdOut
                                  Text=string item;Timestamp=DateTimeOffset(1970,1,1,0,0,0,TimeSpan.Zero)}
                 return result
-            }}
+            }
+            member _.Launch(_) = Flow.ok ()}
     let env = {Process=service}
     let source () = Process.command $"scripted" |> Process.streamStdout
     let observe workflow = workflow |> Flow.localEnv(fun (_: unit) -> env) |> Flow.foldCause (Exit.Success >> Flow.succeed) (Exit.Failure >> Flow.succeed)

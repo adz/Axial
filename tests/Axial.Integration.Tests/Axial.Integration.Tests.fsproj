@@ -16,6 +16,7 @@
     <Compile Include="ProcessServiceTests.fs" />
     <Compile Include="ProcessRuntimeTests.fs" />
     <Compile Include="ProcessStreamingTests.fs" />
+    <Compile Include="ProcessLaunchTests.fs" />
     <Compile Include="DependencyInjectionIntegrationTests.fs" />
     <Compile Include="TestDoubleTests.fs" />
   </ItemGroup>

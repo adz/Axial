@@ -376,10 +376,21 @@ type ProcessStarted = {
     Signal: StopRequest -> Flow<unit, ProcessError, unit>
 }
 
+/// A start-and-forget launch: the caller does not wait for the child, capture its output, or own its lifetime.
+[<RequireQualifiedAccess>]
+type ProcessLaunch =
+    /// Starts one command; the child inherits the caller's standard handles.
+    | Command of ProcessCommand
+    /// Opens a file, folder or URL with the operating system's default handler.
+    | ShellOpen of target: string
+
 /// Executes lazily, awaiting each observation with backpressure.
 type IProcess =
     abstract Execute:
         specification: ProcessSpec * observe: (ProcessOutput -> Async<unit>) -> Flow<unit, ProcessError, ProcessResult>
+    /// Starts a detached launch and returns once it has started. A failure to start is
+    /// <c>ProcessError.StartFailed</c>; what the child does afterwards is not observed.
+    abstract Launch: launch: ProcessLaunch -> Flow<unit, ProcessError, unit>
 
 #if FABLE_COMPILER
 [<Fable.Core.Mangle>]

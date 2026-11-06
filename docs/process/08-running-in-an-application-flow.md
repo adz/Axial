@@ -80,8 +80,9 @@ match Flow.run appEnvironment readRevision with
 
 ## Put a fake in the record for a unit test
 
-`IProcess.Execute` is the single service operation. It returns a lazy completion Flow and awaits each supplied
-observer with backpressure. A focused batch test can return a prepared result without emitting output.
+`IProcess` has two operations. `Execute` returns a lazy completion Flow and awaits each supplied observer with
+backpressure; `Launch` starts a detached program for [`Process.launch` and `Process.shellOpen`](launching-desktop-programs.html).
+A focused batch test can return a prepared result without emitting output.
 
 ```fsharp
 let expectedResult : ProcessResult =
@@ -106,7 +107,9 @@ let fakeProcess =
         member _.Execute(specification, _) =
             Flow.delay (fun () ->
                 requested <- Some specification
-                Flow.succeed expectedResult) }
+                Flow.succeed expectedResult)
+
+        member _.Launch(_) = Flow.ok () }
 
 let testEnvironment = { Processes = fakeProcess }
 ```

@@ -217,7 +217,8 @@ module UnifiedServiceTests =
         let services = { 
             Process = 
                 { new IProcess with 
-                    member _.Execute(_, _) = Flow.succeed processResult }
+                    member _.Execute(_, _) = Flow.succeed processResult
+                    member _.Launch(_) = Flow.ok () }
             Console = Unchecked.defaultof<_>; FS = Unchecked.defaultof<_>; Http = Unchecked.defaultof<_>
         }
         

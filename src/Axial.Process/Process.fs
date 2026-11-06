@@ -792,6 +792,41 @@ module Process =
     let inline toFlow source =
         toFlowSpecification (toSpecification source)
 
+    /// <summary>Starts one command without waiting for it, capturing its output, or owning its lifetime.</summary>
+    /// <remarks>
+    /// Use it to hand off to an editor or another desktop program. The flow succeeds once the child has started; the
+    /// child inherits the caller's standard handles and keeps running after the flow, and its exit code is never
+    /// observed. Interrupting the flow does not stop the child. The launch goes through the environment's
+    /// <c>IProcess.Launch</c>, so <c>Process.test ()</c> records it in <c>Launches</c> instead of starting anything.
+    /// Executable, arguments, working directory and environment variables apply; output routing, capture, timeouts
+    /// and success codes do not. A script such as <c>code.cmd</c> on Windows needs <c>cmd.exe /c</c>.
+    /// </remarks>
+    /// <param name="command">The command to start, for example <c>Process.commandArgs "code" [ path ]</c>.</param>
+    /// <returns>A flow that fails with <c>ProcessError.StartFailed</c> when the command cannot be started.</returns>
+    let launch<'env when 'env :> IHasProcess> (command: ProcessCommand) : Flow<'env, ProcessError, unit> =
+        flow {
+            let! processes = service
+            return! processes.Launch(ProcessLaunch.Command command) |> Flow.localEnv (fun _ -> ())
+        }
+
+    /// <summary>Opens a file, folder or URL with the operating system's default handler.</summary>
+    /// <remarks>
+    /// The live service uses <c>ShellExecute</c> on Windows, <c>open</c> on macOS and <c>xdg-open</c> elsewhere, and
+    /// does not wait for the handler. The flow succeeds once the opener has started, so a target that no handler
+    /// accepts is not reported. To reveal a file in the file manager, open its folder. The launch goes through
+    /// <c>IProcess.Launch</c>, so <c>Process.test ()</c> records it in <c>Launches</c>.
+    /// </remarks>
+    /// <param name="target">A path or URL; it must not be empty or whitespace.</param>
+    /// <returns>A flow that fails with <c>ProcessError.StartFailed</c> when the opener cannot be started.</returns>
+    let shellOpen<'env when 'env :> IHasProcess> (target: string) : Flow<'env, ProcessError, unit> =
+        if String.IsNullOrWhiteSpace target then
+            invalidArg (nameof target) "A shell-open target cannot be empty."
+
+        flow {
+            let! processes = service
+            return! processes.Launch(ProcessLaunch.ShellOpen target) |> Flow.localEnv (fun _ -> ())
+        }
+
     [<EditorBrowsable(EditorBrowsableState.Never)>]
     let createOutputStream<'env when 'env :> IHasProcess>
         requestedChannel
@@ -983,7 +1018,9 @@ module Process =
     let live (fileSystem: IFileSystem) (console: IConsole) =
         { new IProcess with
             member _.Execute(specification, observe) =
-                ProcessRun.execute fileSystem console specification observe }
+                ProcessRun.execute fileSystem console specification observe
+
+            member _.Launch(launch) = ProcessRun.launch launch }
 #endif
 #if !FABLE_COMPILER
     [<EditorBrowsable(EditorBrowsableState.Never)>]

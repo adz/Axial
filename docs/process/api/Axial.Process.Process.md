@@ -33,6 +33,11 @@ api:
       order: 60
       summary: Choose lazy Flow composition or a direct script boundary.
       members: [toFlow, toFlowSpecification, run, runWith, tryRun, tryRunWith, unwrapRun, service]
+    - id: launch
+      title: Launch desktop programs
+      order: 65
+      summary: Start an editor or open a path or URL without waiting for it or capturing its output.
+      members: [launch, shellOpen]
     - id: inspect
       title: Inspect plans
       order: 70

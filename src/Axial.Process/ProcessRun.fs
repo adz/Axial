@@ -5,6 +5,7 @@ open System
 open System.Collections.Generic
 open System.Diagnostics
 open System.IO
+open System.Runtime.InteropServices
 open System.Text
 open System.Threading
 open System.Threading.Tasks
@@ -1101,4 +1102,44 @@ module internal ProcessRun =
         Flow(fun environment token ->
             let caller = RuntimePlatform.current ()
             FlowInternal.invoke (run caller) environment token)
+    let private launchCommand fileName arguments : CommandDefinition = {
+        FileName = fileName
+        Arguments = arguments
+        RedactedArguments = Map.empty
+        WorkingDirectory = None
+        Environment = Map.empty
+        Encoding = None
+        SuccessCodes = None
+        Timeout = None
+        StdIn = None
+        StdOut = None
+        StdErr = None
+        StdOutCapture = None
+        StdErrCapture = None
+    }
+
+    /// Starts a detached child and disposes its handle at once; the child keeps running and is not awaited.
+    let launch (request: ProcessLaunch) : Flow<unit, ProcessError, unit> =
+        Flow.delay (fun () ->
+            let description, info =
+                match request with
+                | ProcessLaunch.Command(ProcessCommand command) ->
+                    Configuration.renderCommand command, NativeProcess.startInfo false false false command
+                | ProcessLaunch.ShellOpen target when RuntimeInformation.IsOSPlatform OSPlatform.Windows ->
+                    let info = ProcessStartInfo(target)
+                    info.UseShellExecute <- true
+                    target, info
+                | ProcessLaunch.ShellOpen target ->
+                    let opener = if RuntimeInformation.IsOSPlatform OSPlatform.OSX then "open" else "xdg-open"
+                    let command = launchCommand opener [ target ]
+                    Configuration.renderCommand command, NativeProcess.startInfo false false false command
+
+            try
+                use proc = new Diagnostics.Process(StartInfo = info)
+                // OS bridge: Process.Start is the process service's named operational boundary. A shell open that
+                // an already-running handler accepts returns false without a new process; that is still a launch.
+                proc.Start() |> ignore
+                Flow.ok ()
+            with error ->
+                Flow.fail (ProcessError.StartFailed { Command = description; Message = error.Message }))
 #endif
