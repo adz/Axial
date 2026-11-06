@@ -300,6 +300,9 @@ type ProcessObservationFailure = { Stage: int; Channel: OutputChannel }
 
 type ProcessStopFailure = { Stage: int; Request: StopRequest; Message: string }
 
+/// A shell-open target refused before any opener started, with the reason.
+type ProcessShellOpenRejection = { Target: string; Reason: string }
+
 /// Expected process errors. Runtime cancellation remains Cause.Interrupt.
 [<RequireQualifiedAccess>]
 type ProcessError =
@@ -315,6 +318,9 @@ type ProcessError =
     | ObservationUnavailable of ProcessObservationFailure
     | StopFailed of ProcessStopFailure
     | StopUnsupported of StopRequest
+    /// <c>Process.shellOpen</c> refused the target before starting the opener: it is empty, or it starts with
+    /// <c>-</c>, which <c>open</c> and <c>xdg-open</c> would read as an option.
+    | ShellOpenRejected of ProcessShellOpenRejection
 
     override this.ToString() =
         match this with
@@ -356,6 +362,8 @@ type ProcessError =
             (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Could not send {0} to stage {1}: {2}", failure.Request, failure.Stage, failure.Message))
         | StopUnsupported request ->
             (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Stop request {0} is not supported by the platform or this stage.", request))
+        | ShellOpenRejected rejection ->
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Shell-open target '{0}' was refused: {1}", rejection.Target, rejection.Reason))
 
 /// A running stage that accepts one-shot requests or coordinated shutdown.
 type ProcessStarted = {
@@ -384,12 +392,23 @@ type ProcessLaunch =
     /// Opens a file, folder or URL with the operating system's default handler.
     | ShellOpen of target: string
 
+[<RequireQualifiedAccess>]
+module internal ProcessLaunchTarget =
+    /// Refuses a shell-open target that no opener should receive: empty, or read as an option.
+    let validate (target: string) : Result<unit, ProcessError> =
+        let reject reason = Error(ProcessError.ShellOpenRejected { Target = target; Reason = reason })
+        if String.IsNullOrWhiteSpace target then reject "the target is empty."
+        elif target.[0] = '-' then
+            reject "the target starts with '-', which the opener would read as an option; prefix a relative path with ./."
+        else Ok ()
+
 /// Executes lazily, awaiting each observation with backpressure.
 type IProcess =
     abstract Execute:
         specification: ProcessSpec * observe: (ProcessOutput -> Async<unit>) -> Flow<unit, ProcessError, ProcessResult>
     /// Starts a detached launch and returns once it has started. A failure to start is
-    /// <c>ProcessError.StartFailed</c>; what the child does afterwards is not observed.
+    /// <c>ProcessError.StartFailed</c>, and a refused shell-open target is <c>ProcessError.ShellOpenRejected</c>; what
+    /// the child does afterwards is not observed.
     abstract Launch: launch: ProcessLaunch -> Flow<unit, ProcessError, unit>
 
 #if FABLE_COMPILER

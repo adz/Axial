@@ -1118,28 +1118,46 @@ module internal ProcessRun =
         StdErrCapture = None
     }
 
+    /// The start info for a detached launch. Unlike a captured run, a launched console program gets its own window.
+    let launchStartInfo (request: ProcessLaunch) : ProcessStartInfo =
+        match request with
+        | ProcessLaunch.Command(ProcessCommand command) ->
+            let info = NativeProcess.startInfo false false false command
+            info.CreateNoWindow <- false
+            info
+        | ProcessLaunch.ShellOpen target when RuntimeInformation.IsOSPlatform OSPlatform.Windows ->
+            let info = ProcessStartInfo(target)
+            info.UseShellExecute <- true
+            info
+        | ProcessLaunch.ShellOpen target ->
+            let opener = if RuntimeInformation.IsOSPlatform OSPlatform.OSX then "open" else "xdg-open"
+            let info = NativeProcess.startInfo false false false (launchCommand opener [ target ])
+            info.CreateNoWindow <- false
+            info
+
     /// Starts a detached child and disposes its handle at once; the child keeps running and is not awaited.
     let launch (request: ProcessLaunch) : Flow<unit, ProcessError, unit> =
         Flow.delay (fun () ->
-            let description, info =
+            let checkedTarget =
                 match request with
-                | ProcessLaunch.Command(ProcessCommand command) ->
-                    Configuration.renderCommand command, NativeProcess.startInfo false false false command
-                | ProcessLaunch.ShellOpen target when RuntimeInformation.IsOSPlatform OSPlatform.Windows ->
-                    let info = ProcessStartInfo(target)
-                    info.UseShellExecute <- true
-                    target, info
-                | ProcessLaunch.ShellOpen target ->
-                    let opener = if RuntimeInformation.IsOSPlatform OSPlatform.OSX then "open" else "xdg-open"
-                    let command = launchCommand opener [ target ]
-                    Configuration.renderCommand command, NativeProcess.startInfo false false false command
-
-            try
-                use proc = new Diagnostics.Process(StartInfo = info)
-                // OS bridge: Process.Start is the process service's named operational boundary. A shell open that
-                // an already-running handler accepts returns false without a new process; that is still a launch.
-                proc.Start() |> ignore
-                Flow.ok ()
-            with error ->
-                Flow.fail (ProcessError.StartFailed { Command = description; Message = error.Message }))
+                | ProcessLaunch.ShellOpen target -> ProcessLaunchTarget.validate target
+                | ProcessLaunch.Command _ -> Ok ()
+            match checkedTarget with
+            | Error error -> Flow.fail error
+            | Ok () ->
+                let description =
+                    match request with
+                    | ProcessLaunch.Command(ProcessCommand command) -> Configuration.renderCommand command
+                    | ProcessLaunch.ShellOpen target when RuntimeInformation.IsOSPlatform OSPlatform.Windows -> target
+                    | ProcessLaunch.ShellOpen target ->
+                        let opener = if RuntimeInformation.IsOSPlatform OSPlatform.OSX then "open" else "xdg-open"
+                        Configuration.renderCommand (launchCommand opener [ target ])
+                try
+                    use proc = new Diagnostics.Process(StartInfo = launchStartInfo request)
+                    // OS bridge: Process.Start is the process service's named operational boundary. A shell open that
+                    // an already-running handler accepts returns false without a new process; that is still a launch.
+                    proc.Start() |> ignore
+                    Flow.ok ()
+                with error ->
+                    Flow.fail (ProcessError.StartFailed { Command = description; Message = error.Message }))
 #endif

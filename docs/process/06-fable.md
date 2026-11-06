@@ -38,7 +38,8 @@ type WorkerProcess(execute: ProcessSpec -> Async<ProcessResult>) =
 
         // A worker has no desktop to hand a detached launch to.
         member _.Launch(_) =
-            Flow.fail (ProcessError.StartFailed { Command = "launch"; Message = "Not available in a worker." })
+            ProcessError.StartFailed { Command = "launch"; Message = "Not available in a worker." }
+            |> Flow.fail
 ```
 
 `Flow.fromAsync` treats a worker exception as a defect; use `Flow.attemptAsync` and map the exception into

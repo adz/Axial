@@ -42,9 +42,43 @@ module ProcessLaunchTests =
         | _ -> failwith "Expected StartFailed"
         Assert.Equal(1, host.Process.Launches.Count)
 
+    let private rejected (outcome: Exit<unit, ProcessError>) =
+        match outcome with
+        | Exit.Failure(Cause.Fail(ProcessError.ShellOpenRejected rejection)) -> rejection
+        | other -> failwithf "Expected ShellOpenRejected, got %A" other
+
     [<Fact>]
-    let ``shellOpen rejects an empty target`` () =
-        Assert.Throws<ArgumentException>(fun () -> Process.shellOpen "   " |> ignore) |> ignore
+    let ``shellOpen fails an empty target inside the flow without launching`` () =
+        let host = ProcessHostEnvironment.test ()
+        // Building the flow is pure; an invalid target is a typed failure when it runs.
+        let opening = Process.shellOpen "   "
+        let rejection = opening |> Flow.run host.Environment |> rejected
+        Assert.Equal("   ", rejection.Target)
+        Assert.Empty(host.Process.Launches)
+
+    [<Fact>]
+    let ``shellOpen rejects a target that an opener would read as an option`` () =
+        let host = ProcessHostEnvironment.test ()
+        let rejection = Process.shellOpen "--help" |> Flow.run host.Environment |> rejected
+        Assert.Equal("--help", rejection.Target)
+        Assert.Contains("'-'", rejection.Reason)
+        Assert.Contains("--help", ProcessError.describe (ProcessError.ShellOpenRejected rejection))
+        Assert.Empty(host.Process.Launches)
+        // A relative path that starts with '-' is still reachable as ./-name.
+        Assert.Equal(Exit.Success (), Process.shellOpen "./-notes.txt" |> Flow.run host.Environment)
+
+    [<Fact>]
+    let ``the live service rejects an option-like target handed to Launch directly`` () =
+        let rejection =
+            ProcessHostEnvironment.live.Process.Launch(ProcessLaunch.ShellOpen "-a") |> Flow.run () |> rejected
+        Assert.Equal("-a", rejection.Target)
+
+    [<Fact>]
+    let ``a live launch gives a console program its own window`` () =
+        let info = ProcessRun.launchStartInfo (ProcessLaunch.Command(Process.commandArgs "htop" []))
+        Assert.False(info.CreateNoWindow)
+        Assert.False(info.UseShellExecute)
+        Assert.False(info.RedirectStandardOutput)
 
     [<Fact>]
     let ``live launch of a missing executable fails with StartFailed`` () =

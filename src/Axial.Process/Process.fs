@@ -796,10 +796,13 @@ module Process =
     /// <remarks>
     /// Use it to hand off to an editor or another desktop program. The flow succeeds once the child has started; the
     /// child inherits the caller's standard handles and keeps running after the flow, and its exit code is never
-    /// observed. Interrupting the flow does not stop the child. The launch goes through the environment's
-    /// <c>IProcess.Launch</c>, so <c>Process.test ()</c> records it in <c>Launches</c> instead of starting anything.
-    /// Executable, arguments, working directory and environment variables apply; output routing, capture, timeouts
-    /// and success codes do not. A script such as <c>code.cmd</c> on Windows needs <c>cmd.exe /c</c>.
+    /// observed. Interrupting the flow does not stop the child. A console program gets its own window on Windows. The
+    /// launch goes through the environment's <c>IProcess.Launch</c>, so <c>Process.test ()</c> records it in
+    /// <c>Launches</c> instead of starting anything. Executable, arguments, working directory and environment
+    /// variables apply; output routing, capture, timeouts and success codes do not. Arguments are passed to the
+    /// executable as a list and never through a shell. An editor installed as a script, such as <c>code.cmd</c> on
+    /// Windows, is not an executable: resolve the executable it runs instead of wrapping it in <c>cmd.exe /c</c>,
+    /// which reinterprets <c>&amp; | ^ %</c> in a path.
     /// </remarks>
     /// <param name="command">The command to start, for example <c>Process.commandArgs "code" [ path ]</c>.</param>
     /// <returns>A flow that fails with <c>ProcessError.StartFailed</c> when the command cannot be started.</returns>
@@ -811,20 +814,33 @@ module Process =
 
     /// <summary>Opens a file, folder or URL with the operating system's default handler.</summary>
     /// <remarks>
+    /// <para>
     /// The live service uses <c>ShellExecute</c> on Windows, <c>open</c> on macOS and <c>xdg-open</c> elsewhere, and
     /// does not wait for the handler. The flow succeeds once the opener has started, so a target that no handler
     /// accepts is not reported. To reveal a file in the file manager, open its folder. The launch goes through
     /// <c>IProcess.Launch</c>, so <c>Process.test ()</c> records it in <c>Launches</c>.
+    /// </para>
+    /// <para>
+    /// Opening a target can run a program. <c>ShellExecute</c> runs an <c>.exe</c>, <c>.bat</c> or <c>.cmd</c>
+    /// file, <c>open</c> runs an <c>.app</c> bundle or an executable script, and <c>xdg-open</c> hands the target to
+    /// whatever the desktop associates with it. Do not pass a path or URL from an untrusted source without checking
+    /// it, for example that it is an <c>https:</c> URL or a folder the application owns. An empty target, or one
+    /// starting with <c>-</c> (which an opener reads as an option), fails with
+    /// <c>ProcessError.ShellOpenRejected</c> and starts nothing; prefix a relative path with <c>./</c>.
+    /// </para>
     /// </remarks>
-    /// <param name="target">A path or URL; it must not be empty or whitespace.</param>
-    /// <returns>A flow that fails with <c>ProcessError.StartFailed</c> when the opener cannot be started.</returns>
+    /// <param name="target">A path or URL.</param>
+    /// <returns>
+    /// A flow that fails with <c>ProcessError.ShellOpenRejected</c> for a refused target and
+    /// <c>ProcessError.StartFailed</c> when the opener cannot be started.
+    /// </returns>
     let shellOpen<'env when 'env :> IHasProcess> (target: string) : Flow<'env, ProcessError, unit> =
-        if String.IsNullOrWhiteSpace target then
-            invalidArg (nameof target) "A shell-open target cannot be empty."
-
         flow {
-            let! processes = service
-            return! processes.Launch(ProcessLaunch.ShellOpen target) |> Flow.localEnv (fun _ -> ())
+            match ProcessLaunchTarget.validate target with
+            | Error error -> return! Flow.fail error
+            | Ok () ->
+                let! processes = service
+                return! processes.Launch(ProcessLaunch.ShellOpen target) |> Flow.localEnv (fun _ -> ())
         }
 
     [<EditorBrowsable(EditorBrowsableState.Never)>]
