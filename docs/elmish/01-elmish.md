@@ -146,11 +146,37 @@ cycle the runner cannot repair. Keep the successful runtime alive until shutdown
 
 ## Long-lived services and fire-and-forget
 
-A service that lives as long as the program — a search pipeline, a poller, a cache warmer — belongs in a stream
-subscription or in a service the runtime provisions, not in a never-completing command. `Cmd.OfFlow.perform` needs a
-success message, so running `Flow.never` through it forces an unreachable `onSuccess`; use
-`Sub.OfFlowStream.subscribe` instead, and let Elmish dispose the subscription
-(interrupting the stream and releasing its resources) when the program unmounts:
+A service that lives as long as the program — a search pipeline, a poller, a cache warmer — belongs to the runtime,
+not to a never-completing command. `Cmd.OfFlow.perform` needs a success message, so running `Flow.never` through it
+forces an unreachable `onSuccess`. Start the service with `ElmishRuntime.startService` after the runtime starts and
+before the Elmish program does. It runs as a named fiber in the runtime's root scope with the runtime's environment;
+`Stop`/`StopAndWait` interrupts it and runs its finalizers, and a defect goes to `OnDefect` under the service name.
+`startService` returns `false` if a service with that name is still running or the runtime is stopping:
+
+```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.ElmishFlows.Tests"
+open Axial
+open Axial.ElmishFlows
+
+type SearchEnvironment = { Requests: Queue<string>; Results: Hub<string> }
+
+let searchPipeline : Flow<SearchEnvironment, Never, unit> =
+    flow {
+        let! env = Flow.env
+        return!
+            FlowStream.fromDequeue env.Requests
+            |> FlowStream.mapFlow (fun query -> Hub.publish $"result:{query}" env.Results |> Flow.map ignore)
+            |> FlowStream.runDrain
+    }
+
+let startServices (runtime: ElmishRuntime<SearchEnvironment>) =
+    if not (runtime |> ElmishRuntime.startService "search-pipeline" searchPipeline) then
+        failwith "search pipeline already running"
+```
+
+The program then talks to the service through what the environment holds: it offers requests to the queue and
+subscribes to the hub with `Sub.OfFlowStream.subscribe`. A service whose lifetime follows the model instead — running
+only while a panel is open — is a subscription: Elmish disposes it (interrupting the stream and releasing its
+resources) when the model no longer asks for it:
 
 ```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.ElmishFlows.Tests"
 open Axial
@@ -214,6 +240,36 @@ let backgroundIndex runtime query =
     Cmd.OfFlow.start "index" runtime (indexSafely query)
 ```
 
+## Streaming results into update
+
+`Cmd.OfFlowStream.latest key runtime stream onElement onError` runs a `FlowStream` as a command and dispatches each
+element as a message, in stream order, through `Post`. Starting another stream or `Cmd.OfFlow.Latest` command with the
+same key interrupts the running one, and elements it already posted that `update` has not yet seen are dropped, so a
+search-as-you-type command never mixes results from two queries. A typed failure dispatches `onError` after the
+elements before it; completion dispatches nothing, so append a final element when `update` needs to know the stream
+finished. `Cmd.OfFlow.Latest.cancel key runtime` stops it without a message.
+
+```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.ElmishFlows.Tests"
+open Axial
+open Axial.ElmishFlows
+
+type SearchMsg =
+    | Found of string list
+    | SearchDone
+    | SearchFailed of string
+
+let search (runtime: ElmishRuntime<unit>) (files: FlowStream<unit, string, string>) (query: string) =
+    let batches =
+        files
+        |> FlowStream.filter (fun path -> path.Contains query)
+        |> FlowStream.groupedWithin 64 (System.TimeSpan.FromMilliseconds 100.0)
+        |> FlowStream.map Found
+        |> FlowStream.append (FlowStream.singleton SearchDone)
+    Cmd.OfFlowStream.latest "search" runtime batches id SearchFailed
+```
+
+Each element costs one `Post`, so batch a fast stream with `FlowStream.groupedWithin` before dispatching it.
+
 ## Command parameter order
 
 Axial's commands keep Elmish's "work first" idea, but the runtime owns the command's root scope, so it precedes the
@@ -235,12 +291,12 @@ The order is `name runtime workflow onSuccess onError` for `either`; `perform` d
 
 The exhaustive operation inventory lives in the API reference:
 
-- [Cmd](/elmish/api/Axial.ElmishFlows.Cmd.html): `Cmd.OfFlow.either`/`perform`/`attempt`/`start` and the latest-wins
-  `Cmd.OfFlow.Latest` variants.
+- [Cmd](/elmish/api/Axial.ElmishFlows.Cmd.html): `Cmd.OfFlow.either`/`perform`/`attempt`/`start`, the latest-wins
+  `Cmd.OfFlow.Latest` variants, and the streaming `Cmd.OfFlowStream.latest`.
 - [Sub](/elmish/api/Axial.ElmishFlows.Sub.html): `Sub.OfFlowStream.subscribe` for running a stream under a subscription id.
 - [Inbox](/elmish/api/Axial.ElmishFlows.Inbox.html): `Inbox.create`/`offer`/`post`/`dropped`/`stream` for synchronous UI
   input and search-as-you-type.
-- [ElmishRuntime](/elmish/api/Axial.ElmishFlows.ElmishRuntime.html): `start`, `startLayer`, `test`, and the
-  `Stop`/`StopAndWait` shutdown methods.
+- [ElmishRuntime](/elmish/api/Axial.ElmishFlows.ElmishRuntime.html): `start`, `startLayer`, `startService`, `test`,
+  and the `Stop`/`StopAndWait` shutdown methods.
 - [TestRuntime](/elmish/api/Axial.ElmishFlows.TestRuntime.html): `run`, `settle`, `drain`, `dispatched`, and `defects` for
   tests with a manual clock.

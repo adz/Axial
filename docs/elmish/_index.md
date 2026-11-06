@@ -23,6 +23,8 @@ Commands and subscriptions run as Axial flows with the program's runtime service
 ## Guides
 
 1. [Elmish programs](/elmish/elmish.html): runtime setup, commands, subscriptions, history, and testing.
+2. [Avalonia desktop application](/elmish/avalonia-desktop.html): startup, services, UI input, streaming results,
+   shutdown, and a `--self-test` command-line path.
 
 ## Reference
 
