@@ -193,10 +193,10 @@ module StreamCommandTests =
         use runtime = owner post (fun defect -> failwith defect.Rendered)
         let numbers : FlowStream<unit, string, int> = FlowStream.fromSeq [ 1 .. 200 ]
         for start in Cmd.OfFlowStream.latest "fast" runtime numbers id (fun _ -> -1) do start messages.Enqueue
-        let watch = Diagnostics.Stopwatch.StartNew()
-        while runtime.LatestCount > 0 && watch.ElapsedMilliseconds < 10000L do
-            // A slow UI thread: the stream must wait for update instead of flooding the dispatcher.
-            Thread.Sleep 1
+        // A UI thread that runs one callback at a time: the stream must wait for update instead of flooding the
+        // dispatcher.
+        while runtime.LatestCount > 0 do
+            Assert.True(SpinWait.SpinUntil((fun () -> deliveries.Count > 0 || runtime.LatestCount = 0), 10000))
             let mutable callback = Unchecked.defaultof<unit -> unit>
             if deliveries.TryDequeue(&callback) then callback ()
         Assert.Equal(0, runtime.LatestCount)
