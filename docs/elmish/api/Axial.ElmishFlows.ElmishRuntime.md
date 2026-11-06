@@ -16,6 +16,13 @@ failures are messages, but defects are not.
 The runtime accepts any environment and needs no clock member. Keep the environment stable, and supply a
 command's current dependencies with `Flow.localEnv`.
 
+## Services
+
+`runtime |> ElmishRuntime.startService name service` starts a `Flow<'env, Never, unit>` as a named fiber in the
+runtime's root scope, outside the Elmish program, so `init` and `update` never start or restart it. It returns `false`
+when a service with that name is still running or the runtime is stopping. Stopping the runtime interrupts the
+service; a defect goes to `OnDefect` under the service name.
+
 ## Shutdown
 
 - `runtime.StopAndWait timeout` interrupts commands and subscriptions, waits for their finalizers, and returns

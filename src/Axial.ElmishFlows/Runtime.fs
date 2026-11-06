@@ -42,6 +42,7 @@ type ElmishRuntime<'env> internal (options: ElmishRuntimeOptions) =
     let signal = new SemaphoreSlim(0)
     let gate = obj ()
     let latest = Dictionary<string, int64 * FiberId option>()
+    let services = HashSet<string>(StringComparer.Ordinal)
     let mutable generation = 0L
     let mutable pending = 0
     let mutable stopping = false
@@ -87,6 +88,16 @@ type ElmishRuntime<'env> internal (options: ElmishRuntimeOptions) =
                 latest.Remove key |> ignore
                 dispatch ()
             | _ -> ())
+    // Streams deliver many elements per key, so the key stays registered until completion is posted after them.
+    member internal _.DispatchIfCurrent(key: string, version: int64, dispatch: unit -> unit) =
+        lock gate (fun () ->
+            match latest.TryGetValue key with
+            | true, (v, _) when v = version && not stopping -> dispatch ()
+            | _ -> ())
+    member internal _.ClaimService(name: string) =
+        lock gate (fun () -> not stopping && not (isStopped ()) && services.Add name)
+    member internal _.ReleaseService(name: string) =
+        lock gate (fun () -> services.Remove name |> ignore)
     member internal _.Complete(key: string, version: int64) =
         lock gate (fun () ->
             match latest.TryGetValue key with

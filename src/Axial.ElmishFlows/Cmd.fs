@@ -145,3 +145,75 @@ module Cmd =
             /// <summary>Interrupts the running command for <paramref name="key" />, if any, without dispatching.</summary>
             let cancel key (runtime: ElmishRuntime<'env>) : Cmd<'msg> =
                 [ fun _ -> runtime.Cancel key ]
+
+    /// <summary>Elmish commands that dispatch every element of an Axial stream.</summary>
+    module OfFlowStream =
+        /// <summary>
+        /// Runs a stream keyed by <paramref name="key" /> and dispatches each element as a message; starting another
+        /// stream or <c>Cmd.OfFlow.Latest</c> command for the same key interrupts this one.
+        /// </summary>
+        /// <remarks>
+        /// Every element and the final typed failure go through the runtime's <c>Post</c> in stream order, so
+        /// <c>update</c> sees them on the host's dispatch thread. Elements of a replaced, cancelled or stopped stream
+        /// that are still waiting in <c>Post</c> are dropped. Keys are shared with <c>Cmd.OfFlow.Latest</c>, so
+        /// <c>Cmd.OfFlow.Latest.cancel key</c> interrupts the stream without dispatching. A stream that completes
+        /// dispatches nothing more; append a final element when <c>update</c> needs to know it finished. A defect is
+        /// reported to <c>OnDefect</c> and interruption is silent. Each element costs one <c>Post</c>; batch a fast
+        /// stream with <c>FlowStream.groupedWithin</c> before dispatching it.
+        /// </remarks>
+        /// <param name="key">The latest-wins key, also the diagnostic name of the stream fiber.</param>
+        /// <param name="runtime">The runtime that owns the stream's root scope.</param>
+        /// <param name="stream">The stream to run, passed positionally.</param>
+        /// <param name="onElement">Maps each element to a message.</param>
+        /// <param name="onError">Maps the stream's typed failure to a message.</param>
+        /// <returns>An Elmish command. Parameter order is <c>key runtime stream onElement onError</c>.</returns>
+        let latest
+            (key: string)
+            (runtime: ElmishRuntime<'env>)
+            (stream: FlowStream<'env, 'error, 'value>)
+            (onElement: 'value -> 'msg)
+            (onError: 'error -> 'msg)
+            : Cmd<'msg> =
+            [ fun dispatch ->
+                let version = runtime.Begin key
+                let report error = Diagnostics.exceptionFrom key runtime.Options error
+                let post callback =
+                    try runtime.Options.Post(fun () -> try callback () with error -> report error)
+                    with error -> report error
+                let deliver message = post (fun () -> runtime.DispatchIfCurrent(key, version, fun () -> dispatch message))
+                // Completion is posted behind the elements so they still find their key current when they run.
+                let finish () =
+                    try runtime.Options.Post(fun () -> runtime.Complete(key, version))
+                    with error ->
+                        report error
+                        runtime.Complete(key, version)
+                let element value =
+                    match (try Ok(onElement value) with error -> Error error) with
+                    | Ok message -> deliver message
+                    | Error error -> report error
+                let job : Flow<'env, Never, unit> =
+                    flow {
+                        if runtime.IsCurrent(key, version) then
+                            let work =
+                                stream
+                                |> FlowStream.runForEach element
+                                |> Flow.annotate "elmish.command" key
+                            let! fiber = Flow.forkNamed key work
+                            runtime.SetCurrent(key, version, fiber.Metadata.Id)
+                            let! outcome = Fiber.awaitExit fiber
+                            if runtime.IsCurrent(key, version) then
+                                match outcome with
+                                | Exit.Success () -> finish ()
+                                | Exit.Failure(Cause.Fail error) ->
+                                    match (try Ok(onError error) with error -> Error error) with
+                                    | Ok message ->
+                                        post (fun () -> runtime.DeliverIfCurrent(key, version, fun () -> dispatch message))
+                                    | Error error ->
+                                        report error
+                                        finish ()
+                                | Exit.Failure cause ->
+                                    if not (List.isEmpty (Cause.defects cause)) || not (Cause.isInterrupted cause) then
+                                        Diagnostics.cause key runtime.Options cause
+                                    finish ()
+                    }
+                if not (runtime.Enqueue job) then runtime.Complete(key, version) ]

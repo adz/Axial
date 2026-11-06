@@ -9,6 +9,8 @@
     <Compile Include="NamespaceTests.fs" />
     <Compile Include="RuntimeTests.fs" />
     <Compile Include="CommandTests.fs" />
+    <Compile Include="StreamCommandTests.fs" />
+    <Compile Include="ServiceTests.fs" />
     <Compile Include="SubscriptionTests.fs" />
     <Compile Include="TestRuntimeTests.fs" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />

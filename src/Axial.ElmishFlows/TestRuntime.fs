@@ -115,6 +115,42 @@ module ElmishRuntime =
             return! Deferred.toTask Never.absurd ready |> Async.AwaitTask
         }
 
+    /// <summary>Starts a long-lived service flow owned by the runtime, outside the Elmish program.</summary>
+    /// <remarks>
+    /// The service runs as a fiber named <paramref name="name" /> in the runtime's root scope, with the runtime's
+    /// environment, so <c>Stop</c>/<c>StopAndWait</c> (or disposal) interrupts it and runs its finalizers. Call it once
+    /// after <c>ElmishRuntime.start</c> or <c>startLayer</c> returns, before the Elmish program starts, so the service
+    /// does not depend on <c>init</c> or <c>update</c>. A defect is reported to <c>OnDefect</c> under the service name;
+    /// interruption is silent. A service that finishes is not restarted, and its name can then be started again.
+    /// The service cannot fail with a typed error: handle that inside the flow, for example by publishing it to a hub
+    /// the program subscribes to.
+    /// </remarks>
+    /// <param name="name">The service fiber's diagnostic name; one running service per name.</param>
+    /// <param name="service">The <c>Flow&lt;'env, Never, unit&gt;</c> to run for the program's lifetime.</param>
+    /// <param name="runtime">The runtime that owns the service.</param>
+    /// <returns>
+    /// <c>true</c> when the service was started; <c>false</c> when a service with this name is still running or the
+    /// runtime is stopping.
+    /// </returns>
+    let startService (name: string) (service: Flow<'env, Never, unit>) (runtime: ElmishRuntime<'env>) : bool =
+        if not (runtime.ClaimService name) then false
+        else
+            let job : Flow<'env, Never, unit> =
+                flow {
+                    let! fiber = Flow.forkNamed name (Flow.annotate "elmish.service" name service)
+                    let! outcome = Fiber.awaitExit fiber
+                    match outcome with
+                    | Exit.Success () -> ()
+                    | Exit.Failure cause ->
+                        if not (List.isEmpty (Cause.defects cause)) || not (Cause.isInterrupted cause) then
+                            Diagnostics.cause name runtime.Options cause
+                }
+                |> Flow.ensuring (Flow.delay (fun () -> runtime.ReleaseService name; Flow.ok ()))
+            if runtime.Enqueue job then true
+            else
+                runtime.ReleaseService name
+                false
+
     /// Creates a runtime with queued dispatch and captured defects for tests.
     let test (clock: ManualClock) (environment: 'env) = new TestRuntime<'env>(clock, environment)
 

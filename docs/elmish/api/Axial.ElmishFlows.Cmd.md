@@ -22,3 +22,10 @@ Interruptions send no message.
 `Cmd.OfFlow.Latest.either key runtime workflow onSuccess onError` starts a latest-wins request: starting another
 command with the same key interrupts the previous one and suppresses its queued delivery. Keys belong to the runtime,
 not to the process. `Cmd.OfFlow.Latest.cancel key runtime` invalidates a pending request.
+
+## Streaming commands
+
+`Cmd.OfFlowStream.latest key runtime stream onElement onError` dispatches every element of a `FlowStream` as a message,
+in order, through `Post`. It shares keys with `Cmd.OfFlow.Latest`: a newer command or stream for the key interrupts the
+running stream, and elements it already posted but `update` has not yet seen are dropped. A typed failure dispatches
+`onError` after the elements before it; completion dispatches nothing.
