@@ -12,7 +12,7 @@ SHA256  59d2d5141c3a010e25b6fb5eb9fc788b82f6862fb6c6e7d8b7c22eb0ca1dc1b6  src/Ax
 SHA256  87e3bc1e2b21c96c178f491be9ecb7bfaa281ffda1c11f910939602611c8615f  src/Axial.Guardrails/build/Axial.Guardrails.targets
 SHA256  49e0c0a0e8a7a783a5ca0977accda3bf78ba16af192e05a2b0977d97f03df078  src/Axial.HttpClient/buildTransitive/Axial.HttpClient.props
 SHA256  44b1d4e543c9f17534f6f13ffaa2c158b1da8932f868235c5a14f61e97ee00e2  src/Axial.Process/buildTransitive/Axial.Process.props
-SHA256  20f05d5919f5ac9f64fe55ddc120de26139f89a1b4dd11de362e9a03a5903aaf  src/Axial.Tool/FullCheck.targets
+SHA256  afb56ac2c1b40561eb7f3fbe28d7e7ed95d3b39ac6d98d132babf974fe660cdc  src/Axial.Tool/FullCheck.targets
 SHA256  8853cdccc10de754e12b422cfed5c4c850f3f6eab92843b1e6b893686d097a88  src/Axial.WebSocket/buildTransitive/Axial.WebSocket.props
 SHA256  a300dc05faef5a3440b323644cd234f8c261fd56d44dca13b751c41a4e0df032  src/Axial/buildTransitive/Axial.props
 BOUNDARY  benchmarks/Axial.Benchmarks/Common.fs
@@ -166,4 +166,4 @@ SUPPRESSION  tests/Axial.Tests/RunOnTests.fs	1	// axial-note AXG013:force an asy
 SUPPRESSION  tests/Axial.Tests/WorkflowSchedulingTests.fs	1	// axial-note AXG013:suspend inside cleanup to prove scope shutdown awaits asynchronous finalizers.
 SUPPRESSION  tests/Axial.Tests/WorkflowStreamTests.fs	1	// axial-note AXG013:stagger completions to exercise replenishment of the bounded parallel window.
 SUPPRESSION  tests/Axial.Tests/WorkflowStreamTests.fs	1	// axial-note AXG013:stagger worker completion to exercise batch ordering and its concurrency bound.
-REVIEWED_POINT  e2edd54109ec826e2840be6086c22811b33cb70d
+REVIEWED_POINT  b9c3f926531660199c3e66d2feb572f9ca5383fc
