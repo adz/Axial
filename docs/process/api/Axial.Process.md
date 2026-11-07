@@ -28,6 +28,7 @@ api:
         - Axial.Process.Process
         - Axial.Process.Process.Runner
         - Axial.Process.IProcess
+        - Axial.Process.ProcessLaunch
         - Axial.Process.IHasProcess
         - Axial.Process.ProcessHostEnvironment
         - Axial.Process.ProcessHostEnvironmentModule
@@ -65,6 +66,7 @@ api:
         - Axial.Process.ProcessStagePlan
         - Axial.Process.ProcessError
         - Axial.Process.ProcessErrorModule
+        - Axial.Process.ProcessShellOpenRejection
         - Axial.Process.ProcessStartFailure
         - Axial.Process.ProcessStageTimeout
         - Axial.Process.ProcessTimeout
