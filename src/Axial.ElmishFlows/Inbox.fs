@@ -18,7 +18,8 @@ type Inbox<'value> internal (queue: Queue<'value>) =
     member internal _.Queue = queue
     member internal _.CountDrop() = Interlocked.Increment(&dropped) |> ignore
 
-    /// <summary>Offers made when the mailbox was full and could not wait.</summary>
+    /// <summary>Values the mailbox could not keep: an offer refused while it was full, or the pending value a
+    /// sliding mailbox evicted to take a newer one.</summary>
     member _.Dropped = Interlocked.Read(&dropped)
 
 /// <summary>Constructs, fills and reads an <see cref="T:Axial.ElmishFlows.Inbox`1" />.</summary>
@@ -58,9 +59,14 @@ module Inbox =
         inbox
 
     /// <summary>Offers a value; returns whether the mailbox took it, false when it is full or shut down.</summary>
+    /// <remarks>A sliding mailbox takes every value, so it reports <c>true</c> and counts the pending value it evicted.
+    /// </remarks>
     let post (value: 'value) (inbox: Inbox<'value>) =
         match Queue.tryOffer value inbox.Queue with
         | QueueTryOfferResult.Accepted -> true
+        | QueueTryOfferResult.Evicted ->
+            inbox.CountDrop()
+            true
         | QueueTryOfferResult.Dropped
         | QueueTryOfferResult.Full ->
             inbox.CountDrop()
@@ -75,5 +81,5 @@ module Inbox =
     let stream (inbox: Inbox<'value>) : FlowStream<'env, 'error, 'value> =
         FlowStream.fromDequeue inbox.Queue
 
-    /// <summary>Offers that were made when the mailbox was full and could not be kept.</summary>
+    /// <summary>Values the mailbox could not keep, whether refused or evicted by a sliding mailbox.</summary>
     let dropped (inbox: Inbox<'value>) = inbox.Dropped

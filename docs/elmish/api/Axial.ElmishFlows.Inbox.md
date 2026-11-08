@@ -68,5 +68,6 @@ the newest offer (`QueueStrategy.Dropping`) and shuts the inbox down when the ru
 was offered. Read it once, because two readers split the mail between them. Pipe it through `FlowStream.debounce` and
 `FlowStream.switchMapFlow` for search-as-you-type, then run it with `Sub.OfFlowStream.subscribe`.
 
-[`dropped inbox`](#Axial.ElmishFlows.Inbox.dropped) counts the offers a full mailbox could not keep. Surface it next to
-the search status so a coalesced search is visible instead of silent.
+[`dropped inbox`](#Axial.ElmishFlows.Inbox.dropped) counts the values the mailbox could not keep: an offer refused
+while it was full, or the pending value a sliding inbox evicted to take a newer one. Surface it next to the search status
+so a coalesced search is visible instead of silent.

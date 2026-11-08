@@ -26,6 +26,24 @@ module SubscriptionTests =
         Assert.Equal(1L, Inbox.dropped inbox)
 
     [<Fact>]
+    let ``sliding inbox takes the newest value and counts the one it evicted`` () =
+        let workflow =
+            flow {
+                let! inbox = Inbox.scopedSliding 1
+                let accepted = [ Inbox.post 1 inbox; Inbox.post 2 inbox ]
+                let! values = Inbox.stream inbox |> FlowStream.take 1 |> FlowStream.runCollect
+                return accepted, values, Inbox.dropped inbox
+            }
+            |> Flow.scoped
+
+        match Flow.run () workflow |> Exit.toResult with
+        | Ok(accepted, values, dropped) ->
+            Assert.Equal<bool list>([ true; true ], accepted)
+            Assert.Equal<int list>([ 2 ], values)
+            Assert.Equal(1L, dropped)
+        | Error error -> failwith $"Expected success, got {error}"
+
+    [<Fact>]
     let ``subscription delivers ordered messages through Post and dispose releases resource`` () =
         let messages = ConcurrentQueue<int>()
         let mutable posts = 0
