@@ -300,8 +300,9 @@ The exhaustive operation inventory lives in the API reference:
 - [Cmd](/elmish/api/Axial.ElmishFlows.Cmd.html): `Cmd.OfFlow.either`/`perform`/`attempt`/`start`, the latest-wins
   `Cmd.OfFlow.Latest` variants, and the streaming `Cmd.OfFlowStream.latest`.
 - [Sub](/elmish/api/Axial.ElmishFlows.Sub.html): `Sub.OfFlowStream.subscribe` for running a stream under a subscription id.
-- [Inbox](/elmish/api/Axial.ElmishFlows.Inbox.html): `Inbox.create`/`offer`/`post`/`dropped`/`stream` for synchronous UI
-  input and search-as-you-type.
+- [Inbox](/elmish/api/Axial.ElmishFlows.Inbox.html): `Inbox.scopedSliding`/`scopedDropping`/`scopedBounded`/
+  `scopedUnbounded`/`scopedWith` for an inbox built in the runtime's layer, and
+  `Inbox.create`/`offer`/`post`/`dropped`/`stream` for synchronous UI input and search-as-you-type.
 - [ElmishRuntime](/elmish/api/Axial.ElmishFlows.ElmishRuntime.html): `start`, `startLayer`, `startService`, `test`,
   and the `Stop`/`StopAndWait` shutdown methods.
 - [TestRuntime](/elmish/api/Axial.ElmishFlows.TestRuntime.html): `run`, `settle`, `drain`, `dispatched`, and `defects` for
