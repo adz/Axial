@@ -2629,10 +2629,11 @@ module Flow =
     /// </code>
     /// </example>
     let exit (source: Flow<'env, 'error, 'value>) : Flow<'env, 'nextError, Exit<'value, 'error>> =
-        source
-        |> foldCauseFlow
-            (fun value -> Flow(fun _ _ -> Execution.ofValue (Exit.Success value)))
-            (fun cause -> Flow(fun _ _ -> Execution.ofValue (Exit.Failure cause)))
+        Flow(fun environment cancellationToken ->
+            invokeCatching source environment cancellationToken
+            |> Platform.foldObserved cancellationToken
+                (fun value -> Execution.ofValue (Exit.Success value))
+                (fun cause -> Execution.ofValue (Exit.Failure cause)))
 
     // A Never-typed cause has no Fail case, so its defects and interruptions carry over to any error type.
     let rec private widenCause (cause: Cause<Never>) : Cause<'error> =
