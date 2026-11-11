@@ -15,7 +15,7 @@ module WorkflowErrorTests =
         | UpstreamError of string
 
     [<Fact>]
-    let ``fold lets interruption pass through without running the typed error handler`` () =
+    let ``foldFlow lets interruption pass through without running the typed error handler`` () =
         let mutable handlerRan = false
 
         let workflow =
@@ -31,7 +31,7 @@ module WorkflowErrorTests =
 
                 let folded : Flow<unit, Never, int> =
                     source
-                    |> Flow.fold Flow.ok (fun _ ->
+                    |> Flow.foldFlow Flow.ok (fun _ ->
                         handlerRan <- true
                         Flow.ok 0)
 
@@ -45,14 +45,14 @@ module WorkflowErrorTests =
         test <@ result = Exit.Success(Exit.Failure Cause.Interrupt, false) @>
 
     [<Fact>]
-    let ``fold lets a defect pass through without running the typed error handler`` () =
+    let ``foldFlow lets a defect pass through without running the typed error handler`` () =
         let defect = InvalidOperationException "broken"
         let mutable handlerRan = false
         let source : Flow<unit, string, int> = Flow.die defect
 
         let result : Exit<int, Never> =
             source
-            |> Flow.fold Flow.ok (fun _ ->
+            |> Flow.foldFlow Flow.ok (fun _ ->
                 handlerRan <- true
                 Flow.ok 0)
             |> Flow.runSync ()
@@ -61,10 +61,48 @@ module WorkflowErrorTests =
         test <@ not handlerRan @>
 
     [<Fact>]
-    let ``fold sends a typed failure to the error handler`` () =
+    let ``foldFlow sends a typed failure to the error handler`` () =
         let source : Flow<unit, string, int> = Flow.fail "missing"
-        let result = source |> Flow.fold (string >> Flow.ok) (fun error -> Flow.ok $"error: {error}") |> Flow.runSync ()
+        let result = source |> Flow.foldFlow (string >> Flow.ok) (fun error -> Flow.ok $"error: {error}") |> Flow.runSync ()
         test <@ result = Exit.Success "error: missing" @>
+
+    [<Fact>]
+    let ``fold maps success and a typed failure to plain values`` () =
+        let succeeded : Flow<unit, string, int> = Flow.ok 42
+        let failed : Flow<unit, string, int> = Flow.fail "missing"
+
+        let describe (source: Flow<unit, string, int>) : Exit<string, Never> =
+            source |> Flow.fold (fun value -> $"value {value}") (fun error -> $"error: {error}") |> Flow.runSync ()
+
+        test <@ describe succeeded = Exit.Success "value 42" @>
+        test <@ describe failed = Exit.Success "error: missing" @>
+
+    [<Fact>]
+    let ``fold lets a defect pass through without running the typed error handler`` () =
+        let defect = InvalidOperationException "broken"
+        let mutable handlerRan = false
+        let source : Flow<unit, string, int> = Flow.die defect
+
+        let result : Exit<int, Never> =
+            source
+            |> Flow.fold id (fun _ ->
+                handlerRan <- true
+                0)
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure(Cause.Die defect) @>
+        test <@ not handlerRan @>
+
+    [<Fact>]
+    let ``exit succeeds with the source outcome, including defects`` () =
+        let defect = InvalidOperationException "broken"
+
+        let exitOf (source: Flow<unit, string, int>) : Exit<Exit<int, string>, Never> =
+            source |> Flow.exit |> Flow.runSync ()
+
+        test <@ exitOf (Flow.ok 42) = Exit.Success(Exit.Success 42) @>
+        test <@ exitOf (Flow.fail "missing") = Exit.Success(Exit.Failure(Cause.Fail "missing")) @>
+        test <@ exitOf (Flow.die defect) = Exit.Success(Exit.Failure(Cause.Die defect)) @>
 
     [<Fact>]
     let ``recover changes error type on a traced typed failure`` () =
@@ -264,37 +302,37 @@ module WorkflowErrorTests =
 
         test <@ requestedCancellation = Exit.Failure Cause.Interrupt @>
 
-    // T28: foldCause and mapBoth must observe an exception thrown by the source flow, as Flow.catch does.
+    // T28: foldCauseFlow and mapBoth must observe an exception thrown by the source flow, as Flow.catch does.
     let private dieHandler (defect: exn) (cause: Cause<string>) : Flow<unit, string, int> =
         match Cause.untraced cause with
         | Cause.Die error when obj.ReferenceEquals(error, defect) -> Flow.succeed -1
         | other -> Flow.succeed -2
 
     [<Fact>]
-    let ``Flow foldCause sends a synchronously thrown exception to the failure handler as Die`` () =
+    let ``Flow foldCauseFlow sends a synchronously thrown exception to the failure handler as Die`` () =
         let defect = InvalidOperationException "boom"
 
         let thrownByBuilder : Exit<int, string> =
             flow { return raise defect }
-            |> Flow.foldCause Flow.succeed (dieHandler defect)
+            |> Flow.foldCauseFlow Flow.succeed (dieHandler defect)
             |> Flow.runSync ()
 
         let thrownByInvoke : Exit<int, string> =
             Flow(fun (_: unit) _ -> raise defect)
-            |> Flow.foldCause Flow.succeed (dieHandler defect)
+            |> Flow.foldCauseFlow Flow.succeed (dieHandler defect)
             |> Flow.runSync ()
 
         test <@ thrownByBuilder = Exit.Success -1 @>
         test <@ thrownByInvoke = Exit.Success -1 @>
 
     [<Fact>]
-    let ``Flow foldCause sends an exception thrown after an async hop to the failure handler as Die`` () =
+    let ``Flow foldCauseFlow sends an exception thrown after an async hop to the failure handler as Die`` () =
         let defect = InvalidOperationException "boom after hop"
 
         let afterSleep : Exit<int, string> =
             Flow.sleep (TimeSpan.FromMilliseconds 5.0)
             |> Flow.bind (fun () -> raise defect)
-            |> Flow.foldCause Flow.succeed (dieHandler defect)
+            |> Flow.foldCauseFlow Flow.succeed (dieHandler defect)
             |> Flow.runSync ()
 
         let afterTask : Exit<int, string> =
@@ -302,20 +340,20 @@ module WorkflowErrorTests =
                 do! Flow.fromTask (fun _ -> task { do! Task.Yield() })
                 return raise defect
             }
-            |> Flow.foldCause Flow.succeed (dieHandler defect)
+            |> Flow.foldCauseFlow Flow.succeed (dieHandler defect)
             |> Flow.runSync ()
 
         test <@ afterSleep = Exit.Success -1 @>
         test <@ afterTask = Exit.Success -1 @>
 
     [<Fact>]
-    let ``Flow foldCause keeps a throw from the success handler out of the failure handler`` () =
+    let ``Flow foldCauseFlow keeps a throw from the success handler out of the failure handler`` () =
         let defect = InvalidOperationException "success handler"
         let mutable failureHandlerRan = false
 
         let result : Exit<int, string> =
             Flow.succeed 1
-            |> Flow.foldCause
+            |> Flow.foldCauseFlow
                 (fun _ -> raise defect)
                 (fun _ ->
                     failureHandlerRan <- true
@@ -326,14 +364,14 @@ module WorkflowErrorTests =
         test <@ not failureHandlerRan @>
 
     [<Fact>]
-    let ``Flow foldCause reports a runtime cancellation thrown by the source as Interrupt`` () =
+    let ``Flow foldCauseFlow reports a runtime cancellation thrown by the source as Interrupt`` () =
         use cancellation = new CancellationTokenSource()
 
         let result : Exit<string, string> =
             Flow(fun (_: unit) _ ->
                 cancellation.Cancel()
                 raise (OperationCanceledException cancellation.Token))
-            |> Flow.foldCause
+            |> Flow.foldCauseFlow
                 (fun _ -> Flow.succeed "success")
                 (fun cause ->
                     match Cause.untraced cause with

@@ -54,7 +54,7 @@ module ProcessStream =
 
             Flow.race consumer watcher
             |> Flow.scoped
-            |> Flow.foldCause (fun result ->
+            |> Flow.foldCauseFlow (fun result ->
                 failure () |> Option.iter Flow.reportUnobservedCause
                 Flow.succeed result) (fun cause ->
                 let combined =
@@ -94,7 +94,7 @@ module ProcessStream =
 
             Flow.race consumer watcher
             |> Flow.scoped
-            |> Flow.foldCause (fun result ->
+            |> Flow.foldCauseFlow (fun result ->
                 failure () |> Option.iter Flow.reportUnobservedCause
                 Flow.succeed result) (fun cause ->
                 let combined =

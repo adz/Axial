@@ -16,13 +16,13 @@ let private dieMessage (cause: Cause<string>) : string =
 let private throwNow (message: string) : 'value = raise (Exception message)
 
 let private messageOf (source: Flow<unit, string, int>) : Flow<unit, Never, string> =
-    source |> Flow.foldCause (fun _ -> Flow.ok "success") (dieMessage >> Flow.ok)
+    source |> Flow.foldCauseFlow (fun _ -> Flow.ok "success") (dieMessage >> Flow.ok)
 
 let private messageOf' (source: Flow<unit, string, string>) : Flow<unit, Never, string> =
-    source |> Flow.foldCause Flow.ok (dieMessage >> Flow.ok)
+    source |> Flow.foldCauseFlow Flow.ok (dieMessage >> Flow.ok)
 
 let tests =
-    [ test "foldCause sees an exception thrown synchronously and after an await" (
+    [ test "foldCauseFlow sees an exception thrown synchronously and after an await" (
           flow {
               let! synchronous = messageOf (flow { return throwNow "sync boom" })
 
@@ -106,7 +106,7 @@ let tests =
               let! traced =
                   throwsAfterAwait "traced boom"
                   |> Flow.tracedError "fable.trace"
-                  |> Flow.foldCause
+                  |> Flow.foldCauseFlow
                       (fun _ -> Flow.ok "success")
                       (fun cause ->
                           match cause with
@@ -127,7 +127,7 @@ let tests =
                       do! Flow.sleep (TimeSpan.FromMilliseconds 1.0)
                       return 1
                   }
-                  |> Flow.foldCause
+                  |> Flow.foldCauseFlow
                       (fun (_: int) -> throwNow "success handler boom")
                       (fun (_: Cause<string>) ->
                           failureCalls.Value <- failureCalls.Value + 1
@@ -147,7 +147,7 @@ let tests =
                     equal "the catch handler's throw is a defect" "catch handler boom" fromCatch
                     equal "the catch handler ran once" 1 catchCalls.Value ]
           })
-      test "an interrupted body stays interrupted through try/with and foldCause" (
+      test "an interrupted body stays interrupted through try/with and foldCauseFlow" (
           flow {
               let! started = Deferred.make<unit, Never, unit> ()
 
@@ -160,7 +160,7 @@ let tests =
                       with _ ->
                           return "fallback"
                   }
-                  |> Flow.foldCause Flow.ok (fun cause ->
+                  |> Flow.foldCauseFlow Flow.ok (fun cause ->
                       if Cause.isInterrupted cause then Flow.ofExit (Exit.Failure cause) else Flow.ok "handled")
 
               let! fiber = Flow.fork guarded

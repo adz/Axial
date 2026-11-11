@@ -41,7 +41,40 @@ type PlatformReadBenchmarks() =
         for _ in 1 .. 1000 do
             completed |> Flow.retry (Schedule.recurs 3) |> fun workflow -> workflow.RunSynchronously(environment) |> ignore
 
-// T28: foldCause and mapBoth observe a thrown source; the non-throwing paths must stay as cheap as before.
+// Applicative combinators and tap, which used to be composed from bind and map.
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(3)>]
+[<IterationCount(3)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
+type CombinatorBenchmarks() =
+    let environment = ()
+    let one : Flow<unit, string, int> = Flow.ok 1
+    let two : Flow<unit, string, int> = Flow.ok 2
+    let three : Flow<unit, string, int> = Flow.ok 3
+    let add : Flow<unit, string, int -> int> = Flow.ok ((+) 1)
+    let tapX1000 = flow { for _ in 1 .. 1000 do let! _ = one |> Flow.tap (fun _ -> Flow.ok ()) in () }
+    let zipX1000 = flow { for _ in 1 .. 1000 do let! _ = Flow.zip one two in () }
+    let map2X1000 = flow { for _ in 1 .. 1000 do let! _ = Flow.map2 (+) one two in () }
+    let applyX1000 = flow { for _ in 1 .. 1000 do let! _ = Flow.apply add one in () }
+    let map3X1000 = flow { for _ in 1 .. 1000 do let! _ = Flow.map3 (fun a b c -> a + b + c) one two three in () }
+
+    [<Benchmark>]
+    member _.TapX1000() = tapX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.ZipX1000() = zipX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.Map2X1000() = map2X1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.ApplyX1000() = applyX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.Map3X1000() = map3X1000.RunSynchronously(environment) |> ignore
+
+// T28: foldCauseFlow and mapBoth observe a thrown source; the non-throwing paths must stay as cheap as before.
 [<MemoryDiagnoser>]
 [<InProcess>]
 [<WarmupCount(3)>]
@@ -59,10 +92,16 @@ type FoldCauseBenchmarks() =
             })
     let onSuccess (value: int) : Flow<unit, string, int> = Flow.ok (value + 1)
     let onFailure (_: Cause<string>) : Flow<unit, string, int> = Flow.ok 0
-    let successX1000 = flow { for _ in 1 .. 1000 do let! _ = completed |> Flow.foldCause onSuccess onFailure in () }
-    let failureX1000 = flow { for _ in 1 .. 1000 do let! _ = failed |> Flow.foldCause onSuccess onFailure in () }
+    let successX1000 = flow { for _ in 1 .. 1000 do let! _ = completed |> Flow.foldCauseFlow onSuccess onFailure in () }
+    let failureX1000 = flow { for _ in 1 .. 1000 do let! _ = failed |> Flow.foldCauseFlow onSuccess onFailure in () }
     let mapBothX1000 = flow { for _ in 1 .. 1000 do let! _ = completed |> Flow.mapBoth id id in () }
-    let asyncX100 = flow { for _ in 1 .. 100 do let! _ = hop |> Flow.foldCause onSuccess onFailure in () }
+    let asyncX100 = flow { for _ in 1 .. 100 do let! _ = hop |> Flow.foldCauseFlow onSuccess onFailure in () }
+    let onError (_: string) : Flow<unit, string, int> = Flow.ok 0
+    let foldSuccessX1000 = flow { for _ in 1 .. 1000 do let! _ = completed |> Flow.fold ((+) 1) (fun _ -> 0) in () }
+    let foldFailureX1000 = flow { for _ in 1 .. 1000 do let! _ = failed |> Flow.fold ((+) 1) (fun _ -> 0) in () }
+    let foldFlowSuccessX1000 = flow { for _ in 1 .. 1000 do let! _ = completed |> Flow.foldFlow onSuccess onError in () }
+    let foldFlowFailureX1000 = flow { for _ in 1 .. 1000 do let! _ = failed |> Flow.foldFlow onSuccess onError in () }
+    let foldFlowAsyncX100 = flow { for _ in 1 .. 100 do let! _ = hop |> Flow.foldFlow onSuccess onError in () }
     let noop =
         { new IDisposable with
             member _.Dispose() = () }
@@ -86,6 +125,21 @@ type FoldCauseBenchmarks() =
 
     [<Benchmark>]
     member _.FoldCauseAsyncX100() = asyncX100.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.FoldSuccessX1000() = foldSuccessX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.FoldFailureX1000() = foldFailureX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.FoldFlowSuccessX1000() = foldFlowSuccessX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.FoldFlowFailureX1000() = foldFlowFailureX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.FoldFlowAsyncX100() = foldFlowAsyncX100.RunSynchronously(environment) |> ignore
 
     [<Benchmark>]
     member _.UseInLoopX1000() = useInLoopX1000.RunSynchronously(environment) |> ignore

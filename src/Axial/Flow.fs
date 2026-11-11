@@ -16,6 +16,13 @@ type private BindAwaiter<'env, 'error, 'value, 'next>
             match source.Result with  // axial-allow-AXG001: task already awaited
             | Exit.Success value -> FlowStep.Next(binder value)
             | Exit.Failure cause -> FlowStep.Failed cause
+
+// Like BindAwaiter, but the continuation sees both outcomes, for folds that branch on failure as well as success.
+type private FoldAwaiter<'env, 'error, 'value, 'nextError, 'next>
+    (source: Task<Exit<'value, 'error>>, step: Exit<'value, 'error> -> FlowStep<'env, 'nextError, 'next>) =
+    interface IFlowAwaiter<'env, 'nextError, 'next> with
+        member _.Pending = source :> Task
+        member _.Resume() = step source.Result  // axial-allow-AXG001: task already awaited
 #endif
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -2593,13 +2600,13 @@ module Flow =
     /// after its owner asked it to stop) or a defect (a bug disappears). Unless the caller owns the cancellation, the
     /// handler must re-raise <c>Cause.Interrupt</c>, and it should re-raise or report every <c>Cause.Die</c>.
     /// </para>
-    /// <para>For typed errors only, use <c>Flow.fold</c>, <c>Flow.recover</c>, or <c>Flow.orElseWith</c>, which never see interruption or defects.</para>
+    /// <para>For typed errors only, use <c>Flow.foldFlow</c>, <c>Flow.recover</c>, or <c>Flow.orElseWith</c>, which never see interruption or defects.</para>
     /// </remarks>
     /// <param name="onSuccess">A function that returns a new flow from the success value.</param>
     /// <param name="onFailure">A function that returns a new flow from the failure cause.</param>
     /// <param name="flow">The source flow.</param>
     /// <returns>A flow that continues with the outcome of either <paramref name="onSuccess" /> or <paramref name="onFailure" />.</returns>
-    let foldCause
+    let foldCauseFlow
         (onSuccess: 'value -> Flow<'env, 'nextError, 'next>)
         (onFailure: Cause<'error> -> Flow<'env, 'nextError, 'next>)
         (flow: Flow<'env, 'error, 'value>)
@@ -2609,6 +2616,31 @@ module Flow =
             |> Platform.foldObserved cancellationToken
                 (fun value -> invoke (onSuccess value) environment cancellationToken)
                 (fun cause -> invoke (onFailure cause) environment cancellationToken))
+
+    /// <summary>Runs a flow and succeeds with its whole outcome as an <c>Exit</c>.</summary>
+    /// <remarks>
+    /// <para>
+    /// The resulting flow never fails: it succeeds with <c>Exit.Success</c> or with <c>Exit.Failure</c> carrying the
+    /// full cause, including defects and interruption. <c>ofExit</c> turns the value back into a flow.
+    /// </para>
+    /// <para>
+    /// Like <c>foldCauseFlow</c>, this turns an interruption into a value. Unless the caller owns the cancellation,
+    /// re-raise an <c>Exit.Failure</c> that contains <c>Cause.Interrupt</c>, for example with <c>ofExit</c>.
+    /// </para>
+    /// </remarks>
+    /// <param name="source">The source flow.</param>
+    /// <returns>A flow that succeeds with the source's exit.</returns>
+    /// <example>
+    /// <code>
+    /// let observed : Flow&lt;'env, Never, Exit&lt;int, string&gt;&gt; = Flow.fail "boom" |&gt; Flow.exit
+    /// </code>
+    /// </example>
+    let exit (source: Flow<'env, 'error, 'value>) : Flow<'env, 'nextError, Exit<'value, 'error>> =
+        Flow(fun environment cancellationToken ->
+            invokeCatching source environment cancellationToken
+            |> Platform.foldObserved cancellationToken
+                (fun value -> Execution.ofValue (Exit.Success value))
+                (fun cause -> Execution.ofValue (Exit.Failure cause)))
 
     // A Never-typed cause has no Fail case, so its defects and interruptions carry over to any error type.
     let rec private widenCause (cause: Cause<Never>) : Cause<'error> =
@@ -2781,7 +2813,7 @@ module Flow =
     /// <summary>Recovers a typed failure with a flow whose error type may differ.</summary>
     /// <remarks>
     /// Like <c>orElseWith</c>, this handles a single <c>Cause.Fail</c>, including traced failures;
-    /// unlike <c>orElseWith</c>, the handler may change the error type. <c>foldCause</c> handles every
+    /// unlike <c>orElseWith</c>, the handler may change the error type. <c>foldCauseFlow</c> handles every
     /// cause, including defects and interruption. Compound causes are not recovered. Because a
     /// compound cause may contain old typed errors that cannot inhabit the new error channel,
     /// each old typed failure becomes a <c>Cause.Die</c> containing an <c>UnrecoveredFailureException</c>
@@ -2851,17 +2883,76 @@ module Flow =
     /// <param name="onError">A function that returns a new flow from the typed error.</param>
     /// <param name="source">The source flow.</param>
     /// <returns>A flow that continues with the success or typed-error result.</returns>
-    let fold
+    let foldFlow
         (onSuccess: 'value -> Flow<'env, 'nextError, 'next>)
         (onError: 'error -> Flow<'env, 'nextError, 'next>)
         (source: Flow<'env, 'error, 'value>)
         : Flow<'env, 'nextError, 'next> =
-        source
-        |> map Choice1Of2
-        |> recover (fun error -> onError error |> map Choice2Of2)
-        |> bind (function
-            | Choice1Of2 value -> onSuccess value
-            | Choice2Of2 next -> Flow(fun _ _ -> Execution.ofValue next))
+        // One pass over the outcome, with the same rules as recover. On .NET the chosen handler's flow is the next
+        // trampoline step, as in bind, so recursion through either handler runs in constant stack.
+#if FABLE_COMPILER
+        Flow(fun environment cancellationToken ->
+            invoke source environment cancellationToken
+            |> Execution.fold
+                (fun value -> invoke (onSuccess value) environment cancellationToken)
+                (fun cause ->
+                    match Cause.untraced cause with
+                    | Cause.Fail error ->
+                        try invoke (onError error) environment cancellationToken
+                        with thrown -> Execution.ofCause (ForeignCancellation.causeOf cancellationToken thrown)
+                    | _ -> Execution.ofCause (retypeUnrecovered cause)))
+#else
+        FlowContinue(fun environment cancellationToken ->
+            let step (exit: Exit<'value, 'error>) : FlowStep<'env, 'nextError, 'next> =
+                match exit with
+                | Exit.Success value -> FlowStep.Next(onSuccess value)
+                | Exit.Failure cause ->
+                    match Cause.untraced cause with
+                    | Cause.Fail error ->
+                        try FlowStep.Next(onError error)
+                        with thrown -> FlowStep.Failed(ForeignCancellation.causeOf cancellationToken thrown)
+                    | _ -> FlowStep.Failed(retypeUnrecovered cause)
+
+            let execution = invoke source environment cancellationToken
+
+            if execution.IsCompletedSuccessfully then step execution.Result
+            else FlowStep.Await(FoldAwaiter(execution.AsTask(), step)))
+#endif
+
+    /// <summary>Folds a successful value or a single typed failure into a plain value.</summary>
+    /// <remarks>
+    /// Other libraries call this <c>either</c> or <c>match</c>. The handlers return plain values; use
+    /// <c>foldFlow</c> when a handler needs to run another flow. Traced typed failures reach
+    /// <paramref name="onError" />. Defects and interruption pass through, and compound causes are retyped without
+    /// recovery in the same way as <c>recover</c>. The result has no typed failure of its own, so its error type is
+    /// free.
+    /// </remarks>
+    /// <param name="onSuccess">A function that maps the success value.</param>
+    /// <param name="onError">A function that maps the typed error.</param>
+    /// <param name="source">The source flow.</param>
+    /// <returns>A flow that succeeds with the result of whichever handler ran.</returns>
+    /// <example>
+    /// <code>
+    /// let response : Flow&lt;'env, Never, Response&gt; =
+    ///     loadOrder id
+    ///     |&gt; Flow.fold render (fun error -&gt; Http.problem 500 (OrderError.describe error))
+    /// </code>
+    /// </example>
+    let fold
+        (onSuccess: 'value -> 'next)
+        (onError: 'error -> 'next)
+        (source: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'nextError, 'next> =
+        Flow(fun environment cancellationToken ->
+            invoke source environment cancellationToken
+            |> Execution.fold
+                (fun value -> Execution.ofValue (onSuccess value))
+                (fun cause ->
+                    match Cause.untraced cause with
+                    | Cause.Fail error ->
+                        try Execution.ofValue (onError error)
+                        with thrown -> Execution.ofCause (ForeignCancellation.causeOf cancellationToken thrown)
+                    | _ -> Execution.ofCause (retypeUnrecovered cause)))
 
     /// <summary>Falls back to another flow when the source flow fails.</summary>
     /// <param name="fallback">The flow to run if the source flow fails.</param>
@@ -2891,11 +2982,11 @@ module Flow =
         (left: Flow<'env, 'error, 'left>)
         (right: Flow<'env, 'error, 'right>)
         : Flow<'env, 'error, 'left * 'right> =
-        bind
-            (fun leftValue ->
-                right
-                |> map (fun rightValue -> leftValue, rightValue))
-            left
+        Flow(fun environment cancellationToken ->
+            invoke left environment cancellationToken
+            |> Execution.bind (fun leftValue ->
+                invoke right environment cancellationToken
+                |> Execution.map (fun rightValue -> leftValue, rightValue)))
 
     /// <summary>Combines two flows with a mapping function.</summary>
     /// <param name="mapper">A function that combines the successful values of both flows.</param>
@@ -2912,8 +3003,11 @@ module Flow =
         (left: Flow<'env, 'error, 'left>)
         (right: Flow<'env, 'error, 'right>)
         : Flow<'env, 'error, 'value> =
-        zip left right
-        |> map (fun (leftValue, rightValue) -> mapper leftValue rightValue)
+        Flow(fun environment cancellationToken ->
+            invoke left environment cancellationToken
+            |> Execution.bind (fun leftValue ->
+                invoke right environment cancellationToken
+                |> Execution.map (fun rightValue -> mapper leftValue rightValue)))
 
     /// <summary>Applies a flow-wrapped function to a flow-wrapped value.</summary>
     /// <param name="flow">A flow that contains a function to apply.</param>
@@ -2928,7 +3022,11 @@ module Flow =
         (flow: Flow<'env, 'error, 'value -> 'next>)
         (value: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'next> =
-        map2 (fun mapper input -> mapper input) flow value
+        Flow(fun environment cancellationToken ->
+            invoke flow environment cancellationToken
+            |> Execution.bind (fun mapper ->
+                invoke value environment cancellationToken
+                |> Execution.map mapper))
 
     /// <summary>Combines three flows with a mapping function.</summary>
     /// <param name="mapper">A function that combines the successful values of all three flows.</param>
@@ -2947,9 +3045,13 @@ module Flow =
         (middle: Flow<'env, 'error, 'middle>)
         (right: Flow<'env, 'error, 'right>)
         : Flow<'env, 'error, 'value> =
-        apply
-            (map2 (fun leftValue middleValue -> fun rightValue -> mapper leftValue middleValue rightValue) left middle)
-            right
+        Flow(fun environment cancellationToken ->
+            invoke left environment cancellationToken
+            |> Execution.bind (fun leftValue ->
+                invoke middle environment cancellationToken
+                |> Execution.bind (fun middleValue ->
+                    invoke right environment cancellationToken
+                    |> Execution.map (fun rightValue -> mapper leftValue middleValue rightValue))))
 
     /// <summary>Maps the successful value of a synchronous flow.</summary>
     let (<!>)

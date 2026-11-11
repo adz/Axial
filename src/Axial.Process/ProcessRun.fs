@@ -138,7 +138,7 @@ module internal ProcessRun =
 
     let private mapInputFailure (source: Flow<'env, string, unit>) =
         source
-        |> Flow.foldCause
+        |> Flow.foldCauseFlow
             Flow.succeed
             (fun cause ->
                 if hasTypedFailure cause && (Cause.defects cause |> List.isEmpty) then
@@ -148,7 +148,7 @@ module internal ProcessRun =
 
     let private mapEngineFailure (source: Flow<unit, ProcessError, 'value>) =
         source
-        |> Flow.foldCause
+        |> Flow.foldCauseFlow
             Flow.succeed
             (fun cause ->
                 match Cause.untraced cause with
@@ -554,7 +554,7 @@ module internal ProcessRun =
                         let! reply = Deferred.make<unit, Never, StopCause> ()
                         let! offered =
                             (commandsQueue |> Queue.offer (Stop(cause, reply)) |> Flow.map Some)
-                            |> Flow.foldCause Flow.succeed (fun _ -> Flow.succeed None)
+                            |> Flow.foldCauseFlow Flow.succeed (fun _ -> Flow.succeed None)
                         match offered with
                         | Some _ -> return! Deferred.await reply
                         | None -> return cause
@@ -570,7 +570,7 @@ module internal ProcessRun =
                                 |> Flow.map (fun () -> Ok ())
                                 |> Flow.recover (Error >> Flow.succeed)
                         }
-                        |> Flow.foldCause Flow.succeed (fun _ -> Flow.succeed (Ok ()))
+                        |> Flow.foldCauseFlow Flow.succeed (fun _ -> Flow.succeed (Ok ()))
 
                     let! token = Async.CancellationToken
                     let! exit =
@@ -677,7 +677,7 @@ module internal ProcessRun =
                             if not (isNull rentedChars) then Buffers.ArrayPool<char>.Shared.Return rentedChars
                             Buffers.ArrayPool<byte>.Shared.Return buffer
                     })
-                    |> Flow.foldCause Flow.succeed (fun cause ->
+                    |> Flow.foldCauseFlow Flow.succeed (fun cause ->
                         match Cause.untraced cause with
                         | Cause.Die (ProcessPumpFailure error) -> Flow.fail error
                         | _ -> Flow.ofExit (Exit.Failure cause))
@@ -771,7 +771,7 @@ module internal ProcessRun =
                             |> Flow.sequencePar
                             |> Flow.ignore
                     }
-                    |> Flow.foldCause
+                    |> Flow.foldCauseFlow
                         Flow.succeed
                         (fun cause ->
                             match Cause.untraced cause with
@@ -819,7 +819,7 @@ module internal ProcessRun =
                         code = 109 || code = 232 // Windows ERROR_BROKEN_PIPE / ERROR_NO_DATA
 
                 let classifyInputWrite work =
-                    work |> Flow.foldCause Flow.succeed (fun cause ->
+                    work |> Flow.foldCauseFlow Flow.succeed (fun cause ->
                         match Cause.untraced cause with
                         | Cause.Die (:? IOException as error) when childClosedPipe error ->
                             // Stop feeding, not just this write. User source defects never pass through here.
@@ -854,7 +854,7 @@ module internal ProcessRun =
                             work
 
                     pumping
-                    |> Flow.foldCause
+                    |> Flow.foldCauseFlow
                         Flow.succeed
                         (fun cause ->
                             let expectedPipeClose =
@@ -923,7 +923,7 @@ module internal ProcessRun =
 
                 let tolerateStopPipeFailure source =
                     source
-                    |> Flow.foldCause
+                    |> Flow.foldCauseFlow
                         Flow.succeed
                         (fun cause ->
                             let expected =

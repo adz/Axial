@@ -541,7 +541,7 @@ module WorkflowConcurrencyTests =
                 let! _ =
                     Deferred.succeed () entered
                     |> Flow.bind (fun _ -> Flow.sleep (TimeSpan.FromSeconds 30.0))
-                    |> Flow.foldCause Flow.ok (fun cause ->
+                    |> Flow.foldCauseFlow Flow.ok (fun cause ->
                         cleaned.Value <- true
                         Flow.ofExit (Exit.Failure cause))
                     |> Flow.forkReplacing slot

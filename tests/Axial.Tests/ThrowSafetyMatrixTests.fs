@@ -374,9 +374,9 @@ module ThrowSafetyMatrix =
           die "Flow.ensuring/source" (fun c -> c.Bad |> Flow.ensuring c.Finalizer) |> comp 1
           die "Flow.ensuring/finalizer" (fun c -> c.Src 1 |> Flow.ensuring (c.BadOf()))
           die "Flow.envWith/fn" (fun c -> c.Later(Flow.envWith (fun () -> c.Throw<int>())) : Flow<unit, string, int>)
-          die "Flow.fold/source" (fun c ->
+          die "Flow.foldFlow/source" (fun c ->
               c.Bad
-              |> Flow.fold
+              |> Flow.foldFlow
                   (fun value ->
                       c.Handle()
                       Flow.ok value)
@@ -385,28 +385,37 @@ module ThrowSafetyMatrix =
                       Flow.ok 0)
               : Flow<unit, string, int>)
           |> calls 0
-          die "Flow.fold/onSuccess" (fun c -> c.Src 1 |> Flow.fold (c.Fn<int, Flow<unit, string, int>>()) (fun _ -> Flow.ok 0))
-          die "Flow.fold/onError" (fun c -> c.SrcFail |> Flow.fold Flow.ok (c.Fn<string, Flow<unit, string, int>>()))
-          value "Flow.foldCause/source" 42 (fun c ->
+          die "Flow.foldFlow/onSuccess" (fun c -> c.Src 1 |> Flow.foldFlow (c.Fn<int, Flow<unit, string, int>>()) (fun _ -> Flow.ok 0))
+          die "Flow.foldFlow/onError" (fun c -> c.SrcFail |> Flow.foldFlow Flow.ok (c.Fn<string, Flow<unit, string, int>>()))
+          die "Flow.fold/onSuccess" (fun c -> c.Src 1 |> Flow.fold (c.Fn<int, int>()) (fun _ -> 0) : Flow<unit, string, int>)
+          die "Flow.fold/onError" (fun c -> c.SrcFail |> Flow.fold id (c.Fn<string, int>()) : Flow<unit, string, int>)
+          value "Flow.exit/source" 42 (fun c ->
               c.Bad
-              |> Flow.foldCause
+              |> Flow.exit
+              |> Flow.map (function
+                  | Exit.Failure cause when hasBoom c cause -> 42
+                  | _ -> -1)
+              : Flow<unit, string, int>)
+          value "Flow.foldCauseFlow/source" 42 (fun c ->
+              c.Bad
+              |> Flow.foldCauseFlow
                   (fun _ -> Flow.ok 0)
                   (fun cause ->
                       c.Handle()
                       Flow.ok (if hasBoom c cause then 42 else -1))
               : Flow<unit, string, int>)
           |> calls 1
-          die "Flow.foldCause/onSuccess" (fun c ->
+          die "Flow.foldCauseFlow/onSuccess" (fun c ->
               c.Src 1
-              |> Flow.foldCause
+              |> Flow.foldCauseFlow
                   (c.Fn<int, Flow<unit, string, int>>())
                   (fun _ ->
                       c.Handle()
                       Flow.ok 0))
           |> calls 0
-          die "Flow.foldCause/onFailure" (fun c ->
+          die "Flow.foldCauseFlow/onFailure" (fun c ->
               c.SrcFail
-              |> Flow.foldCause Flow.ok (fun _ ->
+              |> Flow.foldCauseFlow Flow.ok (fun _ ->
                   c.Handle()
                   c.Throw<Flow<unit, string, int>>()))
           |> calls 1
