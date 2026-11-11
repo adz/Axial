@@ -63,6 +63,12 @@ type FoldCauseBenchmarks() =
     let failureX1000 = flow { for _ in 1 .. 1000 do let! _ = failed |> Flow.foldCauseFlow onSuccess onFailure in () }
     let mapBothX1000 = flow { for _ in 1 .. 1000 do let! _ = completed |> Flow.mapBoth id id in () }
     let asyncX100 = flow { for _ in 1 .. 100 do let! _ = hop |> Flow.foldCauseFlow onSuccess onFailure in () }
+    let onError (_: string) : Flow<unit, string, int> = Flow.ok 0
+    let foldSuccessX1000 = flow { for _ in 1 .. 1000 do let! _ = completed |> Flow.fold ((+) 1) (fun _ -> 0) in () }
+    let foldFailureX1000 = flow { for _ in 1 .. 1000 do let! _ = failed |> Flow.fold ((+) 1) (fun _ -> 0) in () }
+    let foldFlowSuccessX1000 = flow { for _ in 1 .. 1000 do let! _ = completed |> Flow.foldFlow onSuccess onError in () }
+    let foldFlowFailureX1000 = flow { for _ in 1 .. 1000 do let! _ = failed |> Flow.foldFlow onSuccess onError in () }
+    let foldFlowAsyncX100 = flow { for _ in 1 .. 100 do let! _ = hop |> Flow.foldFlow onSuccess onError in () }
     let noop =
         { new IDisposable with
             member _.Dispose() = () }
@@ -86,6 +92,21 @@ type FoldCauseBenchmarks() =
 
     [<Benchmark>]
     member _.FoldCauseAsyncX100() = asyncX100.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.FoldSuccessX1000() = foldSuccessX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.FoldFailureX1000() = foldFailureX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.FoldFlowSuccessX1000() = foldFlowSuccessX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.FoldFlowFailureX1000() = foldFlowFailureX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.FoldFlowAsyncX100() = foldFlowAsyncX100.RunSynchronously(environment) |> ignore
 
     [<Benchmark>]
     member _.UseInLoopX1000() = useInLoopX1000.RunSynchronously(environment) |> ignore

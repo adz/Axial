@@ -87,6 +87,17 @@ module StackSafetyTests =
         test <@ onSmallStack (fun () -> Flow.runSync () recovered) = Exit.Success 1 @>
 
     [<Fact>]
+    let ``recursion through either foldFlow handler is stack safe`` () =
+        // Each step recurses from the handler for its outcome: even steps succeed, odd steps fail with a typed error.
+        let rec countDown n : Flow<unit, string, int> =
+            if n = 0 then Flow.succeed 0
+            else
+                let step : Flow<unit, string, int> = if n % 2 = 0 then Flow.succeed n else Flow.fail "odd"
+                step |> Flow.foldFlow (fun _ -> countDown (n - 1)) (fun _ -> countDown (n - 1))
+
+        test <@ onSmallStack (fun () -> Flow.runSync () (countDown iterations)) = Exit.Success 0 @>
+
+    [<Fact>]
     let ``deeply recursive flows are stack safe`` () =
         // Recursion is deferred with Flow.delay (the builder defers implicitly); an eager
         // `countDown (n - 1) |> Flow.map` recurses in plain F# while building the value, before Axial runs.

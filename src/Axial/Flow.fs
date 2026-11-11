@@ -16,6 +16,13 @@ type private BindAwaiter<'env, 'error, 'value, 'next>
             match source.Result with  // axial-allow-AXG001: task already awaited
             | Exit.Success value -> FlowStep.Next(binder value)
             | Exit.Failure cause -> FlowStep.Failed cause
+
+// Like BindAwaiter, but the continuation sees both outcomes, for folds that branch on failure as well as success.
+type private FoldAwaiter<'env, 'error, 'value, 'nextError, 'next>
+    (source: Task<Exit<'value, 'error>>, step: Exit<'value, 'error> -> FlowStep<'env, 'nextError, 'next>) =
+    interface IFlowAwaiter<'env, 'nextError, 'next> with
+        member _.Pending = source :> Task
+        member _.Resume() = step source.Result  // axial-allow-AXG001: task already awaited
 #endif
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -2881,12 +2888,36 @@ module Flow =
         (onError: 'error -> Flow<'env, 'nextError, 'next>)
         (source: Flow<'env, 'error, 'value>)
         : Flow<'env, 'nextError, 'next> =
-        source
-        |> map Choice1Of2
-        |> recover (fun error -> onError error |> map Choice2Of2)
-        |> bind (function
-            | Choice1Of2 value -> onSuccess value
-            | Choice2Of2 next -> Flow(fun _ _ -> Execution.ofValue next))
+        // One pass over the outcome, with the same rules as recover. On .NET the chosen handler's flow is the next
+        // trampoline step, as in bind, so recursion through either handler runs in constant stack.
+#if FABLE_COMPILER
+        Flow(fun environment cancellationToken ->
+            invoke source environment cancellationToken
+            |> Execution.fold
+                (fun value -> invoke (onSuccess value) environment cancellationToken)
+                (fun cause ->
+                    match Cause.untraced cause with
+                    | Cause.Fail error ->
+                        try invoke (onError error) environment cancellationToken
+                        with thrown -> Execution.ofCause (ForeignCancellation.causeOf cancellationToken thrown)
+                    | _ -> Execution.ofCause (retypeUnrecovered cause)))
+#else
+        FlowContinue(fun environment cancellationToken ->
+            let step (exit: Exit<'value, 'error>) : FlowStep<'env, 'nextError, 'next> =
+                match exit with
+                | Exit.Success value -> FlowStep.Next(onSuccess value)
+                | Exit.Failure cause ->
+                    match Cause.untraced cause with
+                    | Cause.Fail error ->
+                        try FlowStep.Next(onError error)
+                        with thrown -> FlowStep.Failed(ForeignCancellation.causeOf cancellationToken thrown)
+                    | _ -> FlowStep.Failed(retypeUnrecovered cause)
+
+            let execution = invoke source environment cancellationToken
+
+            if execution.IsCompletedSuccessfully then step execution.Result
+            else FlowStep.Await(FoldAwaiter(execution.AsTask(), step)))
+#endif
 
     /// <summary>Folds a successful value or a single typed failure into a plain value.</summary>
     /// <remarks>
@@ -2912,9 +2943,16 @@ module Flow =
         (onError: 'error -> 'next)
         (source: Flow<'env, 'error, 'value>)
         : Flow<'env, 'nextError, 'next> =
-        source
-        |> map onSuccess
-        |> recover (fun error -> Flow(fun _ _ -> Execution.ofValue (onError error)))
+        Flow(fun environment cancellationToken ->
+            invoke source environment cancellationToken
+            |> Execution.fold
+                (fun value -> Execution.ofValue (onSuccess value))
+                (fun cause ->
+                    match Cause.untraced cause with
+                    | Cause.Fail error ->
+                        try Execution.ofValue (onError error)
+                        with thrown -> Execution.ofCause (ForeignCancellation.causeOf cancellationToken thrown)
+                    | _ -> Execution.ofCause (retypeUnrecovered cause)))
 
     /// <summary>Falls back to another flow when the source flow fails.</summary>
     /// <param name="fallback">The flow to run if the source flow fails.</param>
