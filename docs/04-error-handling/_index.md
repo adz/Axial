@@ -50,8 +50,9 @@ when the application deliberately translates a defect into a typed error.
 
 Use [`Flow.recover`](/api/Axial.Flow.html#Axial.Flow.recover) when a typed failure needs a fallback with a different
 error type, [`Flow.orElseWith`](/api/Axial.Flow.html#Axial.Flow.orElseWith) when it keeps the same error type,
-[`Flow.fold`](/api/Axial.Flow.html#Axial.Flow.fold) to branch on success or a typed failure, and
-[`Flow.foldCause`](/api/Axial.Flow.html#Axial.Flow.foldCause) only to inspect every cause. See
+[`Flow.fold`](/api/Axial.Flow.html#Axial.Flow.fold) to map success or a typed failure to a value
+([`Flow.foldFlow`](/api/Axial.Flow.html#Axial.Flow.foldFlow) when the handlers return flows), and
+[`Flow.foldCauseFlow`](/api/Axial.Flow.html#Axial.Flow.foldCauseFlow) only to inspect every cause. See
 [Recovery and compound causes](recovery.html) for what happens when error types change and when a handler throws.
 
 ```fsharp
@@ -74,7 +75,13 @@ declined
 |> Flow.run ()
 |> shouldEqual (Exit.Success 0m : Exit<decimal, Never>)
 
-// Neither handles a defect; foldCause sees every cause, including defects.
+// fold maps either outcome to a plain value.
+declined
+|> Flow.fold (fun amount -> $"paid {amount}") (function CardDeclined -> "declined" | AccountClosed -> "closed")
+|> Flow.run ()
+|> shouldEqual (Exit.Success "declined" : Exit<string, Never>)
+
+// Neither handles a defect; foldCauseFlow sees every cause, including defects.
 broken
 |> Flow.orElseWith (fun _ -> Flow.ok 0m)
 |> Flow.run ()
@@ -83,7 +90,7 @@ broken
 | other -> failwithf "expected a defect, got %A" other
 
 broken
-|> Flow.foldCause (fun value -> Flow.ok $"value {value}") (fun cause -> Flow.ok (Cause.prettyPrint string cause))
+|> Flow.foldCauseFlow (fun value -> Flow.ok $"value {value}") (fun cause -> Flow.ok (Cause.prettyPrint string cause))
 |> Flow.run ()
 |> shouldEqual (Exit.Success "Die(InvalidOperationException: boom)")
 ```

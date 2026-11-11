@@ -29,7 +29,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
             member _.Launch(_) = Flow.ok ()}
     let env = {Process=service}
     let source () = Process.command $"scripted" |> Process.streamStdout
-    let observe workflow = workflow |> Flow.localEnv(fun (_: unit) -> env) |> Flow.foldCause (Exit.Success >> Flow.succeed) (Exit.Failure >> Flow.succeed)
+    let observe workflow = workflow |> Flow.localEnv(fun (_: unit) -> env) |> Flow.exit
     flow {
         let! collected = source() |> ProcessStream.map(fun item -> int item.Text) |> ProcessStream.filter(fun item -> item%2=0) |> ProcessStream.runCollect |> observe
         let! folded = source() |> ProcessStream.runFold(fun total item -> total+int item.Text) 0 |> observe

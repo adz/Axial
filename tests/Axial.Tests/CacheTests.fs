@@ -180,7 +180,7 @@ module CacheTests =
         let workflow =
             flow {
                 let! cache = Cache.make load
-                let! first = cache |> Cache.get "k" |> Flow.fold (Ok >> Flow.ok) (fun _ -> Flow.ok (Error "failed"))
+                let! first = cache |> Cache.get "k" |> Flow.fold Ok (fun _ -> Error "failed")
                 let! second = cache |> Cache.get "k"
                 let! third = cache |> Cache.get "k"
                 return first, second, third
@@ -246,7 +246,7 @@ module CacheTests =
         let workflow =
             flow {
                 let! shared = Flow.memoize source
-                let! first = shared |> Flow.fold (Ok >> Flow.ok) (fun _ -> Flow.ok (Error "failed"))
+                let! first = shared |> Flow.fold Ok (fun _ -> Error "failed")
                 let! second = shared
                 let! third = shared
                 return first, second, third
@@ -280,7 +280,7 @@ module CacheTests =
 
     let private outcomeOf (source: Flow<unit, string, int>) : Flow<unit, string, Result<int, string>> =
         source
-        |> Flow.foldCause (Ok >> Flow.ok) (fun cause ->
+        |> Flow.foldCauseFlow (Ok >> Flow.ok) (fun cause ->
             match Cause.defects cause with
             | [ error ] -> Flow.ok (Error error.Message)
             | _ -> Flow.ok (Error $"unexpected cause %A{cause}"))

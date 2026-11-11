@@ -93,6 +93,15 @@ let run (round: Round) : Flow<unit, Never, Check list> =
                 | Died -> value < 0
                 | Interrupted -> value = 0)
 
+        // fold classifies success and typed failures with plain handlers; foldCauseFlow sees the defects it passes on.
+        let fold kind : Flow<unit, Never, Outcome> =
+            produce kind
+            |> Flow.fold Value Failed
+            |> Flow.foldCauseFlow Flow.ok (fun cause -> Flow.ok (if Cause.isInterrupted cause then Interrupted else Died))
+
+        let! folded = kinds |> List.map fold |> Flow.sequencePar
+        let foldedAsExpected = List.forall2 (fun kind outcome -> outcome = expected kind) kinds folded
+
         // Causes combine without losing any failure, and Exit converts faithfully.
         let causes = exits |> List.choose (function Exit.Failure cause -> Some cause | Exit.Success _ -> None)
         let combined = causes |> List.fold (fun total cause -> Cause.both total cause) (Cause.Fail "seed")
@@ -161,6 +170,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
         return
             [ check "every forked outcome was reported as itself" (List.zip kinds classified |> List.forall (fun (kind, outcome) -> outcome = expected kind))
               check "recovery turned every outcome into the value it should" recoveredAsExpected
+              check "fold and foldCauseFlow classified every outcome as itself" foldedAsExpected
               check "combined causes kept every failure" (countFailures combined = expectedFailures && countFailures sequential = expectedFailures && rendered.Length > 0)
               check "a traced cause untraces to the cause it wraps" (causes |> List.forall (fun cause -> Cause.untraced (Cause.traced "branch" cause) = Cause.untraced cause))
               check "Exit conversions kept values and failures" exitRoundTrips

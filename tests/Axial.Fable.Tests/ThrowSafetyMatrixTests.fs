@@ -133,17 +133,17 @@ let private cells () : Cell list =
               c.Handle()
               if c.IsBoom error then "caught" else "another exception"))
       |> calls 1
-      cell "Flow.foldCause/source" (ExpectValue 42) (fun c ->
+      cell "Flow.foldCauseFlow/source" (ExpectValue 42) (fun c ->
           c.Bad
-          |> Flow.foldCause
+          |> Flow.foldCauseFlow
               (fun _ -> Flow.ok 0)
               (fun cause ->
                   c.Handle()
                   Flow.ok (if Cause.defects cause |> List.exists c.IsBoom then 42 else -1)))
       |> calls 1
-      die "Flow.foldCause/onFailure" (fun c ->
+      die "Flow.foldCauseFlow/onFailure" (fun c ->
           c.SrcFail
-          |> Flow.foldCause Flow.ok (fun _ ->
+          |> Flow.foldCauseFlow Flow.ok (fun _ ->
               c.Handle()
               c.Throw<Flow<unit, string, int>>()))
       |> calls 1
@@ -153,7 +153,7 @@ let private cells () : Cell list =
               c.Handle()
               cause))
       |> calls 1
-      die "Flow.fold/onSuccess" (fun c -> c.Src 1 |> Flow.fold (c.Fn<int, Flow<unit, string, int>>()) (fun _ -> Flow.ok 0))
+      die "Flow.foldFlow/onSuccess" (fun c -> c.Src 1 |> Flow.foldFlow (c.Fn<int, Flow<unit, string, int>>()) (fun _ -> Flow.ok 0))
       die "Flow.recover/source" (fun c -> c.Bad |> Flow.recover (fun _ -> Flow.ok 0))
       die "Flow.orElseWith/fn" (fun c -> c.SrcFail |> Flow.orElseWith (c.Fn<string, Flow<unit, string, int>>()))
       die "Flow.tap/fn" (fun c -> c.Src 1 |> Flow.tap (c.Fn<int, Flow<unit, string, unit>>()))

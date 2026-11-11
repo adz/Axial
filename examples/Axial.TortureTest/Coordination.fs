@@ -79,7 +79,7 @@ let deferreds (round: Round) : Flow<unit, Never, Check list> =
 
     flow {
         // Deferred.make's flow fails with the deferred's own error type; creating one never actually fails.
-        let! deferred = Deferred.make<unit, int, int> () |> Flow.fold Flow.ok (fun _ -> Flow.die (InvalidOperationException "unreachable"))
+        let! deferred = Deferred.make<unit, int, int> () |> Flow.foldFlow Flow.ok (fun _ -> Flow.die (InvalidOperationException "unreachable"))
         let! early = [ 1..awaiters ] |> Flow.traverse (fun _ -> deferred |> Deferred.await |> Flow.fork)
 
         // Several completers race, each with a different kind of completion; exactly one may win.

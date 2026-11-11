@@ -48,8 +48,8 @@ Cancelling the runtime token produces `Cause.Interrupt`. Only the code that aske
 into a value: `Flow.timeout` turns its own interruption of the timed flow into a timeout error, and
 `Fiber.interrupt` returns the interrupted fiber's `Exit`. Everywhere else, interruption passes through unchanged.
 
-Typed-error handlers (`Flow.recover`, `Flow.orElseWith`, `Flow.fold`, `Flow.retry`) never see interruption or defects.
-`Flow.foldCause` sees everything and can swallow both, so its handler must re-raise `Cause.Interrupt` unless it owns
+Typed-error handlers (`Flow.recover`, `Flow.orElseWith`, `Flow.foldFlow`, `Flow.retry`) never see interruption or defects.
+`Flow.foldCauseFlow` sees everything and can swallow both, so its handler must re-raise `Cause.Interrupt` unless it owns
 the cancellation, and should re-raise or report every `Cause.Die`.
 
 ## Defects are never lost

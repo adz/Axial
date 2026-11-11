@@ -32,7 +32,7 @@ let test (name: string) (body: Flow<unit, Never, Check list>) : Test = { Name = 
 
 /// Runs a flow and returns its outcome as a value, so a test can check failures and interruptions.
 let exitOf (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error>> =
-    flow |> Flow.foldCause (fun value -> Flow.ok (Exit.Success value)) (fun cause -> Flow.ok (Exit.Failure cause))
+    flow |> Flow.exit
 
 /// Milliseconds on the JavaScript monotonic clock, for coarse timing checks.
 [<Emit("performance.now()")>]

@@ -451,7 +451,7 @@ module FiberObserverTests =
         let defective : Flow<unit, string, unit> =
             Flow.die (InvalidOperationException "disconnected defect")
             |> Flow.disconnect
-            |> Flow.foldCause Flow.succeed (fun _ -> Flow.succeed ())
+            |> Flow.foldCauseFlow Flow.succeed (fun _ -> Flow.succeed ())
 
         let workflow =
             flow {

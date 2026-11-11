@@ -180,7 +180,7 @@ module RuntimeSemanticsTests =
 
                 let! joined =
                     Fiber.join fiber
-                    |> Flow.foldCause
+                    |> Flow.foldCauseFlow
                         (Exit.Success >> Flow.succeed)
                         (Exit.Failure >> Flow.succeed)
 
@@ -244,7 +244,7 @@ module RuntimeSemanticsTests =
 
                 let! joined =
                     Fiber.join fiber
-                    |> Flow.foldCause
+                    |> Flow.foldCauseFlow
                         (Exit.Success >> Flow.succeed)
                         (Exit.Failure >> Flow.succeed)
 
@@ -443,7 +443,7 @@ module RuntimeSemanticsTests =
         }
 
     // T28b: an OperationCanceledException the runtime did not ask for is a defect at every boundary, not an
-    // interruption nobody requested; foldCause already classifies it so, and the root, fork, retry and Layer.zipPar
+    // interruption nobody requested; foldCauseFlow already classifies it so, and the root, fork, retry and Layer.zipPar
     // boundaries now agree. Each case throws it synchronously and after an await.
     let private foreignCancellation () = OperationCanceledException "foreign"
 
@@ -456,8 +456,8 @@ module RuntimeSemanticsTests =
 
     let private boundaries (afterAwait: bool) (error: exn) : (string * Flow<unit, string, int>) list =
         [ "root", throwsForeign afterAwait error
-          "foldCause",
-          throwsForeign afterAwait error |> Flow.foldCause Flow.ok (fun cause -> Flow.ofExit (Exit.Failure cause))
+          "foldCauseFlow",
+          throwsForeign afterAwait error |> Flow.foldCauseFlow Flow.ok (fun cause -> Flow.ofExit (Exit.Failure cause))
           "fork",
           flow {
               let! fiber = Flow.fork (throwsForeign afterAwait error)

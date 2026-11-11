@@ -409,7 +409,7 @@ module WorkflowStreamTests =
                     do! Task.Delay(Timeout.Infinite, cancellationToken)
                 return $"result-{query}"
             })
-            |> Flow.foldCause Flow.ok (fun cause ->
+            |> Flow.foldCauseFlow Flow.ok (fun cause ->
                 if Cause.isInterrupted cause then Interlocked.Increment(&interrupted.contents) |> ignore
                 Flow.ofExit (Exit.Failure cause))
 
