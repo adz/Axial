@@ -41,6 +41,39 @@ type PlatformReadBenchmarks() =
         for _ in 1 .. 1000 do
             completed |> Flow.retry (Schedule.recurs 3) |> fun workflow -> workflow.RunSynchronously(environment) |> ignore
 
+// Applicative combinators and tap, which used to be composed from bind and map.
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(3)>]
+[<IterationCount(3)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
+type CombinatorBenchmarks() =
+    let environment = ()
+    let one : Flow<unit, string, int> = Flow.ok 1
+    let two : Flow<unit, string, int> = Flow.ok 2
+    let three : Flow<unit, string, int> = Flow.ok 3
+    let add : Flow<unit, string, int -> int> = Flow.ok ((+) 1)
+    let tapX1000 = flow { for _ in 1 .. 1000 do let! _ = one |> Flow.tap (fun _ -> Flow.ok ()) in () }
+    let zipX1000 = flow { for _ in 1 .. 1000 do let! _ = Flow.zip one two in () }
+    let map2X1000 = flow { for _ in 1 .. 1000 do let! _ = Flow.map2 (+) one two in () }
+    let applyX1000 = flow { for _ in 1 .. 1000 do let! _ = Flow.apply add one in () }
+    let map3X1000 = flow { for _ in 1 .. 1000 do let! _ = Flow.map3 (fun a b c -> a + b + c) one two three in () }
+
+    [<Benchmark>]
+    member _.TapX1000() = tapX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.ZipX1000() = zipX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.Map2X1000() = map2X1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.ApplyX1000() = applyX1000.RunSynchronously(environment) |> ignore
+
+    [<Benchmark>]
+    member _.Map3X1000() = map3X1000.RunSynchronously(environment) |> ignore
+
 // T28: foldCauseFlow and mapBoth observe a thrown source; the non-throwing paths must stay as cheap as before.
 [<MemoryDiagnoser>]
 [<InProcess>]

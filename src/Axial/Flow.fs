@@ -2982,11 +2982,11 @@ module Flow =
         (left: Flow<'env, 'error, 'left>)
         (right: Flow<'env, 'error, 'right>)
         : Flow<'env, 'error, 'left * 'right> =
-        bind
-            (fun leftValue ->
-                right
-                |> map (fun rightValue -> leftValue, rightValue))
-            left
+        Flow(fun environment cancellationToken ->
+            invoke left environment cancellationToken
+            |> Execution.bind (fun leftValue ->
+                invoke right environment cancellationToken
+                |> Execution.map (fun rightValue -> leftValue, rightValue)))
 
     /// <summary>Combines two flows with a mapping function.</summary>
     /// <param name="mapper">A function that combines the successful values of both flows.</param>
@@ -3003,8 +3003,11 @@ module Flow =
         (left: Flow<'env, 'error, 'left>)
         (right: Flow<'env, 'error, 'right>)
         : Flow<'env, 'error, 'value> =
-        zip left right
-        |> map (fun (leftValue, rightValue) -> mapper leftValue rightValue)
+        Flow(fun environment cancellationToken ->
+            invoke left environment cancellationToken
+            |> Execution.bind (fun leftValue ->
+                invoke right environment cancellationToken
+                |> Execution.map (fun rightValue -> mapper leftValue rightValue)))
 
     /// <summary>Applies a flow-wrapped function to a flow-wrapped value.</summary>
     /// <param name="flow">A flow that contains a function to apply.</param>
@@ -3019,7 +3022,11 @@ module Flow =
         (flow: Flow<'env, 'error, 'value -> 'next>)
         (value: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'next> =
-        map2 (fun mapper input -> mapper input) flow value
+        Flow(fun environment cancellationToken ->
+            invoke flow environment cancellationToken
+            |> Execution.bind (fun mapper ->
+                invoke value environment cancellationToken
+                |> Execution.map mapper))
 
     /// <summary>Combines three flows with a mapping function.</summary>
     /// <param name="mapper">A function that combines the successful values of all three flows.</param>
@@ -3038,9 +3045,13 @@ module Flow =
         (middle: Flow<'env, 'error, 'middle>)
         (right: Flow<'env, 'error, 'right>)
         : Flow<'env, 'error, 'value> =
-        apply
-            (map2 (fun leftValue middleValue -> fun rightValue -> mapper leftValue middleValue rightValue) left middle)
-            right
+        Flow(fun environment cancellationToken ->
+            invoke left environment cancellationToken
+            |> Execution.bind (fun leftValue ->
+                invoke middle environment cancellationToken
+                |> Execution.bind (fun middleValue ->
+                    invoke right environment cancellationToken
+                    |> Execution.map (fun rightValue -> mapper leftValue middleValue rightValue))))
 
     /// <summary>Maps the successful value of a synchronous flow.</summary>
     let (<!>)
