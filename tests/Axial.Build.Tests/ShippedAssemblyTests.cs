@@ -53,6 +53,48 @@ public sealed class ShippedAssemblyTests
             string.Join("\n", findings.Order()));
     }
 
+    // The FSharp.Core assembly version each shipped library compiles against, set in Directory.Build.props. A higher
+    // reference means something raised the floor that the package's nuspec declares to consumers.
+    private static readonly Dictionary<string, Version> FSharpCoreFloor = new()
+    {
+        ["Axial.Configuration"] = new(8, 0, 0, 0),
+        ["Axial.ElmishFlows"] = new(8, 0, 0, 0),
+        ["Axial.Hosting"] = new(8, 0, 0, 0),
+        ["Axial.Hosting.AspNetCore"] = new(8, 0, 0, 0),
+        ["Axial.Hosting.GenHttp"] = new(8, 0, 0, 0)
+    };
+
+    [Fact]
+    public void Shipped_runtime_assemblies_compile_against_their_FSharp_Core_floor()
+    {
+        var artifacts = FindArtifactsRoot();
+        var findings = new List<string>();
+
+        foreach (var (assemblyName, frameworks) in ShippedAssemblies)
+        foreach (var framework in frameworks)
+        {
+            var path = AssemblyPath(artifacts, assemblyName, framework, frameworks.Length == 1);
+            Assert.True(File.Exists(path), $"Expected shipped artifact is missing: {path}");
+            var expected = FSharpCoreFloor.GetValueOrDefault(assemblyName, new Version(6, 0, 0, 0));
+            var actual = FSharpCoreReference(path);
+            if (actual != expected) findings.Add($"{assemblyName} ({framework}): FSharp.Core {actual}, expected {expected}");
+        }
+
+        Assert.True(findings.Count == 0, "Shipped assemblies reference an unexpected FSharp.Core:\n" + string.Join("\n", findings));
+    }
+
+    private static Version? FSharpCoreReference(string path)
+    {
+        using var stream = File.OpenRead(path);
+        using var pe = new PEReader(stream);
+        var metadata = pe.GetMetadataReader();
+        return metadata.AssemblyReferences
+            .Select(metadata.GetAssemblyReference)
+            .Where(reference => metadata.GetString(reference.Name) == "FSharp.Core")
+            .Select(reference => reference.Version)
+            .SingleOrDefault();
+    }
+
     private static string FindArtifactsRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

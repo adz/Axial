@@ -15,6 +15,15 @@
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageReadmeFile Condition="'$(PackageReadmeFile)' == ''">README.md</PackageReadmeFile>
 
+    <!-- Published libraries compile against the lowest FSharp.Core they support, so every build checks that floor
+         and each nuspec declares it. Applications (tests, examples, benchmarks, Axial.Tool) keep the SDK's
+         FSharp.Core. Axial.Guardrails ships the FSharp.Core that FSharp.Compiler.Service needs and sets its own. -->
+    <_AxialLibraryPackage Condition="$(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)src')) and '$(MSBuildProjectExtension)' == '.fsproj' and '$(MSBuildProjectName)' != 'Axial.Guardrails' and '$(MSBuildProjectName)' != 'Axial.Tool'">true</_AxialLibraryPackage>
+    <FSharpCoreImplicitPackageVersion Condition="'$(_AxialLibraryPackage)' == 'true'">6.0.7</FSharpCoreImplicitPackageVersion>
+    <!-- These depend on assemblies built against FSharp.Core 8: Reified.* (which declares FSharp.Core >= 8.0.100)
+         and Elmish 5 (which references FSharp.Core 8.0.0.0 without declaring it). -->
+    <FSharpCoreImplicitPackageVersion Condition="'$(_AxialLibraryPackage)' == 'true' and ('$(MSBuildProjectName)' == 'Axial.Configuration' or '$(MSBuildProjectName)' == 'Axial.Hosting' or '$(MSBuildProjectName)' == 'Axial.Hosting.AspNetCore' or '$(MSBuildProjectName)' == 'Axial.Hosting.GenHttp' or '$(MSBuildProjectName)' == 'Axial.ElmishFlows')">8.0.100</FSharpCoreImplicitPackageVersion>
+
     <!-- Build distributable F# libraries without generated reflection-based structural formatting. -->
     <OtherFlags Condition="$(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)src')) and '$(MSBuildProjectName)' != 'Axial.Guardrails'">$(OtherFlags) --reflectionfree</OtherFlags>
 
