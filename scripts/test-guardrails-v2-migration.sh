@@ -20,7 +20,8 @@ import xml.etree.ElementTree as ET
 paths = [Path("Directory.Build.props"), Path("Directory.Build.targets")]
 paths += list(Path("src/Axial.Guardrails/build").rglob("*"))
 paths += list(Path("src/Axial.Guardrails").glob("*.fs"))
-pattern = re.compile(r'AxialGuardrailsUseLegacyPolicy|AxialGuardrailsSeverity|AxialGuardrailsGenerateBaseline|GetEnvironmentVariable\(.?(AxialGuardrailsEnabled|AXIAL_GUARDRAILS_ENABLED|AxialGuardrailsSeverity|AXIAL_GUARDRAILS_SEVERITY)|CI=true')
+# Word boundaries: private properties such as _AxialGuardrailsSeverityCap are not the removed public switches.
+pattern = re.compile(r'\b(?:AxialGuardrailsUseLegacyPolicy|AxialGuardrailsSeverity|AxialGuardrailsGenerateBaseline)\b|GetEnvironmentVariable\(.?(AxialGuardrailsEnabled|AXIAL_GUARDRAILS_ENABLED|AxialGuardrailsSeverity|AXIAL_GUARDRAILS_SEVERITY)|CI=true')
 for path in paths:
     if not path.is_file():
         continue
