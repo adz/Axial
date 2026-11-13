@@ -85,7 +85,11 @@ run_fable() {
         timeout 300 node artifacts/fable-tests/Program.js >>"$out_dir/fable.log" 2>&1 \
             || { echo "fail|run $run: $(tail -1 "$out_dir/fable.log")"; return; }
     done
-    echo "pass|$(grep -E "^[0-9]+ tests, 0 failed" "$out_dir/fable.log" | tail -1) x$fable_runs"
+    # The same packages as a NuGet consumer gets them: packed to a local feed, compiled from their fable/ sources.
+    echo "--- packages" >>"$out_dir/fable.log"
+    timeout 1500 bash scripts/run-fable-package-tests.sh >>"$out_dir/fable.log" 2>&1 \
+        || { echo "fail|packages: $(tail -1 "$out_dir/fable.log")"; return; }
+    echo "pass|$(grep -E "^[0-9]+ tests, 0 failed" "$out_dir/fable.log" | tail -1) x$fable_runs; $(grep -E "^[0-9]+ package checks, 0 failed" "$out_dir/fable.log" | tail -1)"
 }
 
 run_aot() {

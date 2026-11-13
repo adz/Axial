@@ -79,7 +79,10 @@ not a wall-clock pause or a guess that the scheduler is idle:
 
 ```fsharp run
 let platform = TestPlatform.create ()
-let registered = Deferred.make<unit, Never, unit> () |> Flow.run () |> Exit.toResult |> Result.defaultWith Never.absurd
+let registered =
+    match Deferred.make<unit, Never, unit> () |> Flow.run () |> Exit.toResult with
+    | Ok deferred -> deferred
+    | Error never -> Never.absurd never
 let clock = platform.Clock :> IClock
 let notifying =
     { new IClock with

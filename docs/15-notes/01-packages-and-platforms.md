@@ -16,7 +16,7 @@ runtime.
 | `Axial.Configuration` | Yes | Yes* | Yes* | Layered environment, command-line, JSON, browser and Microsoft configuration decoded by Reified, with redacted secrets and optional watching. *Fable requires Reified 0.12.1 or later; typed `schema<...>`/`Config.load` decoding works on Fable. |
 | `Axial.Console` | Yes | Yes | Yes | Console service; JavaScript behavior is limited to facilities supplied by the host console. |
 | `Axial.FileSystem` | Yes | API only | API only | The live filesystem implementation is .NET-only. Supply a JavaScript implementation explicitly if needed. |
-| `Axial.HttpClient` | Yes | API only | API only | Request plans are portable; the live `HttpClient` implementation is .NET-only. |
+| `Axial.HttpClient` | Yes | No | No | The live `HttpClient` implementation is .NET-only. The package is not packed for Fable. |
 | `Axial.Process` | Yes | API only | API only | Process plans are portable; live child-process execution is .NET-only. |
 | `Axial.Hosting` | Yes | No | No | Standalone .NET and Microsoft Generic Host integration. |
 | `Axial.Hosting.Node` | No | Yes | No | Node signals, arguments, exit code, and `process.env`. |
@@ -30,12 +30,20 @@ runtime.
 
 Each guide installs the package it teaches at first use: [Configuration](/configuration/), [Console](/console/console.html), [FileSystem](/filesystem/filesystem.html) and [Files](/filesystem/files.html), [WebSocket](/websocket/websocket.html), [Process](/process/), [HttpClient](/http/), [Hosting](/hosting/) ([Node](/hosting/node.html) and [Browser](/hosting/browser.html) for Fable), [Telemetry](/telemetry/index.html), and [Elmish flows](/elmish/elmish.html).
 
+## Requirements
+
+- **FSharp.Core:** 6.0.7 or later. `Axial.Configuration`, `Axial.Hosting`, `Axial.Hosting.AspNetCore`,
+  `Axial.Hosting.GenHttp` and `Axial.ElmishFlows` need 8.0.100 or later, because their Reified and Elmish dependencies
+  are built against FSharp.Core 8. An application can reference any later FSharp.Core.
+- **Fable:** 5.6.0 or later. Fable 4 is not supported. Packages marked Yes or API only for Fable JavaScript above ship
+  their F# sources for Fable and carry the `fable-javascript` tag; install them with `dotnet add package` as on .NET.
+
 JavaScript-only hosting packages intentionally fail outside their named runtime. The browser adapter does not treat page
 visibility or unload as dependable application shutdown.
 
 ## Dependencies
 
-NuGet installs the transitive dependencies below; reference only the packages you use directly. Every package also depends on `FSharp.Core`.
+NuGet installs the transitive dependencies below; reference only the packages you use directly. Every package also depends on `FSharp.Core` (see [Requirements](#requirements)).
 
 `Axial` defines the service contracts, such as `IClock`, and ships the live clock, logging, ordinary and secure randomness, GUID and test helpers. Their `Axial` namespaces remain in `Axial` for 0.12. The old `Axial` package is deleted; `Axial.Configuration` owns environment, argument, JSON, browser and Microsoft configuration.
 

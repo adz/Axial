@@ -11,7 +11,7 @@ Run `scripts/verify.sh` (all stages) or name stages: `scripts/verify.sh build te
 |---|---|
 | `build` | `dotnet build Axial.slnx -c Release --no-incremental` (an up-to-date project skips the Guardrails analyzer) |
 | `test` | `dotnet test Axial.slnx -c Release --no-build` |
-| `fable` | `scripts/run-fable-tests.sh`, then the compiled suite again until it has run `FABLE_RUNS` times (default 3) |
+| `fable` | `scripts/run-fable-tests.sh`, then the compiled suite again until it has run `FABLE_RUNS` times (default 3), then `scripts/run-fable-package-tests.sh` (the Fable packages from a local feed) |
 | `aot` | `scripts/run-aot-probe.sh` |
 | `docs` | `scripts/check-docs-conventions.sh` and `scripts/check-source-inventory.sh` |
 | `livedocs` | `dotnet livedocs test --warn-as-error`, using the Release build from `build` |

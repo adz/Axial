@@ -12,7 +12,10 @@
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <PackageTags>fsharp;fable;browser;hosting;axial;flow</PackageTags>
+    <PackageTags>fsharp;fable;browser;hosting;axial;flow;fable-javascript</PackageTags>
+    <FablePackageType>library</FablePackageType>
+    <!-- Fable.Package.SDK defaults to embedded PDBs, which would leave the snupkg empty. -->
+    <DebugType>portable</DebugType>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
@@ -20,6 +23,7 @@
   <ItemGroup>
     <PackageReference Include="Fable.Core" Version="4.3.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <PackageReference Include="Fable.Package.SDK" Version="$(FablePackageSdkVersion)" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Axial\Axial.fsproj" />

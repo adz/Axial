@@ -30,7 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="../Axial.Telemetry.Shared/SpanConventions.fs" />
+    <Compile Include="../Axial.Telemetry.JavaScript/SpanConventions.fs" Link="SpanConventions.fs" />
     <Compile Include="Telemetry.fs" />
   </ItemGroup>
 

@@ -131,7 +131,10 @@ let notes (path: string) : Flow<AppEnv, FileSystemError, string array * int64> =
 ```
 
 ```fsharp run
-let lines, length = notes (Path.Combine(root, "notes.txt")) |> Flow.run live |> Exit.toResult |> Result.defaultWith (failwithf "%A")
+let lines, length =
+    match notes (Path.Combine(root, "notes.txt")) |> Flow.run live |> Exit.toResult with
+    | Ok value -> value
+    | Error error -> failwithf "%A" error
 lines |> shouldEqual [| "one"; "two"; "three" |]
 length |> shouldEqual (int64 ("one" + Environment.NewLine + "two" + Environment.NewLine + "three").Length)
 ```

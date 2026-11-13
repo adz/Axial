@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Consumes the Fable-compatible Axial packages from a local feed, not project references, then is compiled to
+       JavaScript with Fable and run on Node by scripts/run-fable-package-tests.sh. It proves the packed nupkgs
+       carry what Fable needs (the fable/ sources and project file). Not part of Axial.slnx. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <!-- The script packs every Fable-compatible project at this version into the local feed. -->
+    <AxialPackageVersion>0.0.0-fable-package-test</AxialPackageVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Fable.Core" Version="4.3.0" />
+    <PackageReference Include="Axial" Version="$(AxialPackageVersion)" />
+    <PackageReference Include="Axial.Configuration" Version="$(AxialPackageVersion)" />
+    <PackageReference Include="Axial.Console" Version="$(AxialPackageVersion)" />
+    <PackageReference Include="Axial.FileSystem" Version="$(AxialPackageVersion)" />
+    <PackageReference Include="Axial.Process" Version="$(AxialPackageVersion)" />
+    <PackageReference Include="Axial.Hosting.Node" Version="$(AxialPackageVersion)" />
+    <PackageReference Include="Axial.Hosting.Browser" Version="$(AxialPackageVersion)" />
+    <PackageReference Include="Axial.Telemetry.JavaScript" Version="$(AxialPackageVersion)" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+</Project>

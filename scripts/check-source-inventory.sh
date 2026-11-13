@@ -8,8 +8,11 @@ cd "$root_dir"
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
+# Outside Axial.slnx: the HTTP hosting tests depend on Reified adapters, and the Fable package tests restore Axial
+# from the local feed scripts/run-fable-package-tests.sh packs.
 find src tests -name '*.fsproj' \
   ! -path 'tests/Axial.Hosting.Http.Tests/*' \
+  ! -path 'tests/Axial.Fable.PackageTests/*' \
   -print | sort > "$tmp_dir/projects.actual"
 grep -o 'Path="[^"]*\.fsproj"' Axial.slnx \
   | sed 's/^Path="//; s/"$//' \
@@ -18,6 +21,7 @@ grep -o 'Path="[^"]*\.fsproj"' Axial.slnx \
 
 find src tests -name '*.fs' \
   ! -path 'tests/Axial.Hosting.Http.Tests/*' \
+  ! -path 'tests/Axial.Fable.PackageTests/*' \
   -print | sort > "$tmp_dir/sources.actual"
 
 > "$tmp_dir/sources.expected"

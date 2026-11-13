@@ -102,6 +102,9 @@ jobs:
       - name: Run Fable tests on Node
         run: bash scripts/run-fable-tests.sh
 
+      - name: Run Fable package tests on Node
+        run: bash scripts/run-fable-package-tests.sh
+
   native-aot:
     runs-on: ubuntu-latest
     timeout-minutes: 30

@@ -302,3 +302,35 @@ consumer contract is `docs/guardrails/01-guardrails.md`; these are the reasons b
   checkpoints reject unacknowledged ones. `forbid` cannot be suppressed. Baselines only shrink.
 - **New rules target bugs we actually had** (raw concurrency, swallowed failures, uncancellable or discarded work,
   timed waits in tests), each concurrency fix with a torture scenario, rather than more anti-tamper machinery.
+
+## 2026-11-12: Package requirements: FSharp.Core floor and Fable 5 libraries
+
+- **FSharp.Core 6.0 is the floor for libraries.** FSharp.Core targets only netstandard2.0/2.1, so its version is
+  independent of the .NET runtime; a library that references the SDK's bundled FSharp.Core (10.1.403 for 0.14.1)
+  forces every consumer up to it. Following the FSharp.Core guidance, libraries reference the lowest FSharp.Core they
+  need and applications use the latest. `Directory.Build.props` sets `FSharpCoreImplicitPackageVersion` to 6.0.7 for
+  the packable libraries under `src/`. Tests, examples, benchmarks and `Axial.Tool` are applications and keep the SDK's
+  FSharp.Core; `Axial.Guardrails` ships the FSharp.Core that FSharp.Compiler.Service needs.
+- **Dependencies can raise it.** `Axial.Configuration`, `Axial.Hosting`, `Axial.Hosting.AspNetCore` and
+  `Axial.Hosting.GenHttp` depend on Reified packages that declare FSharp.Core >= 8.0.100, and `Axial.ElmishFlows`
+  depends on Elmish 5, whose assembly references FSharp.Core 8.0.0.0 without declaring it. These pin 8.0.100. Lowering
+  them needs Reified (and Elmish) to lower theirs.
+- **Every build checks the floor.** The libraries compile against the pinned version, so an API newer than the floor
+  fails the build. `ShippedAssemblyTests` reads each shipped assembly's FSharp.Core reference and fails when it is
+  not the expected floor, which catches a dependency silently upgrading the compile-time FSharp.Core. Tests run on the
+  latest FSharp.Core through their own reference, which is what applications do.
+- **Fable 5 only.** The repository builds with Fable 5.6.0 (`.config/dotnet-tools.json`), the minimum tested version.
+  Fable 4 gets no new work upstream and is not supported.
+- **Fable-compatible packages are Fable libraries.** Fable compiles dependencies from F# source, so a package is usable
+  from Fable only when its nupkg carries the sources and project file under `fable/`. The packages the Fable tests
+  compile (`Axial`, `Axial.Console`, `Axial.FileSystem`, `Axial.Process`, `Axial.Configuration`,
+  `Axial.Hosting.Node`, `Axial.Hosting.Browser`, `Axial.Telemetry.JavaScript`) reference `Fable.Package.SDK` with
+  `FablePackageType=library` and carry the `fable-javascript` tag; a target tag is added only for a target the tests
+  run. `scripts/run-fable-package-tests.sh` packs them into a local feed and compiles and runs
+  `tests/Axial.Fable.PackageTests` from those packages, so a packaging regression fails the `fable` stage.
+  `Axial.HttpClient` has Fable conditionals but no Fable tests, so it is not packed for Fable.
+- **A Fable package's sources live in its project folder.** Fable resolves each `Compile Include` of the packed project
+  file against the package's `fable/` folder and ignores `Link`, so a source linked from elsewhere is missing for
+  consumers. `SpanConventions.fs` therefore lives in `Axial.Telemetry.JavaScript`, and the .NET `Axial.Telemetry` links
+  it. These projects also set `DebugType` back to `portable`, because `Fable.Package.SDK` switches to embedded PDBs and
+  the release publishes snupkg symbol packages.

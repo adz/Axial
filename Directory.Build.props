@@ -9,6 +9,8 @@
     <!-- Local/dev default only; the release workflow stamps the real version via -p:Version from the release tag. -->
     <VersionPrefix>0.7.1</VersionPrefix>
     <ReifiedVersion Condition="'$(ReifiedVersion)' == ''">0.13.0</ReifiedVersion>
+    <!-- Packs the Fable-compatible projects as Fable libraries (sources under fable/ in the nupkg). -->
+    <FablePackageSdkVersion>1.4.1</FablePackageSdkVersion>
     <NuGetAudit>false</NuGetAudit>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryBranch>main</RepositoryBranch>
