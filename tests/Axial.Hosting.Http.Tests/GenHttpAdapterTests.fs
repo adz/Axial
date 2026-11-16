@@ -55,9 +55,30 @@ let private buildHandler () =
             (fun _ -> "!")
             (Response.text ResponseStatus.BadRequest)
 
+    let signupPage : Flow<HttpEndpointEnv<string>, EndpointError<string>, HttpResponse> =
+        flow {
+            match! Request.parseForm schema with
+            | { Result = Ok signup } -> return Response.redirect ResponseStatus.SeeOther $"/signups/{signup.Age}"
+            | invalid ->
+                let street = Data.redisplayPath "address.street" invalid.Input
+                let cityErrors = invalid.ErrorsFor "address.city" |> List.length
+
+                return
+                    Response.html ResponseStatus.UnprocessableEntity $"<p>{street}</p><p>{cityErrors}</p>"
+                    |> Response.withHeader "HX-Trigger" "invalid"
+        }
+
+    let strictForm : Flow<HttpEndpointEnv<string>, EndpointError<string>, HttpResponse> =
+        flow {
+            let! signup = Request.form schema
+            return Response.text ResponseStatus.Ok signup.Address.City
+        }
+
     Inline
         .Create()
         .Post("/signups", endpoint signupEndpoint)
+        .Post("/signup-page", endpoint signupPage)
+        .Post("/strict-form", endpoint strictForm)
         .Get(
             "/openapi.json",
             Func<IRequest, IResponse>(fun request -> SchemaResponse.openApi request openApiDocument)
@@ -70,7 +91,8 @@ let private withServer (run: HttpClient -> Task) =
         let! _ = host.StartAsync()
 
         try
-            use client = new HttpClient(BaseAddress = Uri $"http://127.0.0.1:{int port}")
+            use handler = new HttpClientHandler(AllowAutoRedirect = false)
+            use client = new HttpClient(handler, BaseAddress = Uri $"http://127.0.0.1:{int port}")
             do! run client
         finally
             host.StopAsync().GetAwaiter().GetResult() |> ignore
@@ -129,4 +151,70 @@ let ``the openapi document is served from the assembled specs`` () =
             use document = JsonDocument.Parse body
 
             Assert.True(document.RootElement.GetProperty("paths").TryGetProperty("/signups") |> fst)
+        })
+
+let private validForm () =
+    new FormUrlEncodedContent(
+        [ Collections.Generic.KeyValuePair("name", "Ada Lovelace")
+          Collections.Generic.KeyValuePair("age", "36")
+          Collections.Generic.KeyValuePair("address.street", "12 Analytical Way")
+          Collections.Generic.KeyValuePair("address.city", "London")
+          Collections.Generic.KeyValuePair("tags.0", "vip") ]
+    )
+
+let private formMissingCity () =
+    new FormUrlEncodedContent(
+        [ Collections.Generic.KeyValuePair("name", "Ada Lovelace")
+          Collections.Generic.KeyValuePair("age", "36")
+          Collections.Generic.KeyValuePair("address.street", "12 Analytical Way")
+          Collections.Generic.KeyValuePair("address.city", "") ]
+    )
+
+[<Fact>]
+let ``a valid page form redirects after the post`` () =
+    withServer (fun client ->
+        task {
+            use content = validForm ()
+            let! response = client.PostAsync("/signup-page", content)
+
+            Assert.Equal(303, int response.StatusCode)
+            Assert.Equal("/signups/36", string response.Headers.Location)
+        })
+
+[<Fact>]
+let ``an invalid page form shows again with what was typed and its errors`` () =
+    withServer (fun client ->
+        task {
+            use content = formMissingCity ()
+            let! response = client.PostAsync("/signup-page", content)
+            let! body = response.Content.ReadAsStringAsync()
+
+            Assert.Equal(422, int response.StatusCode)
+            Assert.Equal("text/html", response.Content.Headers.ContentType.MediaType)
+            Assert.Equal("<p>12 Analytical Way</p><p>1</p>", body)
+            Assert.Equal<string seq>([ "invalid" ], response.Headers.GetValues "HX-Trigger")
+        })
+
+[<Fact>]
+let ``a form endpoint parses the posted form`` () =
+    withServer (fun client ->
+        task {
+            use content = validForm ()
+            let! response = client.PostAsync("/strict-form", content)
+            let! body = response.Content.ReadAsStringAsync()
+
+            Assert.Equal(200, int response.StatusCode)
+            Assert.Equal("London", body)
+        })
+
+[<Fact>]
+let ``a form endpoint refuses a body that is not a form`` () =
+    withServer (fun client ->
+        task {
+            use content = new StringContent(validJson, Encoding.UTF8, "application/json")
+            let! response = client.PostAsync("/strict-form", content)
+            let! body = response.Content.ReadAsStringAsync()
+
+            Assert.Equal(400, int response.StatusCode)
+            Assert.Contains("not a form", body)
         })

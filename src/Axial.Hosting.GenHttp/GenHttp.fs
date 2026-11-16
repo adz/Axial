@@ -31,6 +31,36 @@ module SchemaRequest =
         let pairs = request.Query |> Seq.map (fun pair -> pair.Key, pair.Value)
         Schema.parseRetainingInput schema (BoundaryInput.ofQuery pairs)
 
+    /// <summary>Returns <c>true</c> when the request body is <c>application/x-www-form-urlencoded</c>.</summary>
+    let isForm (request: IRequest) : bool =
+        not (isNull request.Content)
+        && not (isNull (box request.ContentType))
+        && String.Equals(request.ContentType.RawType, "application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase)
+
+    /// <summary>Parses an <c>application/x-www-form-urlencoded</c> body through the schema; any other body parses as empty input.</summary>
+    let form (schema: Schema<'model>) (request: IRequest) (cancellationToken: System.Threading.CancellationToken) : ValueTask<RetainedParseResult<'model>> =
+        if not (isForm request) then
+            ValueTask<_>(Schema.parseRetainingInput schema (BoundaryInput.ofForm []))
+        else
+            let decode (text: string) = Uri.UnescapeDataString(text.Replace('+', ' '))
+
+            let parse: Task<RetainedParseResult<'model>> =
+                task {
+                    use reader = new System.IO.StreamReader(request.Content)
+                    let! body = reader.ReadToEndAsync(cancellationToken)
+
+                    let pairs =
+                        body.Split('&', StringSplitOptions.RemoveEmptyEntries)
+                        |> Array.map (fun pair ->
+                            match pair.IndexOf '=' with
+                            | -1 -> decode pair, ""
+                            | at -> decode pair[.. at - 1], decode pair[at + 1 ..])
+
+                    return Schema.parseRetainingInput schema (BoundaryInput.ofForm pairs)
+                }
+
+            ValueTask<RetainedParseResult<'model>> parse
+
 /// <summary>Builds GenHTTP responses for schema-driven endpoints.</summary>
 [<RequireQualifiedAccess>]
 module SchemaResponse =
@@ -59,7 +89,6 @@ module SchemaResponse =
     let openApi (request: IRequest) (document: string) : IResponse =
         request.Respond().Content(document).Type("application/json").Build()
 
-    /// <summary>Runs the handler with the trusted model, or short-circuits to the problem-details response.</summary>
 /// <summary>The request-scoped environment supplied to a GenHTTP endpoint Flow.</summary>
 /// <remarks>The host factory supplies <c>App</c>; adapter request operations read <c>Request</c>. Keep application workflows typed against <c>'app</c> and embed them with <c>EndpointFlow.run</c>.</remarks>
 type HttpEndpointEnv<'app> =
@@ -118,6 +147,49 @@ module Request =
         Flow.envWith _.Request
         |> Flow.bind (SchemaRequest.query schema >> fromParsed)
 
+    let private notAForm : ProblemDetails =
+        { ProblemDetails.malformedJson with
+            Errors = [ { Pointer = ""; Message = "The request body is not a form." } ] }
+
+    /// <summary>Reads and schema-parses a posted <c>application/x-www-form-urlencoded</c> form.</summary>
+    /// <remarks>Any other body is an invalid request.</remarks>
+    /// <param name="schema">The schema that interprets the form name/value input.</param>
+    /// <returns>An endpoint Flow that succeeds with the trusted model.</returns>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema, codec, and request are supplied by the application."><code>let! signup = Request.form Signup.schema</code></example>
+    let form (schema: Schema<'model>) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'model> =
+        Flow.envWith _.Request
+        |> Flow.bind (fun request ->
+            if SchemaRequest.isForm request then
+                Flow.fromTask (fun token -> (SchemaRequest.form schema request token).AsTask())
+                |> Flow.bind fromParsed
+            else
+                Flow.fail (EndpointError.InvalidRequest notAForm))
+
+    /// <summary>Schema-parses a posted form and returns the outcome with the input it came from, for a page that shows the form again with its errors.</summary>
+    /// <remarks>
+    /// Unlike <c>form</c>, a parse failure does not end the endpoint. A body that is not a form parses as empty input,
+    /// so every required field reports that it must be present.
+    /// </remarks>
+    /// <param name="schema">The schema that interprets the form name/value input.</param>
+    /// <returns>An endpoint Flow that succeeds with the parse result: the trusted model, or the errors and the values to show again.</returns>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema and views are supplied by the application.">
+    /// <code>
+    /// match! Request.parseForm Signup.schema with
+    /// | { Result = Ok signup } -> ...
+    /// | invalid -> return Response.html ResponseStatus.UnprocessableEntity (SignupView.form invalid)
+    /// </code>
+    /// </example>
+    let parseForm (schema: Schema<'model>) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, RetainedParseResult<'model>> =
+        Flow.envWith _.Request
+        |> Flow.bind (fun request -> Flow.fromTask (fun token -> (SchemaRequest.form schema request token).AsTask()))
+
+    /// <summary>Schema-parses the query string and returns the outcome with the input it came from, for a page that shows its filters again with their errors.</summary>
+    /// <param name="schema">The schema that interprets the complete query input.</param>
+    /// <returns>An endpoint Flow that succeeds with the parse result.</returns>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema is supplied by the application."><code>let! search = Request.parseQuery Search.schema</code></example>
+    let parseQuery (schema: Schema<'model>) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, RetainedParseResult<'model>> =
+        Flow.envWith (fun environment -> SchemaRequest.query schema environment.Request)
+
     /// <summary>Projects untrusted input directly from the native request without schema parsing.</summary>
     /// <param name="projection">The direct projection from the native request.</param>
     /// <returns>An endpoint Flow containing the projected, still-untrusted value.</returns>
@@ -173,6 +245,42 @@ module Response =
     /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema, codec, and request are supplied by the application."><code>return Response.text ResponseStatus.Ok "ready"</code></example>
     let text (status: ResponseStatus) (value: string) : HttpResponse =
         HttpResponse(fun request -> request.Respond().Status(status).Content(value).Type("text/plain").Build())
+
+    /// <summary>Returns an HTML response, such as a page or the fragment an htmx request swaps in.</summary>
+    /// <param name="status">The HTTP status.</param>
+    /// <param name="html">The rendered HTML.</param>
+    /// <returns>A request-relative response plan with content type <c>text/html; charset=utf-8</c>.</returns>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the view is supplied by the application."><code>return Response.html ResponseStatus.Ok (renderHtml page)</code></example>
+    let html (status: ResponseStatus) (html: string) : HttpResponse =
+        HttpResponse(fun request ->
+            request.Respond().Status(status).Content(html).Type(FlexibleContentType.Parse "text/html; charset=utf-8").Build())
+
+    /// <summary>Returns a redirect to another address.</summary>
+    /// <param name="status">The redirect status: <c>SeeOther</c> after a form post, <c>Found</c> or <c>TemporaryRedirect</c> for a temporary move, <c>MovedPermanently</c> or <c>PermanentRedirect</c> for a permanent one.</param>
+    /// <param name="location">The address sent in the <c>Location</c> header.</param>
+    /// <returns>A request-relative empty response plan with the status and <c>Location</c> header.</returns>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context."><code>return Response.redirect ResponseStatus.SeeOther "/signups"</code></example>
+    let redirect (status: ResponseStatus) (location: string) : HttpResponse =
+        HttpResponse(fun request -> request.Respond().Status(status).Header("Location", location).Build())
+
+    /// <summary>Adds a header to a response, replacing a value already set under that name.</summary>
+    /// <param name="name">The header name.</param>
+    /// <param name="value">The header value.</param>
+    /// <param name="response">The response plan to add the header to.</param>
+    /// <returns>The response plan, sent with the header.</returns>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the view is supplied by the application.">
+    /// <code>
+    /// return
+    ///     Response.html ResponseStatus.Ok fragment
+    ///     |> Response.withHeader "HX-Push-Url" address
+    ///     |> Response.withHeader "HX-Trigger" "saved"
+    /// </code>
+    /// </example>
+    let withHeader (name: string) (value: string) (HttpResponse respond) : HttpResponse =
+        HttpResponse(fun request ->
+            let response = respond request
+            response.Headers[name] <- value
+            response)
 
     /// <summary>Builds a host-native response plan from the current GenHTTP request.</summary>
     /// <param name="respond">The host-specific response function.</param>

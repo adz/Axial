@@ -73,7 +73,6 @@ module SchemaResult =
     let openApi (document: string) : IResult =
         Results.Text(document, "application/json")
 
-    /// <summary>Runs the handler with the trusted model, or short-circuits to the problem-details response.</summary>
 /// <summary>The request-scoped environment supplied to an ASP.NET Core endpoint Flow.</summary>
 /// <remarks>The host factory supplies <c>App</c>; adapter request operations read <c>Request</c>. Keep application workflows typed against <c>'app</c> and embed them with <c>EndpointFlow.run</c>.</remarks>
 type HttpEndpointEnv<'app> =
@@ -100,14 +99,6 @@ module Request =
         | Error diagnostics ->
             Flow.fail (EndpointError.InvalidRequest(ProblemDetails.ofErrors diagnostics))
 
-    let private parsed
-        (parse: HttpRequest -> System.Threading.CancellationToken -> Task<RetainedParseResult<'model>>) 
-        : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'model> =
-        Flow.envWith _.Request
-        |> Flow.bind (fun request ->
-            Flow.fromTask (parse request)
-            |> Flow.bind fromParsed)
-
     /// <summary>Reads and schema-parses a JSON request body; malformed JSON and schema diagnostics become invalid-request failures.</summary>
     /// <param name="schema">The schema that establishes the trusted input type.</param>
     /// <returns>An endpoint Flow that succeeds with the trusted model.</returns>
@@ -128,12 +119,22 @@ module Request =
                 | Ok parsed -> fromParsed parsed
                 | Error problem -> Flow.fail (EndpointError.InvalidRequest problem)))
 
+    let private notAForm : ProblemDetails =
+        { ProblemDetails.malformedJson with
+            Errors = [ { Pointer = ""; Message = "The request body is not a form." } ] }
+
     /// <summary>Reads and schema-parses a posted form.</summary>
+    /// <remarks>A body that is not <c>application/x-www-form-urlencoded</c> or <c>multipart/form-data</c> is an invalid request.</remarks>
     /// <param name="schema">The schema that interprets the form name/value input.</param>
     /// <returns>An endpoint Flow that succeeds with the trusted model.</returns>
     /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema, codec, and request are supplied by the application."><code>let! signup = Request.form Signup.schema</code></example>
     let form (schema: Schema<'model>) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'model> =
-        parsed (SchemaRequest.form schema)
+        Flow.envWith _.Request
+        |> Flow.bind (fun request ->
+            if request.HasFormContentType then
+                Flow.fromTask (SchemaRequest.form schema request) |> Flow.bind fromParsed
+            else
+                Flow.fail (EndpointError.InvalidRequest notAForm))
 
     /// <summary>Schema-parses the query string.</summary>
     /// <param name="schema">The schema that interprets the complete query input.</param>
@@ -142,6 +143,35 @@ module Request =
     let query (schema: Schema<'model>) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'model> =
         Flow.envWith _.Request
         |> Flow.bind (SchemaRequest.query schema >> fromParsed)
+
+    /// <summary>Schema-parses a posted form and returns the outcome with the input it came from, for a page that shows the form again with its errors.</summary>
+    /// <remarks>
+    /// Unlike <c>form</c>, a parse failure does not end the endpoint. A body that is not a form parses as empty input,
+    /// so every required field reports that it must be present.
+    /// </remarks>
+    /// <param name="schema">The schema that interprets the form name/value input.</param>
+    /// <returns>An endpoint Flow that succeeds with the parse result: the trusted model, or the errors and the values to show again.</returns>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema and views are supplied by the application.">
+    /// <code>
+    /// match! Request.parseForm Signup.schema with
+    /// | { Result = Ok signup } -> ...
+    /// | invalid -> return Response.html 422 (SignupView.form invalid)
+    /// </code>
+    /// </example>
+    let parseForm (schema: Schema<'model>) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, RetainedParseResult<'model>> =
+        Flow.envWith _.Request
+        |> Flow.bind (fun request ->
+            if request.HasFormContentType then
+                Flow.fromTask (SchemaRequest.form schema request)
+            else
+                Flow.succeed (Schema.parseRetainingInput schema (BoundaryInput.ofForm [])))
+
+    /// <summary>Schema-parses the query string and returns the outcome with the input it came from, for a page that shows its filters again with their errors.</summary>
+    /// <param name="schema">The schema that interprets the complete query input.</param>
+    /// <returns>An endpoint Flow that succeeds with the parse result.</returns>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema is supplied by the application."><code>let! search = Request.parseQuery Search.schema</code></example>
+    let parseQuery (schema: Schema<'model>) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, RetainedParseResult<'model>> =
+        Flow.envWith (fun environment -> SchemaRequest.query schema environment.Request)
 
     /// <summary>Schema-parses one named ASP.NET route value.</summary>
     /// <param name="name">The route-value name registered in the ASP.NET route pattern.</param>
@@ -217,6 +247,45 @@ module Response =
     /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema, codec, and request are supplied by the application."><code>return Response.text 200 "ready"</code></example>
     let text (statusCode: int) (value: string) : IResult =
         Results.Text(value, statusCode = statusCode)
+
+    /// <summary>Returns an HTML response, such as a page or the fragment an htmx request swaps in.</summary>
+    /// <param name="statusCode">The HTTP status code.</param>
+    /// <param name="html">The rendered HTML.</param>
+    /// <returns>An ASP.NET result with content type <c>text/html; charset=utf-8</c>.</returns>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the view is supplied by the application."><code>return Response.html 200 (renderHtml page)</code></example>
+    let html (statusCode: int) (html: string) : IResult =
+        Results.Text(html, "text/html; charset=utf-8", statusCode = statusCode)
+
+    /// <summary>Returns a redirect to another address.</summary>
+    /// <param name="statusCode">The redirect status: 303 after a form post, 302 or 307 for a temporary move, 301 or 308 for a permanent one.</param>
+    /// <param name="location">The address sent in the <c>Location</c> header.</param>
+    /// <returns>An empty ASP.NET result with the status and <c>Location</c> header.</returns>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context."><code>return Response.redirect 303 "/signups"</code></example>
+    let redirect (statusCode: int) (location: string) : IResult =
+        { new IResult with
+            member _.ExecuteAsync(context: HttpContext) =
+                context.Response.StatusCode <- statusCode
+                context.Response.Headers.Location <- Microsoft.Extensions.Primitives.StringValues location
+                Task.CompletedTask }
+
+    /// <summary>Adds a header to a response, replacing a value already set under that name.</summary>
+    /// <param name="name">The header name.</param>
+    /// <param name="value">The header value.</param>
+    /// <param name="response">The response to add the header to.</param>
+    /// <returns>The response, sent with the header.</returns>
+    /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the view is supplied by the application.">
+    /// <code>
+    /// return
+    ///     Response.html 200 fragment
+    ///     |> Response.withHeader "HX-Push-Url" address
+    ///     |> Response.withHeader "HX-Trigger" "saved"
+    /// </code>
+    /// </example>
+    let withHeader (name: string) (value: string) (response: IResult) : IResult =
+        { new IResult with
+            member _.ExecuteAsync(context: HttpContext) =
+                context.Response.Headers[name] <- Microsoft.Extensions.Primitives.StringValues value
+                response.ExecuteAsync context }
 
     /// <summary>Returns a host-native ASP.NET result unchanged.</summary>
     /// <param name="result">The result constructed through ASP.NET APIs.</param>
