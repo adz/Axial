@@ -3,7 +3,7 @@ BASELINE_PATH  Axial.Guardrails.baseline
 SHA256  2b078d571a2415b4395d0b789a67fdb6e5020af0f84926f2f61d34c71fad1cee  .editorconfig
 SHA256  cc8a1c075025701e675b9fdb4331bace6421ac1bf71111f91c7772992624c3f5  Axial.Guardrails.baseline
 SHA256  db08f9d8f79b17bcc00212eaa580198a4ec78d0dd9f9e1e14d0269c10cf9c93e  Axial.Guardrails.toml
-SHA256  460878e4bdc2549e3357808fcd82ec11dbfc0bb8ba1f205e7b5362ee0f4eafb8  Directory.Build.props
+SHA256  481b863ca0ac950bfb0fafc62c0fafe66bfc7d26825b130aba52faf80e0647eb  Directory.Build.props
 SHA256  451033b451a34b27be5835c14b6dbac777c58b9c170835bc37f684f20a949bc9  Directory.Build.targets
 SHA256  c9a976e73aa3c0642dacd5078208fccb9dd3a2586c564e8ff7e865075998be2d  src/Axial.Configuration/buildTransitive/Axial.Configuration.props
 SHA256  6d7437334f7cf44d5039e85b6a0b61a77b3f1be3088982b7c4df354b80b724a6  src/Axial.Console/buildTransitive/Axial.Console.props
@@ -137,6 +137,7 @@ SUPPRESSION  src/Axial/Flow.fs	1	// axial-allow-AXG001:task already awaited
 SUPPRESSION  src/Axial/Flow.fs	1	// axial-note AXG010:a closing scope can reject registration after startup; keep publishing the already started fiber's handle and interrupt registration.
 SUPPRESSION  src/Axial/Flow.fs	1	// axial-note AXG010:annotation sink failures must not replace the annotated workflow's result.
 SUPPRESSION  src/Axial/Flow.fs	1	// axial-note AXG010:diagnostic history failure must not prevent settlement or replace the original fiber failure.
+SUPPRESSION  src/Axial/Flow.fs	2	// axial-allow-AXG001:task already awaited
 SUPPRESSION  src/Axial/Outcome.fs	1	// axial-note AXG010:arbitrary payload ToString implementations can throw; cause rendering must retain the type-name fallback rather than fail while reporting the original cause.
 SUPPRESSION  src/Axial/Parallelism.fs	1	// axial-allow-AXG001:intentional environment host or live-service boundary
 SUPPRESSION  src/Axial/Platform.fs	1	// axial-allow-AXG001:intentional clock host or live-service boundary
@@ -166,4 +167,4 @@ SUPPRESSION  tests/Axial.Tests/RunOnTests.fs	1	// axial-note AXG013:force an asy
 SUPPRESSION  tests/Axial.Tests/WorkflowSchedulingTests.fs	1	// axial-note AXG013:suspend inside cleanup to prove scope shutdown awaits asynchronous finalizers.
 SUPPRESSION  tests/Axial.Tests/WorkflowStreamTests.fs	1	// axial-note AXG013:stagger completions to exercise replenishment of the bounded parallel window.
 SUPPRESSION  tests/Axial.Tests/WorkflowStreamTests.fs	1	// axial-note AXG013:stagger worker completion to exercise batch ordering and its concurrency bound.
-REVIEWED_POINT  b9c3f926531660199c3e66d2feb572f9ca5383fc
+REVIEWED_POINT  61ccd57ed26a57e61bb032d71a53206970240b21
