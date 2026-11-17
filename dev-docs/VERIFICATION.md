@@ -34,6 +34,11 @@ F# compiler than local builds, which emitted invalid IL for two `task { }` shape
 `try ... with error -> ...; return raise error`, and local `let rec` functions inside the block). Every process test
 failed on CI with `InvalidProgramException` while passing locally. Bump the pin in both places together.
 
+A pin only selects what `setup-dotnet` installs; `dotnet` still runs the newest SDK it can see. Runner image
+20261111 added SDK 11.0.100 to `/usr/share/dotnet`, so builds compiled against FSharp.Core 11 and the AOT probe,
+a doc test and 54 Guardrails tests failed. Each workflow therefore sets `DOTNET_INSTALL_DIR` to an empty directory,
+which leaves the pinned SDK as the only one. A `global.json` would not cover the tests that build projects in `/tmp`.
+
 ## Checkpoint before every agent run
 
 `scripts/checkpoint.sh "<label>"` commits the working tree as a local `WIP checkpoint:` commit and prints

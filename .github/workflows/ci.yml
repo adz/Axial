@@ -12,6 +12,9 @@ permissions:
 env:
   DOTNET_NOLOGO: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  # The runner image ships its own SDKs in /usr/share/dotnet and the newest one wins. Installing the
+  # pinned SDK into an empty directory makes it the only one, including for tests that build in /tmp.
+  DOTNET_INSTALL_DIR: /home/runner/.dotnet-pinned
 
 jobs:
   verify:

@@ -17,6 +17,11 @@ concurrency:
   group: github-pages-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # The runner image ships its own SDKs in /usr/share/dotnet and the newest one wins. Installing the
+  # pinned SDK into an empty directory makes it the only one, including for tests that build in /tmp.
+  DOTNET_INSTALL_DIR: /home/runner/.dotnet-pinned
+
 jobs:
   build:
     runs-on: ubuntu-latest
