@@ -302,6 +302,45 @@ module WorkflowErrorTests =
 
         test <@ requestedCancellation = Exit.Failure Cause.Interrupt @>
 
+    [<Fact>]
+    let ``unit task constructors succeed with unit and keep thrown exceptions as defects or typed errors`` () =
+        let failure = IOException "disk full"
+        let failingTask (_: CancellationToken) : Task = Task.FromException failure
+        let failingValueTask (_: CancellationToken) : ValueTask = ValueTask(Task.FromException failure)
+
+        let completed : Exit<unit, string> = Flow.fromUnitTask (fun _ -> Task.CompletedTask) |> Flow.runSync ()
+        let completedValue : Exit<unit, string> = Flow.fromUnitValueTask (fun _ -> ValueTask.CompletedTask) |> Flow.runSync ()
+        let fromFailed : Exit<unit, string> = Flow.fromUnitTask failingTask |> Flow.runSync ()
+        let fromFailedValue : Exit<unit, string> = Flow.fromUnitValueTask failingValueTask |> Flow.runSync ()
+        let attempted = Flow.attemptUnitTask failingTask |> Flow.runSync ()
+        let attemptedValue = Flow.attemptUnitValueTask failingValueTask |> Flow.runSync ()
+
+        test <@ completed = Exit.Success() @>
+        test <@ completedValue = Exit.Success() @>
+        test <@ fromFailed = Exit.Failure(Cause.Die(failure :> exn)) @>
+        test <@ fromFailedValue = Exit.Failure(Cause.Die(failure :> exn)) @>
+        test <@ attempted = Exit.Failure(Cause.Fail(failure :> exn)) @>
+        test <@ attemptedValue = Exit.Failure(Cause.Fail(failure :> exn)) @>
+
+    [<Fact>]
+    let ``unit task constructors interrupt only on the runtime's own cancellation`` () =
+        let runCancelled (workflow: Flow<unit, exn, unit>) =
+            use cts = new CancellationTokenSource(TimeSpan.FromMilliseconds 20.0)
+            workflow |> Flow.runSyncWithToken () cts.Token
+
+        let waitTask (token: CancellationToken) : Task = Task.Delay(Timeout.Infinite, token)
+        let waitValueTask (token: CancellationToken) : ValueTask = ValueTask(Task.Delay(Timeout.Infinite, token))
+        let foreignCancel (_: CancellationToken) : Task = Task.FromCanceled(CancellationToken(true))
+
+        test <@ runCancelled (Flow.attemptUnitTask waitTask) = Exit.Failure Cause.Interrupt @>
+        test <@ runCancelled (Flow.attemptUnitValueTask waitValueTask) = Exit.Failure Cause.Interrupt @>
+        test <@ runCancelled (Flow.fromUnitTask waitTask) = Exit.Failure Cause.Interrupt @>
+        test <@ runCancelled (Flow.fromUnitValueTask waitValueTask) = Exit.Failure Cause.Interrupt @>
+
+        match Flow.attemptUnitTask foreignCancel |> Flow.runSync () with
+        | Exit.Failure(Cause.Fail(:? OperationCanceledException)) -> ()
+        | other -> failwithf "Expected a typed cancellation failure, got %A" other
+
     // T28: foldCauseFlow and mapBoth must observe an exception thrown by the source flow, as Flow.catch does.
     let private dieHandler (defect: exn) (cause: Cause<string>) : Flow<unit, string, int> =
         match Cause.untraced cause with

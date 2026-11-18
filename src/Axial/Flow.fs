@@ -826,6 +826,57 @@ module Flow =
                         return Exit.Failure (Cause.Fail error)
                 }))
 
+    // F# cannot overload let-bound functions, and a type-directed (SRTP) fromTask would lose inference on lambdas
+    // that call overloaded .NET methods such as Stream.WriteAsync, so the non-generic Task forms take their own names.
+
+    /// <summary>Creates a flow from a cancellable factory for a <c>Task</c> with no result, such as a write, connect or copy.</summary>
+    /// <remarks>Behaves as <c>fromTask</c>: thrown exceptions are recorded as defects (<c>Cause.Die</c>). Use <c>attemptUnitTask</c> when expected exceptions should enter the typed error channel.</remarks>
+    /// <param name="factory">Starts the operation, observing the supplied cancellation token.</param>
+    /// <platforms>.NET only</platforms>
+    /// <example>
+    /// <code>
+    /// let send = Flow.fromUnitTask (fun token -> stream.FlushAsync token)
+    /// </code>
+    /// </example>
+    let fromUnitTask (factory: CancellationToken -> Task) : Flow<'env, 'error, unit> =
+        fromTask (fun cancellationToken -> task { do! factory cancellationToken })
+
+    /// <summary>Creates a flow from a cancellable factory for a <c>Task</c> with no result and treats thrown exceptions as recoverable typed errors.</summary>
+    /// <remarks>Behaves as <c>attemptTask</c>: <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c> when the runtime token requested it. Other exceptions, including cancellation the operation raised for its own reasons, return <c>Cause.Fail exn</c>.</remarks>
+    /// <param name="factory">Starts the operation, observing the supplied cancellation token.</param>
+    /// <platforms>.NET only</platforms>
+    /// <example>
+    /// <code>
+    /// let connect = Flow.attemptUnitTask (fun token -> socket.ConnectAsync(host, port, token).AsTask())
+    /// </code>
+    /// </example>
+    let attemptUnitTask (factory: CancellationToken -> Task) : Flow<'env, exn, unit> =
+        attemptTask (fun cancellationToken -> task { do! factory cancellationToken })
+
+    /// <summary>Creates a flow from a cancellable factory for a <c>ValueTask</c> with no result.</summary>
+    /// <remarks>Behaves as <c>fromValueTask</c>: thrown exceptions are recorded as defects (<c>Cause.Die</c>). Use <c>attemptUnitValueTask</c> when expected exceptions should enter the typed error channel.</remarks>
+    /// <param name="factory">Starts the operation, observing the supplied cancellation token.</param>
+    /// <platforms>.NET only</platforms>
+    /// <example>
+    /// <code>
+    /// let write = Flow.fromUnitValueTask (fun token -> stream.WriteAsync(bytes, token))
+    /// </code>
+    /// </example>
+    let fromUnitValueTask (factory: CancellationToken -> ValueTask) : Flow<'env, 'error, unit> =
+        fromTask (fun cancellationToken -> task { do! factory cancellationToken })
+
+    /// <summary>Creates a flow from a cancellable factory for a <c>ValueTask</c> with no result and treats thrown exceptions as recoverable typed errors.</summary>
+    /// <remarks>Behaves as <c>attemptValueTask</c>: <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c> when the runtime token requested it. Other exceptions return <c>Cause.Fail exn</c>.</remarks>
+    /// <param name="factory">Starts the operation, observing the supplied cancellation token.</param>
+    /// <platforms>.NET only</platforms>
+    /// <example>
+    /// <code>
+    /// let write = Flow.attemptUnitValueTask (fun token -> stream.WriteAsync(bytes, token))
+    /// </code>
+    /// </example>
+    let attemptUnitValueTask (factory: CancellationToken -> ValueTask) : Flow<'env, exn, unit> =
+        attemptTask (fun cancellationToken -> task { do! factory cancellationToken })
+
     /// <summary>Observes a task that has already been started.</summary>
     /// <remarks>
     /// The operation is in flight before this is called. It therefore starts outside the workflow,

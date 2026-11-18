@@ -62,7 +62,7 @@ type ElmishRuntime<'env> internal (options: ElmishRuntimeOptions) =
 
     let rec pump () : Flow<'env, Never, unit> =
         flow {
-            do! Flow.fromTask (fun token -> task { do! signal.WaitAsync(token) })
+            do! Flow.fromUnitTask (fun token -> signal.WaitAsync token)
             let mutable job = Unchecked.defaultof<Flow<'env, Never, unit>>
             if queue.TryDequeue(&job) then
                 let! _ = Flow.fork job

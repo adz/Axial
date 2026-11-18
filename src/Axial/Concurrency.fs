@@ -420,7 +420,7 @@ module Semaphore =
 module SemaphoreSlim =
     /// <summary>Acquires a permit from a .NET semaphore, waiting asynchronously.</summary>
     let acquire (semaphore: System.Threading.SemaphoreSlim) : Flow<'env, 'error, unit> =
-        Flow.fromTask (fun cancellationToken -> task { do! semaphore.WaitAsync(cancellationToken) })
+        Flow.fromUnitTask (fun cancellationToken -> semaphore.WaitAsync cancellationToken)
 
     /// <summary>Releases one permit back to a .NET semaphore.</summary>
     let release (semaphore: System.Threading.SemaphoreSlim) : Flow<'env, 'error, unit> =

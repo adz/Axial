@@ -332,3 +332,60 @@ module WorkflowBasicTests =
 
         test <@ typeof<FlowBuilder>.Namespace = "Axial" @>
         test <@ result = Exit.Success 42 @>
+
+    [<Fact>]
+    let ``zip map2 apply and map3 combine successful values`` () =
+        let zipped = Flow.zip (Flow.ok 1) (Flow.ok "two") |> Flow.runSync ()
+        let mapped2 = Flow.map2 (+) (Flow.ok 1) (Flow.ok 2) |> Flow.runSync ()
+        let applied = Flow.apply (Flow.ok (fun value -> value * 10)) (Flow.ok 4) |> Flow.runSync ()
+        let mapped3 = Flow.map3 (fun a b c -> a + b + c) (Flow.ok "a") (Flow.ok "b") (Flow.ok "c") |> Flow.runSync ()
+
+        test <@ zipped = Exit.Success(1, "two") @>
+        test <@ mapped2 = Exit.Success 3 @>
+        test <@ applied = Exit.Success 40 @>
+        test <@ mapped3 = Exit.Success "abc" @>
+
+    [<Fact>]
+    let ``zip map2 apply and map3 stop at the first failure and skip the flows after it`` () =
+        let ran = Collections.Generic.List<string>()
+
+        let step name (outcome: Result<int, string>) : Flow<unit, string, int> =
+            Flow.delay (fun () ->
+                ran.Add name
+                Flow.fromResult outcome)
+
+        let runRecording (workflow: Flow<unit, string, int>) : Exit<int, string> * string list =
+            ran.Clear()
+            let exit = workflow |> Flow.runSync ()
+            exit, List.ofSeq ran
+
+        let add3 a b c = a + b + c
+
+        let zipLeftFails = Flow.zip (step "left" (Error "left")) (step "right" (Ok 2)) |> Flow.map fst |> runRecording
+        let zipRightFails = Flow.zip (step "left" (Ok 1)) (step "right" (Error "right")) |> Flow.map fst |> runRecording
+        let map2BothFail = Flow.map2 (+) (step "left" (Error "left")) (step "right" (Error "right")) |> runRecording
+        let map2RightFails = Flow.map2 (+) (step "left" (Ok 1)) (step "right" (Error "right")) |> runRecording
+        let applyBothFail = Flow.apply (step "fn" (Error "fn") |> Flow.map (+)) (step "value" (Error "value")) |> runRecording
+        let applyValueFails = Flow.apply (step "fn" (Ok 1) |> Flow.map (+)) (step "value" (Error "value")) |> runRecording
+        let map3MiddleFails = Flow.map3 add3 (step "a" (Ok 1)) (step "b" (Error "b")) (step "c" (Error "c")) |> runRecording
+        let map3LastFails = Flow.map3 add3 (step "a" (Ok 1)) (step "b" (Ok 2)) (step "c" (Error "c")) |> runRecording
+
+        test <@ zipLeftFails = (Exit.Failure(Cause.Fail "left"), [ "left" ]) @>
+        test <@ zipRightFails = (Exit.Failure(Cause.Fail "right"), [ "left"; "right" ]) @>
+        test <@ map2BothFail = (Exit.Failure(Cause.Fail "left"), [ "left" ]) @>
+        test <@ map2RightFails = (Exit.Failure(Cause.Fail "right"), [ "left"; "right" ]) @>
+        test <@ applyBothFail = (Exit.Failure(Cause.Fail "fn"), [ "fn" ]) @>
+        test <@ applyValueFails = (Exit.Failure(Cause.Fail "value"), [ "fn"; "value" ]) @>
+        test <@ map3MiddleFails = (Exit.Failure(Cause.Fail "b"), [ "a"; "b" ]) @>
+        test <@ map3LastFails = (Exit.Failure(Cause.Fail "c"), [ "a"; "b"; "c" ]) @>
+
+    [<Fact>]
+    let ``zip map2 apply and map3 pass a defect through unchanged`` () =
+        let defect = InvalidOperationException "broken"
+        let broken : Flow<unit, string, int> = Flow.die defect
+
+        test <@ Flow.zip broken (Flow.ok 2) |> Flow.runSync () = Exit.Failure(Cause.Die defect) @>
+        test <@ Flow.zip (Flow.ok 1) broken |> Flow.runSync () = Exit.Failure(Cause.Die defect) @>
+        test <@ Flow.map2 (+) (Flow.ok 1) broken |> Flow.runSync () = Exit.Failure(Cause.Die defect) @>
+        test <@ Flow.apply (Flow.ok id) broken |> Flow.runSync () = Exit.Failure(Cause.Die defect) @>
+        test <@ Flow.map3 (fun a b c -> a + b + c) (Flow.ok 1) (Flow.ok 2) broken |> Flow.runSync () = Exit.Failure(Cause.Die defect) @>

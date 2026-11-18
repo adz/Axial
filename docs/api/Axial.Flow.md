@@ -48,7 +48,7 @@ api:
     - id: run-interop
       title: Run and interop
       order: 80
-      members: ["RunSynchronously", "StartAsTask", "StartAsValueTask", "ToAsync", "fromAsync", "fromAsyncResult", "attemptAsync", "fromBlocking", "fromBlockingResult", "attemptBlocking", "fromTask", "fromTaskResult", "attemptTask", "fromValueTask", "fromValueTaskResult", "attemptValueTask", "awaitStartedTask", "awaitStartedTaskResult", "attemptStartedTask", "awaitStartedValueTask", "awaitStartedValueTaskResult", "attemptStartedValueTask", "toAsync", "startTask", "run"]
+      members: ["RunSynchronously", "StartAsTask", "StartAsValueTask", "ToAsync", "fromAsync", "fromAsyncResult", "attemptAsync", "fromBlocking", "fromBlockingResult", "attemptBlocking", "fromTask", "fromTaskResult", "attemptTask", "fromValueTask", "fromValueTaskResult", "attemptValueTask", "fromUnitTask", "attemptUnitTask", "fromUnitValueTask", "attemptUnitValueTask", "awaitStartedTask", "awaitStartedTaskResult", "attemptStartedTask", "awaitStartedValueTask", "awaitStartedValueTaskResult", "attemptStartedValueTask", "toAsync", "startTask", "run"]
       facets:
         task: [run-interop]
 ---

@@ -19,11 +19,12 @@ channel.
 | `ColdTask<Result<'value,'error>>` | `Flow.fromColdTaskResult` | Cold task factory; `Error` enters the typed error channel |
 | `CancellationToken -> Task<'value>` | `Flow.fromTask` | Creates a cold Flow whose task value is successful output |
 | `CancellationToken -> Task<Result<'value,'error>>` | `Flow.fromTaskResult` | Creates a cold Flow whose `Error` enters the typed error channel |
+| `CancellationToken -> Task` | `Flow.fromUnitTask` | Creates a cold Flow that succeeds with `()`; `Flow.attemptUnitTask` puts exceptions in the typed error channel |
 | Already-running `Task<'value>` | `Flow.awaitStartedTask` | Awaits the existing operation; Flow cannot retroactively supply its cancellation token |
 | Already-running `Task<Result<'value,'error>>` | `Flow.awaitStartedTaskResult` | Awaits the existing operation and lifts `Error` |
 
-`ValueTask` has the corresponding `fromValueTask`, `fromValueTaskResult`, `awaitStartedValueTask`, and
-`awaitStartedValueTaskResult` functions.
+`ValueTask` has the corresponding `fromValueTask`, `fromValueTaskResult`, `fromUnitValueTask`,
+`attemptUnitValueTask`, `awaitStartedValueTask`, and `awaitStartedValueTaskResult` functions.
 
 ## Example repository
 
@@ -218,6 +219,8 @@ Available functions include:
 Flow.attemptAsync
 Flow.attemptTask
 Flow.attemptValueTask
+Flow.attemptUnitTask
+Flow.attemptUnitValueTask
 Flow.attemptStartedTask
 Flow.attemptStartedValueTask
 ```
