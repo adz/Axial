@@ -1216,6 +1216,82 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
         finally
             Directory.Delete(dir, true)
 
+    let private occurrences (text: string) (fragment: string) =
+        let rec count (start: int) total =
+            match text.IndexOf(fragment, start, StringComparison.Ordinal) with
+            | -1 -> total
+            | index -> count (index + fragment.Length) (total + 1)
+        count 0 0
+
+    [<Fact>]
+    let ``projects under one policy root share one listing and one policy check per build`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-shared-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            let names = [ "First"; "Second" ]
+            for name in names do
+                let projectDir = Path.Combine(dir, name)
+                Directory.CreateDirectory projectDir |> ignore
+                writeConsumerProject projectDir "<TargetFramework>net10.0</TargetFramework>" $"module {name}\nlet value = 1\n"
+                File.Move(Path.Combine(projectDir, "Consumer.fsproj"), Path.Combine(projectDir, name + ".fsproj"))
+            let solution = Path.Combine(dir, "Shared.slnx")
+            File.WriteAllText(solution, "<Solution>\n" + String.concat "" [ for name in names -> $"  <Project Path=\"{name}/{name}.fsproj\" />\n" ] + "</Solution>\n")
+            writeV2Policy dir "domain" "warn"
+            // Detailed verbosity shows the task's low-importance reuse messages and MSBuild's skipped targets.
+            let build () =
+                let result = runBuildWithArgs [ "-v:detailed" ] solution None
+                Assert.True(result.ExitCode = 0, result.Output)
+                result.Output
+            let reusedListing = "reusing this build's protected-file list"
+            let reusedCheck = "reusing this build's result"
+            let skippedCheck = "Skipping target \"AxialGuardrailsCheckPolicy\" because all output files are up-to-date"
+            let analysis = "Running Axial.Guardrails analysis"
+
+            let first = build ()
+            Assert.Equal(names.Length - 1, occurrences first reusedListing)
+            Assert.Equal(names.Length - 1, occurrences first reusedCheck)
+            Assert.Equal(names.Length, occurrences first analysis)
+
+            // Unchanged: the listing is still shared, no project runs the policy tool or the analysis.
+            let unchanged = build ()
+            Assert.Equal(names.Length - 1, occurrences unchanged reusedListing)
+            Assert.Equal(names.Length, occurrences unchanged skippedCheck)
+            Assert.Equal(0, occurrences unchanged reusedCheck)
+            Assert.Equal(0, occurrences unchanged analysis)
+
+            // A policy edit invalidates every project: the tool runs once and the drift warning shows once.
+            File.AppendAllText(Path.Combine(dir, "Axial.Guardrails.toml"), "# drift\n")
+            let drift = build ()
+            Assert.Equal(0, occurrences drift skippedCheck)
+            Assert.Equal(names.Length - 1, occurrences drift reusedCheck)
+            Assert.Contains("Policy changed since the last review:", drift)
+            Assert.Equal(names.Length, occurrences drift analysis)
+
+            // A lock change is a policy input too, even when it clears the drift.
+            writeFixtureLock dir
+            let relocked = build ()
+            Assert.Equal(0, occurrences relocked skippedCheck)
+            Assert.DoesNotContain("Policy changed since the last review:", relocked)
+
+            // A protected file added anywhere under the policy root reaches the next build's listing, even when no
+            // project imports it (so no project's MSBuildAllProjects changes).
+            let unused = Path.Combine(dir, "Second", "Unused.props")
+            File.WriteAllText(unused, "<Project />\n")
+            let added = build ()
+            Assert.Equal(0, occurrences added skippedCheck)
+            File.Delete unused
+            let removed = build ()
+            Assert.Equal(0, occurrences removed skippedCheck)
+
+            // A source edit reruns only the project that owns the source.
+            File.WriteAllText(Path.Combine(dir, "Second", "Program.fs"), "module Second\nlet value = System.DateTimeOffset.UtcNow\n")
+            let source = build ()
+            Assert.Equal(names.Length, occurrences source skippedCheck)
+            Assert.Equal(1, occurrences source analysis)
+            Assert.Contains("AXG001", source)
+        finally
+            Directory.Delete(dir, true)
+
     [<Fact>]
     let ``cache keys generated sources compiler properties references and overridden tool inputs`` () =
         let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-cache-" + Guid.NewGuid().ToString("N"))

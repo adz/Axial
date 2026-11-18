@@ -173,9 +173,60 @@ public class AxialGuardrailsTask : Task
             || name == ".editorconfig" || file.EndsWith(".globalconfig", StringComparison.OrdinalIgnoreCase)
             || (relative.StartsWith("tests/Axial.Guardrails", StringComparison.Ordinal) && (file.EndsWith(".fs", StringComparison.Ordinal) || file.EndsWith(".fsproj", StringComparison.Ordinal)));
     }
+    static readonly object inventoryGate = new object();
+    // The protected-file walk covers the whole policy root, so every project of a build would repeat it. The first
+    // project in each build node walks; the others reuse its list. The registry entry lives for one build invocation
+    // only, so the next build walks again and sees files added in between.
     void Inventory()
     {
+        var engine = BuildEngine as IBuildEngine4;
+        if (engine == null) { InventoryUncached(); return; }
+        var key = "AxialGuardrailsInventory|" + Path.GetFullPath(WorkingDirectory);
+        lock (inventoryGate)
+        {
+            var cached = engine.GetRegisteredTaskObject(key, RegisteredTaskObjectLifetime.Build) as string[];
+            if (cached != null)
+            {
+                InventoryFiles = cached.Select(path => (ITaskItem)new TaskItem(path)).ToArray();
+                Log.LogMessage(MessageImportance.Low, "Axial.Guardrails: reusing this build's protected-file list for " + WorkingDirectory + ".");
+                return;
+            }
+            InventoryUncached();
+            engine.RegisterTaskObject(key, InventoryFiles.Select(item => item.ItemSpec).ToArray(), RegisteredTaskObjectLifetime.Build, false);
+        }
+    }
+    // The same listing `axial check` protects (Axial.Tool PolicyLock.repositoryFiles): tracked and untracked files that
+    // git does not ignore. It skips ignored trees such as package caches, which the walk below must enumerate.
+    // Null when git is missing, fails, or the root is not in a work tree; the caller then walks the directory.
+    static string[] GitFiles(string root)
+    {
+        var start = new ProcessStartInfo("git", "ls-files -z --cached --others --exclude-standard")
+        {
+            WorkingDirectory = root, UseShellExecute = false, CreateNoWindow = true,
+            RedirectStandardOutput = true, RedirectStandardError = true, StandardOutputEncoding = Encoding.UTF8
+        };
+        var output = new StringBuilder();
+        var failures = new List<string>();
+        int exit;
+        try { exit = RunBounded(start, 120000, line => { lock (output) output.Append(line).Append('\n'); }, failures, "git ls-files", ""); }
+        catch (System.ComponentModel.Win32Exception) { return null; }
+        if (exit != 0 || failures.Count != 0) return null;
+        string text;
+        lock (output) text = output.ToString();
+        // -z separates paths with NUL; the line reader only adds the trailing newline.
+        return text.Split('\0').Select(path => path.TrimEnd('\n')).Where(path => path.Length != 0)
+            .Select(path => Path.GetFullPath(Path.Combine(root, path))).Where(File.Exists).ToArray();
+    }
+    void InventoryUncached()
+    {
         var root = Path.GetFullPath(WorkingDirectory);
+        var listed = GitFiles(root);
+        if (listed != null)
+        {
+            InventoryFiles = listed.Where(file => Protected(root, file)).Distinct(StringComparer.Ordinal)
+                .OrderBy(file => file, StringComparer.Ordinal).Select(file => (ITaskItem)new TaskItem(file)).ToArray();
+            return;
+        }
         // Directory change times detect entry additions/removals, while file contents are still rehashed by the caller.
         // The snapshot is plain checksummed lines: a no-op build validates thousands of directories cheaply.
         // On platforms without verified directory identities, enumerate rather than trusting mtimes.
@@ -308,6 +359,39 @@ public class AxialGuardrailsTask : Task
         try { document.Save(temporary); Publish(temporary, path); }
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }
+    sealed class BuildDigests { public readonly Dictionary<string, (long Length, long Written, string Digest)> Files = new Dictionary<string, (long, long, string)>(StringComparer.Ordinal); }
+    static readonly object buildDigestsGate = new object();
+    // Every project of a build hashes the same SDK imports, policy files and analyzer assemblies. Within one build
+    // invocation a digest is reused while the file keeps its length and write time: a file the build itself rewrites
+    // (a rebuilt analyzer, a regenerated source) gets a new write time and is hashed again. The registry entry ends
+    // with the build, so the next build reads every file again and a content change with a restored timestamp is
+    // still caught there.
+    string BuildDigest(string path)
+    {
+        var engine = BuildEngine as IBuildEngine4;
+        if (engine == null) return Digest(path);
+        var before = new FileInfo(path);
+        var length = before.Length;
+        var written = before.LastWriteTimeUtc.Ticks;
+        BuildDigests digests;
+        lock (buildDigestsGate)
+        {
+            digests = engine.GetRegisteredTaskObject("AxialGuardrailsDigests", RegisteredTaskObjectLifetime.Build) as BuildDigests;
+            if (digests == null)
+            {
+                digests = new BuildDigests();
+                engine.RegisterTaskObject("AxialGuardrailsDigests", digests, RegisteredTaskObjectLifetime.Build, false);
+            }
+            (long Length, long Written, string Digest) entry;
+            if (digests.Files.TryGetValue(path, out entry) && entry.Length == length && entry.Written == written) return entry.Digest;
+        }
+        var digest = Digest(path);
+        // A file rewritten while it was read cannot vouch for this digest.
+        var after = new FileInfo(path);
+        if (after.Length == length && after.LastWriteTimeUtc.Ticks == written)
+            lock (buildDigestsGate) digests.Files[path] = (length, written, digest);
+        return digest;
+    }
     void Hash()
     {
         var memo = new Dictionary<string, XElement>(StringComparer.Ordinal);
@@ -326,7 +410,7 @@ public class AxialGuardrailsTask : Task
                 digest = (string)old.Attribute("hash");
             else
             {
-                digest = Digest(path);
+                digest = BuildDigest(path);
                 // A concurrent replacement cannot acquire the digest of the previous file.
                 if (identity != null && identity != Identity(path)) identity = null;
             }
@@ -489,11 +573,11 @@ public class AxialGuardrailsTask : Task
             return child.HasExited ? child.ExitCode : -1;
         }
     }
-    static readonly object policyNoticeGate = new object();
-    // Every project/TFM of a build checks the policy lock. Drift is backpressure, never a gate: the warning is shown
-    // once per policy root and drift state in one build invocation. The engine's build-lifetime registry dedupes it
-    // in each build node, with no clock or temporary-file state; a later build shows it again.
-    void PolicyCheck()
+    sealed class PolicyCheckResult { public int Exit; public string[] Failures; public string[] Output; }
+    static readonly object policyCheckGate = new object();
+    // The check reads only the policy root, so one run answers for every project/TFM whose cache is stale in this
+    // build node (a policy edit invalidates all of them at once). A later build runs it again.
+    PolicyCheckResult RunPolicyCheck()
     {
         var start = CreateStartInfo(Command, RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
         start.WorkingDirectory = WorkingDirectory;
@@ -501,9 +585,35 @@ public class AxialGuardrailsTask : Task
         var lines = new List<string>();
         var failures = new List<string>();
         var exit = RunBounded(start, 300000, line => { lock (lines) lines.Add(line); }, failures, "Axial policy check", "");
-        string[] output;
-        lock (lines) output = lines.ToArray();
-        if (failures.Count != 0 || exit != 0)
+        lock (lines) return new PolicyCheckResult { Exit = exit, Failures = failures.ToArray(), Output = lines.ToArray() };
+    }
+    static readonly object policyNoticeGate = new object();
+    // Every project/TFM of a build checks the policy lock. Drift is backpressure, never a gate: the warning is shown
+    // once per policy root and drift state in one build invocation. The engine's build-lifetime registry dedupes it
+    // in each build node, with no clock or temporary-file state; a later build shows it again.
+    void PolicyCheck()
+    {
+        PolicyCheckResult result;
+        var engine = BuildEngine as IBuildEngine4;
+        if (engine == null) result = RunPolicyCheck();
+        else
+        {
+            var checkKey = "AxialGuardrailsPolicyCheck|" + Path.GetFullPath(WorkingDirectory) + "|" + Command;
+            lock (policyCheckGate)
+            {
+                result = engine.GetRegisteredTaskObject(checkKey, RegisteredTaskObjectLifetime.Build) as PolicyCheckResult;
+                if (result == null)
+                {
+                    result = RunPolicyCheck();
+                    engine.RegisterTaskObject(checkKey, result, RegisteredTaskObjectLifetime.Build, false);
+                }
+                else Log.LogMessage(MessageImportance.Low, "Axial policy check: reusing this build's result for " + WorkingDirectory + ".");
+            }
+        }
+        var exit = result.Exit;
+        var failures = result.Failures;
+        var output = result.Output;
+        if (failures.Length != 0 || exit != 0)
         {
             Log.LogError($"Axial policy check failed (exit code {exit}). {string.Join(" ", failures)} {string.Join(Environment.NewLine, output)}".Trim());
             return;

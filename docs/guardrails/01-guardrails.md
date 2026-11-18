@@ -231,14 +231,20 @@ fingerprinting, CLI startup/analyzer loading, compiler-argument or project loadi
 and output time in milliseconds. CLI phase boundaries are observed from its diagnostic log; parallel rule times
 overlap and must not be summed as wall time. Timing collection is off by default.
 
-Source and configuration contents are rehashed on every request. Binary digest reuse on supported 64-bit Linux
-local filesystems (ext, XFS, Btrfs, tmpfs and overlay) verifies device, inode, size and kernel-managed nanosecond
-change time, not just a restorable modification timestamp. A changed identity triggers content hashing; other
+Source and configuration contents are rehashed on every build. Within one build invocation, projects share work
+that does not depend on the project: a file's digest is reused while its length and modification time are unchanged,
+the protected-file list is built once, and the policy check runs once per policy root (in each MSBuild node). The
+next build starts over, so a content change with a restored modification time is still found then.
+
+Binary digest reuse across builds on supported 64-bit Linux local filesystems (ext, XFS, Btrfs, tmpfs and overlay)
+verifies device, inode, size and kernel-managed nanosecond change time, not just a restorable modification timestamp. A changed identity triggers content hashing; other
 platforms/filesystems rehash. This assumes ordinary filesystem writers, not privileged manipulation of filesystem
 metadata. Tool, ordered compiler arguments, policy, source order and target-framework inputs all participate in the
 analysis fingerprint. Full additionally fingerprints references and its analyzer CLI; Fast does not consume either.
-Protected-input discovery skips `.git`, `.livedocs`, legacy `.fsdocs`, `node_modules`, `artifacts`, `bin`, `obj`, and
-`output`. Explicit MSBuild imports remain inputs even under these directories. On supported local Linux filesystems,
+In a git work tree, protected-input discovery uses `git ls-files --cached --others --exclude-standard`, the same
+list `axial check` protects, so ignored trees such as a package cache are never enumerated. Outside git it skips
+`.git`, `.livedocs`, legacy `.fsdocs`, `node_modules`, `artifacts`, `bin`, `obj`, and `output`. Explicit MSBuild
+imports remain inputs even when ignored or under these directories. Outside git on supported local Linux filesystems,
 a content-validated directory-inventory snapshot checks kernel change times to discover added/removed files without
 recursively enumerating unchanged trees; protected file contents are still rehashed. Other platforms enumerate.
 

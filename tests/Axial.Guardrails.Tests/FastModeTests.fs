@@ -189,6 +189,48 @@ public static string Run(string input) {
         Assert.Empty(inventory ()))
 
     [<Fact>]
+    let ``inventory in a git work tree lists unignored protected files and skips ignored trees`` () = withFixture (fun dir ->
+        let git arguments =
+            let start = ProcessStartInfo("git")
+            start.WorkingDirectory <- dir
+            start.UseShellExecute <- false
+            start.RedirectStandardOutput <- true
+            start.RedirectStandardError <- true
+            for argument in arguments do start.ArgumentList.Add argument
+            let code, stdout, stderr = TestProcess.run 60000 start
+            Assert.True((code = 0), stdout + stderr)
+        let assembly = System.Reflection.Assembly.LoadFrom(Path.Combine(root (), "artifacts/bin/Axial.Guardrails.Build", config (), "Axial.Guardrails.Build.dll"))
+        let typ = assembly.GetType("AxialGuardrailsTask")
+        let inventory () =
+            let instance = Activator.CreateInstance typ
+            typ.GetProperty("WorkingDirectory").SetValue(instance, dir)
+            typ.GetMethod("Inventory", System.Reflection.BindingFlags.Instance ||| System.Reflection.BindingFlags.NonPublic).Invoke(instance, [||]) |> ignore
+            typ.GetProperty("InventoryFiles").GetValue(instance) :?> Microsoft.Build.Framework.ITaskItem[] |> Array.map _.ItemSpec
+        git [ "init"; "-q" ]
+        // git writes read-only object files, which Directory.Delete refuses on Windows.
+        use _ = { new IDisposable with
+                    member _.Dispose() =
+                        for file in Directory.GetFiles(Path.Combine(dir, ".git"), "*", SearchOption.AllDirectories) do
+                            File.SetAttributes(file, FileAttributes.Normal) }
+        File.WriteAllText(Path.Combine(dir, ".gitignore"), "cache/\n")
+        let cached = Path.Combine(dir, "cache", "nuget", "pkg", "1.0.0", "build", "Pkg.props")
+        Directory.CreateDirectory(Path.GetDirectoryName cached) |> ignore
+        File.WriteAllText(cached, "<Project/>")
+        let tracked = Path.Combine(dir, "Directory.Build.props")
+        File.WriteAllText(tracked, "<Project/>")
+        git [ "add"; "Directory.Build.props"; ".gitignore" ]
+        let listed = inventory ()
+        Assert.Contains(tracked, listed)
+        Assert.DoesNotContain(cached, listed)
+        // Untracked but not ignored: git still lists it, as `axial check` would protect it.
+        let untracked = Path.Combine(dir, "nested", "Directory.Build.targets")
+        Directory.CreateDirectory(Path.GetDirectoryName untracked) |> ignore
+        File.WriteAllText(untracked, "<Project/>")
+        Assert.Contains(untracked, inventory ())
+        File.Delete untracked
+        Assert.DoesNotContain(untracked, inventory ()))
+
+    [<Fact>]
     let ``Fast cannot satisfy Full even after a successful Fast stamp`` () = withFixture (fun dir ->
         checkSuccess (build dir ["-p:AxialGuardrailsMode=Fast"])
         let full = build dir ["-p:AxialGuardrailsMode=Full"; "-p:_AxialGuardrailsExe=DO_NOT_LAUNCH"; "-p:_AxialGuardrailsUsesPackagedTool=true"]

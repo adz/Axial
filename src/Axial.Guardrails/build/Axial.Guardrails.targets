@@ -121,8 +121,11 @@
   <Target Name="AxialGuardrailsValidatePolicyCache"
           BeforeTargets="AxialGuardrailsCheckPolicy"
           Condition="'$(AxialGuardrailsEnabled)' == 'true' and '$(_AxialGuardrailsPolicyRoot)' != ''">
-    <!-- One traversal, using the policy inventory's generated-directory exclusions. Do not enumerate globs
-         on every project/TFM graph evaluation. New files are still discovered on every active build. -->
+    <!-- The files `axial check` protects: `git ls-files` (tracked and unignored), or one traversal with the policy
+         inventory's generated-directory exclusions outside git. Do not enumerate globs on every project/TFM graph
+         evaluation. The task lists once per build in each build node and reuses that list for later projects; the
+         next build lists again, so new files are still discovered on every active build. File digests are likewise
+         reused within one build while a file keeps its length and write time. -->
     <PropertyGroup><_AxialGuardrailsTaskEntered>false</_AxialGuardrailsTaskEntered></PropertyGroup>
     <AxialGuardrailsTask Action="Inventory" WorkingDirectory="$(_AxialGuardrailsPolicyGlobRoot)" MemoFile="$(IntermediateOutputPath)axial-guardrails.$(TargetFramework).inventory.xml">
       <Output TaskParameter="Entered" PropertyName="_AxialGuardrailsTaskEntered" />
@@ -157,8 +160,9 @@
           Inputs="@(_AxialGuardrailsPolicyInputs);$(_AxialGuardrailsPolicyToolAssembly)"
           Outputs="$(_AxialGuardrailsPolicyCheckStamp)">
     <Error Condition="!Exists('$(_AxialGuardrailsPolicyToolAssembly)')" Text="Axial.Guardrails policy tool is missing: $(_AxialGuardrailsPolicyToolAssembly). Restore/reinstall the package." />
-    <!-- The task shows the policy-drift warning once per drift state in a build across projects/TFMs (in each build
-         node): a warning, never an error. A malformed lock or policy still fails. -->
+    <!-- The task runs the tool once per policy root in each build node and replays that result for later projects
+         whose stamp is stale. It shows the policy-drift warning once per drift state in a build across projects/TFMs
+         (in each build node): a warning, never an error. A malformed lock or policy still fails. -->
     <AxialGuardrailsTask Action="PolicyCheck" Command="$(_AxialGuardrailsPolicyExe) check --build" WorkingDirectory="$(_AxialGuardrailsPolicyRoot)" />
     <WriteLinesToFile File="$(_AxialGuardrailsPolicyCheckStamp)" Lines="@(_AxialGuardrailsPolicyFingerprintHash->'%(FileHash)')" Overwrite="true" />
   </Target>
