@@ -98,8 +98,40 @@ let private buildApp () =
             return Response.text 200 signup.Address.City
         }
 
+    let addressSearch : Flow<HttpEndpointEnv<string>, EndpointError<string>, IResult> =
+        flow {
+            match! Request.parseQuery (addressSchema ()) with
+            | { Result = Ok address } -> return Response.text 200 address.City
+            | invalid ->
+                let street = Data.redisplayPath "street" invalid.Input
+                let cityErrors = invalid.ErrorsFor "city" |> List.length
+                return Response.html 422 $"<p>{street}</p><p>{cityErrors}</p>"
+        }
+
+    let moved : Flow<HttpEndpointEnv<string>, EndpointError<string>, IResult> =
+        flow { return Response.redirect 302 "/old" |> Response.withHeader "Location" "/new" }
+
+    let plain : Flow<HttpEndpointEnv<string>, EndpointError<string>, IResult> =
+        flow {
+            return
+                Response.html 200 "<p>plain</p>"
+                |> Response.withHeader "Content-Type" "text/plain; charset=utf-8"
+        }
+
+    let retriggered : Flow<HttpEndpointEnv<string>, EndpointError<string>, IResult> =
+        flow {
+            return
+                Response.text 200 "saved"
+                |> Response.withHeader "HX-Trigger" "first"
+                |> Response.withHeader "HX-Trigger" "second"
+        }
+
     app.MapPost("/signup-page", endpoint signupPage) |> ignore
     app.MapPost("/strict-form", endpoint strictForm) |> ignore
+    app.MapGet("/address", endpoint addressSearch) |> ignore
+    app.MapGet("/moved", endpoint moved) |> ignore
+    app.MapGet("/plain", endpoint plain) |> ignore
+    app.MapGet("/retriggered", endpoint retriggered) |> ignore
 
     app.MapGet("/openapi.json", Func<IResult>(fun () -> SchemaResult.openApi openApiDocument))
     |> ignore
@@ -291,4 +323,54 @@ let ``a form endpoint refuses a body that is not a form`` () =
 
             Assert.Equal(400, int response.StatusCode)
             Assert.Contains("not a form", body)
+        })
+
+[<Fact>]
+let ``a valid query parses to the trusted model`` () =
+    withServer (fun client ->
+        task {
+            let! response = client.GetAsync("/address?street=12%20Analytical%20Way&city=London")
+            let! body = response.Content.ReadAsStringAsync()
+
+            Assert.Equal(200, int response.StatusCode)
+            Assert.Equal("London", body)
+        })
+
+[<Fact>]
+let ``an invalid query shows again with what was typed and its errors`` () =
+    withServer (fun client ->
+        task {
+            let! response = client.GetAsync("/address?street=12%20Analytical%20Way&city=")
+            let! body = response.Content.ReadAsStringAsync()
+
+            Assert.Equal(422, int response.StatusCode)
+            Assert.Equal("<p>12 Analytical Way</p><p>1</p>", body)
+        })
+
+[<Fact>]
+let ``withHeader replaces the location a redirect set`` () =
+    withServer (fun client ->
+        task {
+            let! response = client.GetAsync("/moved")
+
+            Assert.Equal(302, int response.StatusCode)
+            Assert.Equal("/new", string response.Headers.Location)
+        })
+
+[<Fact>]
+let ``withHeader replaces the content type a response set`` () =
+    withServer (fun client ->
+        task {
+            let! response = client.GetAsync("/plain")
+
+            Assert.Equal("text/plain", response.Content.Headers.ContentType.MediaType)
+        })
+
+[<Fact>]
+let ``the last withHeader for a name wins`` () =
+    withServer (fun client ->
+        task {
+            let! response = client.GetAsync("/retriggered")
+
+            Assert.Equal<string seq>([ "second" ], response.Headers.GetValues "HX-Trigger")
         })

@@ -284,7 +284,12 @@ module Response =
     let withHeader (name: string) (value: string) (response: IResult) : IResult =
         { new IResult with
             member _.ExecuteAsync(context: HttpContext) =
-                context.Response.Headers[name] <- Microsoft.Extensions.Primitives.StringValues value
+                // The inner result sets its own headers, such as Content-Type or Location, as it runs. Setting this
+                // one as the headers are sent lets it win. Callbacks run last-registered first, so the outermost
+                // withHeader for a name wins, as in the GenHTTP adapter.
+                context.Response.OnStarting(fun () ->
+                    context.Response.Headers[name] <- Microsoft.Extensions.Primitives.StringValues value
+                    Task.CompletedTask)
                 response.ExecuteAsync context }
 
     /// <summary>Returns a host-native ASP.NET result unchanged.</summary>

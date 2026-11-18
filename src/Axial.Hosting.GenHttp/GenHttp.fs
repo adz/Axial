@@ -279,7 +279,13 @@ module Response =
     let withHeader (name: string) (value: string) (HttpResponse respond) : HttpResponse =
         HttpResponse(fun request ->
             let response = respond request
-            response.Headers[name] <- value
+
+            // GenHTTP writes Content-Type from the response's ContentType, not from its header collection.
+            if String.Equals(name, "Content-Type", StringComparison.OrdinalIgnoreCase) then
+                response.ContentType <- FlexibleContentType.Parse value
+            else
+                response.Headers[name] <- value
+
             response)
 
     /// <summary>Builds a host-native response plan from the current GenHTTP request.</summary>
