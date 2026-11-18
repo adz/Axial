@@ -58,7 +58,7 @@ test = ["**/*.fsproj"]
 
     let private cleanup (f: Fixture) =
         Environment.SetEnvironmentVariable(GuardrailConfig.EnvironmentVariable, null)
-        try Directory.Delete(Path.GetDirectoryName f.Repo, true) with _ -> ()
+        try TestDirectory.delete (Path.GetDirectoryName f.Repo) with _ -> ()
 
     let private analyze (f: Fixture) analyzer source =
         task {
@@ -262,7 +262,7 @@ module SourceClassificationTests =
             Assert.Equal("nested/File.fs", expectRepository root inside)
             expectExternal root outside
             expectExternal root (Path.Combine(root, "..", Path.GetFileName sibling, "File.fs"))
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``project relative internal link stays in the repository`` () =
@@ -275,7 +275,7 @@ module SourceClassificationTests =
             File.WriteAllText(linked, "module Linked")
             let viaProject = Path.Combine(project, "..", "..", "shared", "Linked.fs")
             Assert.Equal("shared/Linked.fs", expectRepository root viaProject)
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``relative source resolves against the supplied project directory`` () =
@@ -289,7 +289,7 @@ module SourceClassificationTests =
             match classifySourceFrom project root "../../shared/Linked.fs" with
             | RepositorySource relative -> Assert.Equal("shared/Linked.fs", relative)
             | other -> failwith $"expected repository source, got {other}"
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``filesystem root is preserved as a containment root`` () =
@@ -306,7 +306,7 @@ module SourceClassificationTests =
             match classifySource root "" with
             | InvalidSource _ -> ()
             | other -> failwith $"expected invalid source, got {other}"
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``file symlink escaping the root is external`` () =
@@ -318,4 +318,4 @@ module SourceClassificationTests =
             let link = Path.Combine(root, "Linked.fs")
             File.CreateSymbolicLink(link, outside) |> ignore
             expectExternal root link
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root

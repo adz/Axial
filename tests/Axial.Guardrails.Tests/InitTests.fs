@@ -54,7 +54,7 @@ module InitTests =
             for explanation in ["# Roles"; "# Test role"; "# Baseline"; "# Automation"; "verification script"] do
                 Assert.Contains(explanation, config)
             Assert.Contains("# [projects]", config)
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``noninteractive init defaults to Other and reports it`` () =
@@ -64,7 +64,7 @@ module InitTests =
             Assert.True((code = 0), errors)
             Assert.Contains("Other", output)
             Assert.Contains("automation = []", read root "Axial.Guardrails.toml")
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``existing nondefault toml bootstraps configured baseline and lock`` () =
@@ -82,7 +82,7 @@ module InitTests =
             Assert.Equal("", errors)
             let code, _, _ = run root ["check"]
             Assert.Equal(0, code)
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``existing baseline entries are preserved and included in the new lock`` () =
@@ -96,7 +96,7 @@ module InitTests =
             Assert.Equal(baseline, read root "Axial.Guardrails.baseline")
             let lock = Axial.Tool.PolicyLock.parseLock (Path.Combine(root, "Axial.Guardrails.lock")) |> Result.defaultWith failwith
             Assert.Contains(lock.Baseline, fun entry -> entry.Rule = "effects.ambient" && entry.File = "src/App.fs" && entry.Fingerprint = "abc")
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``repeated init is a byte-for-byte no-op`` () =
@@ -111,7 +111,7 @@ module InitTests =
             for name, text, stamp in before do
                 Assert.Equal(text, read root name)
                 Assert.Equal(stamp, File.GetLastWriteTimeUtc(Path.Combine(root, name)))
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``nested configured baseline parents are created`` () =
@@ -123,7 +123,7 @@ module InitTests =
             Assert.Contains("\"status\":\"ok\"", output)
             Assert.True(File.Exists(Path.Combine(root, "policy", "new.baseline")), errors)
             Assert.True(File.Exists(Path.Combine(root, "Axial.Guardrails.lock")))
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``invalid existing toml fails without creating artifacts`` () =
@@ -136,7 +136,7 @@ module InitTests =
             Assert.Equal(toml, read root "Axial.Guardrails.toml")
             Assert.False(File.Exists(Path.Combine(root, "Axial.Guardrails.baseline")))
             Assert.False(File.Exists(Path.Combine(root, "Axial.Guardrails.lock")))
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``existing lock is never refreshed while a missing baseline is created`` () =
@@ -149,7 +149,7 @@ module InitTests =
             Assert.Equal(0, code)
             Assert.Equal(lock, read root "Axial.Guardrails.lock")
             Assert.True(File.Exists(Path.Combine(root, "Axial.Guardrails.baseline")))
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``missing lock check and approve point at the bootstrap command`` () =
@@ -164,7 +164,7 @@ module InitTests =
             let code, _, errors = run root ["policy"; "approve"; "--yes-i-reviewed"]
             Assert.NotEqual(0, code)
             Assert.Contains("axial init", errors)
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``create-new never replaces a concurrently created artifact`` () =
@@ -178,7 +178,7 @@ module InitTests =
             | Ok () -> failwith "writeNew replaced an existing artifact"
             | Error _ -> ()
             Assert.Equal("first", File.ReadAllText path)
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``json init reports the created and reused artifacts`` () =
@@ -191,7 +191,7 @@ module InitTests =
             let code, output, _ = run root ["init"; "--json"]
             Assert.Equal(0, code)
             Assert.Contains("reused:", output)
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
 
     [<Fact>]
@@ -210,8 +210,8 @@ module InitTests =
                 let lock = Axial.Tool.PolicyLock.parseLock (Path.Combine(root, "Axial.Guardrails.lock")) |> Result.defaultWith failwith
                 Assert.False(lock.Hashes.ContainsKey "Linked.props", errors)
             finally
-                Directory.Delete(root, true)
-                Directory.Delete(outside, true)
+                TestDirectory.delete root
+                TestDirectory.delete outside
 
     [<Fact>]
     let ``directory symlink is not traversed for inventory`` () =
@@ -228,8 +228,8 @@ module InitTests =
                 let lock = Axial.Tool.PolicyLock.parseLock (Path.Combine(root, "Axial.Guardrails.lock")) |> Result.defaultWith failwith
                 Assert.DoesNotContain(lock.Hashes.Keys, fun path -> path.Contains "Secret.props")
             finally
-                Directory.Delete(root, true)
-                Directory.Delete(outside, true)
+                TestDirectory.delete root
+                TestDirectory.delete outside
 
     [<Fact>]
     let ``implicit default baseline rejects external symlink before parsing inventory`` () =
@@ -246,7 +246,7 @@ module InitTests =
                     Assert.DoesNotContain("malformed", message)
                 | Ok _ -> failwith "Inventory accepted an external default baseline"
             finally
-                Directory.Delete(root, true)
+                TestDirectory.delete root
                 File.Delete outside
 
     [<Theory>]
@@ -269,7 +269,7 @@ module InitTests =
                 Assert.False(File.Exists(Path.Combine(root, "Axial.Guardrails.baseline")))
                 if existingLock then Assert.Equal("unchanged-lock", read root "Axial.Guardrails.lock")
             finally
-                Directory.Delete(root, true)
+                TestDirectory.delete root
                 File.Delete outside
 
     [<Fact>]
@@ -287,7 +287,7 @@ module InitTests =
             info.ArgumentList.Add("help")
             let code, output, errors = TestProcess.run 120000 info
             Assert.True((code = 0), output + errors)
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``baseline help permits preparation but approval remains a human decision`` () =
@@ -304,7 +304,7 @@ module InitTests =
             let code, _, _ = run root ["policy"; "baseline"; "--rule"; "effects.ambient"; "--yes-i-reviewed"]
             Assert.NotEqual(0, code)
             Assert.False(File.Exists(Path.Combine(root, "Axial.Guardrails.lock")))
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
     [<Theory>]
     [<InlineData("AXIAL_GUARDRAILS_SEVERITY")>]
@@ -320,4 +320,4 @@ module InitTests =
             Assert.Contains("policy-roles", errors)
             Assert.Contains("Axial.Guardrails.toml", errors)
             Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(errors, "AXIALGR001").Count)
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root

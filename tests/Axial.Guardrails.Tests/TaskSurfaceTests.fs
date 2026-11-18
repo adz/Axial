@@ -26,7 +26,7 @@ module TaskSurfaceTests =
                 GuardrailConfig.parse (
                     [ "guardrail\tAxial"; $"setting\tpolicyRoot\t{dir}"; $"setting\tpolicyFile\t{policy}"; $"setting\tprojectPath\t{dir}/App.fsproj" ] @ settings)
             action config (Path.Combine(dir, "Fast.fs"))
-        finally Directory.Delete(dir, true)
+        finally TestDirectory.delete dir
 
     let private fast config path source =
         FastSyntax.analyze config path (SourceText.ofString source) (parse path source)
@@ -168,7 +168,7 @@ module TaskSurfaceTests =
     let private withDirectory action =
         let dir = Path.Combine(Path.GetTempPath(), "axial-fast-runner-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
-        try action dir finally Directory.Delete(dir, true)
+        try action dir finally TestDirectory.delete dir
 
     [<Fact>]
     let ``skipped sources are recorded on every run in one process including cache hits`` () =

@@ -22,7 +22,7 @@ module FastSyntaxTests =
         try
             let config = GuardrailConfig.parse [ "guardrail\tAxial"; "guardrail\tAxial.Console"; "guardrail\tAxial.FileSystem"; "setting\tinTests\tall"; $"setting\tpolicyRoot\t{dir}"; $"setting\tpolicyFile\t{policy}"; $"setting\tprojectPath\t{dir}/Tests.fsproj" ]
             action config (Path.Combine(dir, "Fast.fs"))
-        finally Directory.Delete(dir, true)
+        finally TestDirectory.delete dir
     let private analyzeFor code source = withConfig (if code = "AXG013" then "test" else "domain") (fun config file -> FastSyntax.analyze config file (SourceText.ofString source) (parse [] source))
     let private analyze source = analyzeFor "AXG004" source
 
@@ -133,7 +133,7 @@ module FastSyntaxTests =
                 Assert.Equal(expected, fast)
                 let full = EffectBoundaryAnalyzer.analyzeWithConfig conf ctx |> List.exists (fun m -> m.Code = "AXG001")
                 Assert.Equal(expected, full)
-            finally Directory.Delete(root, true)
+            finally TestDirectory.delete root
         }
 
     [<Theory>]
@@ -225,4 +225,4 @@ module FastSyntaxTests =
             Assert.Single(result.Elements(XName.Get "failure")) |> ignore
             Assert.Equal((if fault = "visitor crash" then 14 else 7), result.Elements(XName.Get "coverage") |> Seq.length)
             Assert.Single(Directory.GetFiles(Path.Combine(dir, "cache"))) |> ignore
-        finally Directory.Delete(dir, true)
+        finally TestDirectory.delete dir

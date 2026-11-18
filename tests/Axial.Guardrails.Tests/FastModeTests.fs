@@ -41,7 +41,7 @@ module FastModeTests =
     let private checkSuccess (code, output) = Assert.True((code = 0), output)
     let private withFixture test =
         let dir = fixture ()
-        try test dir finally Directory.Delete(dir, true)
+        try test dir finally TestDirectory.delete dir
 
     [<Fact>]
     let ``Fast is default runs syntax hints and explicitly defers typed coverage`` () = withFixture (fun dir ->
@@ -207,11 +207,6 @@ public static string Run(string input) {
             typ.GetMethod("Inventory", System.Reflection.BindingFlags.Instance ||| System.Reflection.BindingFlags.NonPublic).Invoke(instance, [||]) |> ignore
             typ.GetProperty("InventoryFiles").GetValue(instance) :?> Microsoft.Build.Framework.ITaskItem[] |> Array.map _.ItemSpec
         git [ "init"; "-q" ]
-        // git writes read-only object files, which Directory.Delete refuses on Windows.
-        use _ = { new IDisposable with
-                    member _.Dispose() =
-                        for file in Directory.GetFiles(Path.Combine(dir, ".git"), "*", SearchOption.AllDirectories) do
-                            File.SetAttributes(file, FileAttributes.Normal) }
         File.WriteAllText(Path.Combine(dir, ".gitignore"), "cache/\n")
         let cached = Path.Combine(dir, "cache", "nuget", "pkg", "1.0.0", "build", "Pkg.props")
         Directory.CreateDirectory(Path.GetDirectoryName cached) |> ignore

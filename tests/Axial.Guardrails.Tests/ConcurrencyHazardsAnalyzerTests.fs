@@ -241,7 +241,7 @@ type ConcurrencyHazardsPolicyTests() =
                 return! ConcurrencyHazardsAnalyzerTests.runContext code ctx
             finally
                 Environment.SetEnvironmentVariable(GuardrailConfig.EnvironmentVariable, previous)
-                System.IO.Directory.Delete(root, true)
+                TestDirectory.delete root
         }
 
     let runWith role runtime boundary project source code = runWithSettings [] role runtime boundary project source code
@@ -282,7 +282,7 @@ type ConcurrencyHazardsPolicyTests() =
                         Assert.Equal((inTests = "all" || analyzer.RunsInTests), called)
             finally
                 Environment.SetEnvironmentVariable(GuardrailConfig.EnvironmentVariable, previous)
-                System.IO.Directory.Delete(root, true)
+                TestDirectory.delete root
         }
 
     [<Fact>]
@@ -333,8 +333,8 @@ type ConcurrencyHazardsPolicyTests() =
             finally
                 Environment.SetEnvironmentVariable(GuardrailConfig.EnvironmentVariable, previousConfig)
                 Environment.SetEnvironmentVariable("AXIAL_GUARDRAILS_RUN", previousRun)
-                System.IO.Directory.Delete(run, true)
-                System.IO.Directory.Delete(root, true)
+                TestDirectory.delete run
+                TestDirectory.delete root
         }
 
     [<Theory>]

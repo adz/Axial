@@ -47,3 +47,11 @@ module TestProcess =
         if not exited then failwith $"{command} timed out after {timeoutMilliseconds} ms:\n{out}\n{err}"
         if not drained then failwith $"{command} exited but its output stayed open (a descendant holds the pipe):\n{out}\n{err}"
         child.ExitCode, out, err
+
+module TestDirectory =
+    /// Deletes a test directory tree. git writes read-only object files, which Directory.Delete refuses on Windows.
+    let delete (path: string) =
+        if Directory.Exists path then
+            for file in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories) do
+                File.SetAttributes(file, FileAttributes.Normal)
+            Directory.Delete(path, true)

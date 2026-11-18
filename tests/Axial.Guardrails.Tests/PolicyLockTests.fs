@@ -24,7 +24,7 @@ module PolicyLockTests =
                 File.WriteAllText(path,serialize (inspectCurrent ()))
                 parseLock path |> function Ok value -> value | Error error -> failwith error
             action root write inspectCurrent approved
-        finally Directory.Delete(root,true)
+        finally TestDirectory.delete root
 
     [<Theory>]
     [<InlineData("module App\n// axial-allow-AXG001: live boundary\n")>]
@@ -218,7 +218,7 @@ module PolicyLockTests =
             test <@ changes.BoundariesAdded = [ "runtime:Runtime.fs" ] @>
             test <@ not (isEmpty changes) @>
             test <@ changes.ProtectedChanged |> List.contains ConfigName @>
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``ordinary approval refuses baseline growth`` () =
@@ -279,7 +279,7 @@ module PolicyLockTests =
             test <@ diff snapshot (current ()) |> isEmpty @>
             File.WriteAllText(Path.Combine(root,"Directory.Build.targets"),"<Project><!-- changed --></Project>")
             test <@ (diff snapshot (current ())).ProtectedChanged=["Directory.Build.targets"] @>
-        finally Directory.Delete(root,true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``baseline roles use the project assignment before file overrides`` () =
@@ -304,7 +304,7 @@ domain = ["src/Domain/*.fsproj"]
             test <@ validateApproval (BaselineRule "effects.ambient") empty snapshot changes = Ok () @>
             let established={empty with Rules=Map ["domain/effects.ambient","deny"]}
             test <@ validateApproval (BaselineRule "effects.ambient") established snapshot changes |> Result.isError @>
-        finally Directory.Delete(root,true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``baseline growth must be authorized for every project role of a shared file`` () =
@@ -331,7 +331,7 @@ host = ["src/Z/*.fsproj"]
             test <@ roleRecords = 2 @>
             let changes=diff empty snapshot
             test <@ validateApproval (BaselineRule "effects.ambient") empty snapshot changes |> Result.isError @>
-        finally Directory.Delete(root,true)
+        finally TestDirectory.delete root
 
     [<Fact>]
     let ``strict lock parser requires one first version and unique exact records`` () =

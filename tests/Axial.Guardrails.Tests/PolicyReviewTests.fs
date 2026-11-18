@@ -46,7 +46,7 @@ module PolicyReviewTests =
                 let runtime = if File.Exists testRuntime then testRuntime else runtime
                 run root "dotnet" (["exec"; "--runtimeconfig"; runtime; typeof<Snapshot>.Assembly.Location] @ args)
             action root write git cli
-        finally Directory.Delete(root, true)
+        finally TestDirectory.delete root
 
     [<Theory>]
     [<InlineData("// axial-allow-AXG001: foreign boundary")>]
@@ -209,7 +209,7 @@ module PolicyReviewTests =
             write path "changed\n"
             let code, output = cli ["policy"; "review"; "--since"; "HEAD"; "--check"]
             Assert.Equal(declared, code <> 0)
-            if declared then Assert.Contains("automation:\n  " + path, output)
+            if declared then Assert.Contains("automation:\n  " + path, output.ReplaceLineEndings "\n")
             else Assert.DoesNotContain(path, output))
 
     [<Fact>]

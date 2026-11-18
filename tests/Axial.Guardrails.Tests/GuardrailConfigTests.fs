@@ -81,7 +81,7 @@ module GuardrailConfigTests =
                     let actual = GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx [ message ]
                     Assert.Equal(expectsFull || List.contains code [ "AXG001"; "AXG004"; "AXG009"; "AXG013" ], not actual.IsEmpty)
             finally
-                System.IO.Directory.Delete(root, true)
+                TestDirectory.delete root
         }
 
     [<Fact>]

@@ -37,7 +37,7 @@ module WaitForFactsAnalyzerTests =
                     yield! settings ]
                 return WaitForFactsAnalyzer.analyzeWithConfig config ctx
             finally
-                System.IO.Directory.Delete(root, true)
+                TestDirectory.delete root
         }
 
     let private findings role body = findingsWith [] "deny" role body

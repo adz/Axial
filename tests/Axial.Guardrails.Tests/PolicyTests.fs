@@ -30,7 +30,7 @@ module PolicyTests =
         File.WriteAllText(Path.Combine(root, "src", "App", "Services", "Orders.fs"), "module Orders")
         File.WriteAllText(Path.Combine(root, "src", "App", "Boundary.fs"), "module Boundary")
         File.WriteAllText(Path.Combine(root, "tests", "App.Tests.fsproj"), "<Project />")
-        try action root finally Directory.Delete(root, true)
+        try action root finally TestDirectory.delete root
 
     let private parse root text = Policy.parse root (set [ "effects.ambient"; "domain.async-return" ]) text
 
@@ -222,7 +222,7 @@ host = ["../Program.fs"]
                 Directory.CreateSymbolicLink(link,outside) |> ignore
                 let actual=parse root "version = 2\nbaseline = \"linked/baseline\"\n[default]\nrole = \"domain\""
                 test <@ actual = Error [ "baseline path 'linked/baseline' resolves outside the repository root" ] @>
-            finally Directory.Delete(outside,true))
+            finally TestDirectory.delete outside)
 
     [<Fact>]
     let ``directory symlinks are not followed`` () =
@@ -235,4 +235,4 @@ host = ["../Program.fs"]
                 Directory.CreateSymbolicLink(link,outside) |> ignore
                 let actual=parse root "version = 2\n[default]\nrole = \"domain\"\n[files]\nhost = [\"src/linked/**\"]"
                 test <@ actual = Error [ "policy path 'src/linked/**' matches nothing" ] @>
-            finally Directory.Delete(outside,true))
+            finally TestDirectory.delete outside)
