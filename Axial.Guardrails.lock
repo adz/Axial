@@ -3,13 +3,13 @@ BASELINE_PATH  Axial.Guardrails.baseline
 SHA256  2b078d571a2415b4395d0b789a67fdb6e5020af0f84926f2f61d34c71fad1cee  .editorconfig
 SHA256  cc8a1c075025701e675b9fdb4331bace6421ac1bf71111f91c7772992624c3f5  Axial.Guardrails.baseline
 SHA256  db08f9d8f79b17bcc00212eaa580198a4ec78d0dd9f9e1e14d0269c10cf9c93e  Axial.Guardrails.toml
-SHA256  481b863ca0ac950bfb0fafc62c0fafe66bfc7d26825b130aba52faf80e0647eb  Directory.Build.props
+SHA256  ed26744a45f5aec3ae05a5953d8e3c0aa2f482fc7ad6f9bd71099244f7ca2d41  Directory.Build.props
 SHA256  451033b451a34b27be5835c14b6dbac777c58b9c170835bc37f684f20a949bc9  Directory.Build.targets
 SHA256  c9a976e73aa3c0642dacd5078208fccb9dd3a2586c564e8ff7e865075998be2d  src/Axial.Configuration/buildTransitive/Axial.Configuration.props
 SHA256  6d7437334f7cf44d5039e85b6a0b61a77b3f1be3088982b7c4df354b80b724a6  src/Axial.Console/buildTransitive/Axial.Console.props
 SHA256  ea327e356b2a5baf96e6db3b8d8f9dbec9fed22f733ba732082d96d1a55841ef  src/Axial.FileSystem/buildTransitive/Axial.FileSystem.props
 SHA256  59d2d5141c3a010e25b6fb5eb9fc788b82f6862fb6c6e7d8b7c22eb0ca1dc1b6  src/Axial.Guardrails/build/Axial.Guardrails.props
-SHA256  87e3bc1e2b21c96c178f491be9ecb7bfaa281ffda1c11f910939602611c8615f  src/Axial.Guardrails/build/Axial.Guardrails.targets
+SHA256  f7a5e16025182c7ce43b5c65f9f214a08473454cddbee607ccda62546a2db649  src/Axial.Guardrails/build/Axial.Guardrails.targets
 SHA256  49e0c0a0e8a7a783a5ca0977accda3bf78ba16af192e05a2b0977d97f03df078  src/Axial.HttpClient/buildTransitive/Axial.HttpClient.props
 SHA256  44b1d4e543c9f17534f6f13ffaa2c158b1da8932f868235c5a14f61e97ee00e2  src/Axial.Process/buildTransitive/Axial.Process.props
 SHA256  afb56ac2c1b40561eb7f3fbe28d7e7ed95d3b39ac6d98d132babf974fe660cdc  src/Axial.Tool/FullCheck.targets
@@ -167,4 +167,4 @@ SUPPRESSION  tests/Axial.Tests/RunOnTests.fs	1	// axial-note AXG013:force an asy
 SUPPRESSION  tests/Axial.Tests/WorkflowSchedulingTests.fs	1	// axial-note AXG013:suspend inside cleanup to prove scope shutdown awaits asynchronous finalizers.
 SUPPRESSION  tests/Axial.Tests/WorkflowStreamTests.fs	1	// axial-note AXG013:stagger completions to exercise replenishment of the bounded parallel window.
 SUPPRESSION  tests/Axial.Tests/WorkflowStreamTests.fs	1	// axial-note AXG013:stagger worker completion to exercise batch ordering and its concurrency bound.
-REVIEWED_POINT  61ccd57ed26a57e61bb032d71a53206970240b21
+REVIEWED_POINT  8c7096a7eddce3e5bb760be438c7931441f42944
