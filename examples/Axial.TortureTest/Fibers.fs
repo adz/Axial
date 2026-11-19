@@ -70,7 +70,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
                       let! annotations = Flow.annotations
                       let! trace = Flow.traceId
                       let! id = Flow.fiberId
-                      let! tenant = Flow.envWith _.Tenant
+                      let! tenant = Flow.envWithFlow (fun environment -> Flow.sync (fun () -> environment.Tenant))
                       return worker, annotations, trace, id, tenant
                   }
                   |> Flow.annotate "worker" (string worker)
@@ -82,7 +82,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
             // addAnnotationSink composes with the sink installed outside it; withAnnotationSink replaces it.
             |> Flow.addAnnotationSink (fun _ _ -> increment sinkCount |> ignore)
             |> Flow.withAnnotationSink (fun _ _ -> ())
-            |> Flow.localEnv (fun (_: unit) -> { Tenant = "acme" })
+            |> Flow.provide { Tenant = "acme" }
 
         let annotationsHeld =
             inherited

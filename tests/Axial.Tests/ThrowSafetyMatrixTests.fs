@@ -377,6 +377,8 @@ module ThrowSafetyMatrix =
           die "Flow.ensuring/source" (fun c -> c.Bad |> Flow.ensuring c.Finalizer) |> comp 1
           die "Flow.ensuring/finalizer" (fun c -> c.Src 1 |> Flow.ensuring (c.BadOf()))
           die "Flow.envWith/fn" (fun c -> c.Later(Flow.envWith (fun () -> c.Throw<int>())) : Flow<unit, string, int>)
+          die "Flow.envWithFlow/fn" (fun c -> c.Later(Flow.envWithFlow (fun () -> c.Throw<Flow<unit, string, int>>())))
+          die "Flow.envWithFlow/flow" (fun c -> Flow.envWithFlow (fun () -> c.Bad))
           die "Flow.foldFlow/source" (fun c ->
               c.Bad
               |> Flow.foldFlow
@@ -486,6 +488,7 @@ module ThrowSafetyMatrix =
           die "Flow.ignore/flow" (fun c -> c.Bad |> Flow.ignore)
           die "Flow.localEnv/fn" (fun c -> c.Later(Flow.env<int, string> |> Flow.localEnv (fun () -> c.Throw<int>())))
           die "Flow.localEnv/flow" (fun c -> c.BadOf<int, string, int>() |> Flow.localEnv (fun () -> 5))
+          die "Flow.provide/flow" (fun c -> c.BadOf<int, string, int>() |> Flow.provide 5)
           die "Flow.map/fn" (fun c -> c.Src 1 |> Flow.map (c.Fn<int, int>()))
           die "Flow.map/source" (fun c -> c.Bad |> Flow.map id)
           die "Flow.map2/fn" (fun c -> Flow.map2 (fun _ _ -> c.Throw<int>()) (c.Src 1) (c.Src 2))
@@ -545,6 +548,7 @@ module ThrowSafetyMatrix =
           |> comp 1
           die "Flow.orElse/source" (fun c -> c.Bad |> Flow.orElse (Flow.ok 0))
           die "Flow.orElse/fallback" (fun c -> c.SrcFail |> Flow.orElse c.Bad)
+          die "Flow.orDie/source" (fun c -> c.Bad |> Flow.orDie)
           die "Flow.orElseFlow/flow" (fun c -> Flow.orElseFlow (c.BadOf<unit, string, string>()) (Error() : Result<int, unit>))
           die "Flow.orElseWith/source" (fun c -> c.Bad |> Flow.orElseWith (fun _ -> Flow.ok 0))
           die "Flow.orElseWith/fn" (fun c -> c.SrcFail |> Flow.orElseWith (c.Fn<string, Flow<unit, string, int>>()))
@@ -556,6 +560,7 @@ module ThrowSafetyMatrix =
           die "Flow.recover/flow" (fun c -> c.SrcFail |> Flow.recover (fun _ -> c.Bad))
           die "Flow.repeat/flow" (fun c -> c.Bad |> Flow.repeat (Schedule.recurs 2))
           die "Flow.retry/flow" (fun c -> c.Bad |> Flow.retry (Schedule.recurs 2))
+          die "Flow.retryForever/flow" (fun c -> c.Bad |> Flow.retryForever (Schedule.spaced TimeSpan.Zero))
           die "Flow.run/flow" (fun c -> c.Later(Flow.delay (fun () -> Flow.ofExit (Flow.run () c.Bad))))
           die "Flow.runOn/flow" (fun c -> c.Bad |> Flow.runOn RunOn.ThreadPool)
           die "Flow.scopeAcquireRelease/acquire" (fun c ->
@@ -608,6 +613,15 @@ module ThrowSafetyMatrix =
           die "Flow.startTask/flow" (fun c ->
               c.Later(Flow.delay (fun () -> Flow.awaitStartedTask (Flow.startTask () c.Bad) |> Flow.bind Flow.ofExit)))
           die "Flow.supervise/flow" (fun c -> c.Bad |> Flow.supervise (Schedule.recurs 1))
+          // superviseForever restarts a defect without end, so the flow throws once and then stops with a typed failure.
+          fails "Flow.superviseForever/flow" "stop" (fun c ->
+              let runs = ref 0
+
+              Flow.delay (fun () ->
+                  runs.Value <- runs.Value + 1
+                  if runs.Value = 1 then c.Bad else Flow.fail "stop")
+              |> Flow.superviseForever Backoff.NoDelay)
+          die "Flow.sync/fn" (fun c -> c.Later(Flow.sync (fun () -> c.Throw<int>())) : Flow<unit, string, int>)
           die "Flow.tap/fn" (fun c -> c.Src 1 |> Flow.tap (c.Fn<int, Flow<unit, string, unit>>()))
           die "Flow.tap/flow" (fun c -> c.Src 1 |> Flow.tap (fun _ -> c.BadOf()))
           die "Flow.tapError/fn" (fun c -> c.SrcFail |> Flow.tapError (c.Fn<string, Flow<unit, string, unit>>()))
@@ -615,6 +629,7 @@ module ThrowSafetyMatrix =
           die "Flow.timeout/flow" (fun c -> c.Bad |> Flow.timeout (long ()) "late")
           die "Flow.timeoutToError/flow" (fun c -> c.Bad |> Flow.timeoutToError (long ()) "late")
           die "Flow.timeoutToOk/flow" (fun c -> c.Bad |> Flow.timeoutToOk (long ()) 0)
+          die "Flow.timeoutOption/flow" (fun c -> c.Bad |> Flow.timeoutOption (long ()))
           die "Flow.timeoutWith/flow" (fun c -> c.Bad |> Flow.timeoutWith (long ()) (fun () -> Flow.ok 0))
           die "Flow.timeoutWith/fallback" (fun c ->
               (Flow.never: Flow<unit, string, int>) |> Flow.timeoutWith (ms 10.0) (c.Fn<unit, Flow<unit, string, int>>()))
@@ -730,6 +745,8 @@ module ThrowSafetyMatrix =
           die "Schedule.resetAfter/inner" (fun c -> repeatWith c (bad c |> Schedule.resetAfter (long ())))
           die "Schedule.upTo/inner" (fun c -> repeatWith c (bad c |> Schedule.upTo (long ())))
           die "Flow.retry/schedule" (fun c -> c.SrcFail |> Flow.retry (Schedule.recurs 3 |> Schedule.whileInput (c.Fn<string, bool>())))
+          die "Flow.retryForever/schedule" (fun c ->
+              c.SrcFail |> Flow.retryForever (Schedule.spaced TimeSpan.Zero |> Schedule.whileInput (c.Fn<string, bool>())))
           die "Flow.supervise/schedule" (fun c -> c.Bad |> Flow.supervise (Schedule.recurs 3 |> Schedule.whileInput (fun (_: exn) -> c.Throw<bool>())))
           die "Retry.schedule/when" (fun c ->
               c.SrcFail |> Flow.retry (Retry.schedule { Retry.defaults with When = c.Fn<string, bool>() })) ]
@@ -1092,7 +1109,7 @@ module ThrowSafetyMatrix =
                   $"Hub.{name}", NoUserCode
               for name in
                   [ "bounded"; "dropping"; "droppingNow"; "make"; "makeScoped"; "offerAll"; "shutdownNow"; "sliding"
-                    "tryOffer"; "unbounded" ] do
+                    "slidingNow"; "tryOffer"; "unbounded" ] do
                   $"Queue.{name}", NoUserCode
               for name in
                   [ "awaitShutdown"; "capacity"; "isShutdown"; "poll"; "shutdown"; "size"; "stats"; "takeAll"

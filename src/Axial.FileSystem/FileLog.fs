@@ -40,7 +40,7 @@ module FileLog =
         validate options |> ignore
 
         let gate = obj ()
-        let archivePath index = path + "." + string index
+        let archivePath (index: int) = path + "." + string index
 
         { new ILogSink with
             member _.IsEnabled _ = true

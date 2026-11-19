@@ -108,6 +108,8 @@ let run (round: Round) : Flow<unit, Never, Check list> =
 let runLossy (round: Round) : Flow<unit, Never, Check list> =
     let synchronous : Queue<int> = Queue.droppingNow 1
     Queue.shutdownNow synchronous
+    let slidingSynchronous : Queue<int> = Queue.slidingNow 1
+    Queue.shutdownNow slidingSynchronous
     let perProducer = round.Size 500
 
     let exercise (make: Flow<unit, Never, Queue<int * int>>) =

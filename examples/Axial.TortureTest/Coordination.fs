@@ -81,6 +81,8 @@ let deferreds (round: Round) : Flow<unit, Never, Check list> =
         // Deferred.make's flow fails with the deferred's own error type; creating one never actually fails.
         let! deferred = Deferred.make<unit, int, int> () |> Flow.foldFlow Flow.ok (fun _ -> Flow.die (InvalidOperationException "unreachable"))
         let! early = [ 1..awaiters ] |> Flow.traverse (fun _ -> deferred |> Deferred.await |> Flow.fork)
+        // Polling never fails; orDie turns the deferred's error type into Never.
+        let! pending = deferred |> Deferred.poll |> Flow.orDie
 
         // Several completers race, each with a different kind of completion; exactly one may win.
         let attempts =
@@ -117,6 +119,7 @@ let deferreds (round: Round) : Flow<unit, Never, Check list> =
 
         let! won, earlyExits = Flow.zipPar (attempts |> Flow.traversePar (Parallelism.bounded 10) attempt) interrupter
         let! late = deferred |> Deferred.await |> exitOf
+        let! polled = deferred |> Deferred.poll |> Flow.orDie
 
         let winners = List.zip attempts won |> List.filter snd |> List.map fst
 
@@ -138,7 +141,8 @@ let deferreds (round: Round) : Flow<unit, Never, Check list> =
         return
             [ check "exactly one completion won" (winners.Length = 1)
               check "every awaiter that was not interrupted saw the winning outcome" (observed |> List.forall matches)
-              check "an awaiter arriving afterwards sees the same outcome" (matches late) ]
+              check "an awaiter arriving afterwards sees the same outcome" (matches late)
+              check "poll saw nothing before the race and the winning outcome after" (pending.IsNone && polled = Some late) ]
     }
 // </snippet:torture-deferreds>
 
@@ -201,6 +205,8 @@ let refs (round: Round) : Flow<unit, Never, Check list> =
             |> Flow.fork
 
         do! Deferred.await subscribed
+        // A waiter for the final total; it sees the current value first, so it may subscribe at any point.
+        let! reachedTotal = level |> SubscriptionRef.awaitWhere ((=) (fibers * perFiber)) |> Flow.fork
 
         do!
             List.replicate fibers (flow {
@@ -212,15 +218,35 @@ let refs (round: Round) : Flow<unit, Never, Check list> =
             |> Flow.ignore
 
         let! finalLevel = SubscriptionRef.get level
+        let! awaitedTotal = Fiber.join reachedTotal
         do! level |> SubscriptionRef.set 0
         let! seen = Fiber.join history
+
+        // awaitChange reads the current value when it starts, so keep setting new values until it has returned one.
+        let! changed = SubscriptionRef.awaitChange level |> Flow.fork
+
+        let rec nudge value =
+            flow {
+                do! level |> SubscriptionRef.set value
+                let! exit = Fiber.poll changed
+
+                match exit with
+                | Some exit -> return exit
+                | None ->
+                    do! Flow.sleep (TimeSpan.FromMilliseconds 1.0)
+                    return! nudge (value - 1)
+            }
+
+        let! changeExit = nudge -1
 
         return
             [ check "no increment was lost" (total = fibers * perFiber)
               check "every increment that reported a value saw a different one" (List.length (List.distinct observed) = observed.Length)
               check "getAndSet handed every token on exactly once" (List.sort (last :: returned) = List.sort (0 :: placed) && reset = -1)
               check "a SubscriptionRef ends at the total" (finalLevel = fibers * perFiber)
-              check "its change stream saw every value, in order" (seen = [ 0 .. fibers * perFiber ]) ]
+              check "its change stream saw every value, in order" (seen = [ 0 .. fibers * perFiber ])
+              check "awaitWhere returned the total" (awaitedTotal = fibers * perFiber)
+              check "awaitChange returned a value set after it started" (match changeExit with Exit.Success value -> value < 0 | _ -> false) ]
     }
 // </snippet:torture-refs>
 

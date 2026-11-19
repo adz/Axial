@@ -148,6 +148,30 @@ let supervision (round: Round) : Flow<unit, Never, Check list> =
         do! Flow.sleep (ms 2.0)
         let! hungExit = Fiber.interrupt hung
 
+        // superviseForever restarts on return and on defect alike, and stops only on a typed failure.
+        let foreverRuns = ref 0
+        let returns, crashes = round.Next 4, round.Next 4
+
+        let! forever =
+            Flow.delay (fun () ->
+                let run = increment foreverRuns
+                if run <= returns then Flow.ok run
+                elif run <= returns + crashes then Flow.die (InvalidOperationException "crash")
+                else Flow.fail "stop")
+            |> Flow.superviseForever Backoff.NoDelay
+            |> exitOf
+
+        // retryForever retries typed failures until an attempt succeeds, and never fails with a typed error.
+        let retryRuns = ref 0
+        let failures = round.Next 5
+
+        let! retried =
+            Flow.delay (fun () -> if increment retryRuns <= failures then Flow.fail "transient" else Flow.ok retryRuns.Value)
+            |> Flow.retryForever (Schedule.spaced TimeSpan.Zero)
+            |> exitOf
+
+        let! crashed = (Flow.fail "typed" : Flow<unit, string, int>) |> Flow.orDie |> exitOf
+
         // Timeouts race operations of random length. Whichever wins, the operation has settled before the timeout
         // returns, so its cleanup has always run.
         let timed index =
@@ -158,15 +182,16 @@ let supervision (round: Round) : Flow<unit, Never, Check list> =
                     Flow.sleep (ms (float (round.Next 5))) |> Flow.map (fun () -> index) |> Flow.onExit (fun _ -> Flow.delay (fun () -> settled.Value <- true; Flow.ok ()))
 
                 let! exit =
-                    match round.Next 4 with
+                    match round.Next 5 with
                     | 0 -> operation |> Flow.timeout (ms 2.0) "timed out" |> exitOf
                     | 1 -> operation |> Flow.timeoutToError (ms 2.0) "timed out" |> exitOf
                     | 2 -> operation |> Flow.timeoutToOk (ms 2.0) -1 |> exitOf
+                    | 3 -> operation |> Flow.timeoutOption (ms 2.0) |> Flow.map (Option.defaultValue -3) |> exitOf
                     | _ -> operation |> Flow.timeoutWith (ms 2.0) (fun () -> Flow.ok -2) |> exitOf
 
                 let valid =
                     match exit with
-                    | Exit.Success value -> value = index || value = -1 || value = -2
+                    | Exit.Success value -> value = index || value = -1 || value = -2 || value = -3
                     | Exit.Failure(Cause.Fail "timed out") -> true
                     | _ -> false
 
@@ -179,6 +204,10 @@ let supervision (round: Round) : Flow<unit, Never, Check list> =
             [ check "supervise restarted every defect while the schedule allowed, and no more" restartedAsAllowed
               check "a typed failure was not restarted" (typed = Exit.Failure(Cause.Fail "typed") && typedRuns.Value = 1)
               check "an interruption was not restarted" (isInterrupted hungExit && hungRuns.Value = 1)
+              check "superviseForever restarted every return and defect, and stopped on the typed failure"
+                  (forever = Exit.Failure(Cause.Fail "stop") && foreverRuns.Value = returns + crashes + 1)
+              check "retryForever retried every typed failure until success" (retried = Exit.Success(failures + 1) && retryRuns.Value = failures + 1)
+              check "orDie turned a typed failure into a defect" (match crashed with Exit.Failure(Cause.Die _) -> true | _ -> false)
               check "every timeout returned the value or its fallback, after its operation had settled" (timings |> List.forall id) ]
     }
 // </snippet:torture-schedules>

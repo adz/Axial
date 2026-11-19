@@ -117,7 +117,8 @@ let run (round: Round) : Flow<unit, Never, Check list> =
                 let mapped = exit |> Exit.map ((+) 1) |> Exit.bind (fun value -> Exit.Success(value - 1)) |> Exit.mapError id |> Exit.mapBoth id id
 
                 match exit with
-                | Exit.Success original -> Exit.toResult mapped = Ok original && Exit.fromResult (Ok original) = exit
+                | Exit.Success original ->
+                    Exit.toResult mapped = Ok original && Exit.getOrThrow mapped = original && Exit.fromResult (Ok original) = exit
                 | Exit.Failure(Cause.Fail failure) -> Exit.toResult mapped = Error failure && Exit.fromResult (Error failure) = exit
                 | Exit.Failure _ ->
                     try

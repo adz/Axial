@@ -19,7 +19,7 @@ let private fakeOtel () : OpenTelemetryApi = jsNative
 let private spans (_api: OpenTelemetryApi) : string = jsNative
 
 let private exitOf (source: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error>> =
-    source |> Flow.foldCause (fun value -> Flow.ok (Exit.Success value)) (fun cause -> Flow.ok (Exit.Failure cause))
+    Flow.exit source
 
 let private check (name: string) (passed: bool) = name, passed
 
