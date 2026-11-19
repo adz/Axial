@@ -259,6 +259,16 @@ module Exit =
                 let rendered = Cause.prettyPrint (fun error -> OutcomeText.value (box error)) cause
                 raise (InvalidOperationException((System.String.Format(Globalization.CultureInfo.InvariantCulture, "Workflow failed with a composite cause that cannot be represented as Result: {0}", rendered))))
 
+    /// <summary>Returns the successful value or throws for any failure.</summary>
+    /// <exception cref="T:System.Exception">Throws the defect, an interruption, or the rendered typed failure.</exception>
+    let getOrThrow (exit: Exit<'v, 'e>) : 'v =
+        match exit with
+        | Exit.Success v -> v
+        | Exit.Failure _ ->
+            match toResult exit with
+            | Ok v -> v
+            | Error error -> raise (InvalidOperationException(System.String.Format(Globalization.CultureInfo.InvariantCulture, "Workflow failed: {0}", OutcomeText.value (box error))))
+
 /// <summary>Unique identifier for a running fiber.</summary>
 [<Struct>]
 type FiberId =

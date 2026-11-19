@@ -41,6 +41,30 @@ module internal TaskInterop =
                         return Exit.Failure(ForeignCancellation.causeOf cancellationToken error)
                 }))
 
+    /// Awaits an already-started task but returns (and interrupts) when the runtime token cancels.
+    let awaitStarted (started: Task<'source>) (cancellationToken: CancellationToken) : Task<'source> =
+#if NET8_0_OR_GREATER
+        started.WaitAsync cancellationToken
+#else
+        task {
+            if cancellationToken.IsCancellationRequested then
+                cancellationToken.ThrowIfCancellationRequested()
+
+            let cancellation = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+            use _registration =
+                cancellationToken.Register(fun () -> cancellation.TrySetResult() |> ignore)
+
+            let! completed = Task.WhenAny(started, cancellation.Task)
+
+            if obj.ReferenceEquals(completed, started :> Task) then
+                return started.Result
+            else
+                cancellationToken.ThrowIfCancellationRequested()
+                return Unchecked.defaultof<'source>
+        }
+#endif
+
 module internal ValueTaskInterop =
     let from
         (mapExit: 'source -> Exit<'value, 'error>)

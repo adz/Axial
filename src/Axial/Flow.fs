@@ -887,7 +887,7 @@ module Flow =
     /// <param name="startedTask">A task that is already running.</param>
     /// <platforms>.NET only</platforms>
     let awaitStartedTask (startedTask: Task<'value>) : Flow<'env, 'error, 'value> =
-        TaskInterop.from Exit.Success (fun _ -> startedTask)
+        TaskInterop.from Exit.Success (TaskInterop.awaitStarted startedTask)
 
     /// <summary>Observes an already-started task whose <c>Error</c> enters the typed error channel.</summary>
     /// <remarks>The work started outside Flow and cannot receive the runtime cancellation token. Thrown exceptions are defects.</remarks>
@@ -895,21 +895,21 @@ module Flow =
     let awaitStartedTaskResult
         (startedTask: Task<Result<'value, 'error>>)
         : Flow<'env, 'error, 'value> =
-        TaskInterop.from Exit.fromResult (fun _ -> startedTask)
+        TaskInterop.from Exit.fromResult (TaskInterop.awaitStarted startedTask)
 
     /// <summary>Observes a task that has already been started and treats thrown exceptions as recoverable typed errors.</summary>
     /// <remarks>Carries the same caveats as <c>awaitStartedTask</c>.</remarks>
     /// <param name="startedTask">A task that is already running.</param>
     /// <platforms>.NET only</platforms>
     let attemptStartedTask (startedTask: Task<'value>) : Flow<'env, exn, 'value> =
-        attemptTask (fun _ -> startedTask)
+        attemptTask (TaskInterop.awaitStarted startedTask)
 
     /// <summary>Observes a value task that has already been started.</summary>
     /// <remarks>Carries the same caveats as <c>awaitStartedTask</c>.</remarks>
     /// <param name="startedValueTask">A value task that is already running.</param>
     /// <platforms>.NET only</platforms>
     let awaitStartedValueTask (startedValueTask: ValueTask<'value>) : Flow<'env, 'error, 'value> =
-        ValueTaskInterop.from Exit.Success (fun _ -> startedValueTask)
+        TaskInterop.from Exit.Success (TaskInterop.awaitStarted (startedValueTask.AsTask()))
 
     /// <summary>Observes an already-started value task whose <c>Error</c> enters the typed error channel.</summary>
     /// <remarks>The work started outside Flow and cannot receive the runtime cancellation token. Thrown exceptions are defects.</remarks>
@@ -917,14 +917,14 @@ module Flow =
     let awaitStartedValueTaskResult
         (startedValueTask: ValueTask<Result<'value, 'error>>)
         : Flow<'env, 'error, 'value> =
-        ValueTaskInterop.from Exit.fromResult (fun _ -> startedValueTask)
+        TaskInterop.from Exit.fromResult (TaskInterop.awaitStarted (startedValueTask.AsTask()))
 
     /// <summary>Observes a value task that has already been started and treats thrown exceptions as recoverable typed errors.</summary>
     /// <remarks>Carries the same caveats as <c>awaitStartedTask</c>.</remarks>
     /// <param name="startedValueTask">A value task that is already running.</param>
     /// <platforms>.NET only</platforms>
     let attemptStartedValueTask (startedValueTask: ValueTask<'value>) : Flow<'env, exn, 'value> =
-        attemptValueTask (fun _ -> startedValueTask)
+        attemptTask (TaskInterop.awaitStarted (startedValueTask.AsTask()))
 #endif
 
     /// <summary>Creates a successful synchronous flow.</summary>
@@ -3215,6 +3215,12 @@ module Flow =
 #else
         FlowDelay factory
 #endif
+
+    /// <summary>Runs a synchronous computation and succeeds with its result.</summary>
+    /// <param name="compute">The synchronous computation to run at execution time.</param>
+    /// <returns>A flow that succeeds with the computation's result.</returns>
+    let sync (compute: unit -> 'value) : Flow<'env, 'error, 'value> =
+        Flow(fun _ _ -> Execution.ofValue (compute ()))
 
     /// <summary>Transforms a sequence of values into a flow and stops at the first failure.</summary>
     /// <param name="mapping">A function that maps each value to a flow.</param>
