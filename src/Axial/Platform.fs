@@ -1852,6 +1852,14 @@ let resolveSignal (signal: Signal<'value>) (value: 'value) : bool =
     signal.TrySetResult value
 #endif
 
+/// Returns the value if the signal has resolved, otherwise <c>None</c>.
+let pollSignal (signal: Signal<'value>) : 'value option =
+#if FABLE_COMPILER
+    signal.Value
+#else
+    if signal.Task.IsCompleted then Some signal.Task.Result else None
+#endif
+
 /// Awaits the signal's value as an execution, observing cancellation as an interruption. Multiple callers may
 /// await the same signal concurrently; cancelling one caller's wait does not affect the others or the signal
 /// itself.
@@ -2052,6 +2060,10 @@ type ManualTime() =
     let mutable now = TimeSpan.Zero
     let mutable order = 0L
     let sleepers = System.Collections.Generic.List<TimeSpan * int64 * Signal<unit>>()
+    let mutable changed = newSignal<unit>()
+
+    /// A signal that resolves whenever a new sleep is registered.
+    member _.Changed = changed
 
     /// The number of sleeps waiting for time to reach their deadline.
     member _.Sleepers = lock gate (fun () -> sleepers.Count)
@@ -2128,6 +2140,9 @@ type ManualTime() =
                         let entry = now + delay, order, signal
                         order <- order + 1L
                         sleepers.Add entry
+                        let previous = changed
+                        changed <- newSignal<unit>()
+                        resolveSignal previous () |> ignore
                         entry)
 
                 cancellationToken.Register(fun () -> lock gate (fun () -> sleepers.Remove entry |> ignore))

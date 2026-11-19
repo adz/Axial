@@ -9,7 +9,7 @@ type TestPlatform private () =
     let mutable nextGuid = 0
     let guidGate = obj()
     let reads = ResizeArray<string * int64>()
-    member val Clock = ManualClock(DateTimeOffset.UnixEpoch)
+    member val Clock = ManualClock(DateTimeOffset.UnixEpoch) with get, set
     member val Log = TestLog()
     member val Random: IRandom = Random.seeded 0 with get, set
     member val Guid: IGuid =
@@ -26,6 +26,11 @@ type TestPlatform private () =
         lock reads (fun () -> reads.ToArray() :> System.Collections.Generic.IReadOnlyList<string * int64>)
     member internal _.Record(name, id) = lock reads (fun () -> reads.Add(name, id))
     static member create () = TestPlatform()
+    /// <summary>Creates a test platform whose manual clock starts at the supplied wall time.</summary>
+    static member createAt (start: DateTimeOffset) =
+        let platform = TestPlatform()
+        platform.Clock <- ManualClock start
+        platform
 
 type private TracedClock(clock: ManualClock, record: string -> unit) =
     member _.Clock = clock
@@ -92,4 +97,40 @@ module TestClock =
 
     let sleepers<'env, 'error> : Flow<'env, 'error, int> =
         Flow.delay (fun () -> Flow.ok (current ()).Sleepers)
+
+    /// <summary>Waits until at least <paramref name="count" /> sleeps are registered, without spin-waiting.</summary>
+    let awaitSleepers (count: int) : Flow<'env, 'error, unit> =
+        Flow(fun _ cancellationToken ->
+            let clock = current ()
+
+            let rec loop () =
+                if clock.Sleepers >= count then
+                    Execution.ofValue ()
+                else
+                    Platform.awaitSignal clock.Changed cancellationToken
+                    |> Execution.bind (fun () -> loop ())
+
+            loop ())
+
+    /// <summary>Advances the clock until the supplied fiber settles, then returns its exit.</summary>
+    let driveUntilDone (fiber: Fiber<'error, 'value>) : Flow<'env, 'error, Exit<'value, 'error>> =
+        let rec loop () =
+            flow {
+                match! Fiber.poll fiber with
+                | Some exit -> return exit
+                | None ->
+                    let clock = current ()
+
+                    do!
+                        Flow(fun _ cancellationToken ->
+                            if clock.Sleepers = 0 then
+                                Platform.awaitSignal clock.Changed cancellationToken |> Execution.map ignore
+                            else
+                                Execution.ofValue ())
+
+                    do! advanceAll
+                    return! loop ()
+            }
+
+        loop ()
 #endif

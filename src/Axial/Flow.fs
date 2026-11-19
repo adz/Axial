@@ -2953,6 +2953,15 @@ module Flow =
                     | _ ->
                         Execution.ofCause (retypeUnrecovered cause)))
 
+    /// <summary>Retries a flow's typed failures forever and never fails with a typed error.</summary>
+    /// <remarks>The schedule must be infinite. The final, unreachable failure branch is a defect, because an infinite schedule stopping is a bug.</remarks>
+    /// <param name="schedule">An infinite schedule built with <c>Schedule.spaced</c> or <c>Schedule.exponential</c>.</param>
+    /// <param name="flow">The flow to retry.</param>
+    /// <returns>A flow that succeeds as soon as an attempt succeeds.</returns>
+    let retryForever (schedule: Schedule<'env, 'error, 'output>) (flow: Flow<'env, 'error, 'value>) : Flow<'env, Never, 'value> =
+        retry schedule flow
+        |> recover (fun _ -> die (InvalidOperationException "An infinite retry schedule stopped."))
+
     /// <summary>Folds a successful value or a single typed failure into a new flow.</summary>
     /// <remarks>
     /// Traced typed failures reach <paramref name="onError" />. Defects and interruption pass through, and compound

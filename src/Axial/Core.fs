@@ -13,6 +13,9 @@ open System.Threading.Tasks
 type ManualClock(initialUtc: DateTimeOffset) =
     let time = Platform.ManualTime()
 
+    /// <summary>A signal that resolves whenever a new sleep is registered.</summary>
+    member _.Changed = time.Changed
+
     /// <summary>The number of delays waiting for the clock.</summary>
     member _.Sleepers = time.Sleepers
 
@@ -1187,7 +1190,8 @@ module LogSink =
     let internal enabled (sink: ILogSink) level =
         // axial-note AXG010: a broken observation gate cannot fail the application.
         try sink.IsEnabled level with _ -> false
-    let internal write (sink: ILogSink) entry =
+    /// <summary>Writes one log entry to a sink, swallowing observation failures.</summary>
+    let write (sink: ILogSink) entry =
         // axial-note AXG010: log destinations are write-only observations.
         try sink.Write entry with _ -> ()
     let none : ILogSink =

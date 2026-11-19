@@ -215,6 +215,11 @@ module Deferred =
         Flow(fun _ cancellationToken ->
             Execution.fold Execution.ofExit Execution.ofCause (Platform.awaitSignal signal cancellationToken))
 
+    /// <summary>Returns the outcome if the deferred has already been completed, otherwise <c>None</c>.</summary>
+    let poll (deferred: Deferred<'error, 'value>) : Flow<'env, 'error, Exit<'value, 'error> option> =
+        let (Deferred signal) = deferred
+        Flow(fun _ _ -> Execution.ofValue (Platform.pollSignal signal))
+
     /// <summary>Tries to complete a deferred directly from a synchronous callback.</summary>
     /// <returns>True if this call won the completion race; false if it was already completed.</returns>
     let completeNow (exit: Exit<'value, 'error>) (deferred: Deferred<'error, 'value>) : bool =
