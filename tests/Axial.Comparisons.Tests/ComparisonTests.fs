@@ -198,11 +198,16 @@ module DashboardTests =
     [<Fact>]
     let ``a mandatory failure interrupts the slow sibling`` () =
         let mutable siblingCancelled = false
+        // Orders fail only once the slow sibling is running; failing first could interrupt the sibling before it
+        // starts, leaving nothing to cancel.
+        let siblingStarted = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
         let slowRecommendations =
             { new IRecommendations with
                 member _.For(_, cancellationToken) =
                     task {
+                        siblingStarted.TrySetResult() |> ignore
+
                         try
                             do! Task.Delay(30_000, cancellationToken)
                             return Ok []
@@ -213,7 +218,13 @@ module DashboardTests =
 
         let env: WithFlow.DashboardEnv =
             { Accounts = accounts ()
-              Orders = orders (Error "orders store down")
+              Orders =
+                { new IOrders with
+                    member _.Recent(_, cancellationToken) =
+                        task {
+                            do! siblingStarted.Task.WaitAsync cancellationToken
+                            return Error "orders store down"
+                        } }
               Recommendations = slowRecommendations }
 
         let exit = Flow.runSync env (WithFlow.loadPage "a-1")
