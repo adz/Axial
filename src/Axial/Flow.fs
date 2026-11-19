@@ -1358,6 +1358,19 @@ module Flow =
             timeoutBranch environment cancellationToken after flow
                 (fun () -> invoke (fallback ()) environment cancellationToken))
 
+    /// <summary>Returns <c>Some value</c> when the flow succeeds in time, and <c>None</c> when the timeout wins.</summary>
+    /// <remarks>Waits for interruption cleanup. A defect from the timed-out flow or its cleanup becomes the failure.</remarks>
+    /// <param name="after">The timeout duration.</param>
+    /// <param name="flow">The source flow.</param>
+    /// <returns>A flow that returns the source value as an option, or <c>None</c> on timeout.</returns>
+    let timeoutOption (after: TimeSpan) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value option> =
+        let mapped =
+            Flow(fun environment cancellationToken ->
+                invoke flow environment cancellationToken
+                |> Execution.fold (fun value -> Execution.ofValue (Some value)) Execution.ofCause)
+
+        timeoutToOk after None mapped
+
     // Runs one attempt of a retried, repeated, or supervised flow in a child scope of its own, so that an attempt
     // that is superseded by the next one can release what it acquired before that next attempt starts.
     let private runAttempt
@@ -2442,6 +2455,12 @@ module Flow =
     let envWith (projection: 'env -> 'value) : Flow<'env, 'error, 'value> =
         Flow(fun environment _ -> Execution.ofValue (projection environment))
 
+    /// <summary>Reads the environment and runs the flow the projection returns.</summary>
+    /// <param name="projection">A function that returns a flow from the environment.</param>
+    /// <returns>The flow the projection returns for the current environment.</returns>
+    let envWithFlow (projection: 'env -> Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        Flow(fun environment cancellationToken -> invoke (projection environment) environment cancellationToken)
+
     /// <summary>Transforms the successful value of a flow.</summary>
     /// <remarks>
     /// If the source <paramref name="flow" /> fails, the <paramref name="mapper" /> is not executed.
@@ -2909,6 +2928,15 @@ module Flow =
                     results.Push(if kind = 0 then Cause.Then(left, right) else Cause.Both(left, right))
         results.Pop()
 
+    /// <summary>Turns a typed failure into a defect, so the workflow crashes instead of returning the error.</summary>
+    /// <remarks>The typed failure becomes a <c>Cause.Die</c> holding an <c>UnrecoveredFailureException</c> whose <c>Value</c> is the original error. Defects and interruption pass through.</remarks>
+    let orDie (source: Flow<'env, 'error, 'value>) : Flow<'env, Never, 'value> =
+        Flow(fun environment cancellationToken ->
+            invoke source environment cancellationToken
+            |> Execution.fold
+                Execution.ofValue
+                (fun cause -> Execution.ofCause (retypeUnrecovered cause)))
+
     let recover
         (handler: 'error -> Flow<'env, 'nextError, 'value>)
         (source: Flow<'env, 'error, 'value>)
@@ -3139,6 +3167,13 @@ module Flow =
         Flow(fun environment ct ->
             let innerEnvironment = mapping environment
             invoke flow innerEnvironment ct)
+
+    /// <summary>Runs a flow with a fixed environment, ignoring the caller's environment.</summary>
+    /// <param name="environment">The environment to supply to the flow.</param>
+    /// <param name="flow">The flow to run with the supplied environment.</param>
+    /// <returns>A flow that ignores its outer environment.</returns>
+    let provide (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Flow<'outer, 'error, 'value> =
+        localEnv (fun _ -> environment) flow
 
     /// <summary>Runs a provisioning step in a fresh scope, then the downstream flow, closing the scope after.</summary>
     /// <remarks>

@@ -548,6 +548,11 @@ module Queue =
         if capacity <= 0 then invalidArg (nameof capacity) "Capacity must be positive"
         Queue<'a>(QueueStrategy.Dropping capacity)
 
+    /// Creates a sliding queue synchronously for synchronous producers such as UI event handlers.
+    let slidingNow (capacity: int) : Queue<'a> =
+        if capacity <= 0 then invalidArg (nameof capacity) "Capacity must be positive"
+        Queue<'a>(QueueStrategy.Sliding capacity)
+
     /// Shuts down a queue synchronously, waking any suspended consumers.
     let shutdownNow (queue: Queue<'a>) = QueueCore.shutdown queue
 
