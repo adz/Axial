@@ -84,3 +84,18 @@ module BclInteropTests =
             with error -> error
 
         test <@ error <> null && error.Message = "bad" @>
+
+    [<Fact>]
+    let ``awaitStartedTask stops waiting when interrupted, leaving the task running`` () =
+        let started = TaskCompletionSource<int>()
+        let timed = Flow.awaitStartedTask started.Task |> Flow.timeoutOption (TimeSpan.FromMilliseconds 50.0)
+        let running = timed.StartAsTask(())
+        test <@ running.Wait(TimeSpan.FromSeconds 10.0) @>
+        test <@ running.Result = (Exit.Success None : Exit<int option, string>) @>
+        test <@ not started.Task.IsCompleted @>
+
+    [<Fact>]
+    let ``awaitStartedTask reports a faulted task's own exception`` () =
+        let error = InvalidOperationException "bad"
+        let exit = (Flow.awaitStartedTask (Task.FromException<int> error) : Flow<unit, string, int>).RunSynchronously(())
+        test <@ exit = Exit.Failure(Cause.Die error) @>

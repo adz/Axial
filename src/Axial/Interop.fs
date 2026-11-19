@@ -58,7 +58,8 @@ module internal TaskInterop =
             let! completed = Task.WhenAny(started, cancellation.Task)
 
             if obj.ReferenceEquals(completed, started :> Task) then
-                return started.Result
+                // Awaiting rethrows the task's own exception; .Result would wrap it in an AggregateException.
+                return! started
             else
                 cancellationToken.ThrowIfCancellationRequested()
                 return Unchecked.defaultof<'source>

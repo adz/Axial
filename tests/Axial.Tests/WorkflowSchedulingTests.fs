@@ -797,3 +797,16 @@ module WorkflowSchedulingTests =
             |> List.min
 
         test <@ shortest >= 1.5 @>
+
+    [<Fact>]
+    let ``timeoutOption returns Some in time, None after the timeout, and keeps typed failures`` () =
+        let timed (source: Flow<unit, string, int>) =
+            flow {
+                let! running = source |> Flow.timeoutOption (TimeSpan.FromSeconds 1.0) |> Flow.fork
+                return! TestClock.driveUntilDone running
+            }
+            |> Flow.runTest ()
+
+        test <@ timed (Flow.ok 1) = Exit.Success(Exit.Success(Some 1)) @>
+        test <@ timed Flow.never = Exit.Success(Exit.Success None) @>
+        test <@ timed (Flow.fail "bad") = Exit.Success(Exit.Failure(Cause.Fail "bad")) @>

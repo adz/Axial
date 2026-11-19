@@ -1105,3 +1105,42 @@ module WorkflowErrorTests =
         test <@ calls = 1 @>
         test <@ fromCause = Exit.Failure(Cause.Die handlerError) @>
         test <@ fromThrow = Exit.Failure(Cause.Die handlerError) @>
+
+    [<Fact>]
+    let ``orDie turns a typed failure into a defect holding the error, and passes the rest through`` () =
+        let failed = (Flow.fail "bad" : Flow<unit, string, int>) |> Flow.orDie |> Flow.runSync ()
+
+        match failed with
+        | Exit.Failure(Cause.Die(:? UnrecoveredFailureException as error)) -> test <@ error.Value = box "bad" @>
+        | other -> failwith $"Expected an unrecovered-failure defect, got {other}"
+
+        let defect = InvalidOperationException "crash"
+        test <@ (Flow.ok 1 : Flow<unit, string, int>) |> Flow.orDie |> Flow.runSync () = Exit.Success 1 @>
+        test <@ (Flow.die defect : Flow<unit, string, int>) |> Flow.orDie |> Flow.runSync () = Exit.Failure(Cause.Die defect) @>
+
+    [<Fact>]
+    let ``Exit.getOrThrow returns the value, rethrows a defect, and renders a typed failure`` () =
+        let defect = InvalidOperationException "crash"
+        test <@ Exit.getOrThrow (Exit.Success 1 : Exit<int, string>) = 1 @>
+        let rethrown = Assert.Throws<InvalidOperationException>(fun () -> Exit.getOrThrow (Exit.Failure(Cause.Die defect) : Exit<int, string>) |> ignore)
+        test <@ obj.ReferenceEquals(rethrown, defect) @>
+        let rendered = Assert.Throws<InvalidOperationException>(fun () -> Exit.getOrThrow (Exit.Failure(Cause.Fail "bad") : Exit<int, string>) |> ignore)
+        test <@ rendered.Message.Contains "bad" @>
+        Assert.Throws<OperationCanceledException>(fun () -> Exit.getOrThrow (Exit.Failure Cause.Interrupt : Exit<int, string>) |> ignore) |> ignore
+
+    [<Fact>]
+    let ``retryForever retries typed failures until success and never retries a defect`` () =
+        let runs = ref 0
+
+        let flaky : Flow<unit, string, int> =
+            Flow.delay (fun () ->
+                runs.Value <- runs.Value + 1
+                if runs.Value <= 3 then Flow.fail "transient" else Flow.ok runs.Value)
+
+        test <@ flaky |> Flow.retryForever (Schedule.spaced TimeSpan.Zero) |> Flow.runSync () = Exit.Success 4 @>
+
+        let crashes = ref 0
+        let defect = InvalidOperationException "crash"
+        let crashing : Flow<unit, string, int> = Flow.delay (fun () -> crashes.Value <- crashes.Value + 1; Flow.die defect)
+        test <@ crashing |> Flow.retryForever (Schedule.spaced TimeSpan.Zero) |> Flow.runSync () = Exit.Failure(Cause.Die defect) @>
+        test <@ crashes.Value = 1 @>

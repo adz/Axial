@@ -139,3 +139,40 @@ module WorkflowSupervisionTests =
         test <@ result = Exit.Success "connection" @>
         test <@ not observedBeforeClose.Value @>
         test <@ released.Value @>
+
+    [<Fact>]
+    let ``superviseForever restarts on return and on defect, pacing with the backoff, and stops on a typed failure`` () =
+        let runs = ref 0
+
+        let worker : Flow<unit, string, int> =
+            Flow.delay (fun () ->
+                runs.Value <- runs.Value + 1
+
+                match runs.Value with
+                | 1 -> Flow.ok 1
+                | 2 -> Flow.die (InvalidOperationException "crash")
+                | _ -> Flow.fail "stop")
+
+        let workflow =
+            flow {
+                let! started = Clock.now
+                let! supervised = worker |> Flow.superviseForever (Backoff.Fixed(TimeSpan.FromSeconds 1.0)) |> Flow.fork
+                let! exit = TestClock.driveUntilDone supervised
+                let! finished = Clock.now
+                return exit, finished - started
+            }
+
+        test <@ Flow.runTest () workflow = Exit.Success(Exit.Failure(Cause.Fail "stop"), TimeSpan.FromSeconds 2.0) @>
+        test <@ runs.Value = 3 @>
+
+    [<Fact>]
+    let ``superviseForever stops when interrupted`` () =
+        let workflow =
+            flow {
+                let! supervised = (Flow.never : Flow<unit, string, int>) |> Flow.superviseForever Backoff.NoDelay |> Flow.fork
+                return! Fiber.interrupt supervised
+            }
+
+        match Flow.runSync () workflow with
+        | Exit.Success(Exit.Failure cause) -> test <@ Cause.isInterrupted cause @>
+        | other -> failwith $"Expected an interrupted supervisor, got {other}"

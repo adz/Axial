@@ -389,3 +389,21 @@ module WorkflowBasicTests =
         test <@ Flow.map2 (+) (Flow.ok 1) broken |> Flow.runSync () = Exit.Failure(Cause.Die defect) @>
         test <@ Flow.apply (Flow.ok id) broken |> Flow.runSync () = Exit.Failure(Cause.Die defect) @>
         test <@ Flow.map3 (fun a b c -> a + b + c) (Flow.ok 1) (Flow.ok 2) broken |> Flow.runSync () = Exit.Failure(Cause.Die defect) @>
+
+    [<Fact>]
+    let ``sync runs its computation each time the flow runs, not when it is built`` () =
+        let calls = ref 0
+        let counted : Flow<unit, string, int> = Flow.sync (fun () -> calls.Value <- calls.Value + 1; calls.Value)
+        test <@ calls.Value = 0 @>
+        test <@ Flow.runSync () counted = Exit.Success 1 @>
+        test <@ Flow.runSync () counted = Exit.Success 2 @>
+
+    [<Fact>]
+    let ``envWithFlow runs the flow the environment selects`` () =
+        let doubled : Flow<int, string, int> = Flow.envWithFlow (fun environment -> Flow.ok (environment * 2))
+        test <@ Flow.runSync 21 doubled = Exit.Success 42 @>
+
+    [<Fact>]
+    let ``provide runs a flow with a fixed environment whatever the caller's`` () =
+        let provided : Flow<string, string, int> = Flow.env<int, string> |> Flow.provide 5
+        test <@ Flow.runSync "outer" provided = Exit.Success 5 @>

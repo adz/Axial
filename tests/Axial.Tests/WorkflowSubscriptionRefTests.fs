@@ -116,3 +116,45 @@ module WorkflowSubscriptionRefTests =
             }
 
         test <@ Flow.runSync () workflow = Exit.Success([ 7 ], 0) @>
+
+    [<Fact>]
+    let ``awaitWhere returns a current match at once and otherwise waits for one`` () =
+        let workflow =
+            flow {
+                let! reference = SubscriptionRef.make 5
+                let! already = reference |> SubscriptionRef.awaitWhere (fun value -> value > 1)
+                let! waiting = reference |> SubscriptionRef.awaitWhere (fun value -> value > 10) |> Flow.fork
+                do! reference |> SubscriptionRef.set 7
+                do! reference |> SubscriptionRef.set 11
+                let! later = Fiber.join waiting
+                return already, later
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success(5, 11) @>
+
+    [<Fact>]
+    let ``awaitChange returns the first value that differs from the value at its start`` () =
+        let workflow =
+            flow {
+                let! reference = SubscriptionRef.make 0
+                let! changed = SubscriptionRef.awaitChange reference |> Flow.fork
+
+                // The waiter reads the value when it starts, so keep setting new values until it returns one.
+                let rec nudge value =
+                    flow {
+                        do! reference |> SubscriptionRef.set value
+                        let! exit = Fiber.poll changed
+
+                        match exit with
+                        | Some exit -> return exit
+                        | None ->
+                            do! Flow.sleep (TimeSpan.FromMilliseconds 1.0)
+                            return! nudge (value + 1)
+                    }
+
+                return! nudge 1
+            }
+
+        match Flow.runSync () workflow with
+        | Exit.Success(Exit.Success value) -> test <@ value > 0 @>
+        | other -> failwith $"Expected a changed value, got {other}"

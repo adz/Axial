@@ -52,7 +52,9 @@ module FileLog =
                         if options.MaxFileSizeBytes > 0L && fileSystem.FileExists path then
                             let length = fileSystem.GetFileLength path
 
-                            if length + int64 line.Length > options.MaxFileSizeBytes && options.MaxArchives > 0 then
+                            if length + int64 line.Length > options.MaxFileSizeBytes && options.MaxArchives = 0 then
+                                fileSystem.DeleteFile path
+                            elif length + int64 line.Length > options.MaxFileSizeBytes then
                                 let oldest = archivePath options.MaxArchives
 
                                 if fileSystem.FileExists oldest then

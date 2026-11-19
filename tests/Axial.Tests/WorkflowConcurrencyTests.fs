@@ -705,3 +705,16 @@ module WorkflowConcurrencyTests =
         let running = caught.StartAsTask(())
         test <@ running.Wait(TimeSpan.FromSeconds 10.0) @>
         test <@ running.Result = Exit.Success(1, 0) @>
+
+    [<Fact>]
+    let ``Deferred.poll returns None until the deferred completes, then its outcome`` () =
+        let workflow =
+            flow {
+                let! deferred = Deferred.make<unit, string, int> ()
+                let! before = Deferred.poll deferred
+                let! _ = Deferred.succeed 3 deferred
+                let! after = Deferred.poll deferred
+                return before, after
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success(None, Some(Exit.Success 3)) @>

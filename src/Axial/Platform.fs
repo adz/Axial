@@ -2063,7 +2063,11 @@ type ManualTime() =
     let mutable changed = newSignal<unit>()
 
     /// A signal that resolves whenever a new sleep is registered.
-    member _.Changed = changed
+    member _.Changed = lock gate (fun () -> changed)
+
+    /// The sleeper count and the signal for the next registration, read together so a waiter cannot miss a
+    /// registration that lands between reading the count and reading the signal.
+    member internal _.SleepersAndChanged = lock gate (fun () -> sleepers.Count, changed)
 
     /// The number of sleeps waiting for time to reach their deadline.
     member _.Sleepers = lock gate (fun () -> sleepers.Count)

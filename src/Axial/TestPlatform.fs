@@ -1,6 +1,7 @@
 namespace Axial
 
 open System
+open System.Threading
 open Axial
 
 #if !FABLE_COMPILER
@@ -103,14 +104,13 @@ module TestClock =
         Flow(fun _ cancellationToken ->
             let clock = current ()
 
-            let rec loop () =
-                if clock.Sleepers >= count then
-                    Execution.ofValue ()
-                else
-                    Platform.awaitSignal clock.Changed cancellationToken
-                    |> Execution.bind (fun () -> loop ())
+            Execution.loop () (fun () ->
+                let sleeping, changed = clock.SleepersAndChanged
 
-            loop ())
+                if sleeping >= count then
+                    Execution.ofValue (Platform.Break())
+                else
+                    Platform.awaitSignal changed cancellationToken |> Execution.map Platform.Continue))
 
     /// <summary>Advances the clock until the supplied fiber settles, then returns its exit.</summary>
     let driveUntilDone (fiber: Fiber<'error, 'value>) : Flow<'env, 'error, Exit<'value, 'error>> =
@@ -119,14 +119,12 @@ module TestClock =
                 match! Fiber.poll fiber with
                 | Some exit -> return exit
                 | None ->
-                    let clock = current ()
+                    let sleeping, changed = (current ()).SleepersAndChanged
 
-                    do!
-                        Flow(fun _ cancellationToken ->
-                            if clock.Sleepers = 0 then
-                                Platform.awaitSignal clock.Changed cancellationToken |> Execution.map ignore
-                            else
-                                Execution.ofValue ())
+                    // With nothing asleep, wait for a new sleep or for the fiber to settle without one.
+                    if sleeping = 0 then
+                        let! _ = Flow.awaitStartedTask (Tasks.Task.WhenAny(fiber.ExitTask :> Tasks.Task, changed.Task :> Tasks.Task))
+                        ()
 
                     do! advanceAll
                     return! loop ()

@@ -432,3 +432,21 @@ module WorkflowQueueTests =
         match exit with
         | Exit.Failure(Cause.Die error) -> test <@ error :? ArgumentOutOfRangeException @>
         | other -> failwith $"Expected a defect, got {other}"
+
+    [<Fact>]
+    let ``slidingNow keeps the newest values when full and rejects a non-positive capacity`` () =
+        let queue : Queue<int> = Queue.slidingNow 2
+
+        let workflow =
+            flow {
+                for value in 1..3 do
+                    let! _ = queue |> Queue.offer value
+                    ()
+
+                let! first = queue |> Dequeue.take
+                let! second = queue |> Dequeue.take
+                return first, second
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success(2, 3) @>
+        Assert.Throws<ArgumentException>(fun () -> (Queue.slidingNow 0 : Queue<int>) |> ignore) |> ignore

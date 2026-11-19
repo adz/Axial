@@ -78,3 +78,45 @@ module TestRuntimeTests =
         let result = workflow |> Layer.provide (Layer.succeed "app")
                               |> Flow.withClock (Clock.fromValue DateTimeOffset.UnixEpoch) |> Flow.runSync ()
         test <@ result = Exit.Success("app", DateTimeOffset.UnixEpoch) @>
+
+    [<Fact>]
+    let ``createAt starts the manual clock at the supplied time`` () =
+        let start = DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero)
+        test <@ Clock.now |> Flow.runTestWith (TestPlatform.createAt start) () = Exit.Success start @>
+
+    [<Fact>]
+    let ``awaitSleepers waits until the sleeps are registered`` () =
+        let workflow =
+            flow {
+                let sleeper = Flow.sleep (TimeSpan.FromMinutes 1.0)
+                let! first = Flow.fork sleeper
+                let! second = Flow.fork sleeper
+                do! TestClock.awaitSleepers 2
+                let! count = TestClock.sleepers
+                do! TestClock.advanceAll
+                do! Fiber.join first
+                do! Fiber.join second
+                return count
+            }
+
+        test <@ (workflow : Flow<unit, string, int>) |> Flow.runTest () = Exit.Success 2 @>
+
+    [<Fact>]
+    let ``driveUntilDone returns when the fiber settles without sleeping`` () =
+        // The fiber waits on a deferred that real work completes, so no sleep is ever registered on the manual clock.
+        let workflow =
+            flow {
+                let! deferred = Deferred.make<unit, string, int> ()
+                let! waiting = Deferred.await deferred |> Flow.fork
+
+                let! _ =
+                    Flow.fromUnitTask (fun token -> System.Threading.Tasks.Task.Delay(20, token))
+                    |> Flow.bind (fun () -> Deferred.succeed 7 deferred)
+                    |> Flow.fork
+
+                return! TestClock.driveUntilDone waiting
+            }
+
+        let running = System.Threading.Tasks.Task.Run(fun () -> workflow |> Flow.runTest ())
+        test <@ running.Wait(TimeSpan.FromSeconds 10.0) @>
+        test <@ running.Result = Exit.Success(Exit.Success 7) @>

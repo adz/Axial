@@ -16,6 +16,8 @@ type ManualClock(initialUtc: DateTimeOffset) =
     /// <summary>A signal that resolves whenever a new sleep is registered.</summary>
     member _.Changed = time.Changed
 
+    member internal _.SleepersAndChanged = time.SleepersAndChanged
+
     /// <summary>The number of delays waiting for the clock.</summary>
     member _.Sleepers = time.Sleepers
 
