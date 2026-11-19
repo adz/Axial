@@ -17,6 +17,7 @@
     <Compile Include="TestFileSystemTests.fs" />
     <Compile Include="FilesTests.fs" />
     <Compile Include="AppendLogTests.fs" />
+    <Compile Include="FileLogTests.fs" />
     <Compile Include="CrashTests.fs" />
   </ItemGroup>
 
