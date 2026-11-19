@@ -1589,6 +1589,61 @@ module Flow =
                                 | None -> Execution.ofCause cause)
                         | None -> Execution.ofCause cause)))
 
+    /// <summary>Restarts a flow forever on normal return and on unexpected defect, pacing restarts with backoff.</summary>
+    /// <remarks>
+    /// Typed failures and interruption stop the loop and propagate. Each attempt runs in its own child scope. The
+    /// same backoff paces a normal return and a crash, so a worker that repeatedly finishes does not restart in a
+    /// tight loop.
+    /// </remarks>
+    /// <param name="backoff">The delay before each restart.</param>
+    /// <param name="flow">The flow to keep running.</param>
+    /// <returns>A flow that only stops on typed failure or interruption.</returns>
+    let superviseForever (backoff: Backoff) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        let schedule =
+            match backoff with
+            | Backoff.NoDelay -> Schedule.spaced TimeSpan.Zero |> Schedule.map ignore
+            | Backoff.Fixed delay -> Schedule.spaced delay |> Schedule.map ignore
+            | Backoff.Exponential(initial, max) ->
+                Schedule.exponential initial |> Schedule.union (Schedule.spaced max) |> Schedule.map ignore
+
+        let restartable (cause: Cause<'error>) =
+            match Cause.defects cause with
+            | first :: _ when not (Cause.isInterrupted cause) && List.isEmpty (Cause.failures cause) -> Some first
+            | _ -> None
+
+        Flow(fun environment cancellationToken ->
+            let time = RuntimePlatform.current().Platform.Time
+            let runState = ScheduleContext.newRunState ()
+            let loopStarted = time.Now()
+
+            Execution.loop (0, loopStarted) (fun (attempt, executionStarted) ->
+                let attemptScope, execution = runAttempt flow environment cancellationToken
+
+                execution
+                |> Execution.fold
+                    (fun _ ->
+                        let context = scheduleContext time runState attempt loopStarted executionStarted
+
+                        Schedule.decide schedule () context environment cancellationToken
+                        |> Execution.bind (fun (_, delay) ->
+                            supersedeThenWait time attemptScope (cleanupCauseWithToken cancellationToken) delay cancellationToken
+                            |> Execution.map (fun () -> Platform.Continue(attempt + 1, time.Now()))))
+                    (fun cause ->
+                        match restartable cause with
+                        | Some _ ->
+                            let context = scheduleContext time runState attempt loopStarted executionStarted
+
+                            Schedule.decide schedule () context environment cancellationToken
+                            |> Execution.bind (fun (_, delay) ->
+                                supersedeThenWait
+                                    time
+                                    attemptScope
+                                    (fun cleanupError -> Cause.thenCause cause (cleanupCauseWithToken cancellationToken cleanupError))
+                                    delay
+                                    cancellationToken
+                                |> Execution.map (fun () -> Platform.Continue(attempt + 1, time.Now())))
+                        | None -> Execution.ofCause cause)))
+
     /// A graceful fiber's stop request and how long to wait after it before interrupting.
     type private GracefulStop<'env> = { Stop: Flow<'env, Never, unit>; Grace: TimeSpan }
 
