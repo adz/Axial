@@ -99,7 +99,14 @@ module Request =
         | Error diagnostics ->
             Flow.fail (EndpointError.InvalidRequest(ProblemDetails.ofErrors diagnostics))
 
+    let private bodyTooLarge : ProblemDetails =
+        { ProblemDetails.malformedJson with
+            Title = "The request body is too large."
+            Status = 413
+            Errors = [ { Pointer = ""; Message = "The request body is larger than this endpoint accepts." } ] }
+
     /// <summary>Reads and schema-parses a JSON request body; malformed JSON and schema diagnostics become invalid-request failures.</summary>
+    /// <remarks>A body larger than the server's limit (see <c>EndpointOptions.MaxRequestBodySize</c>) is a 413 problem response.</remarks>
     /// <param name="schema">The schema that establishes the trusted input type.</param>
     /// <returns>An endpoint Flow that succeeds with the trusted model.</returns>
     /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema, codec, and request are supplied by the application."><code>let! signup = Request.json Signup.schema</code></example>
@@ -112,8 +119,9 @@ module Request =
                     try
                         let! parsed = SchemaRequest.json schema request cancellationToken
                         return Ok parsed
-                    with :? JsonException ->
-                        return Error ProblemDetails.malformedJson
+                    with
+                    | :? JsonException -> return Error ProblemDetails.malformedJson
+                    | :? BadHttpRequestException as error when error.StatusCode = 413 -> return Error bodyTooLarge
                 })
             |> Flow.bind (function
                 | Ok parsed -> fromParsed parsed
@@ -123,8 +131,29 @@ module Request =
         { ProblemDetails.malformedJson with
             Errors = [ { Pointer = ""; Message = "The request body is not a form." } ] }
 
+    let private formTooLarge : ProblemDetails =
+        { ProblemDetails.malformedJson with
+            Title = "The request body is too large."
+            Status = 413
+            Errors = [ { Pointer = ""; Message = "The form is larger than the form reader's limits allow." } ] }
+
+    // ReadFormAsync throws InvalidDataException past FormOptions limits (value length, value count, multipart body).
+    let private readForm (schema: Schema<'model>) (request: HttpRequest) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, RetainedParseResult<'model>> =
+        Flow.fromTask (fun cancellationToken ->
+            task {
+                try
+                    let! parsed = SchemaRequest.form schema request cancellationToken
+                    return Ok parsed
+                with
+                | :? System.IO.InvalidDataException -> return Error formTooLarge
+                | :? BadHttpRequestException as error when error.StatusCode = 413 -> return Error bodyTooLarge
+            })
+        |> Flow.bind (function
+            | Ok parsed -> Flow.succeed parsed
+            | Error problem -> Flow.fail (EndpointError.InvalidRequest problem))
+
     /// <summary>Reads and schema-parses a posted form.</summary>
-    /// <remarks>A body that is not <c>application/x-www-form-urlencoded</c> or <c>multipart/form-data</c> is an invalid request.</remarks>
+    /// <remarks>A body that is not <c>application/x-www-form-urlencoded</c> or <c>multipart/form-data</c> is an invalid request. A form past ASP.NET Core's <c>FormOptions</c> limits is a 413 problem response.</remarks>
     /// <param name="schema">The schema that interprets the form name/value input.</param>
     /// <returns>An endpoint Flow that succeeds with the trusted model.</returns>
     /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema, codec, and request are supplied by the application."><code>let! signup = Request.form Signup.schema</code></example>
@@ -132,7 +161,7 @@ module Request =
         Flow.envWith _.Request
         |> Flow.bind (fun request ->
             if request.HasFormContentType then
-                Flow.fromTask (SchemaRequest.form schema request) |> Flow.bind fromParsed
+                readForm schema request |> Flow.bind fromParsed
             else
                 Flow.fail (EndpointError.InvalidRequest notAForm))
 
@@ -147,7 +176,8 @@ module Request =
     /// <summary>Schema-parses a posted form and returns the outcome with the input it came from, for a page that shows the form again with its errors.</summary>
     /// <remarks>
     /// Unlike <c>form</c>, a parse failure does not end the endpoint. A body that is not a form parses as empty input,
-    /// so every required field reports that it must be present.
+    /// so every required field reports that it must be present. A form past ASP.NET Core's <c>FormOptions</c> limits
+    /// still ends the endpoint with a 413 problem response.
     /// </remarks>
     /// <param name="schema">The schema that interprets the form name/value input.</param>
     /// <returns>An endpoint Flow that succeeds with the parse result: the trusted model, or the errors and the values to show again.</returns>
@@ -162,7 +192,7 @@ module Request =
         Flow.envWith _.Request
         |> Flow.bind (fun request ->
             if request.HasFormContentType then
-                Flow.fromTask (SchemaRequest.form schema request)
+                readForm schema request
             else
                 Flow.succeed (Schema.parseRetainingInput schema (BoundaryInput.ofForm [])))
 
@@ -301,10 +331,14 @@ module Response =
 module private EndpointLogging =
     let defaultSink = MicrosoftLogging.fromFactory "Axial.Endpoint"
 
-/// <summary>Per-request logging policy. Custom callbacks run once per request; only the default adapter is cached per factory. None leaves the runtime default; LogSink.none disables logging.</summary>
+/// <summary>Per-endpoint options.</summary>
 type EndpointOptions =
-    { LogSink: (ILoggerFactory -> ILogSink) option }
-    static member Default = { LogSink = Some EndpointLogging.defaultSink }
+    { /// <summary>The request logging policy. Custom callbacks run once per request; only the default adapter is cached per factory. <c>None</c> leaves the runtime default; <c>LogSink.none</c> disables logging.</summary>
+      LogSink: (ILoggerFactory -> ILogSink) option
+      /// <summary>The largest request body, in bytes, this endpoint accepts. <c>None</c> keeps the server's limit (30,000,000 bytes unless Kestrel is configured otherwise). A larger body ends <c>Request.json</c>, <c>Request.form</c> and <c>Request.parseForm</c> with a 413 problem response.</summary>
+      /// <remarks>Sets <c>IHttpMaxRequestBodySizeFeature.MaxRequestBodySize</c> for the request, as <c>RequestSizeLimitAttribute</c> does. A server without that feature keeps its own limit.</remarks>
+      MaxRequestBodySize: int64 option }
+    static member Default = { LogSink = Some EndpointLogging.defaultSink; MaxRequestBodySize = None }
 
 [<AutoOpen>]
 module FlowEndpoint =
@@ -348,6 +382,14 @@ module FlowEndpoint =
 
         System.Func<HttpContext, Task<IResult>>(fun context ->
             task {
+                match options.MaxRequestBodySize with
+                | Some limit ->
+                    match context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() with
+                    | null -> ()
+                    | feature when feature.IsReadOnly -> ()
+                    | feature -> feature.MaxRequestBodySize <- Nullable limit
+                | None -> ()
+
                 let environment =
                     { App = getAppEnvironment context
                       Request = context.Request }

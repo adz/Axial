@@ -13,14 +13,47 @@ open Axial
 /// <summary>Parses GenHTTP requests into <see cref="T:Reified.RetainedParseResult`1" /> through a schema.</summary>
 [<RequireQualifiedAccess>]
 module SchemaRequest =
+    /// <summary>The request property under which <c>flowEndpointWithOptions</c> records the endpoint's body limit.</summary>
+    let internal maxRequestBodySizeKey = "Axial.MaxRequestBodySize"
+
+    /// Kestrel's default, so both adapters accept the same bodies unless an endpoint sets its own limit.
+    let private defaultMaxRequestBodySize = 30_000_000L
+
+    let private maxRequestBodySize (request: IRequest) : int64 =
+        match request.Properties.TryGet<int64>(maxRequestBodySizeKey) with
+        | true, limit -> limit
+        | _ -> defaultMaxRequestBodySize
+
+    let private readBody (request: IRequest) (cancellationToken: System.Threading.CancellationToken) : Task<System.IO.MemoryStream> =
+        task {
+            let limit = maxRequestBodySize request
+            let body = new System.IO.MemoryStream()
+            let chunk = Array.zeroCreate<byte> 81920
+            let mutable reading = true
+
+            while reading do
+                let! count = request.Content.ReadAsync(chunk.AsMemory(), cancellationToken)
+
+                if count = 0 then
+                    reading <- false
+                elif body.Length + int64 count > limit then
+                    raise (System.IO.InvalidDataException("The request body is larger than " + string limit + " bytes."))
+                else
+                    body.Write(chunk, 0, count)
+
+            return body
+        }
+
     /// <summary>Parses the JSON request body through the schema; a missing body parses as missing input.</summary>
+    /// <remarks>A body larger than the endpoint's <c>EndpointOptions.MaxRequestBodySize</c> (30,000,000 bytes by default) stops reading and fails with <c>InvalidDataException</c>.</remarks>
     let json (schema: Schema<'model>) (request: IRequest) (cancellationToken: System.Threading.CancellationToken) : ValueTask<RetainedParseResult<'model>> =
         match request.Content with
         | null -> ValueTask<_>(Schema.parseRetainingInput schema Data.Null)
-        | content ->
+        | _ ->
             let parse: Task<RetainedParseResult<'model>> =
                 task {
-                    use! document = JsonDocument.ParseAsync(content, cancellationToken = cancellationToken)
+                    use! body = readBody request cancellationToken
+                    use document = JsonDocument.Parse(ReadOnlyMemory<byte>(body.GetBuffer(), 0, int body.Length))
                     return Schema.parseRetainingInput schema (Data.ofJsonDocument document)
                 }
 
@@ -38,6 +71,7 @@ module SchemaRequest =
         && String.Equals(request.ContentType.RawType, "application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase)
 
     /// <summary>Parses an <c>application/x-www-form-urlencoded</c> body through the schema; any other body parses as empty input.</summary>
+    /// <remarks>A body larger than the endpoint's <c>EndpointOptions.MaxRequestBodySize</c> (30,000,000 bytes by default) stops reading and fails with <c>InvalidDataException</c>, as ASP.NET Core's form reader does past its limits.</remarks>
     let form (schema: Schema<'model>) (request: IRequest) (cancellationToken: System.Threading.CancellationToken) : ValueTask<RetainedParseResult<'model>> =
         if not (isForm request) then
             ValueTask<_>(Schema.parseRetainingInput schema (BoundaryInput.ofForm []))
@@ -46,11 +80,11 @@ module SchemaRequest =
 
             let parse: Task<RetainedParseResult<'model>> =
                 task {
-                    use reader = new System.IO.StreamReader(request.Content)
-                    let! body = reader.ReadToEndAsync(cancellationToken)
+                    use! body = readBody request cancellationToken
+                    let text = Text.Encoding.UTF8.GetString(body.GetBuffer(), 0, int body.Length)
 
                     let pairs =
-                        body.Split('&', StringSplitOptions.RemoveEmptyEntries)
+                        text.Split('&', StringSplitOptions.RemoveEmptyEntries)
                         |> Array.map (fun pair ->
                             match pair.IndexOf '=' with
                             | -1 -> decode pair, ""
@@ -119,7 +153,14 @@ module Request =
         | Error diagnostics ->
             Flow.fail (EndpointError.InvalidRequest(ProblemDetails.ofErrors diagnostics))
 
+    let private bodyTooLarge : ProblemDetails =
+        { ProblemDetails.malformedJson with
+            Title = "The request body is too large."
+            Status = 413
+            Errors = [ { Pointer = ""; Message = "The request body is larger than this endpoint accepts." } ] }
+
     /// <summary>Reads and schema-parses a JSON request body; malformed JSON and schema diagnostics become invalid-request failures.</summary>
+    /// <remarks>A body larger than <c>EndpointOptions.MaxRequestBodySize</c> is a 413 problem response.</remarks>
     /// <param name="schema">The schema that establishes the trusted input type.</param>
     /// <returns>An endpoint Flow that succeeds with the trusted model.</returns>
     /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema, codec, and request are supplied by the application."><code>let! signup = Request.json Signup.schema</code></example>
@@ -132,8 +173,9 @@ module Request =
                     try
                         let! parsed = (SchemaRequest.json schema request cancellationToken).AsTask()
                         return Ok parsed
-                    with :? JsonException ->
-                        return Error ProblemDetails.malformedJson
+                    with
+                    | :? JsonException -> return Error ProblemDetails.malformedJson
+                    | :? System.IO.InvalidDataException -> return Error bodyTooLarge
                 })
             |> Flow.bind (function
                 | Ok parsed -> fromParsed parsed
@@ -151,8 +193,22 @@ module Request =
         { ProblemDetails.malformedJson with
             Errors = [ { Pointer = ""; Message = "The request body is not a form." } ] }
 
+
+    let private readForm (schema: Schema<'model>) (request: IRequest) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, RetainedParseResult<'model>> =
+        Flow.fromTask (fun cancellationToken ->
+            task {
+                try
+                    let! parsed = (SchemaRequest.form schema request cancellationToken).AsTask()
+                    return Ok parsed
+                with :? System.IO.InvalidDataException ->
+                    return Error bodyTooLarge
+            })
+        |> Flow.bind (function
+            | Ok parsed -> Flow.succeed parsed
+            | Error problem -> Flow.fail (EndpointError.InvalidRequest problem))
+
     /// <summary>Reads and schema-parses a posted <c>application/x-www-form-urlencoded</c> form.</summary>
-    /// <remarks>Any other body is an invalid request.</remarks>
+    /// <remarks>Any other body is an invalid request, and a body larger than <c>EndpointOptions.MaxRequestBodySize</c> is a 413 problem response.</remarks>
     /// <param name="schema">The schema that interprets the form name/value input.</param>
     /// <returns>An endpoint Flow that succeeds with the trusted model.</returns>
     /// <example data-livedocs="no-check" reason="Shows the expression in its endpoint-flow context; the surrounding schema, codec, and request are supplied by the application."><code>let! signup = Request.form Signup.schema</code></example>
@@ -160,15 +216,15 @@ module Request =
         Flow.envWith _.Request
         |> Flow.bind (fun request ->
             if SchemaRequest.isForm request then
-                Flow.fromTask (fun token -> (SchemaRequest.form schema request token).AsTask())
-                |> Flow.bind fromParsed
+                readForm schema request |> Flow.bind fromParsed
             else
                 Flow.fail (EndpointError.InvalidRequest notAForm))
 
     /// <summary>Schema-parses a posted form and returns the outcome with the input it came from, for a page that shows the form again with its errors.</summary>
     /// <remarks>
     /// Unlike <c>form</c>, a parse failure does not end the endpoint. A body that is not a form parses as empty input,
-    /// so every required field reports that it must be present.
+    /// so every required field reports that it must be present. A body larger than
+    /// <c>EndpointOptions.MaxRequestBodySize</c> still ends the endpoint with a 413 problem response.
     /// </remarks>
     /// <param name="schema">The schema that interprets the form name/value input.</param>
     /// <returns>An endpoint Flow that succeeds with the parse result: the trusted model, or the errors and the values to show again.</returns>
@@ -181,7 +237,7 @@ module Request =
     /// </example>
     let parseForm (schema: Schema<'model>) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, RetainedParseResult<'model>> =
         Flow.envWith _.Request
-        |> Flow.bind (fun request -> Flow.fromTask (fun token -> (SchemaRequest.form schema request token).AsTask()))
+        |> Flow.bind (readForm schema)
 
     /// <summary>Schema-parses the query string and returns the outcome with the input it came from, for a page that shows its filters again with their errors.</summary>
     /// <param name="schema">The schema that interprets the complete query input.</param>
@@ -295,10 +351,13 @@ module Response =
     let native (respond: IRequest -> IResponse) : HttpResponse =
         HttpResponse respond
 
-/// <summary>Optional request log sink. None leaves the runtime default; LogSink.none disables logging.</summary>
+/// <summary>Per-endpoint options.</summary>
 type EndpointOptions =
-    { LogSink: ILogSink option }
-    static member Default = { LogSink = None }
+    { /// <summary>The request log sink. <c>None</c> leaves the runtime default; <c>LogSink.none</c> disables logging.</summary>
+      LogSink: ILogSink option
+      /// <summary>The largest request body, in bytes, that <c>Request.json</c>, <c>Request.form</c> and <c>Request.parseForm</c> read. <c>None</c> is 30,000,000 bytes, Kestrel's default. A larger body ends the endpoint with a 413 problem response.</summary>
+      MaxRequestBodySize: int64 option }
+    static member Default = { LogSink = None; MaxRequestBodySize = None }
 
 [<AutoOpen>]
 module FlowEndpoint =
@@ -314,7 +373,7 @@ module FlowEndpoint =
     let private problemResponse (request: IRequest) (problem: ProblemDetails) =
         request
             .Respond()
-            .Status(ResponseStatus.BadRequest)
+            .Status(enum<ResponseStatus> problem.Status)
             .Content(ProblemDetails.toJson problem)
             .Type(ProblemDetails.ContentType)
             .Build()
@@ -346,6 +405,10 @@ module FlowEndpoint =
         Func<IRequest, ValueTask<IResponse>>(fun request ->
             ValueTask<IResponse>(
                 task {
+                    match options.MaxRequestBodySize with
+                    | Some limit -> request.Properties[SchemaRequest.maxRequestBodySizeKey] <- box limit
+                    | None -> ()
+
                     let environment =
                         { App = getAppEnvironment request
                           Request = request }

@@ -23,6 +23,15 @@ runtime default.
 The host-facing shape keeps the application environment at the edge: the endpoint projection constructs the same
 explicit record or layer that the workflow already expects, and the workflow remains independent of ASP.NET Core types.
 
+## Request body size
+
+`EndpointOptions.MaxRequestBodySize` sets the largest body one endpoint accepts, in bytes. Pass it through
+`FlowEndpoint.flowEndpointWithOptions`, for example `{ EndpointOptions.Default with MaxRequestBodySize = Some 500_000_000L }`
+for an upload endpoint. It sets the request's `IHttpMaxRequestBodySizeFeature`, as `RequestSizeLimitAttribute` does.
+`None` keeps the server's limit, which is 30,000,000 bytes unless Kestrel is configured otherwise. A larger body ends
+`Request.json`, `Request.form` and `Request.parseForm` with a 413 problem response. `Request.form` also answers 413 when
+a form passes ASP.NET Core's `FormOptions` limits, such as a single value over 4 MiB.
+
 ## Pages and forms
 
 An endpoint can serve HTML as well as JSON. `Response.html` returns a page or the fragment an htmx request swaps in,

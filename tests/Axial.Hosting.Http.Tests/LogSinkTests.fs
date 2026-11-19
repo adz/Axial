@@ -87,10 +87,11 @@ let ``ASP custom sink callback runs once per request without sharing request buf
         return Results.NoContent()
     }
     let endpoint = Axial.Hosting.AspNetCore.FlowEndpoint.flowEndpointWithOptions
-                       { LogSink = Some(fun supplied ->
-                           Assert.Same(factory, supplied)
-                           calls <- calls + 1
-                           currentSink) }
+                       { Axial.Hosting.AspNetCore.EndpointOptions.Default with
+                           LogSink = Some(fun supplied ->
+                               Assert.Same(factory, supplied)
+                               calls <- calls + 1
+                               currentSink) }
                        (fun context -> context.TraceIdentifier) Results.BadRequest source
     let invoke id sink =
         currentSink <- sink
@@ -121,7 +122,7 @@ let ``GenHTTP endpoint installs its optional sink and forks inherit it`` () = ta
             return! Flow.die stop
         }) |> Flow.annotate "request" "req-3" |> FiberLocal.locally "job-3" local
     let endpoint = Axial.Hosting.GenHttp.FlowEndpoint.flowEndpointWithOptions
-                       { LogSink = Some sink } (fun _ -> ())
+                       { Axial.Hosting.GenHttp.EndpointOptions.Default with LogSink = Some sink } (fun _ -> ())
                        (Axial.Hosting.GenHttp.Response.text GenHTTP.Api.Protocol.ResponseStatus.BadRequest) source
     let! thrown = Assert.ThrowsAsync<InvalidOperationException>(Func<Task>(fun () -> endpoint.Invoke(Unchecked.defaultof<_>).AsTask() :> Task))
     Assert.Same(stop, thrown)
@@ -157,7 +158,7 @@ let ``ASP endpoint option replaces or silences and scoped overrides win`` silent
         return Results.NoContent()
     }
     let endpoint = Axial.Hosting.AspNetCore.FlowEndpoint.flowEndpointWithOptions
-                       { LogSink = Some(fun supplied -> Assert.Same(factory, supplied); sink) }
+                       { Axial.Hosting.AspNetCore.EndpointOptions.Default with LogSink = Some(fun supplied -> Assert.Same(factory, supplied); sink) }
                        (fun _ -> ()) Results.BadRequest source
     let! _ = endpoint.Invoke context
     Assert.Equal((if silent then 0 else 1), outer.Entries.Count)
@@ -173,7 +174,7 @@ let ``ASP endpoint no installation option needs no logger factory`` () = task {
             return Results.NoContent()
         }) |> Flow.withLogSink memory
     let endpoint = Axial.Hosting.AspNetCore.FlowEndpoint.flowEndpointWithOptions
-                       { LogSink = None } (fun _ -> ()) Results.BadRequest source
+                       { Axial.Hosting.AspNetCore.EndpointOptions.Default with LogSink = None } (fun _ -> ()) Results.BadRequest source
     let! _ = endpoint.Invoke(DefaultHttpContext())
     Assert.Equal("manual", Assert.Single(memory.Entries).Message)
 }
@@ -193,7 +194,7 @@ let ``GenHTTP scoped sink survives default and disabled endpoint policies`` disa
     let mapError = Axial.Hosting.GenHttp.Response.text GenHTTP.Api.Protocol.ResponseStatus.BadRequest
     let endpoint =
         if disabled then Axial.Hosting.GenHttp.FlowEndpoint.flowEndpointWithOptions
-                             { LogSink = Some LogSink.none } (fun _ -> ()) mapError source
+                             { Axial.Hosting.GenHttp.EndpointOptions.Default with LogSink = Some LogSink.none } (fun _ -> ()) mapError source
         else Axial.Hosting.GenHttp.FlowEndpoint.flowEndpoint (fun _ -> ()) mapError source
     let! thrown = Assert.ThrowsAsync<InvalidOperationException>(Func<Task>(fun () -> endpoint.Invoke(Unchecked.defaultof<_>).AsTask() :> Task))
     Assert.Same(stop, thrown)

@@ -102,8 +102,16 @@ let private buildHandler () =
                 |> Response.withHeader "HX-Trigger" "second"
         }
 
+    let smallBody =
+        flowEndpointWithOptions
+            { EndpointOptions.Default with MaxRequestBodySize = Some 64L }
+            (fun _ -> "!")
+            (Response.text ResponseStatus.BadRequest)
+
     Inline
         .Create()
+        .Post("/small-signups", smallBody signupEndpoint)
+        .Post("/small-form", smallBody strictForm)
         .Get("/address", endpoint addressSearch)
         .Get("/moved", endpoint moved)
         .Get("/plain", endpoint plain)
@@ -252,6 +260,19 @@ let ``a form endpoint refuses a body that is not a form`` () =
         })
 
 [<Fact>]
+let ``a form body past the size limit is refused before it is read whole`` () =
+    withServer (fun client ->
+        task {
+            use content = new ByteArrayContent(Array.create 30_000_001 (byte 'a'))
+            content.Headers.ContentType <- Headers.MediaTypeHeaderValue "application/x-www-form-urlencoded"
+            let! response = client.PostAsync("/strict-form", content)
+            let! body = response.Content.ReadAsStringAsync()
+
+            Assert.Equal(413, int response.StatusCode)
+            Assert.Contains("too large", body)
+        })
+
+[<Fact>]
 let ``a valid query parses to the trusted model`` () =
     withServer (fun client ->
         task {
@@ -299,4 +320,28 @@ let ``the last withHeader for a name wins`` () =
             let! response = client.GetAsync("/retriggered")
 
             Assert.Equal<string seq>([ "second" ], response.Headers.GetValues "HX-Trigger")
+        })
+
+[<Fact>]
+let ``a json body past the endpoint's limit is refused as too large`` () =
+    withServer (fun client ->
+        task {
+            use content = new StringContent(validJson, Encoding.UTF8, "application/json")
+            let! response = client.PostAsync("/small-signups", content)
+            let! body = response.Content.ReadAsStringAsync()
+
+            Assert.Equal(413, int response.StatusCode)
+            Assert.Contains("too large", body)
+        })
+
+[<Fact>]
+let ``a form body past the endpoint's limit is refused as too large`` () =
+    withServer (fun client ->
+        task {
+            use content = validForm ()
+            let! response = client.PostAsync("/small-form", content)
+            let! body = response.Content.ReadAsStringAsync()
+
+            Assert.Equal(413, int response.StatusCode)
+            Assert.Contains("too large", body)
         })

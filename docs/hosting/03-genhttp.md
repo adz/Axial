@@ -22,6 +22,13 @@ default.
 The adapter keeps GenHTTP types at the boundary: the endpoint projection constructs the explicit environment the
 workflow expects, so the workflow has no dependency on the server package.
 
+## Request body size
+
+`EndpointOptions.MaxRequestBodySize` sets the largest body one endpoint accepts, in bytes. Pass it through
+`FlowEndpoint.flowEndpointWithOptions`, for example `{ EndpointOptions.Default with MaxRequestBodySize = Some 500_000_000L }`
+for an upload endpoint. `None` is 30,000,000 bytes, the same as Kestrel's default on ASP.NET Core. `Request.json`,
+`Request.form` and `Request.parseForm` stop reading past the limit and end the endpoint with a 413 problem response.
+
 ## Pages and forms
 
 An endpoint can serve HTML as well as JSON. `Response.html` returns a page or the fragment an htmx request swaps in,
