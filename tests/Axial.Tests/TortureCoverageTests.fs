@@ -31,6 +31,10 @@ module TortureCoverageTests =
           "Bind.toFlow", "Compiler-facing helper used by the inline Bind adapters."
           "Flow.fromColdTask", "Compiler-facing helper used by the inline Source adapter."
           "Flow.fromColdTaskResult", "Compiler-facing helper; also resolves nested Result overload ambiguity."
+          "Flow.fromUnitTask", "BCL interop bridge over fromTask, covered by WorkflowErrorTests and ThrowSafetyMatrixTests."
+          "Flow.attemptUnitTask", "BCL interop bridge over attemptTask, covered by WorkflowErrorTests and ThrowSafetyMatrixTests."
+          "Flow.fromUnitValueTask", "BCL interop bridge over fromValueTask, covered by WorkflowErrorTests and ThrowSafetyMatrixTests."
+          "Flow.attemptUnitValueTask", "BCL interop bridge over attemptValueTask, covered by WorkflowErrorTests and ThrowSafetyMatrixTests."
           "Deferred.fromTask", "BCL interop bridge, covered by BclInteropTests."
           "Deferred.toTask", "BCL interop bridge, covered by BclInteropTests." ]
         |> Map.ofList

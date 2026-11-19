@@ -339,6 +339,9 @@ module ThrowSafetyMatrix =
               Flow.delay (fun () -> Flow.attemptStartedValueTask (ValueTask<int>(c.StartedBadTask<int>()))))
           failBoom "Flow.attemptTask/factory" (fun c -> Flow.attemptTask (c.BadTask<int>()))
           failBoom "Flow.attemptValueTask/factory" (fun c -> Flow.attemptValueTask (c.BadValueTask<int>()))
+          failBoom "Flow.attemptUnitTask/factory" (fun c -> Flow.attemptUnitTask (fun token -> c.BadTask<unit>() token :> Task))
+          failBoom "Flow.attemptUnitValueTask/factory" (fun c ->
+              Flow.attemptUnitValueTask (fun token -> ValueTask(c.BadTask<unit>() token :> Task)))
           die "Flow.awaitStartedTask/task" (fun c -> Flow.delay (fun () -> Flow.awaitStartedTask (c.StartedBadTask<int>())) : Flow<unit, string, int>)
           die "Flow.awaitStartedTaskResult/task" (fun c ->
               Flow.delay (fun () -> Flow.awaitStartedTaskResult (c.StartedBadTask<Result<int, string>>())))
@@ -477,6 +480,9 @@ module ThrowSafetyMatrix =
           die "Flow.fromTaskResult/factory" (fun c -> Flow.fromTaskResult (c.BadTask<Result<int, string>>()))
           die "Flow.fromValueTask/factory" (fun c -> Flow.fromValueTask (c.BadValueTask<int>()) : Flow<unit, string, int>)
           die "Flow.fromValueTaskResult/factory" (fun c -> Flow.fromValueTaskResult (c.BadValueTask<Result<int, string>>()))
+          die "Flow.fromUnitTask/factory" (fun c -> Flow.fromUnitTask (fun token -> c.BadTask<unit>() token :> Task) : Flow<unit, string, unit>)
+          die "Flow.fromUnitValueTask/factory" (fun c ->
+              Flow.fromUnitValueTask (fun token -> ValueTask(c.BadTask<unit>() token :> Task)) : Flow<unit, string, unit>)
           die "Flow.ignore/flow" (fun c -> c.Bad |> Flow.ignore)
           die "Flow.localEnv/fn" (fun c -> c.Later(Flow.env<int, string> |> Flow.localEnv (fun () -> c.Throw<int>())))
           die "Flow.localEnv/flow" (fun c -> c.BadOf<int, string, int>() |> Flow.localEnv (fun () -> 5))
