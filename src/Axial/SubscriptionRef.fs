@@ -112,3 +112,25 @@ module SubscriptionRef =
             |> Execution.bind (fun subscription ->
                 let (FlowStream pull) = FlowStream.fromDequeue subscription
                 pull environment cancellationToken))
+
+    /// <summary>Waits until the value satisfies <paramref name="predicate" /> and returns it.</summary>
+    let awaitWhere (predicate: 'a -> bool) (reference: SubscriptionRef<'a>) : Flow<'env, 'error, 'a> =
+        changes (QueueStrategy.Sliding 1) reference
+        |> FlowStream.filter predicate
+        |> FlowStream.runTryHead
+        |> Flow.map (Option.defaultWith (fun () -> invalidOp "SubscriptionRef stream ended before a matching value."))
+
+    /// <summary>Waits until the value differs from its current value and returns the new value.</summary>
+    let awaitChange (reference: SubscriptionRef<'a>) : Flow<'env, 'error, 'a> =
+        Flow(fun environment cancellationToken ->
+            let initial = Platform.lock reference.Gate (fun () -> reference.Current)
+
+            let waiting =
+                changes (QueueStrategy.Sliding 1) reference
+                |> FlowStream.filter (fun value -> not (Unchecked.equals initial value))
+                |> FlowStream.runTryHead
+
+            Flow.invoke waiting environment cancellationToken
+            |> Execution.bind (function
+                | Some value -> Execution.ofValue value
+                | None -> Execution.ofDie (invalidOp "SubscriptionRef stream ended before the value changed.")))
