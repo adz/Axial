@@ -7,6 +7,7 @@ Active sketches:
 - `flow-as-data.md` — make `Flow` a typed description run by several runtimes (ValueTask, continuations, Promise, BEAM), faster than today and with no user-facing change
 - `flow-stream-proving.md` — prove resource-safe, portable `FlowStream` semantics through concrete transport slices
 - `flow-transport-packages.md` — package and API direction for transports, framing, networking, serial, WebSocket, streaming HTTP/SSE, and compression
+- `streaming-uploads.md` — multipart uploads in the HTTP adapters as a `FlowStream` of parts, each file a stream of byte chunks under the per-endpoint body limit
 - `platform-env-class.md` — a base environment class so applications stop re-implementing every platform `IHas*` interface
 - `fsharp-compiler-adapter.md` — pooled-resource combinator for `core Axial`, and an `Axial.FSharpCompiler` adapter, prompted by FsLiveDocs' Axial adoption
 - `capabilities.md` — Platform in the runtime (T25a), ahead of capability declarations and their Guardrails rules
