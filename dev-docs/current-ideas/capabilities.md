@@ -1,7 +1,7 @@
 # Capabilities: platform in the runtime, and declared authority effects
 
 Status: **Part 1 (Platform in the runtime) is shipped.** Parts 2 and 3 (capability declarations, and the Guardrails
-rules that consume them) are specified here, not yet built. No code, TOML or lock changes for Parts 2/3 until approved.
+rules rendered from them) are specified here, not yet built. No code, TOML or lock changes for Parts 2/3 until approved.
 
 Inputs: this file supersedes `platform-env-class.md` (withdrawn); `richer-effects.md` and `flow-as-data.md` remain the
 future-compatible neighbours.
@@ -15,8 +15,8 @@ future-compatible neighbours.
 - **Observation** — write-only sinks that a flow *emits into*: log, telemetry. They live in the runtime context.
 - **Authority** — effects that can change the world or read external state the app does not own: files, directories,
   environment variables, console I/O, processes, HTTP, secrets. They stay in `'env` as explicit capabilities.
-- **Capability** — a declared authority service with a `Live` implementation, a `Fake`, and the set of BCL members it
-  `Replaces`.
+- **Capability** — a declared authority service with a `Live` implementation, a `Fake`, and the BCL members it
+  replaces.
 
 The split is load-bearing: Platform and observation are ambient and harmless (a bad clock read is a value, not an
 action); authority must remain visible in the type.
@@ -100,6 +100,8 @@ module Log =
     val memory : unit -> TestLog
 ```
 
+`Clock.live`, `Random.live` and `Guid.live` expose the live implementations for code that installs them explicitly.
+
 `Flow.sleep`, `timeout`, `retry`, `repeat`, `supervise`, `fork`, `Cache.make`, `FlowStream.fromSchedule`,
 `groupedWithin`, and `throttle` read the clock from the runtime context, not `'env`.
 
@@ -175,117 +177,131 @@ and the `ClockEnvironment`/`TestRuntime` env members are gone. `platform-env-cla
 
 ### 3.1 Goal
 
-Make every authority effect a declared capability, and make the declaration the single source for both the service and
-the Guardrails rule that bans its raw BCL surface.
+Make every authority effect a declared capability, and make the declaration the single source for both the advice a
+Guardrails finding renders and the list `axial capabilities` prints.
 
-### 3.2 The declaration
+### 3.2 One record, two origins
+
+A capability is data, not an interface. There is no `ICapability` type and no `System.Type` field: nothing is
+discovered by reflection, and nothing needs to be.
 
 ```fsharp
-/// A declared authority capability. Not a runtime registry entry: it still flows through 'env as IHasX.
-type ICapability =
-    abstract Name: string
-    /// The BCL members this capability replaces; Guardrails derives its rule from these.
-    abstract Replaces: MemberPattern list
-    /// The service interface and its env accessor.
-    abstract Service: Type
-    /// The live implementation and its test fake.
-    abstract Live: string
-    abstract Fake: string
+// src/Axial.Guardrails/EffectCatalog.fs
+type Capability =
+    { Name: string            // "filesystem"
+      Guardrail: string       // the package that provides it, "Axial.FileSystem"; turns its rules on
+      Service: string         // "IFileSystem"
+      Env: string             // "IHasFileSystem"
+      Live: string            // "FileSystem.live"
+      Fake: string            // "TestFileSystem"
+      Rules: EffectRule list } // the BCL surface it replaces; MemberPattern data, as today
 ```
 
-`MemberPattern` is the existing catalog vocabulary: `MemberOf(typeName, members)`, `AnyMemberOf typeName`,
-`ConstructorOf typeName`. It is data, not a prose string.
+The record has two origins and no third:
 
-### 3.3 The manifest
-
-`Axial.Capabilities.toml` (or a generated `capabilities.json`) lists every capability in the repository:
+- **Built in.** Axial's own capabilities (filesystem, console, process, configuration, http, websocket) are values in
+  `EffectCatalog.fs`, compiled into the analyzer. Today's `builtInRules` regroup under them; each rule's `Guardrail`
+  becomes its capability's. The existing per-package `buildTransitive` props keep switching each guardrail on.
+- **Declared by the consumer.** A repository adds its own in `Axial.Guardrails.toml`:
 
 ```toml
 [[capabilities]]
-name = "filesystem"
-package = "Axial.FileSystem"
-service = "IFileSystem"
-env = "IHasFileSystem"
-live = "FileSystem.live"
-fake = "FileSystem.inMemory"          # or TestFileSystem
+name = "payments"
+service = "IPayments"
+env = "IHasPayments"
+live = "Payments.live"
+fake = "TestPayments"
 replaces = [
-  { type = "System.IO.File", members = "*" },
-  { type = "System.IO.Directory", members = "*" },
-  { type = "System.IO.FileSystemWatcher", constructor = true },
+  { type = "Stripe.ChargeService", members = "*" },
+  { type = "Stripe.RefundService", constructor = true },
 ]
 ```
+
+There is no separate `Axial.Capabilities.toml` and no generated JSON. Putting consumer declarations in the policy file
+means they are already protected, hashed into the policy lock, and listed by `axial policy review`: a declaration
+derives rules, so it is policy, and an agent removing a `replaces` entry is a loosening a human must approve. The
+policy parser's key allowlist gains `capabilities`.
+
+### 3.3 Validation
+
+- `name`, `service`, `env`, `live`, `fake` and a non-empty `replaces` are required. An entry with no `replaces` is
+  rejected because no rule can be derived from it.
+- A consumer `name` or `replaces` type that duplicates a built-in capability is rejected.
+- `live` and `fake` are names shown in advice and in `axial capabilities`; the analyzer does not resolve them. A
+  stale name is a documentation bug, not a build failure.
 
 ### 3.4 Commands
 
 ```text
-axial capabilities             # list declared capabilities: name, service, live, fake, replaces
-axial add service <Name>       # scaffold a capability module + service interface + IHasX + manifest entry
+axial capabilities             # built-in and declared: name, service, env, live, fake, replaced members
+axial add service <Name>       # scaffold the service interface, IHasX, Live and Fake stubs, and the [[capabilities]] entry
 ```
 
-`axial add service` writes the capability-role module, not domain code; the human fills in `Live` and `Fake`.
+`axial add service` writes the capability code into a project or file with the `capabilities` role and appends the
+entry to `Axial.Guardrails.toml`. That edit is a policy change: it appears in `axial policy review` and a human
+approves it, like any other.
 
-### 3.5 Rules
+### 3.5 Where the raw surface is allowed
 
-- A capability module is the only place its raw BCL surface is allowed, and it carries the file-level
-  `capabilities` role in `Axial.Guardrails.toml` — not a per-call suppression.
-- `Live` + `Fake` + `Replaces` must all be present for a capability to be valid. A manifest entry with no `Replaces`
-  is rejected, because there is then no rule to derive.
+Unchanged from today: the capability's own code sits in a project or file the policy assigns the `capabilities` role
+(in this repository, `[projects].capabilities`). There is no per-capability allowlist.
 
 ---
 
-## 4. Part 3 — Guardrails consumes the manifest (spec, not built)
+## 4. Part 3 — Guardrails renders from the declaration (spec, not built)
 
 ### 4.1 Rule derivation
 
-Every `replaces` entry becomes one rule. The diagnostic is rendered from the declaration, not from a hand-written
-string:
+Each `replaces` entry becomes an `EffectRule`, reported as `AXG001` like every effect rule today. The advice is
+rendered from the capability, not from a hand-written string:
 
 ```text
 src/Foo.fs:12 — touches System.IO.File.ReadAllText directly.
-Use IFileSystem.ReadAllText (capability "filesystem"; add IHasFileSystem to env).
+Use IFileSystem (capability "filesystem"; add IHasFileSystem to env; fake: TestFileSystem).
 ```
 
 Three fixed shapes:
 
 | Situation | Advice |
 |---|---|
-| Platform member (`Clock`/`Guid`/`Random`/`Culture`/`TimeZone`) | `use Clock.now` — runtime provides it |
-| Authority member with a matching capability | `use IFileSystem.X — add IHasFileSystem to env` |
-| No matching capability | `no capability replaces this; run axial add service <Name>` |
+| Platform member (`Clock`/`Guid`/`Random`/`Culture`/`TimeZone`) | `use Clock.now`; the runtime provides it (unchanged, from 2.7) |
+| Member a capability replaces | `use IFileSystem; add IHasFileSystem to env` |
+| No capability replaces it | `no capability replaces this; run axial add service <Name>` |
 
-### 4.2 The reason silencer
+### 4.2 Suppressions are unchanged
 
-The per-line silencer stays a comment above the offending line and must name the capability and the reason:
-
-```fsharp
-// axial-note AXG001: use IFileSystem.ReadAllText because this is a settings boundary, not a new capability.
-```
-
-`AXG002` continues to reject a suppression that suppresses nothing, and a suppression naming a capability that is not
-in the manifest is invalid.
+No new silencer syntax. An exceptional call site keeps today's form, `// axial-allow-AXG001: <reason>`, effective only
+in a file listed under `[boundaries]`; `AXG002` still rejects a suppression that suppresses nothing. Derived rules are
+ordinary `AXG001` rules, so nothing in the suppression machinery needs to know about capabilities.
 
 ### 4.3 Close the console hole
 
-`console.any` currently matches only `System.Console`. Add the F# top-level output and exit members to the console
-capability's `Replaces` so they cannot bypass the `IConsole` rule:
+`console.any` matches only `System.Console`. Add to the built-in console capability's rules:
 
-- `Microsoft.FSharp.Core.ExtraTopLevelOperators.stdout` / `stderr`
-- `Microsoft.FSharp.Core.ExtraTopLevelOperators.exit`
-- `Microsoft.FSharp.Core.PrintfModule` members that write to `stdout`/`stderr`
+- `Microsoft.FSharp.Core.ExtraTopLevelOperators.printf`, `printfn`, `eprintf`, `eprintfn`, and the `stdout` / `stderr`
+  values. Advice: `IConsole.Write` / `WriteLine` / `WriteError` / `WriteErrorLine`.
+- `sprintf`, `failwithf`, `kprintf`, `fprintf` (to a writer the code was given) and `String.Format` stay allowed:
+  they format, they do not write to the process.
 
-They map to `Axial.Console.IConsole` (write/error/exit).
+Exit is not a console member, and `IConsole` gains none. `exit` (`Microsoft.FSharp.Core.Operators.exit`) and
+`System.Environment.Exit` get a rule in the core guardrail whose advice is the host: return the flow's `Exit` from
+`DotNetApp.run` (or the Node host), which maps it to the process exit code with `exitCode`. Terminating from inside a
+flow skips finalizers, so it has no capability to replace it.
+
+Measure the printf rule on the examples and tests before turning it on; it is the one addition likely to be noisy.
 
 ---
 
 ## 5. Order of work
 
 1. Approve Part 2/3 shape.
-2. Land the manifest schema + `axial capabilities` (no rule changes yet).
-3. Land `axial add service` and migrate the existing `Axial.FileSystem`/`Axial.Console`/`Axial.Process`/`Axial.Configuration`
-   services into manifest entries.
-4. Switch `EffectCatalog` rule rendering to read from the manifest (keeping today's strings as the fallback during the cutover).
-5. Add the console `stdout`/`stderr`/`exit` entries.
-6. Docs + release notes + migration.
+2. Add the `Capability` record and regroup `builtInRules` under the six built-in capabilities, with no change to any
+   finding's text. `axial capabilities` lists them.
+3. Render advice from the capability (4.1); update the advice snapshot tests.
+4. Parse `[[capabilities]]` in `Axial.Guardrails.toml` (validation from 3.3, review and lock coverage, key allowlist).
+5. `axial add service`.
+6. Console printf/stdout rules and the core exit rule (4.3), after measuring them on this repository.
+7. Docs + release notes + migration.
 
 ---
 
@@ -294,5 +310,5 @@ They map to `Axial.Console.IConsole` (write/error/exit).
 - No general "register any service in the runtime context" API. Platform and observation are ambient; authority stays
   in `'env`.
 - No auto-advancing test clock, no quiescence detection.
-- No reflection-based discovery: the manifest is generated/checked, not scanned at runtime.
+- No reflection-based discovery: built-in capabilities are compiled values, consumer ones are TOML data.
 - `Schedule<'env,'input,'output>` keeps `'env`; only the clock requirement left it.
