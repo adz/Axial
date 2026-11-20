@@ -81,8 +81,8 @@ let deferreds (round: Round) : Flow<unit, Never, Check list> =
         // Deferred.make's flow fails with the deferred's own error type; creating one never actually fails.
         let! deferred = Deferred.make<unit, int, int> () |> Flow.foldFlow Flow.ok (fun _ -> Flow.die (InvalidOperationException "unreachable"))
         let! early = [ 1..awaiters ] |> Flow.traverse (fun _ -> deferred |> Deferred.await |> Flow.fork)
-        // Polling never fails; orDie turns the deferred's error type into Never.
-        let! pending = deferred |> Deferred.poll |> Flow.orDie
+        // Polling never fails, so it binds here although the deferred's error type is int.
+        let! pending = deferred |> Deferred.poll
 
         // Several completers race, each with a different kind of completion; exactly one may win.
         let attempts =
@@ -119,7 +119,7 @@ let deferreds (round: Round) : Flow<unit, Never, Check list> =
 
         let! won, earlyExits = Flow.zipPar (attempts |> Flow.traversePar (Parallelism.bounded 10) attempt) interrupter
         let! late = deferred |> Deferred.await |> exitOf
-        let! polled = deferred |> Deferred.poll |> Flow.orDie
+        let! polled = deferred |> Deferred.poll
 
         let winners = List.zip attempts won |> List.filter snd |> List.map fst
 

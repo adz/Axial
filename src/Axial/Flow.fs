@@ -2984,8 +2984,8 @@ module Flow =
         results.Pop()
 
     /// <summary>Turns a typed failure into a defect, so the workflow crashes instead of returning the error.</summary>
-    /// <remarks>The typed failure becomes a <c>Cause.Die</c> holding an <c>UnrecoveredFailureException</c> whose <c>Value</c> is the original error. Defects and interruption pass through.</remarks>
-    let orDie (source: Flow<'env, 'error, 'value>) : Flow<'env, Never, 'value> =
+    /// <remarks>The typed failure becomes a <c>Cause.Die</c> holding an <c>UnrecoveredFailureException</c> whose <c>Value</c> is the original error. Defects and interruption pass through. The result never fails with a typed error, so its error type is free and it binds in any workflow.</remarks>
+    let orDie (source: Flow<'env, 'error, 'value>) : Flow<'env, 'nextError, 'value> =
         Flow(fun environment cancellationToken ->
             invoke source environment cancellationToken
             |> Execution.fold
@@ -3009,11 +3009,11 @@ module Flow =
                         Execution.ofCause (retypeUnrecovered cause)))
 
     /// <summary>Retries a flow's typed failures forever and never fails with a typed error.</summary>
-    /// <remarks>The schedule must be infinite. The final, unreachable failure branch is a defect, because an infinite schedule stopping is a bug.</remarks>
+    /// <remarks>The schedule must be infinite. The final, unreachable failure branch is a defect, because an infinite schedule stopping is a bug. The result never fails with a typed error, so its error type is free and it binds in any workflow.</remarks>
     /// <param name="schedule">An infinite schedule built with <c>Schedule.spaced</c> or <c>Schedule.exponential</c>.</param>
     /// <param name="flow">The flow to retry.</param>
     /// <returns>A flow that succeeds as soon as an attempt succeeds.</returns>
-    let retryForever (schedule: Schedule<'env, 'error, 'output>) (flow: Flow<'env, 'error, 'value>) : Flow<'env, Never, 'value> =
+    let retryForever (schedule: Schedule<'env, 'error, 'output>) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'nextError, 'value> =
         retry schedule flow
         |> recover (fun _ -> die (InvalidOperationException "An infinite retry schedule stopped."))
 

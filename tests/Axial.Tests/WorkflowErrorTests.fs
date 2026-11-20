@@ -1144,3 +1144,18 @@ module WorkflowErrorTests =
         let crashing : Flow<unit, string, int> = Flow.delay (fun () -> crashes.Value <- crashes.Value + 1; Flow.die defect)
         test <@ crashing |> Flow.retryForever (Schedule.spaced TimeSpan.Zero) |> Flow.runSync () = Exit.Failure(Cause.Die defect) @>
         test <@ crashes.Value = 1 @>
+
+    [<Fact>]
+    let ``orDie, retryForever and Deferred.poll bind in a workflow with a different error type`` () =
+        let lookup : Flow<unit, string, int> = Flow.ok 2
+
+        let workflow : Flow<unit, int, int * int * bool> =
+            flow {
+                let! required = lookup |> Flow.orDie
+                let! retried = lookup |> Flow.retryForever (Schedule.spaced TimeSpan.Zero)
+                let! deferred = Deferred.make<unit, int, string> ()
+                let! pending = Deferred.poll deferred
+                return required, retried, pending.IsNone
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success(2, 2, true) @>

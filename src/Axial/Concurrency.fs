@@ -216,7 +216,8 @@ module Deferred =
             Execution.fold Execution.ofExit Execution.ofCause (Platform.awaitSignal signal cancellationToken))
 
     /// <summary>Returns the outcome if the deferred has already been completed, otherwise <c>None</c>.</summary>
-    let poll (deferred: Deferred<'error, 'value>) : Flow<'env, 'error, Exit<'value, 'error> option> =
+    /// <remarks>Polling never fails, so the flow's error type is independent of the deferred's.</remarks>
+    let poll (deferred: Deferred<'error, 'value>) : Flow<'env, 'workflowError, Exit<'value, 'error> option> =
         let (Deferred signal) = deferred
         Flow(fun _ _ -> Execution.ofValue (Platform.pollSignal signal))
 
