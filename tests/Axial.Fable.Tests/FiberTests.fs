@@ -116,7 +116,7 @@ let tests : Test list =
       })
 
       test "Flow.disconnect reports a late defect exactly once" (flow {
-          let! observed = Deferred.make<unit, Never, exn> ()
+          let! observed = Deferred.make<unit, Never, exn, _> ()
           let count = ref 0
           let started = ref false
           let mutable release = fun () -> ()

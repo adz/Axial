@@ -39,7 +39,7 @@ let semaphores (round: Round) : Flow<unit, Never, Check list> =
         let! mostAtOnce = Ref.get busiest
 
         // If an interrupted waiter had lost a permit, these three could not all hold one at the same time.
-        let! barrier = Deferred.make<unit, Never, unit> ()
+        let! barrier = Deferred.make<unit, Never, unit, _> ()
         let! arrived = Ref.make 0
 
         let holdTogether =
@@ -79,7 +79,7 @@ let deferreds (round: Round) : Flow<unit, Never, Check list> =
 
     flow {
         // Deferred.make's flow fails with the deferred's own error type; creating one never actually fails.
-        let! deferred = Deferred.make<unit, int, int> () |> Flow.foldFlow Flow.ok (fun _ -> Flow.die (InvalidOperationException "unreachable"))
+        let! deferred = Deferred.make<unit, int, int, _> () |> Flow.foldFlow Flow.ok (fun _ -> Flow.die (InvalidOperationException "unreachable"))
         let! early = [ 1..awaiters ] |> Flow.traverse (fun _ -> deferred |> Deferred.await |> Flow.fork)
         // Polling never fails, so it binds here although the deferred's error type is int.
         let! pending = deferred |> Deferred.poll
@@ -194,7 +194,7 @@ let refs (round: Round) : Flow<unit, Never, Check list> =
         // A SubscriptionRef updated concurrently: a stream that started first sees every value in turn.
         // The stream subscribes when it starts; waiting for its first value means it is subscribed before any update.
         let! level = SubscriptionRef.make 0
-        let! subscribed = Deferred.make<unit, Never, unit> ()
+        let! subscribed = Deferred.make<unit, Never, unit, _> ()
 
         let! history =
             level

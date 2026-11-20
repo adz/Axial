@@ -57,6 +57,9 @@ let run (round: Round) : Flow<unit, Never, Check list> =
         let! settledValues = [ 0 .. keys - 1 ] |> Flow.traverse (fun key -> cache |> Cache.get key |> exitOf |> Flow.bind (fun first -> match first with Exit.Success _ -> Flow.ok first | _ -> cache |> Cache.get key |> exitOf))
         let runsBefore = lock gate (fun () -> Array.copy runs)
         let! cachedAgain = [ 0 .. keys - 1 ] |> Flow.traverse (fun key -> cache |> Cache.get key |> exitOf)
+        // A cache whose lookup cannot fail is read with getSure, directly in this Never workflow.
+        let! sure = Cache.make (fun (key: int) -> Flow.ok (key * 2) : Flow<unit, Never, int>)
+        let! doubled = [ 0 .. keys - 1 ] |> Flow.traverse (fun key -> sure |> Cache.getSure key)
         let runsAfter = lock gate (fun () -> Array.copy runs)
         let! countBefore = Cache.count cache
         do! Cache.invalidateAll cache
@@ -74,6 +77,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
               check "a key succeeded at most once per invalidation" ([ 0 .. keys - 1 ] |> List.forall (fun key -> succeededRuns key <= 1 + invalidations[key]))
               check "a failed lookup was not cached: every key ends with a value" (settledValues |> List.forall (function Exit.Success _ -> true | _ -> false))
               check "a cached value is served without running the lookup again" (runsBefore = runsAfter && cachedAgain = settledValues)
+              check "getSure served every key from a cache that cannot fail" (doubled = [ for key in 0 .. keys - 1 -> key * 2 ])
               check "invalidateAll empties the cache" (countBefore = keys && countAfter = 0) ]
     }
 

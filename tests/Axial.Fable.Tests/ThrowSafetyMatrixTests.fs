@@ -412,7 +412,7 @@ let private counterFailures (cell: Cell) (c: Ctx) : string list =
 /// a stalled run.
 let private evaluate (cell: Cell) (mode: Mode) : Flow<unit, Never, string list> =
     flow {
-        let! signal = Deferred.make<unit, Never, unit> ()
+        let! signal = Deferred.make<unit, Never, unit, _> ()
         let c = Ctx(cell.Name, mode, signal)
 
         let! outcome = bounded (Flow.delay (fun () -> cell.Build c))

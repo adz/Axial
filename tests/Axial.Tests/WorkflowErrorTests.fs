@@ -20,7 +20,7 @@ module WorkflowErrorTests =
 
         let workflow =
             flow {
-                let! started = Deferred.make<unit, string, unit> ()
+                let! started = Deferred.make<unit, string, unit, _> ()
 
                 let source : Flow<unit, string, int> =
                     flow {
@@ -1153,7 +1153,7 @@ module WorkflowErrorTests =
             flow {
                 let! required = lookup |> Flow.orDie
                 let! retried = lookup |> Flow.retryForever (Schedule.spaced TimeSpan.Zero)
-                let! deferred = Deferred.make<unit, int, string> ()
+                let! deferred = Deferred.make<unit, int, string, _> ()
                 let! pending = Deferred.poll deferred
                 return required, retried, pending.IsNone
             }

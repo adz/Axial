@@ -63,7 +63,7 @@ module ScopedResourceOwnershipTests =
 
         let workflow : Flow<unit, string, string list> =
             flow {
-                let! acquired = Deferred.make<unit, string, unit> ()
+                let! acquired = Deferred.make<unit, string, unit, _> ()
 
                 let kept =
                     flow {
@@ -105,7 +105,7 @@ module ScopedResourceOwnershipTests =
 
         let workflow : Flow<unit, string, string * string list> =
             flow {
-                let! loserAcquired = Deferred.make<unit, string, unit> ()
+                let! loserAcquired = Deferred.make<unit, string, unit, _> ()
 
                 let loser =
                     flow {
@@ -135,7 +135,7 @@ module ScopedResourceOwnershipTests =
 
         let workflow : Flow<unit, string, string list> =
             flow {
-                let! loserAcquired = Deferred.make<unit, string, unit> ()
+                let! loserAcquired = Deferred.make<unit, string, unit, _> ()
 
                 let loser =
                     flow {
@@ -417,7 +417,7 @@ module ScopedResourceOwnershipTests =
     let ``A fiber forked in a race loser is interrupted with the loser`` () =
         let workflow : Flow<unit, string, Exit<unit, string>> =
             flow {
-                let! forked = Deferred.make<unit, string, Fiber<string, unit>> ()
+                let! forked = Deferred.make<unit, string, Fiber<string, unit>, _> ()
 
                 let loser =
                     flow {
@@ -447,7 +447,7 @@ module ScopedResourceOwnershipTests =
 
         let workflow : Flow<unit, string, int> =
             flow {
-                let! proceed = Deferred.make<unit, string, unit> ()
+                let! proceed = Deferred.make<unit, string, unit, _> ()
 
                 let child =
                     flow {
@@ -470,7 +470,7 @@ module ScopedResourceOwnershipTests =
 
         let workflow : Flow<unit, string, Exit<unit, string> * int> =
             flow {
-                let! proceed = Deferred.make<unit, string, unit> ()
+                let! proceed = Deferred.make<unit, string, unit, _> ()
 
                 let child =
                     flow {
@@ -492,7 +492,7 @@ module ScopedResourceOwnershipTests =
 
         let workflow : Flow<unit, string, Exit<unit, string> * int> =
             flow {
-                let! registered = Deferred.make<unit, string, unit> ()
+                let! registered = Deferred.make<unit, string, unit, _> ()
 
                 let child =
                     flow {

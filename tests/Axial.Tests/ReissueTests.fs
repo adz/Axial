@@ -17,7 +17,7 @@ module ReissueTests =
                 let! started = Queue.unbounded ()
                 let! cleaning = Queue.unbounded ()
                 let! permits = Queue.unbounded ()
-                let! finish = Deferred.make<unit, string, int> ()
+                let! finish = Deferred.make<unit, string, int, _> ()
                 let work =
                     Flow.delay (fun () ->
                         starts <- starts + 1
@@ -70,7 +70,7 @@ module ReissueTests =
         let workflow : Flow<unit, string, _> =
             flow {
                 let! wakes = Queue.unbounded ()
-                let! gate = Deferred.make<unit, string, int> ()
+                let! gate = Deferred.make<unit, string, int, _> ()
                 let work = Deferred.await gate |> Flow.ensuring (Flow.delay (fun () -> stopped <- stopped + 1; Flow.ok ()))
                 return! FlowStream.reissueOnWake (FlowStream.fromDequeue wakes) work
                         |> Flow.timeout (TimeSpan.FromMilliseconds 20.0) "timed out"

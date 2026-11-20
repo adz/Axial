@@ -14,7 +14,7 @@ module WorkflowConcurrencyTests =
     let ``Deferred: await receives successful completion`` () =
         let workflow : Flow<unit, string, bool * int> =
             flow {
-                let! deferred = Deferred.make<unit, string, int> ()
+                let! deferred = Deferred.make<unit, string, int, _> ()
                 let! fiber = Deferred.await deferred |> Flow.fork
                 let! completed = Deferred.succeed 42 deferred
                 let! value = Fiber.join fiber
@@ -27,7 +27,7 @@ module WorkflowConcurrencyTests =
     let ``Deferred: completion is idempotent`` () =
         let workflow : Flow<unit, string, bool * bool * int> =
             flow {
-                let! deferred = Deferred.make<unit, string, int> ()
+                let! deferred = Deferred.make<unit, string, int, _> ()
                 let! first = Deferred.succeed 1 deferred
                 let! second = Deferred.fail "late" deferred
                 let! value = Deferred.await deferred
@@ -40,7 +40,7 @@ module WorkflowConcurrencyTests =
     let ``Deferred: direct completion reports the winner to a synchronous callback`` () =
         let workflow : Flow<unit, string, bool * bool * int> =
             flow {
-                let! deferred = Deferred.make<unit, string, int> ()
+                let! deferred = Deferred.make<unit, string, int, _> ()
                 let first = Deferred.succeedNow 42 deferred
                 let late = Deferred.failNow "late" deferred
                 let! value = Deferred.await deferred
@@ -55,10 +55,10 @@ module WorkflowConcurrencyTests =
 
         let setup : Flow<unit, string, Deferred<string, int> list> =
             flow {
-                let! completed = Deferred.make<unit, string, int> ()
-                let! failed = Deferred.make<unit, string, int> ()
-                let! died = Deferred.make<unit, string, int> ()
-                let! interrupted = Deferred.make<unit, string, int> ()
+                let! completed = Deferred.make<unit, string, int, _> ()
+                let! failed = Deferred.make<unit, string, int, _> ()
+                let! died = Deferred.make<unit, string, int, _> ()
+                let! interrupted = Deferred.make<unit, string, int, _> ()
                 return [ completed; failed; died; interrupted ]
             }
 
@@ -78,7 +78,7 @@ module WorkflowConcurrencyTests =
     let ``Deferred: await preserves typed failure defect and interruption`` () =
         let typedFailure : Flow<unit, string, int> =
             flow {
-                let! deferred = Deferred.make<unit, string, int> ()
+                let! deferred = Deferred.make<unit, string, int, _> ()
                 let! _ = Deferred.fail "boom" deferred
                 return! Deferred.await deferred
             }
@@ -87,14 +87,14 @@ module WorkflowConcurrencyTests =
 
         let defective : Flow<unit, string, int> =
             flow {
-                let! deferred = Deferred.make<unit, string, int> ()
+                let! deferred = Deferred.make<unit, string, int, _> ()
                 let! _ = Deferred.die defect deferred
                 return! Deferred.await deferred
             }
 
         let interrupted : Flow<unit, string, int> =
             flow {
-                let! deferred = Deferred.make<unit, string, int> ()
+                let! deferred = Deferred.make<unit, string, int, _> ()
                 let! _ = Deferred.interrupt deferred
                 return! Deferred.await deferred
             }
@@ -109,7 +109,7 @@ module WorkflowConcurrencyTests =
 
         let workflow : Flow<unit, string, int> =
             flow {
-                let! deferred = Deferred.make<unit, string, int> ()
+                let! deferred = Deferred.make<unit, string, int, _> ()
                 return! Deferred.await deferred
             }
 
@@ -121,7 +121,7 @@ module WorkflowConcurrencyTests =
     let ``Deferred: await composes with race`` () =
         let workflow : Flow<unit, string, int> =
             flow {
-                let! deferred = Deferred.make<unit, string, int> ()
+                let! deferred = Deferred.make<unit, string, int, _> ()
                 let! _ = Deferred.succeed 7 deferred
 
                 return!
@@ -261,7 +261,7 @@ module WorkflowConcurrencyTests =
         let attempt () : Flow<unit, string, bool> =
             flow {
                 let! semaphore = Semaphore.make 1
-                let! release = Deferred.make<unit, string, unit> ()
+                let! release = Deferred.make<unit, string, unit, _> ()
                 let! holder = Semaphore.withPermit semaphore (Deferred.await release) |> Flow.fork
                 let! waiter = Semaphore.withPermit semaphore (Flow.succeed ()) |> Flow.fork
 
@@ -285,7 +285,7 @@ module WorkflowConcurrencyTests =
 
     [<Fact>]
     let ``Deferred: each run of make creates a new deferred`` () =
-        let make = Deferred.make<unit, string, int> ()
+        let make = Deferred.make<unit, string, int, _> ()
 
         let workflow : Flow<unit, string, bool * bool> =
             flow {
@@ -315,7 +315,7 @@ module WorkflowConcurrencyTests =
     let ``Fiber.poll reports None until the fiber settles`` () =
         let workflow : Flow<unit, string, Exit<unit, string> option * Exit<unit, string> option> =
             flow {
-                let! gate = Deferred.make<unit, string, unit> ()
+                let! gate = Deferred.make<unit, string, unit, _> ()
                 let! fiber = Flow.fork (Deferred.await gate)
                 let! before = Fiber.poll fiber
                 let! _ = Deferred.succeed () gate
@@ -564,7 +564,7 @@ module WorkflowConcurrencyTests =
             flow {
                 let! slot = FiberSlot.make ()
                 let! entered = Deferred.make ()
-                let! releaseCleanup = Deferred.make<unit, Never, unit> () |> Flow.widenError
+                let! releaseCleanup = Deferred.make<unit, Never, unit, _> () |> Flow.widenError
 
                 let! _ =
                     flow {
@@ -710,7 +710,7 @@ module WorkflowConcurrencyTests =
     let ``Deferred.poll returns None until the deferred completes, then its outcome`` () =
         let workflow =
             flow {
-                let! deferred = Deferred.make<unit, string, int> ()
+                let! deferred = Deferred.make<unit, string, int, _> ()
                 let! before = Deferred.poll deferred
                 let! _ = Deferred.succeed 3 deferred
                 let! after = Deferred.poll deferred

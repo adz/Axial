@@ -40,7 +40,7 @@ let shouldEqual expected actual =
 ```fsharp
 let handoff : Flow<unit, string, int> =
     flow {
-        let! deferred = Deferred.make<unit, string, int> ()
+        let! deferred = Deferred.make<unit, string, int, _> ()
 
         let! waiter =
             Deferred.await deferred

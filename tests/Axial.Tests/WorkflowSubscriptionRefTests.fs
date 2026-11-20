@@ -77,8 +77,8 @@ module WorkflowSubscriptionRefTests =
         let workflow : Flow<unit, Never, int list> =
             flow {
                 let! reading = SubscriptionRef.make 0
-                let! tookFirst = Deferred.make<unit, Never, unit> ()
-                let! release = Deferred.make<unit, Never, unit> ()
+                let! tookFirst = Deferred.make<unit, Never, unit, _> ()
+                let! release = Deferred.make<unit, Never, unit, _> ()
 
                 // The display takes the current value, then stalls until every update below has been made.
                 let! display =

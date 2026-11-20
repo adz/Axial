@@ -1099,6 +1099,7 @@ module ThrowSafetyMatrix =
               "FlowStream.fromHub", CoveredBy "Hub.publish"
               "Layer.succeed", NoUserCode
               "Cache.get", CoveredBy "Cache.make"
+              "Cache.getSure", CoveredBy "Cache.make"
               for name in [ "count"; "invalidate"; "invalidateAll" ] do
                   $"Cache.{name}", NoUserCode
               for name in [ "AddChild"; "Close" ] do

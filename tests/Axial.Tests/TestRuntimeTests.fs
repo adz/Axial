@@ -106,7 +106,7 @@ module TestRuntimeTests =
         // The fiber waits on a deferred that real work completes, so no sleep is ever registered on the manual clock.
         let workflow =
             flow {
-                let! deferred = Deferred.make<unit, string, int> ()
+                let! deferred = Deferred.make<unit, string, int, _> ()
                 let! waiting = Deferred.await deferred |> Flow.fork
 
                 let! _ =

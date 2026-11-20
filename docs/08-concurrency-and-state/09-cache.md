@@ -136,8 +136,8 @@ result, but the key is no longer cached, so the next `get` starts a fresh lookup
 let invalidateInFlight : Flow<unit, string, string * string * int> =
     flow {
         let! lookups = Ref.make 0
-        let! loadStarted = Deferred.make<unit, string, unit> ()
-        let! finishLoad = Deferred.make<unit, string, unit> ()
+        let! loadStarted = Deferred.make<unit, string, unit, _> ()
+        let! finishLoad = Deferred.make<unit, string, unit, _> ()
 
         let load (id: int) : Flow<unit, string, string> =
             flow {

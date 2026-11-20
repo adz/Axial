@@ -223,14 +223,14 @@ module internal ProcessRun =
 
                 let! exits =
                     commands
-                    |> Flow.traverse (fun _ -> Deferred.make<unit, Never, int> ())
+                    |> Flow.traverse (fun _ -> Deferred.make<unit, Never, int, _> ())
                     |> Flow.widenError
                 let! (commandsQueue: Queue<RunCommand>) = Queue.unbounded ()
                 let timerFibers = ResizeArray<Fiber<ProcessError, unit>>()
 
                 let postTimedStop cause error =
                     flow {
-                        let! reply = Deferred.make<unit, Never, StopCause> () |> Flow.widenError
+                        let! reply = Deferred.make<unit, Never, StopCause, _> () |> Flow.widenError
                         let! _ = commandsQueue |> Queue.offer (Stop(cause, reply))
                         let! winner = Deferred.await reply |> Flow.widenError
                         if winner = cause then return! Flow.fail error
@@ -450,10 +450,10 @@ module internal ProcessRun =
 
                 let mutable firstStop: StopCause option = None
                 let! stopFinished =
-                    Deferred.make<unit, Never, StopCause> ()
+                    Deferred.make<unit, Never, StopCause, _> ()
                     |> Flow.widenError
                 let! ioStop =
-                    Deferred.make<unit, Never, unit> ()
+                    Deferred.make<unit, Never, unit, _> ()
                     |> Flow.widenError
 
                 let mutable stopLadder: Fiber<Never, unit> option = None
@@ -498,7 +498,7 @@ module internal ProcessRun =
                             state.Exited <- true
                             if state.Feeder.IsSome && not state.StdinClosed then do! stopFeeder state
                             if not (commands[stage].SuccessCodes.Value.Contains code) then
-                                let! ignored = Deferred.make<unit, Never, StopCause> ()
+                                let! ignored = Deferred.make<unit, Never, StopCause, _> ()
                                 do! stop WorkerFailure ignored
                         | Close(stage, request, initiateShutdown, reply) ->
                             let state = stages[stage]
@@ -517,7 +517,7 @@ module internal ProcessRun =
                                 match result with
                                 | Ok () when initiateShutdown ->
                                     initialClose <- Some(stage, request)
-                                    let! ignored = Deferred.make<unit, Never, StopCause> ()
+                                    let! ignored = Deferred.make<unit, Never, StopCause, _> ()
                                     do! stop ExternalClose ignored
                                 | _ -> ()
                         | Stop(cause, reply) -> do! stop cause reply
@@ -551,7 +551,7 @@ module internal ProcessRun =
 
                 let requestStop cause =
                     flow {
-                        let! reply = Deferred.make<unit, Never, StopCause> ()
+                        let! reply = Deferred.make<unit, Never, StopCause, _> ()
                         let! offered =
                             (commandsQueue |> Queue.offer (Stop(cause, reply)) |> Flow.map Some)
                             |> Flow.foldCauseFlow Flow.succeed (fun _ -> Flow.succeed None)
@@ -563,7 +563,7 @@ module internal ProcessRun =
                 let closeCallback initiateShutdown stage request = async {
                     let requestFlow =
                         flow {
-                            let! reply = Deferred.make<unit, StopRequestError, unit> ()
+                            let! reply = Deferred.make<unit, StopRequestError, unit, _> ()
                             let! _ = commandsQueue |> Queue.offer (Close(stage, request, initiateShutdown, reply))
                             return!
                                 Deferred.await reply

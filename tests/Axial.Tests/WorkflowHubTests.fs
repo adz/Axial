@@ -30,8 +30,8 @@ module WorkflowHubTests =
     /// Subscribes in a scope owned by a forked fiber. Returns the subscription and a flow that closes that scope.
     let private subscribeInOwnScope strategy (hub: Hub<'a>) : Flow<unit, 'error, Dequeue<'a> * Flow<unit, 'error, unit>> =
         flow {
-            let! handedOut = Deferred.make<unit, 'error, Dequeue<'a>> ()
-            let! close = Deferred.make<unit, 'error, unit> ()
+            let! handedOut = Deferred.make<unit, 'error, Dequeue<'a>, _> ()
+            let! close = Deferred.make<unit, 'error, unit, _> ()
 
             let! owner =
                 flow {

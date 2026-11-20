@@ -56,7 +56,7 @@ module BclInteropTests =
     [<Fact>]
     let ``Deferred toTask completes from a deferred`` () =
         let deferred =
-            match Flow.runSync () (Deferred.make<unit, string, int> ()) with
+            match Flow.runSync () (Deferred.make<unit, string, int, _> ()) with
             | Exit.Success value -> value
             | other -> failwithf "Expected a deferred, got %A" other
 
@@ -69,7 +69,7 @@ module BclInteropTests =
     [<Fact>]
     let ``Deferred toTask propagates a typed failure as an exception`` () =
         let deferred =
-            match Flow.runSync () (Deferred.make<unit, string, int> ()) with
+            match Flow.runSync () (Deferred.make<unit, string, int, _> ()) with
             | Exit.Success value -> value
             | other -> failwithf "Expected a deferred, got %A" other
 

@@ -94,7 +94,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
                 && signalClock.Sleepers = 0
             let mutable retained = None
             let clock = ManualClock(DateTimeOffset.UnixEpoch)
-            let! armed = Deferred.make<unit, Never, unit> ()
+            let! armed = Deferred.make<unit, Never, unit, _> ()
             let grace = TimeSpan.FromSeconds 17.
             let notifying =
                 { new IClock with

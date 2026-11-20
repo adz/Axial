@@ -33,9 +33,9 @@ let private interruptedCleanup () : Flow<unit, Never, Check list> =
     [ 0; 1; 2 ]
     |> Flow.traverse (fun mode ->
         flow {
-            let! started = Deferred.make<unit, Never, unit> ()
-            let! resume = Deferred.make<unit, Never, unit> ()
-            let! acquired = Deferred.make<unit, Never, unit> ()
+            let! started = Deferred.make<unit, Never, unit, _> ()
+            let! resume = Deferred.make<unit, Never, unit, _> ()
+            let! acquired = Deferred.make<unit, Never, unit, _> ()
             let! finished = Ref.make 0
             let starts, ends = ref 0, ref 0
             let observer = throwingObserver starts ends

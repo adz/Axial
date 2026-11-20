@@ -80,7 +80,7 @@ module CommandTests =
         let messages = ConcurrentQueue<int>()
         use owner = runtime (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
         let gate =
-            match App.run owner.Environment (Deferred.make<unit, Never, unit> ()) |> Async.RunSynchronously with
+            match App.run owner.Environment (Deferred.make<unit, Never, unit, _> ()) |> Async.RunSynchronously with
             | Exit.Success value -> value
             | _ -> failwith "Could not create gate"
         let work : Flow<unit, Never, unit> =
@@ -102,7 +102,7 @@ module CommandTests =
         let interrupted = new TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         use owner = runtime (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
         let gate =
-            match App.run owner.Environment (Deferred.make<unit, Never, int> ()) |> Async.RunSynchronously with
+            match App.run owner.Environment (Deferred.make<unit, Never, int, _> ()) |> Async.RunSynchronously with
             | Exit.Success value -> value
             | _ -> failwith "Could not create gate"
         let slow =
@@ -125,7 +125,7 @@ module CommandTests =
         let released = new TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         use owner = runtime (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
         let gate =
-            match App.run owner.Environment (Deferred.make<unit, Never, int> ()) |> Async.RunSynchronously with
+            match App.run owner.Environment (Deferred.make<unit, Never, int, _> ()) |> Async.RunSynchronously with
             | Exit.Success value -> value
             | _ -> failwith "Could not create gate"
         let work = flow {

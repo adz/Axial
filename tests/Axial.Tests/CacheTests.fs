@@ -322,3 +322,23 @@ module CacheTests =
 
         test <@ result = Exit.Success(Error sharedDefect, Ok 2) @>
         test <@ runs.Value = 2 @>
+
+    [<Fact>]
+    let ``getSure reads a cache that cannot fail inside a workflow with its own error type`` () =
+        let runs = ref 0
+
+        let load (key: int) : Flow<unit, Never, string> =
+            Flow.delay (fun () ->
+                runs.Value <- runs.Value + 1
+                Flow.ok $"name-{key}")
+
+        let workflow : Flow<unit, string, string * string> =
+            flow {
+                let! names = Cache.make load
+                let! first = names |> Cache.getSure 7
+                let! again = names |> Cache.getSure 7
+                return first, again
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success("name-7", "name-7") @>
+        test <@ runs.Value = 1 @>

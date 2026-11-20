@@ -545,7 +545,7 @@ module WorkflowResourceTests =
                     let! _ = Fiber.interrupt fiber
                     ()
 
-                let! gate = Deferred.make<unit, string, unit> ()
+                let! gate = Deferred.make<unit, string, unit, _> ()
                 let! running = Flow.fork (Deferred.await gate)
                 let! whileRunning = registeredInCurrentScope ()
                 let! _ = Fiber.interrupt running
@@ -583,7 +583,7 @@ module WorkflowResourceTests =
         let workflow : Flow<unit, Never, int * PublishResult> =
             flow {
                 let! (hub: Hub<int>) = Hub.make ()
-                let! subscribed = Deferred.make<unit, Never, unit> ()
+                let! subscribed = Deferred.make<unit, Never, unit, _> ()
 
                 let! consumer =
                     flow {
@@ -659,7 +659,7 @@ module WorkflowResourceTests =
         let workflow : Flow<unit, Never, int> =
             flow {
                 let flushed = ref 0
-                let! ready = Deferred.make<unit, Never, unit> ()
+                let! ready = Deferred.make<unit, Never, unit, _> ()
 
                 let! owner =
                     flow {

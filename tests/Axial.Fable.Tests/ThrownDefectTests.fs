@@ -149,7 +149,7 @@ let tests =
           })
       test "an interrupted body stays interrupted through try/with and foldCauseFlow" (
           flow {
-              let! started = Deferred.make<unit, Never, unit> ()
+              let! started = Deferred.make<unit, Never, unit, _> ()
 
               let guarded : Flow<unit, string, string> =
                   flow {

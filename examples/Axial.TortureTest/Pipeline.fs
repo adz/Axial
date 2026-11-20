@@ -37,7 +37,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
 
                 // A view that joins the latest-sample reference and follows 200 changes of it. Waiting for its first
                 // value means it is subscribed before the readers start, so 200 changes always follow.
-                let! viewing = Deferred.make<unit, Never, unit> ()
+                let! viewing = Deferred.make<unit, Never, unit, _> ()
 
                 let! _ =
                     latest

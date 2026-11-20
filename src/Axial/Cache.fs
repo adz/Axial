@@ -111,6 +111,17 @@ module Cache =
     let get (key: 'key) (cache: Cache<'key, 'error, 'value>) : Flow<'env, 'error, 'value> =
         Flow(fun _ cancellationToken -> cache.Get(key, cancellationToken))
 
+    /// <summary>Returns the cached value for a key in a cache whose lookup cannot fail, or starts its lookup.</summary>
+    /// <remarks>Same as <c>get</c>, but the result's error type is free, so it binds in any workflow without <c>Flow.widenError</c>.</remarks>
+    /// <example>
+    /// <code lang="fsharp">
+    /// let render (names: Cache&lt;int, Never, string&gt;) : Flow&lt;unit, PageError, string&gt; =
+    ///     names |> Cache.getSure 42
+    /// </code>
+    /// </example>
+    let getSure (key: 'key) (cache: Cache<'key, Never, 'value>) : Flow<'env, 'error, 'value> =
+        get key cache |> Flow.widenError
+
     /// <summary>Forgets a key without interrupting existing waiters.</summary>
     let invalidate (key: 'key) (cache: Cache<'key, 'error, 'value>) : Flow<'env, 'none, unit> =
         Flow(fun _ _ -> cache.Invalidate key; Execution.ofValue ())

@@ -205,7 +205,8 @@ type Deferred<'error, 'value> =
 [<RequireQualifiedAccess>]
 module Deferred =
     /// <summary>Creates an empty deferred value.</summary>
-    let make<'env, 'error, 'value> () : Flow<'env, 'error, Deferred<'error, 'value>> =
+    /// <remarks>Creating a deferred never fails, so the flow's error type, the last type parameter, is independent of the deferred's.</remarks>
+    let make<'env, 'error, 'value, 'workflowError> () : Flow<'env, 'workflowError, Deferred<'error, 'value>> =
         // Allocated when the flow runs, so each run of the same flow value gets its own deferred.
         Flow(fun _ _ -> Execution.ofValue (Deferred(Platform.newSignal ())))
 

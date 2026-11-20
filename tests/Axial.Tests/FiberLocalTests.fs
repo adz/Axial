@@ -99,7 +99,7 @@ module FiberLocalTests =
     let ``fork retains inherited local after parent leaves scope`` () =
         let local = FiberLocal.make 0
         let workflow = flow {
-            let! gate = Deferred.make<unit, string, unit> ()
+            let! gate = Deferred.make<unit, string, unit, _> ()
             let! child =
                 Flow.fork (flow {
                     do! Deferred.await gate

@@ -204,7 +204,7 @@ module Cmd =
                         Flow.ok ()
                     | Ok message ->
                         flow {
-                            let! delivered = Deferred.make<'env, 'error, unit> ()
+                            let! delivered = Deferred.make<'env, 'error, unit, _> ()
                             let posted =
                                 try
                                     runtime.Options.Post(fun () ->

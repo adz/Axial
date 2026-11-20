@@ -91,7 +91,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
         // Races: the winner's value comes back, and both sides always finish: the winner completes, and the loser
         // completes or is interrupted, running its exit handler either way.
         let races = round.Size 50
-        let! finishes = [ for _ in 1 .. 2 * races -> Deferred.make<unit, Never, unit> () ] |> Flow.sequence
+        let! finishes = [ for _ in 1 .. 2 * races -> Deferred.make<unit, Never, unit, _> () ] |> Flow.sequence
 
         let! winners =
             finishes
