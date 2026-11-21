@@ -181,9 +181,22 @@ let diagnostics (round: Round) : Flow<unit, Never, Check list> =
                 // A discarded fiber that dies is reported when its scope closes; a detached one is not.
                 do!
                     flow {
-                        let! _ = Flow.die (InvalidOperationException "lost") |> Flow.fork
-                        let! _ = Flow.die (InvalidOperationException "deliberate") |> Flow.forkDetached
-                        do! Flow.sleep (TimeSpan.FromMilliseconds 5.0)
+                        let! lost = Flow.die (InvalidOperationException "lost") |> Flow.fork
+                        let! deliberate = Flow.die (InvalidOperationException "deliberate") |> Flow.forkDetached
+
+                        // Wait until both have died before the scope closes; closing first would interrupt the
+                        // discarded fiber instead. Fiber.poll does not mark a fiber observed.
+                        let rec untilSettled () =
+                            flow {
+                                let! lostExit = Fiber.poll lost
+                                let! deliberateExit = Fiber.poll deliberate
+
+                                if lostExit.IsNone || deliberateExit.IsNone then
+                                    do! Flow.sleep (TimeSpan.FromMilliseconds 1.0)
+                                    return! untilSettled ()
+                            }
+
+                        do! untilSettled ()
                     }
                     |> Flow.scoped
 
