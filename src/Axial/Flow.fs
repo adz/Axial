@@ -1829,10 +1829,13 @@ module Flow =
                                 stopFailure <- Cause.defects cause |> List.tryHead
                             | Exit.Success () -> ()
 
-                            use graceTimer = new CancellationTokenSource()
-                            let graceElapsed = (time.Sleep<unit>(request.Grace, graceTimer.Token)).AsTask()
-                            let! _ = Task.WhenAny(exitTask :> Task, graceElapsed :> Task)
-                            graceTimer.Cancel()
+                            let graceTimer = new CancellationTokenSource()
+                            try
+                                let graceElapsed = (time.Sleep<unit>(request.Grace, graceTimer.Token)).AsTask()
+                                let! _ = Task.WhenAny(exitTask :> Task, graceElapsed :> Task)
+                                graceTimer.Cancel()
+                            finally
+                                graceTimer.Dispose()
                         | None -> ()
 
                         cts.Cancel()

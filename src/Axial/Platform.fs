@@ -1196,29 +1196,35 @@ let timeoutExecution
 #else
     ValueTask<Exit<'value, 'error>>(
         task {
-            use timeoutSource = CancellationTokenSource.CreateLinkedTokenSource cancellationToken
-            use timerSource = new CancellationTokenSource()
-            let running = (operation timeoutSource.Token).AsTask()
-            let timeoutTask = (time.Sleep<unit>(after, timerSource.Token)).AsTask() :> Task
-            let! completed = Task.WhenAny([| running :> Task; timeoutTask |])
-
-            if not (obj.ReferenceEquals(completed, timeoutTask)) then
-                timerSource.Cancel()
-
-            if obj.ReferenceEquals(completed, timeoutTask) then
-                timeoutSource.Cancel()
-                // The losing operation's exit is dropped here and can never be observed by anyone else,
-                // so hand it to the caller for unobserved-defect reporting before discarding it.
+            let timeoutSource = CancellationTokenSource.CreateLinkedTokenSource cancellationToken
+            try
+                let timerSource = new CancellationTokenSource()
                 try
-                    let! discarded = running
-                    onDiscarded (Ok discarded)
-                with
-                // Cancellation of the raw task is the timeout's requested interruption, not a defect.
-                | :? OperationCanceledException when running.IsCanceled -> ()
-                | error -> onDiscarded (Error error)
-                return! onTimeout ()
-            else
-                return! running
+                    let running = (operation timeoutSource.Token).AsTask()
+                    let timeoutTask = (time.Sleep<unit>(after, timerSource.Token)).AsTask() :> Task
+                    let! completed = Task.WhenAny([| running :> Task; timeoutTask |])
+
+                    if not (obj.ReferenceEquals(completed, timeoutTask)) then
+                        timerSource.Cancel()
+
+                    if obj.ReferenceEquals(completed, timeoutTask) then
+                        timeoutSource.Cancel()
+                        // The losing operation's exit is dropped here and can never be observed by anyone else,
+                        // so hand it to the caller for unobserved-defect reporting before discarding it.
+                        try
+                            let! discarded = running
+                            onDiscarded (Ok discarded)
+                        with
+                        // Cancellation of the raw task is the timeout's requested interruption, not a defect.
+                        | :? OperationCanceledException when running.IsCanceled -> ()
+                        | error -> onDiscarded (Error error)
+                        return! onTimeout ()
+                    else
+                        return! running
+                finally
+                    timerSource.Dispose()
+            finally
+                timeoutSource.Dispose()
         })
 #endif
 
@@ -1907,15 +1913,18 @@ let awaitSignal (signal: Signal<'value>) (cancellationToken: CancellationToken) 
             else
                 let cancellation = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
-                use _registration =
+                let registration =
                     cancellationToken.Register(fun () -> cancellation.TrySetResult() |> ignore)
 
-                let! completed = Task.WhenAny(signal.Task :> Task, cancellation.Task :> Task)
+                try
+                    let! completed = Task.WhenAny(signal.Task :> Task, cancellation.Task :> Task)
 
-                if obj.ReferenceEquals(completed, signal.Task :> Task) then
-                    return Exit.Success signal.Task.Result
-                else
-                    return Exit.Failure Cause.Interrupt
+                    if obj.ReferenceEquals(completed, signal.Task :> Task) then
+                        return Exit.Success signal.Task.Result
+                    else
+                        return Exit.Failure Cause.Interrupt
+                finally
+                    registration.Dispose()
         })
 #endif
 

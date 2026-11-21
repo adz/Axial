@@ -52,17 +52,20 @@ module internal TaskInterop =
 
             let cancellation = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
-            use _registration =
+            let registration =
                 cancellationToken.Register(fun () -> cancellation.TrySetResult() |> ignore)
 
-            let! completed = Task.WhenAny(started, cancellation.Task)
+            try
+                let! completed = Task.WhenAny(started, cancellation.Task)
 
-            if obj.ReferenceEquals(completed, started :> Task) then
-                // Awaiting rethrows the task's own exception; .Result would wrap it in an AggregateException.
-                return! started
-            else
-                cancellationToken.ThrowIfCancellationRequested()
-                return Unchecked.defaultof<'source>
+                if obj.ReferenceEquals(completed, started :> Task) then
+                    // Awaiting rethrows the task's own exception; .Result would wrap it in an AggregateException.
+                    return! started
+                else
+                    cancellationToken.ThrowIfCancellationRequested()
+                    return Unchecked.defaultof<'source>
+            finally
+                registration.Dispose()
         }
 #endif
 

@@ -52,9 +52,15 @@ module SchemaRequest =
         | _ ->
             let parse: Task<RetainedParseResult<'model>> =
                 task {
-                    use! body = readBody request cancellationToken
-                    use document = JsonDocument.Parse(ReadOnlyMemory<byte>(body.GetBuffer(), 0, int body.Length))
-                    return Schema.parseRetainingInput schema (Data.ofJsonDocument document)
+                    let! body = readBody request cancellationToken
+                    try
+                        let document = JsonDocument.Parse(ReadOnlyMemory<byte>(body.GetBuffer(), 0, int body.Length))
+                        try
+                            return Schema.parseRetainingInput schema (Data.ofJsonDocument document)
+                        finally
+                            document.Dispose()
+                    finally
+                        body.Dispose()
                 }
 
             ValueTask<RetainedParseResult<'model>> parse
@@ -80,17 +86,20 @@ module SchemaRequest =
 
             let parse: Task<RetainedParseResult<'model>> =
                 task {
-                    use! body = readBody request cancellationToken
-                    let text = Text.Encoding.UTF8.GetString(body.GetBuffer(), 0, int body.Length)
+                    let! body = readBody request cancellationToken
+                    try
+                        let text = Text.Encoding.UTF8.GetString(body.GetBuffer(), 0, int body.Length)
 
-                    let pairs =
-                        text.Split('&', StringSplitOptions.RemoveEmptyEntries)
-                        |> Array.map (fun pair ->
-                            match pair.IndexOf '=' with
-                            | -1 -> decode pair, ""
-                            | at -> decode pair[.. at - 1], decode pair[at + 1 ..])
+                        let pairs =
+                            text.Split('&', StringSplitOptions.RemoveEmptyEntries)
+                            |> Array.map (fun pair ->
+                                match pair.IndexOf '=' with
+                                | -1 -> decode pair, ""
+                                | at -> decode pair[.. at - 1], decode pair[at + 1 ..])
 
-                    return Schema.parseRetainingInput schema (BoundaryInput.ofForm pairs)
+                        return Schema.parseRetainingInput schema (BoundaryInput.ofForm pairs)
+                    finally
+                        body.Dispose()
                 }
 
             ValueTask<RetainedParseResult<'model>> parse

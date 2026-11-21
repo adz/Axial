@@ -250,14 +250,17 @@ module internal ProcessRun =
                     let sleeping =
                         Flow.fromTask (fun token -> task {
                             let interrupted = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
-                            use _registration = token.Register(fun () -> interrupted.TrySetResult() |> ignore)
-                            let! first = Task.WhenAny(pending, interrupted.Task)
-                            if obj.ReferenceEquals(first, interrupted.Task) then cancellation.Cancel()
+                            let registration = token.Register(fun () -> interrupted.TrySetResult() |> ignore)
                             try
-                                do! pending
-                                return true
-                            with :? OperationCanceledException when cancellation.IsCancellationRequested ->
-                                return false
+                                let! first = Task.WhenAny(pending, interrupted.Task)
+                                if obj.ReferenceEquals(first, interrupted.Task) then cancellation.Cancel()
+                                try
+                                    do! pending
+                                    return true
+                                with :? OperationCanceledException when cancellation.IsCancellationRequested ->
+                                    return false
+                            finally
+                                registration.Dispose()
                         })
                         |> Flow.ensuring (
                             Flow.delay (fun () ->
@@ -841,8 +844,11 @@ module internal ProcessRun =
                         | InputSource.Bytes bytes -> writeInput stage bytes
                         | InputSource.File path ->
                             Flow.fromTask (fun token -> task {
-                                use input = fileSystem.OpenFile(path, FileMode.Open, FileAccess.Read, FileShare.Read)
-                                do! input.CopyToAsync(processes[stage].StandardInput.BaseStream, 81920, token)
+                                let input = fileSystem.OpenFile(path, FileMode.Open, FileAccess.Read, FileShare.Read)
+                                try
+                                    do! input.CopyToAsync(processes[stage].StandardInput.BaseStream, 81920, token)
+                                finally
+                                    input.Dispose()
                             })
                             |> classifyInputWrite
                         | InputSource.Stream source ->

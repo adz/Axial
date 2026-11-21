@@ -585,26 +585,29 @@ module Http =
             | Some maximum, Some declared when declared > maximum -> return None
             | _ ->
                 let! stream = content.ReadAsStreamAsync()
-                use buffer = new System.IO.MemoryStream()
-                let chunk = Array.zeroCreate<byte> 81920
-                let maximum = defaultArg limit Int64.MaxValue
-                let mutable total = 0L
-                let mutable reading = true
+                let buffer = new System.IO.MemoryStream()
+                try
+                    let chunk = Array.zeroCreate<byte> 81920
+                    let maximum = defaultArg limit Int64.MaxValue
+                    let mutable total = 0L
+                    let mutable reading = true
 
-                while reading do
-                    let! read = stream.ReadAsync(chunk, 0, chunk.Length, cancellationToken)
+                    while reading do
+                        let! read = stream.ReadAsync(chunk, 0, chunk.Length, cancellationToken)
 
-                    if read = 0 then
-                        reading <- false
-                    else
-                        total <- total + int64 read
-
-                        if total > maximum then
+                        if read = 0 then
                             reading <- false
                         else
-                            buffer.Write(chunk, 0, read)
+                            total <- total + int64 read
 
-                return if total > maximum then None else Some(buffer.ToArray())
+                            if total > maximum then
+                                reading <- false
+                            else
+                                buffer.Write(chunk, 0, read)
+
+                    return if total > maximum then None else Some(buffer.ToArray())
+                finally
+                    buffer.Dispose()
         }
 
     /// Creates a live HTTP service backed by the caller's <see cref="T:System.Net.Http.HttpClient" />.
