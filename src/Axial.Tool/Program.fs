@@ -20,7 +20,15 @@ module Program =
   4. A human reads the review, then runs axial policy approve [--yes-i-reviewed].
 
 The lock is tamper-evident, not a security boundary. Enforcement is the repository's choice.
-Approval means a human read the review. The first review requires --since <ref>."""
+Approval means a human read the review. The first review requires --since <ref>.
+
+Capabilities (services that replace raw APIs; guidance, not policy):
+  axial capabilities [--json]
+     Lists Axial's capabilities and every <AxialCapability> a built project declares: the service to use, the
+     environment field, an example call, the live implementation, the test fake and the APIs it replaces.
+  axial add service <Name> [--dir <path>] [--replaces <match>]
+     Writes <Name>.fs (service, environment interface, accessor, live implementation, fake) and prints the
+     <AxialCapability> item to add. Direct uses of the replaced API then get an info hint naming the service."""
     let private policyWarning = "HUMAN DECISION — agents must not run this; ask the user."
     let private jsonString (value: string) = "\"" + JavaScriptEncoder.Default.Encode(value) + "\""
     let private jsonArray values = values |> List.map jsonString |> String.concat "," |> fun content -> "[" + content + "]"
@@ -379,6 +387,32 @@ Approval means a human read the review. The first review requires --since <ref>.
                 | _ -> emit asJson false (policyWarning+"\nUsage: axial policy approve [--baseline-rule <id>] [--yes-i-reviewed] [--json]")
             options None false rest
         | ["policy";"baseline";"--rule";rule] -> baseline asJson rule
+        | ["capabilities"] ->
+            let listed, problems = Capabilities.discover (root())
+            if asJson then
+                let item (entry: Capabilities.Listed) =
+                    let c = entry.Capability
+                    {| name = c.Name; declaredIn = (match entry.DeclaredIn with Some project -> project | None -> "Axial")
+                       level = (match c.Level with Axial.Guardrails.EffectCatalog.Guide -> "guide" | Axial.Guardrails.EffectCatalog.Enforce -> "enforce")
+                       service = c.Service; env = c.Env; field = c.Field; example = c.Example; live = c.Live; fake = c.Fake
+                       replaces = entry.Rules |> List.map Axial.Guardrails.EffectCatalog.ruleTarget |> List.distinct |}
+                printfn "%s" (System.Text.Json.JsonSerializer.Serialize {| schema = "axial.capabilities.v1"; capabilities = listed |> List.map item; problems = problems |})
+            else printfn "%s" (Capabilities.format listed problems)
+            0
+        | "add"::"service"::name::rest ->
+            let usage = "Usage: axial add service <Name> [--dir <path>] [--replaces <match>]"
+            let rec options directory replaces = function
+                | [] -> Ok(directory, replaces)
+                | "--dir"::path::tail when directory = None -> options (Some path) replaces tail
+                | "--replaces"::matching::tail when replaces = None -> options directory (Some matching) tail
+                | _ -> Error usage
+            match options None None rest with
+            | Error error -> emit asJson false error
+            | Ok(directory, replaces) ->
+                match Capabilities.scaffold (defaultArg directory (root())) name replaces with
+                | Ok message -> emit asJson true message
+                | Error error -> emit asJson false error
+        | "add"::_ -> emit asJson false "Usage: axial add service <Name> [--dir <path>] [--replaces <match>]"
         | ["--help"] | ["help"] -> help asJson
         | _ -> emit asJson false ("Unknown command.\n"+workflow)
 

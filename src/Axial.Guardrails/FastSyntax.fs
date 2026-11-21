@@ -235,10 +235,14 @@ let analyzeRule requested (config: GuardrailConfig.Config) fileName (source: ISo
                 // Ordinary (Fast) builds never fail on guidance: exact fixture findings warn; Full keeps policy severity.
                 findings.Add("Fixture", { finding with Message = "[fast hint; syntax-exact] " + finding.Message + (if baselined then " (baselined)" else ""); Severity = Severity.Warning })
     let effectFile = level <> Policy.Allow && (level = Policy.Forbid || (role <> Some Policy.Capabilities && role <> Some Policy.Host))
+    let sourceString = lazy (source.GetSubTextString(0, source.Length))
+    let implementing (rule: EffectRule) =
+        config.CapabilityOf rule
+        |> Option.exists (fun capability -> capability.Level = Guide && implementsService capability sourceString.Value)
     let reportEffects path (expr: SynExpr) (candidates: EffectRule seq) =
-        for rule in Seq.distinct candidates do
+        for rule in Seq.distinct candidates |> Seq.filter (implementing >> not) do
             let scoped = match rule.Scope with Anywhere -> true | InsideFlow -> insideFlow path | OutsideFlow -> not (insideFlow path)
-            if scoped then add "EffectBoundary" "AXG001" expr.Range (EffectBoundaryAnalyzer.toMessage rule expr.Range).Message
+            if scoped then add "EffectBoundary" "AXG001" expr.Range (EffectBoundaryAnalyzer.toMessage config rule expr.Range).Message
     // Mirrors WaitForFacts' syntax: Thread.Sleep anywhere; Task.Delay/Async.Sleep only when awaited directly; never an
     // infinite wait for cancellation, nor the shared bounded-polling helpers.
     let delayCall expr =

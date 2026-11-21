@@ -28,6 +28,15 @@ install, severity, and suppression choices; this page is the per-diagnostic refe
 | `blocking` | `Async.RunSynchronously`, `Task.Wait()`/`Wait(timeout)`, task/value-task `.Result`, and `.GetAwaiter().GetResult()` outside flows; task `.Result` and `.GetAwaiter().GetResult()` inside flows | Await asynchronously outside flows; `let!` on the task inside flows |
 | `scope` | A direct `Cache.make*`, `Hub.make`/`bounded`, or `Queue.bounded`/`unbounded` returned by a run | Use the service before the scope closes |
 
+Each finding says what to use instead. For a service that travels in `'env`, it names the environment field to add,
+the interface to implement, an example call, the live implementation and the test fake. For a platform service such as
+`Clock`, it says the runtime provides it and how tests control it. `axial capabilities` lists every service and the
+APIs it replaces.
+
+Your own services can do the same: an [`<AxialCapability>` item](/guardrails/rule-authoring.html#declaring-a-capability)
+turns direct calls to the API a service wraps into an info-level `AXG001` hint that points at the service. The hint never
+fails a build and needs no acknowledgement.
+
 Reads of `.Result` or `.GetAwaiter().GetResult()` on a task or value task are exempt when the same value's completion state is tested in the enclosing `if` branch or `when` guard, or when the value is the parameter of a `ContinueWith` callback. Other waits remain findings. Blocking waits outside flows can deadlock UI synchronization contexts.
 
 `TimeZoneInfo.ConvertTimeFromUtc(utc, zone)` is allowed when `zone` is supplied explicitly; reading

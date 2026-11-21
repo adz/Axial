@@ -14,14 +14,17 @@
     <IsPackable>true</IsPackable>
     <!-- Slice 1c wires the v2 role-aware analyzer; this host/effects tool cannot satisfy v1 per-line boundaries. -->
     <_AxialRepoSkipGuardrails>true</_AxialRepoSkipGuardrails>
+    <DefineConstants>$(DefineConstants);AXIAL_TOOL</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <None Include="FullCheck.targets" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Compile Include="../Axial.Guardrails/EffectCatalog.fs" Link="EffectCatalog.fs" />
     <Compile Include="../Axial.Guardrails/Policy.fs" Link="Policy.fs" />
     <Compile Include="Command.fs" />
     <Compile Include="PolicyLock.fs" />
     <Compile Include="RawTaskCount.fs" />
     <Compile Include="PolicyReview.fs" />
+    <Compile Include="Capabilities.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 </Project>

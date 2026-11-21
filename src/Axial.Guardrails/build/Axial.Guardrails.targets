@@ -268,7 +268,7 @@
     repair instruction instead of silently skipping analysis.
   -->
   <!--
-    Resolves @(AxialGuardrail) and @(AxialGuardrailRule) into the rules file the analyzers read (see
+    Resolves @(AxialGuardrail), @(AxialGuardrailRule) and @(AxialCapability) into the rules file the analyzers read (see
     GuardrailConfig.fs for the format). WriteOnlyWhenDifferent keeps its timestamp stable, so the check below reruns
     only when the configuration or the sources change. Metadata must not contain semicolons; escape them as %3B.
   -->
@@ -314,6 +314,7 @@
       <_AxialGuardrailsConfigLine Include="setting&#9;nativeAot&#9;true" Condition="'$(IsAotCompatible)' == 'true' or '$(PublishAot)' == 'true'" />
       <_AxialGuardrailsConfigLine Include="setting&#9;nativeAot&#9;false" Condition="'$(IsAotCompatible)' != 'true' and '$(PublishAot)' != 'true'" />
       <_AxialGuardrailsConfigLine Include="@(AxialGuardrailRule->'rule&#9;%(Identity)&#9;%(Guardrail)&#9;%(Category)&#9;%(Match)&#9;%(Scope)&#9;%(Message)&#9;%(Replacement)')" />
+      <_AxialGuardrailsConfigLine Include="@(AxialCapability->'capability&#9;%(Identity)&#9;%(Service)&#9;%(Env)&#9;%(Field)&#9;%(Example)&#9;%(Live)&#9;%(Fake)&#9;%(Replaces)&#9;%(Level)&#9;%(Guardrail)')" />
     </ItemGroup>
     <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')" />
     <WriteLinesToFile File="$(_AxialGuardrailsConfigFile)" Lines="@(_AxialGuardrailsConfigLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />

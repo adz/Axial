@@ -24,6 +24,7 @@
     <Compile Include="ScopeFromRunAnalyzerTests.fs" />
     <Compile Include="WaitForFactsAnalyzerTests.fs" />
     <Compile Include="GuardrailConfigTests.fs" />
+    <Compile Include="CapabilityTests.fs" />
     <Compile Include="PolicyTests.fs" />
     <Compile Include="InitTests.fs" />
     <Compile Include="PolicyLockTests.fs" />

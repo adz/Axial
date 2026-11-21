@@ -37,6 +37,8 @@ type Config =
       FastSeverityCap: bool
       InTests: string
       AllRules: EffectRule list
+      /// Axial's capabilities followed by those declared with `<AxialCapability>` items.
+      AllCapabilities: Capability list
       BoundaryFiles: Set<string>
       /// Compile items the build generated under its intermediate output directory. No rule checks them, and their
       /// coverage is recorded as `excluded (generated)`: the consumer cannot edit generated code.
@@ -51,6 +53,9 @@ type Config =
 
     member this.Rules = this.AllRules |> List.filter (fun rule -> this.EnabledGuardrails.Contains rule.Guardrail)
     member this.KnownCategories = this.AllRules |> List.map _.Category |> Set.ofList
+    /// The capability a rule names, if it is known.
+    member this.CapabilityOf(rule: EffectRule) =
+        rule.Capability |> Option.bind (fun name -> this.AllCapabilities |> List.tryFind (fun capability -> capability.Name = name))
 
 let private parseScope (text: string) =
     match text.Trim().ToLowerInvariant() with
@@ -65,6 +70,7 @@ let defaults: Config =
       FastSeverityCap = false
       InTests = ""
       AllRules = builtInRules
+      AllCapabilities = builtInCapabilities
       // Direct analyzer hosts (not the MSBuild package) have no project item graph; preserve rule-unit-test support.
       BoundaryFiles = Set.singleton "*"
       GeneratedFiles = Set.empty
@@ -99,8 +105,25 @@ let parse (lines: string seq) : Config =
                       Match = parsed
                       Scope = parseScope scope
                       Message = message.Trim()
-                      Replacement = replacement.Trim() })
+                      Replacement = replacement.Trim()
+                      Capability = None })
             | _ -> None)
+
+    // A malformed declaration fails the build with its reason: silently dropping it would remove guidance unseen.
+    let declared =
+        entries
+        |> List.choose (function
+            | lineNumber, _, fields when fields.Length >= 2 && fields[0] = "capability" ->
+                match parseCapability fields[1] (fields |> Array.skip 2 |> List.ofArray) with
+                | Ok parsed -> Some parsed
+                | Error error -> invalidArg "lines" $"Guardrails rules line {lineNumber}: {error}"
+            | _ -> None)
+    let duplicates =
+        (builtInCapabilities |> List.map _.Name) @ (declared |> List.map (fst >> _.Name))
+        |> List.countBy id |> List.filter (snd >> (<) 1) |> List.map fst
+    if not duplicates.IsEmpty then
+        let names = String.concat ", " duplicates
+        invalidArg "lines" $"Guardrails capability declared more than once: {names}"
 
     let setting name =
         entries
@@ -167,7 +190,7 @@ let parse (lines: string seq) : Config =
             | Error errors -> invalidArg "lines" (String.concat Environment.NewLine errors)
         | _ -> None
 
-    { EnabledGuardrails = enabled
+    { EnabledGuardrails = declared |> List.fold (fun enabled (capability, _) -> Set.add capability.Guardrail enabled) enabled
       NativeAot = nativeAot
       Checkpoint = setting "checkpoint" |> Option.exists (fun value -> String.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
       FastSeverityCap =
@@ -176,7 +199,8 @@ let parse (lines: string seq) : Config =
         | Some "Fast" -> true
         | Some other -> invalidArg "lines" $"Unknown Guardrails severityCap '{other}'"
       InTests = setting "inTests" |> Option.defaultValue ""
-      AllRules = builtInRules @ contributed
+      AllRules = builtInRules @ contributed @ (declared |> List.collect snd)
+      AllCapabilities = builtInCapabilities @ (declared |> List.map fst)
       BoundaryFiles =
         match policy, policyRoot with
         | Some parsed, Some root -> parsed.Boundaries |> List.map (fun path -> Path.GetFullPath(Path.Combine(root, path))) |> Set.ofList
@@ -461,7 +485,8 @@ let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: 
 
         findings
         |> List.map (fun (message, entry) ->
-            let tiered = Set.contains message.Code (set [ "AXG009"; "AXG010"; "AXG011"; "AXG012"; "AXG013"; "AXG014" ]) || message.Type = "Axial Note Integrity"
+            // A guide-level capability finding is advice: it keeps its Info severity and never enters the baseline.
+            let tiered = Set.contains message.Code (set [ "AXG009"; "AXG010"; "AXG011"; "AXG012"; "AXG013"; "AXG014" ]) || message.Type = "Axial Note Integrity" || message.Type = "Axial Capability Guide"
             let candidate = not tiered && (not (message.Code = "AXG001") || level <> Policy.Allow)
                             && (config.BaselineRule |> Option.forall ((=) message.Code))
             if candidate then config.BaselineOutput |> Option.iter (fun output -> appendGenerated output entry)

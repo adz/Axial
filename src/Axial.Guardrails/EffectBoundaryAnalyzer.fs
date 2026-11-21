@@ -127,6 +127,8 @@ let private collectFindings rules (ctx: CliContext) : (EffectRule * FSharp.Compi
     let safeReads = completedReadRanges ctx
 
     (SymbolIndex.forContext ctx).All
+    // A definition is not a use: a declared capability may wrap a type the same project defines.
+    |> Seq.filter (fun symbolUse -> not symbolUse.IsFromDefinition)
     |> Seq.choose (fun symbolUse ->
         let inside = flowBodies.Value |> List.exists (fun body -> contains body symbolUse.Range)
         ruleFor rules inside symbolUse.Symbol
@@ -141,14 +143,33 @@ let rawFindingsWithConfig (config: GuardrailConfig.Config) (ctx: CliContext) : (
 
 let rawFindings ctx = rawFindingsWithConfig (GuardrailConfig.load ()) ctx
 
-let toMessage (rule: EffectRule) (range: FSharp.Compiler.Text.Range) : Message =
-    { Type = "Axial Effect Boundary"
-      Message =
-        $"This call {rule.Message}. (1) Use {rule.Replacement}; add the Axial capability/service to your env. "
-        + "(2) If Axial has no service for this effect, create a service built on capabilities with 'axial add service <Name>'. "
-        + "(3) Only genuinely new raw I/O belongs in a capability under Capabilities/."
+/// The finding text: what the call does and what to use instead, rendered from the capability that replaces it.
+let advice (capability: Capability option) (rule: EffectRule) =
+    match capability with
+    | Some capability when capability.Env = "" ->
+        $"This call {rule.Message}. Use {rule.Replacement}. The runtime provides {capability.Service}, so the environment "
+        + $"does not change; tests control it with {capability.Fake}."
+    | Some capability ->
+        let example = if capability.Example = "" then "" else $", then call it, for example `{capability.Example}`"
+        let live = if capability.Live = "" then "" else $" Production: {capability.Live}."
+        let fake = if capability.Fake = "" then "" else $" Tests: {capability.Fake}."
+        $"This call {rule.Message}. Use {rule.Replacement}: give the environment record a `{capability.Field}` field and "
+        + $"implement {capability.Env}{example}.{live}{fake}"
+    | None ->
+        $"This call {rule.Message}. Use {rule.Replacement}. If no service covers this effect yet, "
+        + "`axial add service <Name>` scaffolds one with its <AxialCapability> declaration."
+
+/// The finding type of a guide-level capability: reported as information, never baselined or escalated.
+[<Literal>]
+let CapabilityGuide = "Axial Capability Guide"
+
+let toMessage (config: GuardrailConfig.Config) (rule: EffectRule) (range: FSharp.Compiler.Text.Range) : Message =
+    let capability = config.CapabilityOf rule
+    let guide = capability |> Option.exists (fun capability -> capability.Level = Guide)
+    { Type = if guide then CapabilityGuide else "Axial Effect Boundary"
+      Message = advice capability rule
       Code = "AXG001"
-      Severity = Severity.Error
+      Severity = if guide then Severity.Info else Severity.Error
       Range = range
       // Introducing an explicit service changes the containing function's environment and often its return type;
       // replacing only this expression is therefore not mechanically safe.
@@ -160,10 +181,15 @@ let analyzeWithConfig (config: GuardrailConfig.Config) (ctx: CliContext) =
     let level = resolved |> Option.bind (fun policy -> policy.Rules.TryFind "effects.ambient") |> Option.defaultValue Policy.Deny
     // Effect-role files own raw effects, except where policy forbids them outright.
     if GuardrailConfig.isSkippedSource config ctx.FileName || (effectFile && level <> Policy.Forbid) then [] else
+    let source = lazy (ctx.SourceText.GetSubTextString(0, ctx.SourceText.Length))
+    let implementing (rule: EffectRule) =
+        config.CapabilityOf rule
+        |> Option.exists (fun capability -> capability.Level = Guide && implementsService capability source.Value)
     rawFindingsWithConfig config ctx
+    |> List.filter (fst >> implementing >> not)
     |> List.collect (fun (rule, range) ->
         if level <> Policy.Forbid && isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText range.StartLine "AXG001" then []
-        else GuardrailConfig.applyWith config rule.Guardrail ctx [ toMessage rule range ])
+        else GuardrailConfig.applyWith config rule.Guardrail ctx [ toMessage config rule range ])
 
 [<CliAnalyzer("EffectBoundary",
               "Flags direct use of ambient .NET effects (clock, randomness, GUIDs, console, filesystem, "
