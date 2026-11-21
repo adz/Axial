@@ -314,7 +314,11 @@
       <_AxialGuardrailsConfigLine Include="setting&#9;nativeAot&#9;true" Condition="'$(IsAotCompatible)' == 'true' or '$(PublishAot)' == 'true'" />
       <_AxialGuardrailsConfigLine Include="setting&#9;nativeAot&#9;false" Condition="'$(IsAotCompatible)' != 'true' and '$(PublishAot)' != 'true'" />
       <_AxialGuardrailsConfigLine Include="@(AxialGuardrailRule->'rule&#9;%(Identity)&#9;%(Guardrail)&#9;%(Category)&#9;%(Match)&#9;%(Scope)&#9;%(Message)&#9;%(Replacement)')" />
-      <_AxialGuardrailsConfigLine Include="@(AxialCapability->'capability&#9;%(Identity)&#9;%(Service)&#9;%(Env)&#9;%(Field)&#9;%(Example)&#9;%(Live)&#9;%(Fake)&#9;%(Replaces)&#9;%(Level)&#9;%(Guardrail)')" />
+      <_AxialGuardrailsConfigLine Include="@(AxialCapability->'capability&#9;%(Identity)&#9;%(Service)&#9;%(Env)&#9;%(Field)&#9;%(Example)&#9;%(Live)&#9;%(Fake)&#9;%(Replaces)&#9;%(Level)&#9;%(Guardrail)&#9;%(Implementation)')" />
+      <!-- Implementation is a glob relative to the project; expanded here, the analyzers compare full paths. -->
+      <_AxialGuardrailsCapabilityFile Remove="@(_AxialGuardrailsCapabilityFile)" />
+      <_AxialGuardrailsCapabilityFile Include="%(AxialCapability.Implementation)" Capability="%(AxialCapability.Identity)" Condition="'%(AxialCapability.Implementation)' != ''" />
+      <_AxialGuardrailsConfigLine Include="@(_AxialGuardrailsCapabilityFile->'capabilityFile&#9;%(Capability)&#9;%(FullPath)')" />
     </ItemGroup>
     <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')" />
     <WriteLinesToFile File="$(_AxialGuardrailsConfigFile)" Lines="@(_AxialGuardrailsConfigLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />

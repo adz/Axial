@@ -160,7 +160,8 @@ let taskSites config fileName source tree =
                              System.Xml.Linq.XAttribute(System.Xml.Linq.XName.Get "acknowledged", count.Acknowledged),
                              System.Xml.Linq.XAttribute(System.Xml.Linq.XName.Get "sites", count.Sites))
 
-let analyzeRule requested (config: GuardrailConfig.Config) fileName (source: ISourceText) tree =
+/// Runs the requested rule (all when None); `judged` sees every raw effect call's verdict, reported or allowed.
+let analyzeRuleWith (judged: range -> EffectRule -> EffectUse.Verdict -> unit) requested (config: GuardrailConfig.Config) fileName (source: ISourceText) tree =
     let wants rule = requested |> Option.forall ((=) rule)
     let nodes = ParsedInput.fold (fun nodes path node -> (path, node) :: nodes) [] tree |> List.rev
     let opened = openedNamespaces nodes
@@ -234,15 +235,15 @@ let analyzeRule requested (config: GuardrailConfig.Config) fileName (source: ISo
                 if baselined then remaining[fingerprint] <- count - 1
                 // Ordinary (Fast) builds never fail on guidance: exact fixture findings warn; Full keeps policy severity.
                 findings.Add("Fixture", { finding with Message = "[fast hint; syntax-exact] " + finding.Message + (if baselined then " (baselined)" else ""); Severity = Severity.Warning })
-    let effectFile = level <> Policy.Allow && (level = Policy.Forbid || (role <> Some Policy.Capabilities && role <> Some Policy.Host))
-    let sourceString = lazy (source.GetSubTextString(0, source.Length))
-    let implementing (rule: EffectRule) =
-        config.CapabilityOf rule
-        |> Option.exists (fun capability -> capability.Level = Guide && implementsService capability sourceString.Value)
+    // Every raw effect call is judged; only a reported one becomes a finding. No file skips the check as a whole.
     let reportEffects path (expr: SynExpr) (candidates: EffectRule seq) =
-        for rule in Seq.distinct candidates |> Seq.filter (implementing >> not) do
+        for rule in Seq.distinct candidates do
             let scoped = match rule.Scope with Anywhere -> true | InsideFlow -> insideFlow path | OutsideFlow -> not (insideFlow path)
-            if scoped then add "EffectBoundary" "AXG001" expr.Range (EffectBoundaryAnalyzer.toMessage config rule expr.Range).Message
+            if scoped && GuardrailConfig.runsInProject config "AXG001" && not (GuardrailConfig.isSkippedSource config fileName) then
+                let verdict = EffectUse.judge config fileName source expr.Range.StartLine rule
+                judged expr.Range rule verdict
+                if verdict = EffectUse.Reported then
+                    add "EffectBoundary" "AXG001" expr.Range (EffectUse.toMessage config fileName rule expr.Range).Message
     // Mirrors WaitForFacts' syntax: Thread.Sleep anywhere; Task.Delay/Async.Sleep only when awaited directly; never an
     // infinite wait for cancellation, nor the shared bounded-polling helpers.
     let delayCall expr =
@@ -286,7 +287,7 @@ let analyzeRule requested (config: GuardrailConfig.Config) fileName (source: ISo
                 | _ -> None
             match target with
             | Some(text, constructor) when unshadowed text ->
-                if wants "EffectBoundary" && effectFile then
+                if wants "EffectBoundary" then
                     reportEffects path expr [
                         match exactEffects.TryGetValue text with
                         | true, entries -> yield! entries
@@ -312,7 +313,7 @@ let analyzeRule requested (config: GuardrailConfig.Config) fileName (source: ISo
                        && (match expr with SynExpr.App _ -> true | _ -> false) && not (approvedHelper path) then
                         add "WaitForFacts" "AXG013" expr.Range "Wait for a fact, not elapsed time. Complete a Deferred or TaskCompletionSource and wait with a deadline, or step the test clock. Full checks cancellation waits and timeout constants."
             | _ -> ()
-            if wants "EffectBoundary" && effectFile then
+            if wants "EffectBoundary" then
                 match expr with
                 | SynExpr.DotGet(expr = inner; longDotId = id) ->
                     match strip inner, id.LongIdent with
@@ -346,4 +347,13 @@ let analyzeRule requested (config: GuardrailConfig.Config) fileName (source: ISo
                 findings.Add("TaskSurface", { message with Message = "[fast/unverified] " + message.Message }))
     findings |> Seq.distinctBy (fun (rule, m) -> rule, m.Range.StartLine, m.Range.StartColumn) |> Seq.toList
 
+let analyzeRule requested config fileName source tree = analyzeRuleWith (fun _ _ _ -> ()) requested config fileName source tree
+
 let analyze config fileName source tree = analyzeRule None config fileName source tree
+
+/// The `effectUses` record Fast adds to a file's EffectBoundary coverage (see `EffectUse.record`).
+let effectUses config fileName source tree =
+    // A call can be visited through more than one syntax node; count each call and rule once.
+    let verdicts = System.Collections.Generic.Dictionary<(int * int * string), EffectUse.Verdict>()
+    analyzeRuleWith (fun range rule verdict -> verdicts[(range.StartLine, range.StartColumn, rule.Id)] <- verdict) (Some "EffectBoundary") config fileName source tree |> ignore
+    EffectUse.record (List.ofSeq verdicts.Values)

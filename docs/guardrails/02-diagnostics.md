@@ -33,9 +33,10 @@ the interface to implement, an example call, the live implementation and the tes
 `Clock`, it says the runtime provides it and how tests control it. `axial capabilities` lists every service and the
 APIs it replaces.
 
-Your own services can do the same: an [`<AxialCapability>` item](/guardrails/rule-authoring.html#declaring-a-capability)
-turns direct calls to the API a service wraps into an info-level `AXG001` hint that points at the service. The hint never
-fails a build and needs no acknowledgement.
+No file is exempt as a whole. A file that implements a capability may call only that capability's API: Axial's
+packages each own their own (`Axial.FileSystem` calls `System.IO.File`), and your own capabilities name their files in
+an [`<AxialCapability>` item](/guardrails/rule-authoring.html#declaring-a-capability). Every allowed call is counted by
+`axial check`.
 
 Reads of `.Result` or `.GetAwaiter().GetResult()` on a task or value task are exempt when the same value's completion state is tested in the enclosing `if` branch or `when` guard, or when the value is the parameter of a `ContinueWith` callback. Other waits remain findings. Blocking waits outside flows can deadlock UI synchronization contexts.
 
@@ -49,12 +50,16 @@ The analyzer matches resolved `System.*` symbols, not source text. It does not f
 First replace the ambient call with the service named by the diagnostic. An automatic fix is not offered because
 introducing an explicit service usually changes the containing function's environment and often its return type.
 
-A normal live implementation belongs in a file assigned the `capabilities` role and needs no suppression:
+A live implementation of your own service belongs in a declared capability, which allows its own API there and
+nothing else:
 
-```toml
-[files]
-capabilities = ["src/App/Capabilities/**"]
+```xml
+<AxialCapability Include="payments" Service="IPayments" Replaces="any:Stripe.ChargeService"
+    Implementation="Payments/Live.fs" />
 ```
+
+A file with the `capabilities` role no longer allows every effect: it owns only the API of the capability its project
+implements (`Axial.FileSystem` owns `System.IO.File`).
 
 For an exceptional one-off boundary outside that role, declare the exact file in policy and give each suppression a
 non-empty reason:

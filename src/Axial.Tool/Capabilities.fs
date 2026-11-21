@@ -1,4 +1,4 @@
-/// `axial capabilities` lists the services that replace raw APIs; `axial add service` scaffolds a new one.
+/// `axial capabilities` lists the services that own raw APIs: Axial's own and every declared one.
 module Axial.Tool.Capabilities
 
 open System
@@ -6,7 +6,12 @@ open System.IO
 open Axial.Guardrails.EffectCatalog
 
 /// A capability and where it was declared: `None` for Axial's own, otherwise the project directory.
-type internal Listed = { Capability: Capability; Rules: EffectRule list; DeclaredIn: string option }
+type internal Listed =
+    { Capability: Capability
+      Rules: EffectRule list
+      DeclaredIn: string option
+      /// The files that implement it, relative to the repository; a package's own files for Axial's capabilities.
+      Implementation: string list }
 
 let private skippedDirectories = set [ ".git"; "node_modules"; "bin"; ".livedocs"; "output" ]
 
@@ -43,7 +48,12 @@ let internal discover (root: string) : Listed list * string list =
             |> Seq.filter (fun fields -> fields.Length >= 2 && fields[0] = "capability")
             |> Seq.map (fun fields ->
                 match parseCapability fields[1] (fields |> Array.skip 2 |> List.ofArray) with
-                | Ok(capability, rules) -> Ok { Capability = capability; Rules = rules; DeclaredIn = Some project }
+                | Ok(capability, rules) ->
+                    let files =
+                        lines
+                        |> Array.choose (function [| "capabilityFile"; name; path |] when name = capability.Name -> Some(Path.GetRelativePath(root, path).Replace('\\', '/')) | _ -> None)
+                        |> List.ofArray
+                    Ok { Capability = capability; Rules = rules; DeclaredIn = Some project; Implementation = files }
                 | Error error -> Error $"{Path.GetRelativePath(root, file)}: {error}"))
         |> Seq.toList
         |> List.partition Result.isOk
@@ -57,7 +67,8 @@ let internal discover (root: string) : Listed list * string list =
         |> List.map (fun capability ->
             { Capability = capability
               Rules = builtInRules |> List.filter (fun rule -> rule.Capability = Some capability.Name)
-              DeclaredIn = None })
+              DeclaredIn = None
+              Implementation = (if capability.Env = "" then [] else [ $"the {capability.Guardrail} package" ]) })
     builtIn @ declared, problems |> List.choose (function Error problem -> Some problem | Ok _ -> None)
 
 let private targets (rules: EffectRule list) = rules |> List.map ruleTarget |> List.distinct
@@ -74,86 +85,13 @@ let internal format (listed: Listed list) (problems: string list) =
           if c.Example <> "" then yield $"  example  {c.Example}"
           if c.Live <> "" then yield $"  live     {c.Live}"
           if c.Fake <> "" then yield $"  tests    {c.Fake}"
+          if not item.Implementation.IsEmpty then yield $"""  files    {String.concat ", " item.Implementation}"""
           yield $"""  replaces {String.concat ", " (targets item.Rules)}""" ]
         |> String.concat "\n"
     let declaredCount = listed |> List.filter (fun item -> item.DeclaredIn.IsSome) |> List.length
     [ yield! listed |> List.map block
       if declaredCount = 0 then
-          yield "No project declares its own capability yet, or none has been built. Declare one with an <AxialCapability> item; `axial add service <Name>` scaffolds it."
+          yield "No project declares its own capability yet, or none has been built. Declare one with an <AxialCapability> item naming its Service, the APIs it Replaces and its Implementation file."
       for problem in problems do
           yield $"warning: {problem}" ]
     |> String.concat "\n\n"
-
-let private identifier (name: string) =
-    not (String.IsNullOrEmpty name) && Char.IsUpper name[0] && name |> Seq.forall Char.IsLetterOrDigit
-
-/// The F# source of a new capability: service interface, environment interface, accessor, live implementation and fake.
-let source (name: string) =
-    $"""/// The {name} capability: the one place that calls the API it wraps. The rest of the code reaches it through
-/// I{name} in its environment, and tests replace it with Test{name}.
-module {name}
-
-open Axial
-
-/// The failures {name} reports. Replace these with the ones callers can act on.
-type {name}Error =
-    | Unavailable of reason: string
-
-/// What the rest of the code may ask of {name}. Replace Example with the operations you need.
-type I{name} =
-    abstract Example: input: string -> Flow<unit, {name}Error, string>
-
-/// An environment that carries {name}. Implement it on your environment record with a `{name}: I{name}` field.
-type IHas{name} =
-    abstract {name}: I{name}
-
-/// Calls Example on the {name} service in the environment.
-let example<'env when 'env :> IHas{name}> (input: string) : Flow<'env, {name}Error, string> =
-    Flow.envWithFlow (fun (environment: 'env) -> environment.{name}.Example input |> Flow.provide ())
-
-/// The production implementation: the only code that calls the wrapped API.
-let live: I{name} =
-    {{ new I{name} with
-        member _.Example input =
-            // Call the wrapped API here; lift a .NET task with Flow.attemptTask and map its exception to {name}Error.
-            Flow.fail (Unavailable "not implemented yet") }}
-
-/// A test double that answers from a function.
-type Test{name}(answer: string -> Result<string, {name}Error>) =
-    interface I{name} with
-        member _.Example input = Flow.fromResult (answer input)
-"""
-
-/// The project-file item that declares the capability, so Guardrails points callers of the wrapped API at it.
-let declaration (name: string) (replaces: string option) =
-    let replaces = defaultArg replaces "any:Vendor.Namespace.Client"
-    $"""<ItemGroup>
-  <AxialCapability Include="{name.ToLowerInvariant()}"
-      Service="I{name}"
-      Example="{name}.example input"
-      Live="{name}.live"
-      Fake="Test{name}(fun input -> Ok input)"
-      Replaces="{replaces}" />
-</ItemGroup>"""
-
-/// Writes `<name>.fs` into the directory and returns the declaration to add to the project file.
-let scaffold (directory: string) (name: string) (replaces: string option) : Result<string, string> =
-    if not (identifier name) then
-        Error $"'{name}' is not a service name: use letters and digits starting with an upper-case letter, such as Payments"
-    else
-        match replaces |> Option.map (fun text -> text, text.Split('|') |> Array.forall (parseMatch >> Option.isSome)) with
-        | Some(text, false) -> Error $"--replaces '{text}' is not a match: use ctor:Type, member:Type::A,B or any:Type, separated by |"
-        | _ ->
-            let path = Path.Combine(directory, name + ".fs")
-            if File.Exists path then Error $"Refusing to overwrite {path}"
-            else
-                Directory.CreateDirectory directory |> ignore
-                File.WriteAllText(path, source name)
-                let placeholder = if replaces.IsNone then "\nSet Replaces to the API the service wraps; until then the declaration guides nobody." else ""
-                Ok(
-                    $"Wrote {path}.\n\n"
-                    + $"1. Add it to the project's <Compile> items, then replace Example with the operations you need.\n"
-                    + $"2. Add this declaration to the project file (or Directory.Build.props). Guardrails then points every\n"
-                    + $"   direct use of the wrapped API at I{name}, as information that never fails a build:{placeholder}\n\n"
-                    + declaration name replaces
-                    + "\n\n3. Run `axial capabilities` after the next build to see it listed.")

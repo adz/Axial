@@ -124,6 +124,33 @@ let parse (lines: string seq) : Config =
     if not duplicates.IsEmpty then
         let names = String.concat ", " duplicates
         invalidArg "lines" $"Guardrails capability declared more than once: {names}"
+    // One API, one capability: a declaration cannot claim what an existing capability or rule already covers, so
+    // declaring a capability is never a way around the service that already exists.
+    let covered =
+        builtInRules @ contributed
+        |> List.map (fun rule -> matchedType rule.Match, rule)
+    for capability, rules in declared do
+        for rule in rules do
+            let target = matchedType rule.Match
+            match covered |> List.tryFind (fun (other, _) -> other = target) with
+            | Some(_, existing) ->
+                let owner = existing.Capability |> Option.defaultValue existing.Id
+                invalidArg "lines" $"Guardrails capability '{capability.Name}' claims {target}, which '{owner}' already covers: use {existing.Replacement} instead"
+            | None -> ()
+        for other, otherRules in declared do
+            if other.Name < capability.Name
+               && otherRules |> List.exists (fun o -> rules |> List.exists (fun r -> matchedType o.Match = matchedType r.Match)) then
+                invalidArg "lines" $"Guardrails capabilities '{other.Name}' and '{capability.Name}' claim the same API; one capability owns an API"
+    let implementations =
+        entries
+        |> List.choose (function
+            | _, _, [| "capabilityFile"; name; path |] when path.Trim() <> "" ->
+                (try Some(name.Trim(), Path.GetFullPath(path.Trim())) with _ -> None)
+            | _ -> None)
+    let declared =
+        declared
+        |> List.map (fun (capability, rules) ->
+            { capability with Implementation = implementations |> List.filter (fst >> (=) capability.Name) |> List.map snd }, rules)
 
     let setting name =
         entries

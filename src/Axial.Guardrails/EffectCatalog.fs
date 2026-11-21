@@ -40,12 +40,12 @@ type EffectRule =
       /// The capability that replaces the matched API, by name; its advice is rendered into the finding.
       Capability: string option }
 
-/// How strongly a capability steers callers away from the API it replaces.
+/// How a capability treats a use of its API outside its implementation.
 type CapabilityLevel =
-    /// An info-level hint that names the service to use. It never fails a build and needs no acknowledgement.
-    | Guide
-    /// An AXG001 finding at the file role's `effects.ambient` level, like Axial's own rules.
+    /// An AXG001 finding at the file role's `effects.ambient` level, like Axial's own rules. The default.
     | Enforce
+    /// An info-level hint, for adopting a capability before its callers are migrated.
+    | Guide
 
 /// A service that replaces a raw API: what a caller uses instead, how it reaches the code, and how tests fake it.
 /// Declared in code for Axial's own services and with `<AxialCapability>` items for anyone else's.
@@ -65,7 +65,10 @@ type Capability =
       Live: string
       /// The test implementation.
       Fake: string
-      Level: CapabilityLevel }
+      Level: CapabilityLevel
+      /// Full paths of the files that implement a declared capability: the only files that may call its API.
+      /// Axial's own capabilities are implemented by their package, a `capabilities`-role project of the same name.
+      Implementation: string list }
 
 /// The guardrail that carries Axial's own conventions: the structural analyzers (raise in flow, fixtures, discarded
 /// cancellation, reflection formatting, suppression integrity) and the effects the core runtime replaces.
@@ -83,10 +86,10 @@ let private rule id guardrail category matching message replacement =
       Capability = None }
 
 let private platform name service live fake =
-    { Name = name; Guardrail = CoreGuardrail; Service = service; Env = ""; Field = ""; Example = ""; Live = live; Fake = fake; Level = Enforce }
+    { Name = name; Guardrail = CoreGuardrail; Service = service; Env = ""; Field = ""; Example = ""; Live = live; Fake = fake; Level = Enforce; Implementation = [] }
 
 let private service name guardrail serviceType envType field example live fake =
-    { Name = name; Guardrail = guardrail; Service = serviceType; Env = envType; Field = field; Example = example; Live = live; Fake = fake; Level = Enforce }
+    { Name = name; Guardrail = guardrail; Service = serviceType; Env = envType; Field = field; Example = example; Live = live; Fake = fake; Level = Enforce; Implementation = [] }
 
 /// Axial's own capabilities. Platform services come from the runtime; the others travel in `'env`.
 let builtInCapabilities: Capability list =
@@ -298,7 +301,8 @@ let private describe =
 
 /// Parses one declared capability from a rules-file line (see `GuardrailConfig.parse`) into the capability and the
 /// rules derived from its `replaces` list. Defaults: `Env` is `IHas<Name>`, `Field` is `<Name>: <Service>` where
-/// `<Name>` is the service without a leading `I`, the level is `guide`, and the guardrail is the capability's name.
+/// `<Name>` is the service without a leading `I`, the level is `enforce`, and the guardrail is the capability's name.
+/// Its implementation files arrive on separate `capabilityFile` lines.
 let parseCapability (name: string) (fields: string list) : Result<Capability * EffectRule list, string> =
     let field index = fields |> List.tryItem index |> Option.map _.Trim() |> Option.defaultValue ""
     let name = name.Trim()
@@ -307,8 +311,8 @@ let parseCapability (name: string) (fields: string list) : Result<Capability * E
     let orDefault fallback value = if value = "" then fallback else value
     let level =
         match (field 7).ToLowerInvariant() with
-        | "" | "guide" -> Ok Guide
-        | "enforce" -> Ok Enforce
+        | "" | "enforce" -> Ok Enforce
+        | "guide" -> Ok Guide
         | other -> Error $"capability '{name}': Level must be guide or enforce, not '{other}'"
     let replaces = (field 6).Split('|') |> Array.map _.Trim() |> Array.filter ((<>) "") |> List.ofArray
     let parsed = replaces |> List.map (fun text -> text, parseMatch text)
@@ -317,6 +321,7 @@ let parseCapability (name: string) (fields: string list) : Result<Capability * E
     | _ when name = "" -> Error "an AxialCapability item has no name (Include)"
     | _ when serviceType = "" -> Error $"capability '{name}' has no Service"
     | _ when replaces.IsEmpty -> Error $"capability '{name}' replaces nothing: set Replaces to the APIs its service wraps, such as any:Acme.Gateway.Client"
+    | _ when field 9 = "" -> Error $"capability '{name}' has no Implementation: set it to the file (or glob) that implements the service, the only place that may call the API it replaces"
     | _, Some(text, _) -> Error $"capability '{name}': cannot read Replaces entry '{text}'; use ctor:Type, member:Type::A,B or any:Type"
     | Ok level, None ->
         let capability =
@@ -328,7 +333,8 @@ let parseCapability (name: string) (fields: string list) : Result<Capability * E
               Example = field 3
               Live = field 4
               Fake = field 5
-              Level = level }
+              Level = level
+              Implementation = [] }
         let rules =
             parsed
             |> List.mapi (fun index (_, matching) ->
@@ -352,8 +358,16 @@ let ruleTarget (rule: EffectRule) =
     | ConstructorOf entity -> $"new {entity}"
     | AnyMemberOf entity -> entity
 
-/// Whether a source file declares or implements the capability's service (`type IPayments`, `interface IPayments with`,
-/// `{ new IPayments with ... }`). That file is where the raw API belongs, so guide findings skip it.
-let implementsService (capability: Capability) (source: string) =
-    let service = System.Text.RegularExpressions.Regex.Escape capability.Service
-    System.Text.RegularExpressions.Regex.IsMatch(source, $@"\b(type|interface|new)\s+{service}\b")
+/// The type a match targets, for overlap checks.
+let matchedType =
+    function
+    | ConstructorOf entity
+    | MembersOf(entity, _)
+    | AnyMemberOf entity -> entity
+
+/// A match in the rules-file grammar that `parseMatch` reads.
+let formatMatch =
+    function
+    | ConstructorOf entity -> $"ctor:{entity}"
+    | MembersOf(entity, members) -> $"""member:{entity}::{String.concat "," members}"""
+    | AnyMemberOf entity -> $"any:{entity}"

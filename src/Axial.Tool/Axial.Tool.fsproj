@@ -23,6 +23,7 @@
     <Compile Include="Command.fs" />
     <Compile Include="PolicyLock.fs" />
     <Compile Include="RawTaskCount.fs" />
+    <Compile Include="EffectCount.fs" />
     <Compile Include="PolicyReview.fs" />
     <Compile Include="Capabilities.fs" />
     <Compile Include="Program.fs" />

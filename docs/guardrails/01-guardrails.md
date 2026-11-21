@@ -21,7 +21,9 @@ Task-returning signature as a secondary count, with the project's role (`--json`
 records these counts: each Fast or Full result (`axial-guardrails.<TFM>.result.xml` under `obj`) carries Fast's count
 per file, and cache replays keep it. `axial check` reads each project's latest complete result and parses no source;
 a project without one is listed as "not built yet — run a build" (`--json`: `"built": false`, null counts). Fixing an
-AXG014 finding lowers it after the next build. It is a trend to watch, not a gate; AXG014 gives the per-site guidance. In this repository, `scripts/axial <command>` builds and runs the live tool.
+AXG014 finding lowers it after the next build. It is a trend to watch, not a gate; AXG014 gives the per-site guidance.
+The same results carry the allowed raw effect calls per project: how many sit inside capability implementations (per
+capability), how many a boundary comment allows, and how many are in host files (`--json`: `allowedEffects`). In this repository, `scripts/axial <command>` builds and runs the live tool.
 
 Run `axial policy review [--since <ref>] [--json]` to inspect what loosened: new or changed suppression reasons and notes, relaxed roles or rule levels, runtime/boundary/ignore/baseline additions, evaluated project settings, and changes to declared automation files or analyzer versions. Removals appear briefly as tightening. The default reference is the reviewed commit recorded in the lock; the first review needs `--since <tag-or-commit>`. If that reference predates policy files, the review reports policy introduction rather than inventing historical policy, and still compares source exceptions.
 
@@ -159,8 +161,10 @@ services = ["src/App/Services/**"]
 "effects.ambient" = "allow"
 ```
 
-The five roles are `capabilities`, `services`, `domain`, `host`, and `test`. File assignments override project
-assignments, which override the default. Rule levels are `allow`, `warn`, `deny`, and `forbid`; `forbid` cannot be
+The five roles are `capabilities`, `services`, `domain`, `host`, and `test`. A `capabilities` file may make only the
+raw calls its capability owns: an Axial package its own API, a declared
+[`<AxialCapability>`](/guardrails/rule-authoring.html#declaring-a-capability) the API it replaces. File assignments
+override project assignments, which override the default. Rule levels are `allow`, `warn`, `deny`, and `forbid`; `forbid` cannot be
 suppressed. Suppressions remain active while policy review is pending. Policy changes warn during ordinary builds;
 `axial policy review` groups the changes for later human review. Removing suppressions or shrinking baseline entries
 tightens policy; the next approval refreshes the snapshot.
@@ -314,8 +318,8 @@ rule was newly enabled for every affected file's effective role. Preparing candi
 
 ### Migrate file-level effect allowances
 
-`axial-allow-effect-file` is not recognized in 0.12. If the file implements a primitive effect, assign it the
-`capabilities` role in `[files]` or `[projects]`. For an exceptional boundary file instead, list its exact
+`axial-allow-effect-file` is not recognized in 0.12. If the file implements a primitive effect, declare the capability
+it implements with an `<AxialCapability>` item whose `Implementation` names the file. For an exceptional boundary file instead, list its exact
 repository-relative path in `[boundaries].files` and use a rule-specific allowance, for example
 `// axial-allow-file-AXG001: live system clock implementation` in the leading ordinary-comment block.
 The boundary declaration alone does not suppress findings. A `forbid` level cannot be suppressed.

@@ -143,53 +143,26 @@ let rawFindingsWithConfig (config: GuardrailConfig.Config) (ctx: CliContext) : (
 
 let rawFindings ctx = rawFindingsWithConfig (GuardrailConfig.load ()) ctx
 
-/// The finding text: what the call does and what to use instead, rendered from the capability that replaces it.
-let advice (capability: Capability option) (rule: EffectRule) =
-    match capability with
-    | Some capability when capability.Env = "" ->
-        $"This call {rule.Message}. Use {rule.Replacement}. The runtime provides {capability.Service}, so the environment "
-        + $"does not change; tests control it with {capability.Fake}."
-    | Some capability ->
-        let example = if capability.Example = "" then "" else $", then call it, for example `{capability.Example}`"
-        let live = if capability.Live = "" then "" else $" Production: {capability.Live}."
-        let fake = if capability.Fake = "" then "" else $" Tests: {capability.Fake}."
-        $"This call {rule.Message}. Use {rule.Replacement}: give the environment record a `{capability.Field}` field and "
-        + $"implement {capability.Env}{example}.{live}{fake}"
-    | None ->
-        $"This call {rule.Message}. Use {rule.Replacement}. If no service covers this effect yet, "
-        + "`axial add service <Name>` scaffolds one with its <AxialCapability> declaration."
+let toMessage config fileName rule range = EffectUse.toMessage config fileName rule range
 
-/// The finding type of a guide-level capability: reported as information, never baselined or escalated.
-[<Literal>]
-let CapabilityGuide = "Axial Capability Guide"
-
-let toMessage (config: GuardrailConfig.Config) (rule: EffectRule) (range: FSharp.Compiler.Text.Range) : Message =
-    let capability = config.CapabilityOf rule
-    let guide = capability |> Option.exists (fun capability -> capability.Level = Guide)
-    { Type = if guide then CapabilityGuide else "Axial Effect Boundary"
-      Message = advice capability rule
-      Code = "AXG001"
-      Severity = if guide then Severity.Info else Severity.Error
-      Range = range
-      // Introducing an explicit service changes the containing function's environment and often its return type;
-      // replacing only this expression is therefore not mechanically safe.
-      Fixes = [] }
+/// Every raw effect call in the file with its verdict, for findings and for the `effectUses` record.
+let judged (config: GuardrailConfig.Config) (ctx: CliContext) =
+    rawFindingsWithConfig config ctx
+    |> List.map (fun (rule, range) -> rule, range, EffectUse.judge config ctx.FileName ctx.SourceText range.StartLine rule)
 
 let analyzeWithConfig (config: GuardrailConfig.Config) (ctx: CliContext) =
-    let resolved = GuardrailConfig.resolvedPolicy config ctx
-    let effectFile = resolved |> Option.exists (fun policy -> policy.Role = Policy.Capabilities || policy.Role = Policy.Host)
-    let level = resolved |> Option.bind (fun policy -> policy.Rules.TryFind "effects.ambient") |> Option.defaultValue Policy.Deny
-    // Effect-role files own raw effects, except where policy forbids them outright.
-    if GuardrailConfig.isSkippedSource config ctx.FileName || (effectFile && level <> Policy.Forbid) then [] else
-    let source = lazy (ctx.SourceText.GetSubTextString(0, ctx.SourceText.Length))
-    let implementing (rule: EffectRule) =
-        config.CapabilityOf rule
-        |> Option.exists (fun capability -> capability.Level = Guide && implementsService capability source.Value)
-    rawFindingsWithConfig config ctx
-    |> List.filter (fst >> implementing >> not)
-    |> List.collect (fun (rule, range) ->
-        if level <> Policy.Forbid && isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText range.StartLine "AXG001" then []
-        else GuardrailConfig.applyWith config rule.Guardrail ctx [ toMessage config rule range ])
+    if GuardrailConfig.isSkippedSource config ctx.FileName then [] else
+    judged config ctx
+    |> List.collect (fun (rule, range, verdict) ->
+        match verdict with
+        | EffectUse.Reported -> GuardrailConfig.applyWith config rule.Guardrail ctx [ toMessage config ctx.FileName rule range ]
+        | _ -> [])
+
+/// Full records its own exact count; Fast records the syntactic one.
+let private uses (ctx: CliContext) =
+    let config = GuardrailConfig.load ()
+    if GuardrailConfig.isSkippedSource config ctx.FileName then []
+    else [ EffectUse.record (judged config ctx |> List.map (fun (_, _, verdict) -> verdict)) ]
 
 [<CliAnalyzer("EffectBoundary",
               "Flags direct use of ambient .NET effects (clock, randomness, GUIDs, console, filesystem, "
@@ -200,4 +173,4 @@ let effectBoundaryAnalyzer (ctx: CliContext) =
         async {
             return analyzeWithConfig (GuardrailConfig.load ()) ctx
         }
-    Execution.track "EffectBoundary" run ctx
+    Execution.trackWith uses "EffectBoundary" run ctx

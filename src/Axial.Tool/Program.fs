@@ -22,13 +22,11 @@ module Program =
 The lock is tamper-evident, not a security boundary. Enforcement is the repository's choice.
 Approval means a human read the review. The first review requires --since <ref>.
 
-Capabilities (services that replace raw APIs; guidance, not policy):
+Capabilities (services that own raw APIs):
   axial capabilities [--json]
      Lists Axial's capabilities and every <AxialCapability> a built project declares: the service to use, the
-     environment field, an example call, the live implementation, the test fake and the APIs it replaces.
-  axial add service <Name> [--dir <path>] [--replaces <match>]
-     Writes <Name>.fs (service, environment interface, accessor, live implementation, fake) and prints the
-     <AxialCapability> item to add. Direct uses of the replaced API then get an info hint naming the service."""
+     environment field, the live implementation, the test fake, the files that implement it and the APIs it owns.
+     `axial check` shows how many raw effect calls each project was allowed, and why."""
     let private policyWarning = "HUMAN DECISION — agents must not run this; ask the user."
     let private jsonString (value: string) = "\"" + JavaScriptEncoder.Default.Encode(value) + "\""
     let private jsonArray values = values |> List.map jsonString |> String.concat "," |> fun content -> "[" + content + "]"
@@ -91,8 +89,9 @@ Capabilities (services that replace raw APIs; guidance, not policy):
         | Ok current, Ok locked ->
             let changes=diff locked current
             let counts = if build then [] else rawTaskSummary ()
-            let extra = if build then [] else [ "rawTask", rawTaskJson counts ]
-            let withTrend message = if build || asJson then message else message + "\n" + RawTaskCount.format counts
+            let effects = if build then [] else EffectCount.count (root()) counts
+            let extra = if build then [] else [ "rawTask", rawTaskJson counts; "allowedEffects", EffectCount.json jsonString effects ]
+            let withTrend message = if build || asJson then message else message + "\n" + RawTaskCount.format counts + "\n" + EffectCount.format effects
             if isEmpty changes then emitWithExtra extra None asJson true (withTrend "Axial policy check passed.\nThe lock is tamper-evident, not a security boundary. Enforcement is the repository's choice.")
             else
                 let count = changes.RulesDowngraded.Length + changes.BaselineAdded.Length + changes.SuppressionsAdded.Length + changes.BoundariesAdded.Length + (changes.ProtectedChanged |> List.filter ((<>) LockName) |> List.length)
@@ -395,24 +394,11 @@ Capabilities (services that replace raw APIs; guidance, not policy):
                     {| name = c.Name; declaredIn = (match entry.DeclaredIn with Some project -> project | None -> "Axial")
                        level = (match c.Level with Axial.Guardrails.EffectCatalog.Guide -> "guide" | Axial.Guardrails.EffectCatalog.Enforce -> "enforce")
                        service = c.Service; env = c.Env; field = c.Field; example = c.Example; live = c.Live; fake = c.Fake
+                       implementation = entry.Implementation
                        replaces = entry.Rules |> List.map Axial.Guardrails.EffectCatalog.ruleTarget |> List.distinct |}
                 printfn "%s" (System.Text.Json.JsonSerializer.Serialize {| schema = "axial.capabilities.v1"; capabilities = listed |> List.map item; problems = problems |})
             else printfn "%s" (Capabilities.format listed problems)
             0
-        | "add"::"service"::name::rest ->
-            let usage = "Usage: axial add service <Name> [--dir <path>] [--replaces <match>]"
-            let rec options directory replaces = function
-                | [] -> Ok(directory, replaces)
-                | "--dir"::path::tail when directory = None -> options (Some path) replaces tail
-                | "--replaces"::matching::tail when replaces = None -> options directory (Some matching) tail
-                | _ -> Error usage
-            match options None None rest with
-            | Error error -> emit asJson false error
-            | Ok(directory, replaces) ->
-                match Capabilities.scaffold (defaultArg directory (root())) name replaces with
-                | Ok message -> emit asJson true message
-                | Error error -> emit asJson false error
-        | "add"::_ -> emit asJson false "Usage: axial add service <Name> [--dir <path>] [--replaces <match>]"
         | ["--help"] | ["help"] -> help asJson
         | _ -> emit asJson false ("Unknown command.\n"+workflow)
 

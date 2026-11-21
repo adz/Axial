@@ -114,7 +114,8 @@ module FastSyntaxTests =
 
     [<Theory>]
     [<InlineData("host", false)>]
-    [<InlineData("capabilities", false)>]
+    // A capabilities-role file owns only its own capability's API; this one owns none, so the clock is reported.
+    [<InlineData("capabilities", true)>]
     [<InlineData("domain", true)>]
     [<InlineData("services", true)>]
     [<InlineData("test", true)>]

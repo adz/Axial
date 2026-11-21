@@ -74,7 +74,8 @@ Use `dotnet build -p:AxialGuardrailsMode=Full` to run the typed checks in an ord
 codebase, `axial policy baseline --rule <id>` prepares baseline entries for current findings; a person reviews them
 and runs `axial policy approve`.
 
-Keep intentional effects in files the policy assigns to the `host` or `capabilities` role. To omit a
+Keep intentional effects in host-role files, or in the implementation of a declared capability, which may call only
+the API it owns. To omit a
 package-specific rule set entirely, remove its `AxialGuardrail` MSBuild item; this disables that rule set rather than
 changing finding severity. Roles, rule levels, baselines and suppressions are documented in
 [Effect-boundary guardrails](/guardrails/guardrails.html).

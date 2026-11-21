@@ -1,6 +1,6 @@
 # Capabilities: platform in the runtime, and declared authority effects
 
-Status: **Part 1 (Platform in the runtime) is shipped.** Part 2 (capabilities as guidance) is built on
+Status: **Part 1 (Platform in the runtime) is shipped.** Part 2 (capabilities own raw APIs) is built on
 `feature/capabilities`, awaiting review. Part 3 lists what is still an idea.
 
 Inputs: this file supersedes `platform-env-class.md` (withdrawn); `richer-effects.md` and `flow-as-data.md` remain the
@@ -173,52 +173,54 @@ and the `ClockEnvironment`/`TestRuntime` env members are gone. `platform-env-cla
 
 ---
 
-## 3. Part 2 — Capabilities as guidance (built on `feature/capabilities`)
+## 3. Part 2 — Capabilities own raw APIs (built on `feature/capabilities`)
 
 ### 3.1 Principle
 
-A capability exists to tell the person or agent at the call site what to use instead, not to add a check someone must
-approve. So declaring one needs no policy change, and a declared capability's findings are information unless its
-owner opts into enforcement. Nothing here adds a protected file, a lock entry or an approval step.
+Raw effects are blocking errors the agent must fix, with advice precise enough to act on. Leniency exists only where
+the code genuinely cannot use a service, and then it is declared as a capability and counted, never hidden in a file
+that allows everything.
 
-### 3.2 The record
+### 3.2 Verdicts
 
-`EffectCatalog.Capability` holds what a finding needs to be useful: `Service`, `Env`, `Field`, `Example`, `Live`,
-`Fake`, `Level` (`Guide` | `Enforce`) and the `Guardrail` its rules belong to. Each `EffectRule` names its capability.
-There is no interface, no `System.Type` and no reflection.
+`EffectUse.judge` decides every raw effect call the same way in Fast and Full:
 
-Two origins:
+| Verdict | When | Counted |
+|---|---|---|
+| Owned | The file implements the capability that owns the API | yes, per capability |
+| Boundary | A reasoned `axial-allow-AXG001` comment in a `[boundaries]` file | yes |
+| Host | A `host`-role file, or `effects.ambient = allow` | yes |
+| Reported | Anything else, at the role's level (`forbid` always reports) | finding |
 
-- **Axial's own**, compiled into the analyzer: platform `clock`, `random`, `guid`, `timezone` (no `Env`; the runtime
-  provides them) and `console`, `filesystem`, `process`, `http`, `websocket`. They are `Enforce`, so the built-in
-  rules keep their policy behaviour; only their advice changed.
-- **Declared** with an `<AxialCapability>` item in a project file or `Directory.Build.props`, written into the
-  rules file next to `AxialGuardrailRule` lines. Defaults fill `Env` (`IHas<Name>`), `Field` (`<Name>: I<Name>`),
-  `Level` (`guide`) and `Guardrail` (the capability's name, enabled by the declaration). `Replaces` uses the existing
-  match grammar, separated by `|`. A malformed or duplicate declaration fails the build with its reason.
+No file is exempt as a whole. A `capabilities`-role file owns only its own capability's API: an Axial package owns the
+built-in capability whose guardrail is its project name (`Axial.FileSystem` owns `System.IO.File`); a declared
+capability owns the files its `Implementation` glob names. Every other effect in those files is reported. Measured on
+this repository at the time of writing: Axial's packages report nothing new (FileSystem 80 owned, Console 39, Process
+2, WebSocket 1; Axial core 29 boundary comments; Hosting 3 host).
 
-### 3.3 Findings
+### 3.3 Declarations
 
-Every effect finding renders its advice from the capability:
+`<AxialCapability>` items name `Service`, `Replaces` (match grammar, `|`-separated) and `Implementation` (a glob,
+expanded by MSBuild to full paths on `capabilityFile` lines), with defaults for `Env`, `Field`, `Level` (`enforce`)
+and `Guardrail`. A declaration fails the build when it has no `Replaces` or `Implementation`, duplicates a name, or
+claims an API that another capability or rule already covers: declaring `any:System.IO.File` names Axial.FileSystem
+instead, so a declaration is never a way around an existing service. `Level="guide"` reports outside uses as
+information while callers migrate.
 
-| Capability | Advice |
-|---|---|
-| Platform | `Use Clock.now. The runtime provides Clock, so the environment does not change; tests control it with ...` |
-| In `'env` | `Use IFileSystem: give the environment record a FileSystem: IFileSystem field and implement IHasFileSystem, then call it, for example ... Production: ... Tests: ...` |
-| None | `Use <replacement>. If no service covers this effect yet, axial add service <Name> scaffolds one ...` |
+### 3.4 Advice
 
-A `Guide` capability's finding has type `Axial Capability Guide` and `Info` severity in Fast and Full. It is never
-baselined, never escalated at a checkpoint and needs no `axial-note`. A file that declares or implements the service
-(`type I<Name>`, `interface I<Name> with`, `new I<Name> with`) gets no guide finding. A definition of a wrapped type
-is not a use.
+Findings are instructions: "Replace it with IPayments: add a `Payments: IPayments` field to the environment record,
+implement IHasPayments, and call the service (for example ...). Tests supply ...". Platform services say the runtime
+provides them. An effect no capability covers offers the `<AxialCapability>` item to declare, with the match already
+filled in; structural rules (blocking waits, raw concurrency) give only their rewrite. In a capability's own files, a
+foreign effect adds which capability the file implements and that it may call only its own API.
 
-### 3.4 Commands
+### 3.5 Visibility
 
-- `axial capabilities [--json]` lists Axial's capabilities and every declaration found in built projects' rules
-  files, with the project that declared it.
-- `axial add service <Name> [--dir <path>] [--replaces <match>]` writes `<Name>.fs` (error union, service interface,
-  environment interface, accessor, live stub, fake) and prints the `<AxialCapability>` item. It does not edit the
-  project file.
+Each build result records `effectUses` per file (owned per capability, boundary, host, reported). `axial check`
+prints the allowed counts per project (`--json`: `allowedEffects`); `axial capabilities` lists every capability with
+its implementation files. Counts that stay high, or a capability used from several projects, mark candidates for an
+effect package.
 
 ---
 
