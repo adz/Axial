@@ -8,10 +8,13 @@ cd "$root_dir"
 output_dir="artifacts/package"
 
 VERSION=""
-while getopts "v:" opt; do
+RELEASE=false
+while getopts "v:r" opt; do
   case $opt in
     v) VERSION="$OPTARG" ;;
-    *) echo "Usage: $0 [-v <axial-version>]"; exit 1 ;;
+    # Releases ship the Guardrails CLI precompiled for linux-x64 and win-x64 (~23 MB each, ~12% faster Full checks).
+    r) RELEASE=true ;;
+    *) echo "Usage: $0 [-v <axial-version>] [-r]"; exit 1 ;;
   esac
 done
 
@@ -50,7 +53,11 @@ echo "Packing projects to $output_dir..."
 
 for project in "${projects[@]}"; do
   echo "--- Packing $(basename "$project") ---"
-  dotnet pack "$project" --configuration Release --output "$output_dir" "${version_args[@]}"
+  project_args=()
+  if [[ "$RELEASE" == true && "$project" == "src/Axial.Guardrails/Axial.Guardrails.fsproj" ]]; then
+    project_args+=("-p:AxialGuardrailsPrecompileCli=true")
+  fi
+  dotnet pack "$project" --configuration Release --output "$output_dir" "${version_args[@]}" "${project_args[@]}"
 done
 
 echo "Done. Packages are in $output_dir"

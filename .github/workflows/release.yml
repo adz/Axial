@@ -136,7 +136,7 @@ jobs:
         run: bash scripts/run-aot-probe.sh
 
       - name: Pack libraries
-        run: bash scripts/pack.sh -v "${{ steps.version.outputs.value }}"
+        run: bash scripts/pack.sh -r -v "${{ steps.version.outputs.value }}"
 
       - name: Create draft release with immutable inputs
         env:

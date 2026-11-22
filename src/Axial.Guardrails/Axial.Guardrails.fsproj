@@ -43,6 +43,11 @@
       NU1608 for any consumer pinning a different FSharp.Core.
     -->
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <!-- Releases only (scripts/pack.sh -r): the precompiled CLI folders add ~23 MB each to the package. -->
+    <AxialGuardrailsPrecompileCli Condition="'$(AxialGuardrailsPrecompileCli)' == ''">false</AxialGuardrailsPrecompileCli>
+    <!-- The packing SDK's runtime: ReadyToRun code is used only on a runtime of the major it was compiled against. -->
+    <_AxialGuardrailsCliRuntimeVersion>$(BundledNETCoreAppPackageVersion)</_AxialGuardrailsCliRuntimeVersion>
+    <_AxialGuardrailsCliRuntimeMajor>$(BundledNETCoreAppPackageVersion.Substring(0, $(BundledNETCoreAppPackageVersion.IndexOf('.'))))</_AxialGuardrailsCliRuntimeMajor>
   </PropertyGroup>
 
   <ItemGroup>
@@ -60,6 +65,15 @@
       consumer needs no tool install of their own - the CLI travels inside Axial.Guardrails itself.
     -->
     <PackageDownload Include="fsharp-analyzers" Version="[0.37.2]" />
+    <!--
+      Pack also ships that CLI precompiled (ReadyToRun) for linux-x64 and win-x64, under cli/<rid>-net<major>/: a Full
+      check otherwise JIT-compiles the compiler service in every process (~12% of a Full run on Axial). The runtime
+      ignores ReadyToRun code compiled against another major, so the folder names the packing SDK's runtime major and
+      the targets use it only on a match; anything else runs the portable cli/ copy, correct but slower.
+    -->
+    <PackageDownload Include="Microsoft.NETCore.App.Crossgen2.$(NETCoreSdkPortableRuntimeIdentifier)" Condition="'$(AxialGuardrailsPrecompileCli)' == 'true'" Version="[$(_AxialGuardrailsCliRuntimeVersion)]" />
+    <PackageDownload Include="Microsoft.NETCore.App.Runtime.linux-x64" Condition="'$(AxialGuardrailsPrecompileCli)' == 'true'" Version="[$(_AxialGuardrailsCliRuntimeVersion)]" />
+    <PackageDownload Include="Microsoft.NETCore.App.Runtime.win-x64" Condition="'$(AxialGuardrailsPrecompileCli)' == 'true'" Version="[$(_AxialGuardrailsCliRuntimeVersion)]" />
   </ItemGroup>
 
   <ItemGroup>
@@ -97,7 +111,34 @@
     above) into the package under analyzers/, so build/Axial.Guardrails.targets can point the CLI's
     analyzers path flag at it directly. Runs at pack time, after Build has populated $(TargetDir).
   -->
-  <Target Name="_AxialGuardrailsPackAnalyzerOutput" BeforeTargets="_GetPackageFiles" DependsOnTargets="Build">
+  <ItemGroup>
+    <_AxialGuardrailsCliPlatform Include="linux-x64" TargetOs="linux" />
+    <_AxialGuardrailsCliPlatform Include="win-x64" TargetOs="windows" />
+    <!-- The assemblies a Full check spends its JIT time in; the rest stay IL to keep each folder small. -->
+    <_AxialGuardrailsCliHot Include="$(NuGetPackageRoot)fsharp-analyzers\0.37.2\tools\net8.0\any\FSharp.Compiler.Service.dll;$(NuGetPackageRoot)fsharp-analyzers\0.37.2\tools\net8.0\any\FSharp.Core.dll;$(NuGetPackageRoot)fsharp-analyzers\0.37.2\tools\net8.0\any\FSharp.Analyzers.SDK.dll;$(NuGetPackageRoot)fsharp-analyzers\0.37.2\tools\net8.0\any\FSharp.Analyzers.Cli.dll" />
+  </ItemGroup>
+
+  <Target Name="_AxialGuardrailsCliImages" Condition="'$(AxialGuardrailsPrecompileCli)' == 'true'">
+    <ItemGroup>
+      <_AxialGuardrailsCliHotSource Include="@(_AxialGuardrailsCliHot)" Source="%(FullPath)" />
+      <!-- Every hot assembly for every platform (batching over the platforms). -->
+      <_AxialGuardrailsCliJob Include="@(_AxialGuardrailsCliHotSource)" Platform="%(_AxialGuardrailsCliPlatform.Identity)" TargetOs="%(_AxialGuardrailsCliPlatform.TargetOs)" />
+      <_AxialGuardrailsCliImage Include="@(_AxialGuardrailsCliJob->'$(IntermediateOutputPath)cli-r2r\%(Platform)-net$(_AxialGuardrailsCliRuntimeMajor)\%(Filename)%(Extension)')" />
+    </ItemGroup>
+  </Target>
+
+  <!-- One crossgen2 run per platform and hot assembly; incremental, so repeated packs reuse the images. -->
+  <Target Name="_AxialGuardrailsCliReadyToRun" Condition="'$(AxialGuardrailsPrecompileCli)' == 'true'" DependsOnTargets="_AxialGuardrailsCliImages" Inputs="@(_AxialGuardrailsCliImage->'%(Source)')" Outputs="@(_AxialGuardrailsCliImage)">
+    <PropertyGroup>
+      <_AxialGuardrailsCrossgen>$(NuGetPackageRoot)microsoft.netcore.app.crossgen2.$(NETCoreSdkPortableRuntimeIdentifier.ToLowerInvariant())/$(_AxialGuardrailsCliRuntimeVersion)/tools/crossgen2</_AxialGuardrailsCrossgen>
+      <_AxialGuardrailsCrossgen Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(_AxialGuardrailsCrossgen).exe</_AxialGuardrailsCrossgen>
+      <_AxialGuardrailsRuntimePacks>$(NuGetPackageRoot)microsoft.netcore.app.runtime.</_AxialGuardrailsRuntimePacks>
+    </PropertyGroup>
+    <MakeDir Directories="@(_AxialGuardrailsCliImage->'%(RootDir)%(Directory)')" />
+    <Exec Command="&quot;$(_AxialGuardrailsCrossgen)&quot; &quot;%(_AxialGuardrailsCliImage.Source)&quot; -o &quot;%(_AxialGuardrailsCliImage.FullPath)&quot; -r &quot;$(_AxialGuardrailsRuntimePacks)%(Platform)/$(_AxialGuardrailsCliRuntimeVersion)/runtimes/%(Platform)/lib/net$(_AxialGuardrailsCliRuntimeMajor).0/*.dll&quot; -r &quot;$(NuGetPackageRoot)fsharp-analyzers/0.37.2/tools/net8.0/any/*.dll&quot; --targetos %(TargetOs) --targetarch x64 -O" StandardOutputImportance="low" />
+  </Target>
+
+  <Target Name="_AxialGuardrailsPackAnalyzerOutput" BeforeTargets="_GetPackageFiles" DependsOnTargets="Build;_AxialGuardrailsCliReadyToRun">
     <MSBuild Projects="$(MSBuildThisFileDirectory)..\Axial.Tool\Axial.Tool.fsproj" Targets="Build" Properties="Configuration=$(Configuration)" />
     <ItemGroup>
       <None Include="$(MSBuildThisFileDirectory)..\..\artifacts\bin\Axial.Guardrails.Build\$(Configuration.ToLower())\Axial.Guardrails.Build.dll" Pack="true" PackagePath="tasks\" />
@@ -105,6 +146,13 @@
       <None Include="@(_AxialGuardrailsAnalyzerFile)" Pack="true" PackagePath="analyzers\%(Filename)%(Extension)" />
       <_AxialGuardrailsCliFile Include="$(NuGetPackageRoot)fsharp-analyzers\0.37.2\tools\net8.0\any\*.*" />
       <None Include="@(_AxialGuardrailsCliFile)" Pack="true" PackagePath="cli\%(Filename)%(Extension)" />
+      <!-- Each precompiled folder is the portable CLI with its hot assemblies replaced. -->
+      <_AxialGuardrailsCliCopy Include="@(_AxialGuardrailsCliFile)" Exclude="@(_AxialGuardrailsCliHot)" Platform="%(_AxialGuardrailsCliPlatform.Identity)" Condition="'$(AxialGuardrailsPrecompileCli)' == 'true'" />
+      <_AxialGuardrailsCliCopy Include="@(_AxialGuardrailsCliImage)" Condition="'$(AxialGuardrailsPrecompileCli)' == 'true'" />
+      <_AxialGuardrailsCliCopy>
+        <PackagePath>cli\%(Platform)-net$(_AxialGuardrailsCliRuntimeMajor)\%(Filename)%(Extension)</PackagePath>
+      </_AxialGuardrailsCliCopy>
+      <None Include="@(_AxialGuardrailsCliCopy)" Pack="true" />
       <_AxialGuardrailsPolicyToolFile Include="$(MSBuildThisFileDirectory)..\..\artifacts\bin\Axial.Tool\$([System.String]::Copy('$(Configuration)').ToLowerInvariant())\**\*.*" />
       <None Include="@(_AxialGuardrailsPolicyToolFile)" Pack="true" PackagePath="policy\%(RecursiveDir)%(Filename)%(Extension)" />
     </ItemGroup>

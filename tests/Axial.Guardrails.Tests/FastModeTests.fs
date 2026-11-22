@@ -404,3 +404,42 @@ public static string Run(string input) {
         File.WriteAllText(resultPath, "<broken")
         checkSuccess (build dir args)
         Assert.Equal("true", attr "complete" (report dir).Root))
+
+    [<Fact>]
+    let ``a package runs the CLI precompiled for this platform and runtime major, else the portable copy`` () =
+        let package = Path.Combine(Path.GetTempPath(), "axial-cli-" + Guid.NewGuid().ToString("N"))
+        try
+            Directory.CreateDirectory(Path.Combine(package, "build")) |> ignore
+            for file in [ "Axial.Guardrails.props"; "Axial.Guardrails.targets" ] do
+                File.Copy(Path.Combine(root (), "src/Axial.Guardrails/build", file), Path.Combine(package, "build", file))
+            let cli folder =
+                let dir = Path.Combine(package, "cli", folder)
+                Directory.CreateDirectory dir |> ignore
+                File.WriteAllText(Path.Combine(dir, "FSharp.Analyzers.Cli.dll"), "")
+                Path.GetFullPath dir + string Path.DirectorySeparatorChar
+            let portable = cli ""
+            File.WriteAllText(Path.Combine(package, "Consumer.fsproj"), $"""<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup><TargetFramework>net10.0</TargetFramework><NuGetAudit>false</NuGetAudit></PropertyGroup>
+<Import Project="build/Axial.Guardrails.props"/><Import Project="build/Axial.Guardrails.targets"/>
+</Project>""")
+            let evaluate () =
+                let start = ProcessStartInfo("dotnet")
+                start.WorkingDirectory <- package
+                for arg in [ "msbuild"; "Consumer.fsproj"; "-nologo"; "-getProperty:_AxialGuardrailsToolPath"; "-getProperty:_AxialGuardrailsHostPlatform"; "-getProperty:_AxialGuardrailsHostRuntimeMajor" ] do
+                    start.ArgumentList.Add arg
+                let code, stdout, stderr = TestProcess.run 90000 start
+                Assert.True((code = 0), stdout + stderr)
+                let properties = System.Text.Json.JsonDocument.Parse(stdout).RootElement.GetProperty("Properties")
+                let value (name: string) = properties.GetProperty(name).GetString()
+                value "_AxialGuardrailsToolPath", value "_AxialGuardrailsHostPlatform", value "_AxialGuardrailsHostRuntimeMajor"
+            let toolPath, platform, major = evaluate ()
+            Assert.Equal(portable, toolPath)
+            // A folder for another runtime major is never used: its ReadyToRun code would be ignored anyway.
+            cli $"linux-x64-net{(int major) - 1}" |> ignore
+            cli $"win-x64-net{(int major) - 1}" |> ignore
+            Assert.Equal(portable, (let path, _, _ = evaluate () in path))
+            if platform <> "" then
+                let precompiled = cli $"{platform}-net{major}"
+                Assert.Equal(precompiled, (let path, _, _ = evaluate () in path))
+        finally
+            TestDirectory.delete package

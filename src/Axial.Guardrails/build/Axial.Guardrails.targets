@@ -46,6 +46,14 @@
     -->
     <_AxialGuardrailsAnalyzersPath Condition="'$(_AxialGuardrailsAnalyzersPath)' == ''">$(MSBuildThisFileDirectory)..\analyzers</_AxialGuardrailsAnalyzersPath>
     <_AxialGuardrailsFastAssembly Condition="'$(_AxialGuardrailsFastAssembly)' == ''">$([MSBuild]::NormalizePath($(_AxialGuardrailsAnalyzersPath), Axial.Guardrails.Analyzers.dll))</_AxialGuardrailsFastAssembly>
+    <!-- The package also carries the CLI precompiled per platform and runtime major (cli/<rid>-net<major>/). The CLI
+         rolls forward to the newest runtime, normally the SDK's, and ReadyToRun code serves only the major it was
+         compiled against: use a matching folder, else the portable cli/ copy (correct, only slower). -->
+    <_AxialGuardrailsHostPlatform Condition="$([MSBuild]::IsOSPlatform('Linux')) and '$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'X64'">linux-x64</_AxialGuardrailsHostPlatform>
+    <_AxialGuardrailsHostPlatform Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'X64'">win-x64</_AxialGuardrailsHostPlatform>
+    <_AxialGuardrailsHostRuntimeMajor Condition="$(BundledNETCoreAppPackageVersion.Contains('.'))">$(BundledNETCoreAppPackageVersion.Substring(0, $(BundledNETCoreAppPackageVersion.IndexOf('.'))))</_AxialGuardrailsHostRuntimeMajor>
+    <_AxialGuardrailsPrecompiledCli>$(MSBuildThisFileDirectory)..\cli\$(_AxialGuardrailsHostPlatform)-net$(_AxialGuardrailsHostRuntimeMajor)</_AxialGuardrailsPrecompiledCli>
+    <_AxialGuardrailsToolPath Condition="'$(_AxialGuardrailsToolPath)' == '' and '$(_AxialGuardrailsHostPlatform)' != '' and '$(_AxialGuardrailsHostRuntimeMajor)' != '' and Exists('$(_AxialGuardrailsPrecompiledCli)\FSharp.Analyzers.Cli.dll')">$([MSBuild]::NormalizeDirectory($(_AxialGuardrailsPrecompiledCli)))</_AxialGuardrailsToolPath>
     <_AxialGuardrailsToolPath Condition="'$(_AxialGuardrailsToolPath)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory)..\cli))</_AxialGuardrailsToolPath>
     <_AxialGuardrailsToolAssembly Condition="'$(_AxialGuardrailsToolAssembly)' == ''">$([MSBuild]::NormalizePath($(_AxialGuardrailsToolPath), FSharp.Analyzers.Cli.dll))</_AxialGuardrailsToolAssembly>
     <_AxialGuardrailsUsesPackagedTool Condition="'$(_AxialGuardrailsExe)' == ''">true</_AxialGuardrailsUsesPackagedTool>
