@@ -47,6 +47,19 @@ module HttpServiceTests =
 
     let private okResponse status body = Ok(Response.create syntheticTime status body)
 
+    /// Fake I/O that never answers: it waits on Flow.never until the caller cancels, then fails as cancelled I/O does.
+    let private untilCancelled (cancellationToken: CancellationToken) : Task = task {
+        let! _ = Flow.never<unit, unit, unit>.StartAsTask((), cancellationToken)
+        cancellationToken.ThrowIfCancellationRequested()
+    }
+
+    /// Http.live is the code under test, and it takes a real HttpClient.
+    let private newClient (handler: HttpMessageHandler) = new HttpClient(handler) // axial-allow-AXG001: Http.live under test takes a real HttpClient
+
+    let private withTimeout timeout (client: HttpClient) =
+        client.Timeout <- timeout
+        client
+
     // ---- Request building and safety ----
 
     [<Fact>]
@@ -121,24 +134,15 @@ module HttpServiceTests =
     [<Fact>]
     let ``interrupting an active send remains an interruption`` () =
         use cancellation = new CancellationTokenSource()
-        use started = new ManualResetEventSlim(false)
         let service =
             { new IHttp with
                 member _.Send(_) =
-                    flow {
-                        let! token = Flow.cancellationToken
-                        return! Flow.fromTask (fun _ ->
-                            started.Set()
-                            task {
-                                do! Task.Delay(Timeout.Infinite, token)
-                                return Response.create syntheticTime 200 "late"
-                            })
-                    } }
+                    Flow.delay (fun () ->
+                        cancellation.Cancel()
+                        Flow.never) }
         let env = { Http = service; Clock = Clock.live }
-        let running = Task.Run(fun () -> (Http.get "https://api.example.test/" |> Http.send).RunSynchronously(env, cancellationToken = cancellation.Token))
-        Assert.True(started.Wait(TimeSpan.FromSeconds 5.0))
-        cancellation.Cancel()
-        test <@ match running.GetAwaiter().GetResult() with Exit.Failure Cause.Interrupt -> true | _ -> false @>
+        let exit = (Http.get "https://api.example.test/" |> Http.send).RunSynchronously(env, cancellationToken = cancellation.Token)
+        test <@ match exit with Exit.Failure Cause.Interrupt -> true | _ -> false @>
 
     [<Fact>]
     let ``sendResult returns unexpected statuses as plain values`` () =
@@ -245,7 +249,12 @@ module HttpServiceTests =
     // ---- Live service over loopback ----
 
     let private withServer (handler: HttpListenerContext -> unit) (test: string -> unit) =
-        let port = Random().Next(20000, 60000)
+        let port =
+            let probe = new Sockets.TcpListener(IPAddress.Loopback, 0)
+            probe.Start()
+            let port = (probe.LocalEndpoint :?> IPEndPoint).Port
+            probe.Stop()
+            port
         let prefix = $"http://127.0.0.1:{port}/"
         use listener = new HttpListener()
         listener.Prefixes.Add prefix
@@ -262,10 +271,10 @@ module HttpServiceTests =
             test prefix
         finally
             listener.Stop()
-            try serving.Wait(TimeSpan.FromSeconds 1.0) |> ignore with _ -> ()
+            try serving.Wait(TimeSpan.FromSeconds 1.0) |> ignore with _ -> () // axial-allow-AXG001: joins the loopback server thread before the listener is disposed
 
     let private liveEnv () =
-        let client = new HttpClient()
+        let client = newClient (new HttpClientHandler())
         { Http = Http.live client; Clock = Clock.live }
 
     [<Fact>]
@@ -295,7 +304,7 @@ module HttpServiceTests =
         withServer
             (fun context -> context.Response.StatusCode <- 200)
             (fun root ->
-                use client = new HttpClient()
+                use client = newClient (new HttpClientHandler())
                 let fixedClock = Clock.fromValue fixedTime
                 let env = { Http = Http.live client; Clock = fixedClock }
                 let response =
@@ -315,7 +324,7 @@ module HttpServiceTests =
             { new HttpMessageHandler() with
                 member _.SendAsync(_, _) =
                     Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent("ok"))) }
-        use client = new HttpClient(handler)
+        use client = newClient handler
         let service = Http.live client
         let env = { Http = service; Clock = execution }
         let first =
@@ -342,10 +351,10 @@ module HttpServiceTests =
                 member _.SendAsync(_, cancellationToken) =
                     task {
                         entered.Set()
-                        do! Task.Delay(Timeout.Infinite, cancellationToken)
+                        do! untilCancelled cancellationToken
                         return new HttpResponseMessage(HttpStatusCode.OK)
                     } }
-        use client = new HttpClient(handler, Timeout = Timeout.InfiniteTimeSpan)
+        use client = newClient handler |> withTimeout Timeout.InfiniteTimeSpan
         let clock = Clock.fromValue(DateTimeOffset.UnixEpoch)
         let service = Http.live client
         let env = { Http = service; Clock = clock }
@@ -384,8 +393,8 @@ module HttpServiceTests =
         override _.Write(_, _, _) = raise (NotSupportedException())
 
         override _.ReadAsync(_, _, _, cancellationToken) =
-            Task.Delay(Timeout.Infinite, cancellationToken) |> fun delay -> task {
-                do! delay
+            task {
+                do! untilCancelled cancellationToken
                 return 0
             }
 
@@ -405,7 +414,7 @@ module HttpServiceTests =
                         do! release.Task
                         return new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent("ok"))
                     } }
-        use client = new HttpClient(handler, Timeout = Timeout.InfiniteTimeSpan)
+        use client = newClient handler |> withTimeout Timeout.InfiniteTimeSpan
         let epoch = DateTimeOffset(2040, 1, 1, 0, 0, 0, TimeSpan.Zero)
         let clock = ManualClock(epoch)
         let env = { Http = Http.live client; Clock = clock }
@@ -437,7 +446,7 @@ module HttpServiceTests =
                     do! release[index].Task.WaitAsync token
                     return new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent(string index))
                 } }
-        use client = new HttpClient(handler, Timeout = Timeout.InfiniteTimeSpan)
+        use client = newClient handler |> withTimeout Timeout.InfiniteTimeSpan
         let service = Http.live client
         let first = ManualClock(DateTimeOffset(2002, 1, 1, 0, 0, 0, TimeSpan.Zero))
         let second = ManualClock(DateTimeOffset(2032, 1, 1, 0, 0, 0, TimeSpan.Zero))
@@ -474,7 +483,7 @@ module HttpServiceTests =
                 member _.SendAsync(_, _) =
                     entered.Set()
                     Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK, Content = new StreamContent(stream))) }
-        use client = new HttpClient(handler, Timeout = Timeout.InfiniteTimeSpan)
+        use client = newClient handler |> withTimeout Timeout.InfiniteTimeSpan
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
         let env = { Http = Http.live client; Clock = clock }
         let running =
@@ -499,7 +508,7 @@ module HttpServiceTests =
             { new HttpMessageHandler() with
                 member _.SendAsync(_, _) =
                     Task.FromException<HttpResponseMessage>(TaskCanceledException("native", TimeoutException("native timeout"))) }
-        use client = new HttpClient(handler, Timeout = TimeSpan.FromSeconds 5.)
+        use client = newClient handler |> withTimeout (TimeSpan.FromSeconds 5.)
         let clock = Clock.fromValue DateTimeOffset.UnixEpoch
         let env = { Http = Http.live client; Clock = clock }
         let! exit = (Http.get "https://example.test/" |> Http.send |> Flow.withClock clock |> fun source -> source.StartAsTask env).WaitAsync(TimeSpan.FromSeconds 10.0)
@@ -514,10 +523,10 @@ module HttpServiceTests =
             { new HttpMessageHandler() with
                 member _.SendAsync(_, cancellationToken) =
                     task {
-                        do! Task.Delay(Timeout.Infinite, cancellationToken)
+                        do! untilCancelled cancellationToken
                         return new HttpResponseMessage(HttpStatusCode.OK)
                     } }
-        use client = new HttpClient(handler, Timeout = TimeSpan.FromMilliseconds 100.)
+        use client = newClient handler |> withTimeout (TimeSpan.FromMilliseconds 100.)
         let env = { Http = Http.live client; Clock = Clock.live }
         let! exit = (Http.get "https://example.test/" |> Http.send |> fun source -> source.StartAsTask env).WaitAsync(TimeSpan.FromSeconds 10.0)
         match exit with
@@ -527,7 +536,7 @@ module HttpServiceTests =
 
     [<Fact>]
     let ``invalid URL construction remains a typed request failure`` () =
-        use client = new HttpClient()
+        use client = newClient (new HttpClientHandler())
         let env = { Http = Http.live client; Clock = Clock.live }
         let error = Http.get "http://[" |> Http.send |> runSync env |> requireError
         Assert.True(match error with HttpError.InvalidRequest _ -> true | _ -> false)
@@ -549,7 +558,7 @@ module HttpServiceTests =
                     message.Content <- new ThrowingContent("request-disposal-marker", fun () -> requestDisposed <- true)
                     Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK,
                         Content = new ThrowingContent("response-disposal-marker", fun () -> responseDisposed <- true))) }
-        use client = new HttpClient(handler)
+        use client = newClient handler
         let env = { Http = Http.live client; Clock = Clock.live }
         let exit = Http.get "https://example.test/" |> Http.send |> runSync env
         Assert.True(responseDisposed)
@@ -599,7 +608,7 @@ module HttpServiceTests =
                 member _.SendAsync(_, _) =
                     entered.Set()
                     Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK, Content = new StreamContent(new CancelThenThrowOnDisposeStream()))) }
-        use client = new HttpClient(handler, Timeout = Timeout.InfiniteTimeSpan)
+        use client = newClient handler |> withTimeout Timeout.InfiniteTimeSpan
         let clock = Clock.fromValue(DateTimeOffset.UnixEpoch)
         let env = { Http = Http.live client; Clock = clock }
         let running =
@@ -671,22 +680,20 @@ module HttpServiceTests =
 
     [<Fact>]
     let ``live service interruption during a request remains interruption`` () =
-        use started = new ManualResetEventSlim(false)
+        use cancellation = new CancellationTokenSource()
         use release = new ManualResetEventSlim(false)
         withServer
             (fun context ->
-                started.Set()
+                // The request has reached the server, so the send is in flight when it is interrupted.
+                cancellation.Cancel()
                 release.Wait(TimeSpan.FromSeconds 5.0) |> ignore
                 context.Response.StatusCode <- 200)
             (fun root ->
-                use cancellation = new CancellationTokenSource()
-                use client = new HttpClient()
+                use client = newClient (new HttpClientHandler())
                 let environment = { Http = Http.live client; Clock = Clock.live }
-                let running = Task.Run(fun () -> (Http.get root |> Http.send).RunSynchronously(environment, cancellationToken = cancellation.Token))
                 try
-                    Assert.True(started.Wait(TimeSpan.FromSeconds 5.0))
-                    cancellation.Cancel()
-                    test <@ match running.GetAwaiter().GetResult() with Exit.Failure Cause.Interrupt -> true | _ -> false @>
+                    let exit = (Http.get root |> Http.send).RunSynchronously(environment, cancellationToken = cancellation.Token)
+                    test <@ match exit with Exit.Failure Cause.Interrupt -> true | _ -> false @>
                 finally release.Set())
 
     [<Fact>]
@@ -694,7 +701,7 @@ module HttpServiceTests =
         use handler =
             { new HttpMessageHandler() with
                 member _.SendAsync(_, _) = Task.FromException<HttpResponseMessage>(OperationCanceledException("foreign")) }
-        use client = new HttpClient(handler)
+        use client = newClient handler
         let environment = { Http = Http.live client; Clock = Clock.live }
         match Http.get "https://example.test/" |> Http.send |> runSync environment with
         | Exit.Failure(Cause.Die (:? OperationCanceledException)) -> ()
