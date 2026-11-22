@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <Compile Include="..\Shared\SimulatedWork.fs" Link="SimulatedWork.fs" />
-    <Compile Include="HttpServiceTests.fs" />
+    <Compile Include="HttpServiceTests.fs" AxialCapability="http" />
     <Compile Include="TestHttpTests.fs" />
   </ItemGroup>
 

@@ -74,8 +74,8 @@ let stopwatch () : unit -> System.TimeSpan =
     let started = milliseconds ()
     fun () -> System.TimeSpan.FromMilliseconds(milliseconds () - started)
 #else
-    let watch = System.Diagnostics.Stopwatch.StartNew() // axial-allow-AXG001: intentional clock host or live-service boundary
-    fun () -> watch.Elapsed // axial-allow-AXG001: intentional clock host or live-service boundary
+    let watch = System.Diagnostics.Stopwatch.StartNew()
+    fun () -> watch.Elapsed
 #endif
 
 /// Runs a flow and returns its outcome as a value, so a scenario can inspect failures and interruptions.

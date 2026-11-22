@@ -43,12 +43,12 @@ type TestRuntime<'env> internal (clock: ManualClock, environment: 'env) =
 
     /// Waits for all queued jobs and registered fibers, then drains UI deliveries.
     member this.Settle(timeout: TimeSpan) =
-        let watch = Stopwatch.StartNew() // axial-allow-AXG001: wall-clock test timeout, independent of manual workflow clock
+        let watch = Stopwatch.StartNew()
         let mutable quiet = false
-        while not quiet && watch.Elapsed < timeout do // axial-allow-AXG001: wall-clock test timeout
+        while not quiet && watch.Elapsed < timeout do
             this.Drain()
             quiet <- runtime.Pending = 0 && List.isEmpty (runtime.Registry.Snapshot())
-            if not quiet then Thread.Sleep(1) // axial-allow-AXG001: test-thread polling, not a workflow delay
+            if not quiet then Thread.Sleep(1)
         this.Drain()
         quiet && runtime.Pending = 0 && List.isEmpty (runtime.Registry.Snapshot())
 

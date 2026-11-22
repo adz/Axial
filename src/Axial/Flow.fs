@@ -13,7 +13,7 @@ type private BindAwaiter<'env, 'error, 'value, 'next>
         member _.Resume() =
             // The runner has already awaited this Task. AsTask consumed the source ValueTask exactly once;
             // reading the cached Task result here also supports executions backed by IValueTaskSource.
-            match source.Result with  // axial-allow-AXG001: task already awaited
+            match source.Result with
             | Exit.Success value -> FlowStep.Next(binder value)
             | Exit.Failure cause -> FlowStep.Failed cause
 
@@ -22,7 +22,7 @@ type private FoldAwaiter<'env, 'error, 'value, 'nextError, 'next>
     (source: Task<Exit<'value, 'error>>, step: Exit<'value, 'error> -> FlowStep<'env, 'nextError, 'next>) =
     interface IFlowAwaiter<'env, 'nextError, 'next> with
         member _.Pending = source :> Task
-        member _.Resume() = step source.Result  // axial-allow-AXG001: task already awaited
+        member _.Resume() = step source.Result
 #endif
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]

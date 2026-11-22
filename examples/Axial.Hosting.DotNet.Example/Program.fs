@@ -43,5 +43,4 @@ let main arguments =
     DotNetApp.run describeError { Arguments = arguments } application
     |> Async.AwaitTask
     // executable host boundary performs this effect.
-    // axial-allow-AXG001: intentional blocking host or live-service boundary
     |> Async.RunSynchronously

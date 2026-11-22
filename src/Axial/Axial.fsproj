@@ -39,22 +39,22 @@
 
   <ItemGroup>
     <Compile Include="Outcome.fs" />
-    <Compile Include="Platform.fs" />
+    <Compile Include="Platform.fs" AxialCapability="blocking;clock;timezone;random;console" />
     <Compile Include="TelemetryTypes.fs" />
     <Compile Include="PlatformTypes.fs" />
-    <Compile Include="Core.fs" />
+    <Compile Include="Core.fs" AxialCapability="blocking;clock;random;guid" />
     <Compile Include="Interop.fs" />
     <Compile Include="Foundation.fs" />
     <Compile Include="Runtime.fs" />
     <Compile Include="Policy.fs" />
     <Compile Include="Schedule.fs" />
-    <Compile Include="Parallelism.fs" />
-    <Compile Include="Flow.fs" />
+    <Compile Include="Parallelism.fs" AxialCapability="processors" />
+    <Compile Include="Flow.fs" AxialCapability="blocking" />
     <Compile Include="Layer.fs" />
     <Compile Include="LayerBuilder.fs" />
     <Compile Include="FiberLocal.fs" />
     <Compile Include="Cache.fs" />
-    <Compile Include="App.fs" />
+    <Compile Include="App.fs" AxialCapability="blocking" />
     <Compile Include="BindError.fs" />
     <Compile Include="Concurrency.fs" />
     <Compile Include="Queue.fs" />

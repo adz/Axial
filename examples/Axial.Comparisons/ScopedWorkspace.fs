@@ -32,20 +32,16 @@ module Ordinary =
     let importBatch (records: string list) : Task<int> =
         task {
             let workspace =
-                // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
                 Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
-            // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
             Directory.CreateDirectory workspace |> ignore
 
             try
                 if List.isEmpty records then
                     return raise (ImportFailed NoRecords)
                 else
-                    // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
                     File.WriteAllLines(Path.Combine(workspace, "batch.csv"), records)
                     return records.Length
             finally
-                // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
                 Directory.Delete(workspace, recursive = true)
         }
 
@@ -54,9 +50,7 @@ module Ordinary =
     let importBatchLeaky (records: string list) : Task<int> =
         task {
             let workspace =
-                // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
                 Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
-            // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
             Directory.CreateDirectory workspace |> ignore
 
             // Setup between acquisition and try/finally: throws with no owner to clean up.
@@ -64,11 +58,9 @@ module Ordinary =
                 raise (ImportFailed NoRecords)
 
             try
-                // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
                 File.WriteAllLines(Path.Combine(workspace, "batch.csv"), records)
                 return records.Length
             finally
-                // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
                 Directory.Delete(workspace, recursive = true)
         }
 

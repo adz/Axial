@@ -1,4 +1,3 @@
-// axial-allow-file-AXG001: ProcessRun is the live IProcess implementation and owns native process handles
 namespace Axial.Process
 
 open System

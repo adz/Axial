@@ -54,7 +54,7 @@ module HttpServiceTests =
     }
 
     /// Http.live is the code under test, and it takes a real HttpClient.
-    let private newClient (handler: HttpMessageHandler) = new HttpClient(handler) // axial-allow-AXG001: Http.live under test takes a real HttpClient
+    let private newClient (handler: HttpMessageHandler) = new HttpClient(handler)
 
     let private withTimeout timeout (client: HttpClient) =
         client.Timeout <- timeout
@@ -259,19 +259,19 @@ module HttpServiceTests =
         use listener = new HttpListener()
         listener.Prefixes.Add prefix
         listener.Start()
-        let serving =
-            Task.Run(fun () ->
-                while listener.IsListening do
-                    try
-                        let context = listener.GetContext()
-                        handler context
-                        context.Response.Close()
-                    with _ -> ())
+        // The loop ends by itself once the listener stops: GetContext then throws and IsListening is false.
+        Task.Run(fun () ->
+            while listener.IsListening do
+                try
+                    let context = listener.GetContext()
+                    handler context
+                    context.Response.Close()
+                with _ -> ())
+        |> ignore
         try
             test prefix
         finally
             listener.Stop()
-            try serving.Wait(TimeSpan.FromSeconds 1.0) |> ignore with _ -> () // axial-allow-AXG001: joins the loopback server thread before the listener is disposed
 
     let private liveEnv () =
         let client = newClient (new HttpClientHandler())

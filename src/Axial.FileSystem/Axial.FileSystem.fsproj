@@ -33,7 +33,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="FileSystem.fs" />
+    <Compile Include="FileSystem.fs" AxialCapability="filesystem" />
     <Compile Include="FileLog.fs" />
   </ItemGroup>
 

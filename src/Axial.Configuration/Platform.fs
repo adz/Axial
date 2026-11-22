@@ -19,7 +19,6 @@ module internal Platform =
     let decodeComponent (text: string) : string = jsNative
 #else
     let environmentPairs () : (string * string) array =
-        // axial-allow-AXG001: live process-environment read behind ConfigSource.environment
         [| for entry in Environment.GetEnvironmentVariables() do
                let entry = entry :?> DictionaryEntry
                yield string entry.Key, string entry.Value |]

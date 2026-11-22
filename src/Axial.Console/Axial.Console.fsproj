@@ -33,7 +33,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Console.fs" />
+    <Compile Include="Console.fs" AxialCapability="console" />
   </ItemGroup>
 
 </Project>

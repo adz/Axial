@@ -26,7 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- The torture scenarios from examples/Axial.TortureTest, run at a reduced size on Node. -->
-    <Compile Include="../../examples/Axial.TortureTest/Scenario.fs" Link="TortureTest/Scenario.fs" />
+    <Compile Include="../../examples/Axial.TortureTest/Scenario.fs" Link="TortureTest/Scenario.fs" AxialCapability="clock" />
     <Compile Include="../../examples/Axial.TortureTest/Pipeline.fs" Link="TortureTest/Pipeline.fs" />
     <Compile Include="../../examples/Axial.TortureTest/Queues.fs" Link="TortureTest/Queues.fs" />
     <Compile Include="../../examples/Axial.TortureTest/Hubs.fs" Link="TortureTest/Hubs.fs" />

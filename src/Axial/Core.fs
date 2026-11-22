@@ -1173,7 +1173,7 @@ type Scope() =
     interface IDisposable with
         member this.Dispose() =
             CallerSynchronizationContext.suppress (fun () ->
-                (Platform.Cancellation.uninterruptible this.Close).GetAwaiter().GetResult())  // axial-allow-AXG001: IDisposable.Dispose is synchronous by contract
+                (Platform.Cancellation.uninterruptible this.Close).GetAwaiter().GetResult())
 #endif
 
 type internal FiberContext =
@@ -1254,7 +1254,6 @@ type internal PlatformServices =
 module internal PlatformDefaults =
     let clock : IClock =
         { new IClock with
-            // axial-allow-AXG001: live runtime clock implementation.
             member _.UtcNow() = DateTimeOffset.UtcNow
             member _.Elapsed() = Platform.monotonicNow ()
             member _.Sleep(delay, cancellationToken) =
@@ -1295,7 +1294,6 @@ module internal PlatformDefaults =
 #endif
         }
     let random : IRandom =
-        // axial-allow-AXG001: live runtime random implementation.
         let generator = System.Random()
         let gate = obj()
         { new IRandom with
@@ -1306,7 +1304,6 @@ module internal PlatformDefaults =
             member _.NextBytes buffer = lock gate (fun () -> generator.NextBytes buffer) }
     let guid : IGuid =
         { new IGuid with
-            // axial-allow-AXG001: live runtime GUID implementation.
             member _.NewGuid() = System.Guid.NewGuid() }
     let culture () = Culture(Platform.Bridge.currentCultureName())
     let timeZone () =
@@ -1645,7 +1642,7 @@ type Flow<'env, 'error, 'value> =
             CallerSynchronizationContext.suppress (fun () ->
                 this.StartAsValueTask(environment, ?cancellationToken = cancellationToken))
         if pending.IsCompletedSuccessfully then pending.Result
-        else pending.AsTask().GetAwaiter().GetResult()  // axial-allow-AXG001: RunSynchronously is the documented blocking runner
+        else pending.AsTask().GetAwaiter().GetResult()
 #endif
 
 #if !FABLE_COMPILER

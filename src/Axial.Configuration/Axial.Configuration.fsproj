@@ -41,7 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Platform.fs" />
+    <Compile Include="Platform.fs" AxialCapability="environment" />
     <Compile Include="Configuration.fs" />
   </ItemGroup>
 
