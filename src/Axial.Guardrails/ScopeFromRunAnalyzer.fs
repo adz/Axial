@@ -104,9 +104,7 @@ let private collectRanges (ctx: CliContext) : range list =
             modules |> List.collect (fun (SynModuleOrNamespace(decls = decls)) -> allExprsInModule decls)
         | _ -> []
     let typed =
-        match (try ctx.TypedTree with _ -> None) with
-        | Some tree -> (try tree.Declarations |> List.collect typedDeclarations with _ -> [])
-        | None -> []
+        try SymbolIndex.declarations ctx |> List.collect typedDeclarations with _ -> []
     (expressions |> List.collect (find ctx)) @ typed
     |> List.distinctBy (fun r -> r.StartLine, r.StartColumn, r.EndLine, r.EndColumn)
 

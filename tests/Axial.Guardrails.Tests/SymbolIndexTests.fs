@@ -58,3 +58,28 @@ module SymbolIndexTests =
         Assert.All(references, fun (ctx, index) ->
             Assert.False(ctx.IsAlive, "symbol cache retained its file context")
             Assert.False(index.IsAlive, "symbol cache retained its index"))
+
+    [<Fact>]
+    let ``a file's typed declarations are converted once and shared`` () =
+        task {
+            let! ctx = AnalyzerTestContext.create "module M\nlet f x = x + 1\n"
+            let body declarations =
+                declarations |> List.pick (function
+                    | FSharp.Compiler.Symbols.FSharpImplementationFileDeclaration.Entity(_, nested) ->
+                        nested |> List.tryPick (function
+                            | FSharp.Compiler.Symbols.FSharpImplementationFileDeclaration.MemberOrFunctionOrValue(_, _, body) -> Some body
+                            | _ -> None)
+                    | _ -> None)
+            Assert.Same(body (SymbolIndex.declarations ctx), body (SymbolIndex.declarations ctx))
+        }
+
+    [<Fact>]
+    let ``rules read the typed tree only through the shared declarations`` () =
+        // FCS rebuilds every expression on each read of Declarations: a direct read converts the whole file again.
+        let source = IO.Path.GetFullPath(IO.Path.Combine(AppContext.BaseDirectory, "../../../../src/Axial.Guardrails"))
+        let direct =
+            IO.Directory.GetFiles(source, "*.fs")
+            |> Array.filter (fun file -> IO.Path.GetFileName file <> "SymbolIndex.fs")
+            |> Array.filter (fun file -> let text = IO.File.ReadAllText file in text.Contains "TypedTree" || text.Contains ".Declarations")
+            |> Array.map IO.Path.GetFileName
+        Assert.Empty direct

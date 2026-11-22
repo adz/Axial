@@ -180,9 +180,7 @@ let private allTypedExpressions (ctx: CliContext) =
         | FSharpImplementationFileDeclaration.Entity(_, nested) -> nested |> List.collect declarations
         | FSharpImplementationFileDeclaration.MemberOrFunctionOrValue(_, _, body)
         | FSharpImplementationFileDeclaration.InitAction body -> expressions body
-    match (try ctx.TypedTree with _ -> None) with
-    | Some tree -> try tree.Declarations |> List.collect declarations with _ -> []
-    | None -> []
+    try SymbolIndex.declarations ctx |> List.collect declarations with _ -> []
 
 let rec private entityFullName (typ: FSharpType) =
     if typ.HasTypeDefinition then typ.TypeDefinition.TryFullName

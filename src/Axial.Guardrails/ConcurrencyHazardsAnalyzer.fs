@@ -105,12 +105,13 @@ let private swallowed ctx expr =
             if not (catchAll ctx pat) || handled then None else Some body.Range)
     | _ -> []
 
+let private concurrentTypeNames =
+    set [ "System.Threading.Tasks.Task"; "System.Threading.Tasks.Task`1"
+          "System.Threading.Tasks.ValueTask"; "System.Threading.Tasks.ValueTask`1"; "Axial.Fiber`2" ]
+
 let rec private concurrentType (t: FSharpType) =
     if t.IsAbbreviation then concurrentType t.AbbreviatedType
-    else t.HasTypeDefinition &&
-         (t.TypeDefinition.TryFullName |> Option.exists (fun name ->
-             Set.contains name (set [ "System.Threading.Tasks.Task"; "System.Threading.Tasks.Task`1";
-                                       "System.Threading.Tasks.ValueTask"; "System.Threading.Tasks.ValueTask`1"; "Axial.Fiber`2" ])))
+    else t.HasTypeDefinition && (t.TypeDefinition.TryFullName |> Option.exists concurrentTypeNames.Contains)
 
 let private typedConcurrentRanges (ctx: CliContext) =
     let rec visit (expr: FSharpExpr) =
@@ -121,9 +122,7 @@ let private typedConcurrentRanges (ctx: CliContext) =
         | FSharpImplementationFileDeclaration.Entity(_, nested) -> nested |> List.collect declarations
         | FSharpImplementationFileDeclaration.MemberOrFunctionOrValue(_, _, body)
         | FSharpImplementationFileDeclaration.InitAction body -> visit body
-    match ctx.TypedTree with
-    | Some tree -> tree.Declarations |> List.collect declarations |> List.map key |> Set.ofList
-    | None -> Set.empty
+    SymbolIndex.declarations ctx |> List.collect declarations |> List.map key |> Set.ofList
 
 let private collectRanges code (ctx: CliContext) =
     let nodes =
@@ -217,7 +216,7 @@ let private analyzeContained (config: GuardrailConfig.Config) code (ctx: CliCont
         | _ -> []
     let primitives = lazy (
         if code = "AXG011" then
-            ctx.TypedTree |> Option.map (fun tree -> List.collect primitiveDefinitions tree.Declarations) |> Option.defaultValue []
+            SymbolIndex.declarations ctx |> List.collect primitiveDefinitions
         else [])
     if exempt || ((code = "AXG009" || code = "AXG012") && runtime)
        || (role = Some Policy.Test && not (String.Equals(config.InTests, "all", StringComparison.OrdinalIgnoreCase)))

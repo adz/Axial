@@ -53,12 +53,9 @@ let private signatures (ctx: CliContext) =
             slots @ List.collect declarations nested
         | FSharpImplementationFileDeclaration.MemberOrFunctionOrValue(value, _, _) when publicSignature value -> [ value ]
         | _ -> []
-    match (try ctx.TypedTree with _ -> None) with
-    | Some tree ->
-        (try tree.Declarations |> List.collect declarations with _ -> [])
-        |> List.choose (fun value -> returnedTask value |> Option.map (fun taskType -> value, taskType))
-        |> List.distinctBy (fun (value, _) -> value.DeclarationLocation.StartLine, value.DeclarationLocation.StartColumn)
-    | None -> []
+    (try SymbolIndex.declarations ctx |> List.collect declarations with _ -> [])
+    |> List.choose (fun value -> returnedTask value |> Option.map (fun taskType -> value, taskType))
+    |> List.distinctBy (fun (value, _) -> value.DeclarationLocation.StartLine, value.DeclarationLocation.StartColumn)
 
 let private nodes (ctx: CliContext) =
     ParsedInput.fold (fun nodes path node -> (path, node) :: nodes) [] ctx.ParseFileResults.ParseTree |> List.rev

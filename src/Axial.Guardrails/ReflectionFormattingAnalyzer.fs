@@ -229,13 +229,10 @@ let private toMessage = function
           Fixes = [] }
 
 let private collectFindingsWithNativeAot nativeAot (ctx: CliContext) =
-    match (try ctx.TypedTree with _ -> None) with
-    | None -> []
-    | Some tree ->
-        tolerant (fun () -> tree.Declarations |> List.collect (declarationFindings nativeAot))
-        |> List.distinctBy (fun finding ->
-            let range = findingRange finding
-            range.StartLine, range.StartColumn, range.EndLine, range.EndColumn)
+    tolerant (fun () -> SymbolIndex.declarations ctx |> List.collect (declarationFindings nativeAot))
+    |> List.distinctBy (fun finding ->
+        let range = findingRange finding
+        range.StartLine, range.StartColumn, range.EndLine, range.EndColumn)
 
 let private rawFindingsWithNativeAot nativeAot ctx =
     SymbolIndex.memo ctx ("AXG006.findings", nativeAot) (fun () -> collectFindingsWithNativeAot nativeAot ctx)

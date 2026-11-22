@@ -9,33 +9,50 @@
 /// without any tooling catching it. See dev-docs/current-ideas/api-review.md.
 module Axial.Guardrails.EffectBoundaryAnalyzer
 
+open System.Collections.Generic
+open System.Runtime.CompilerServices
 open FSharp.Analyzers.SDK
 open FSharp.Compiler.Symbols
 open FSharp.Compiler.Symbols.FSharpExprPatterns
 open Axial.Guardrails.EffectCatalog
 open Axial.Guardrails.Suppressions
 
-let private matches (rule: EffectRule) (mfv: FSharpMemberOrFunctionOrValue) : bool =
-    match rule.Match with
-    | ConstructorOf entityFullName ->
-        mfv.IsConstructor
-        && mfv.DeclaringEntity
-           |> Option.map (fun e -> e.TryFullName = Some entityFullName)
-           |> Option.defaultValue false
-    | MembersOf(entityFullName, memberNames) ->
-        mfv.DeclaringEntity
-        |> Option.map (fun e -> e.TryFullName = Some entityFullName && List.contains mfv.CompiledName memberNames)
-        |> Option.defaultValue false
-    | AnyMemberOf entityFullName ->
-        mfv.DeclaringEntity
-        |> Option.map (fun e -> e.TryFullName = Some entityFullName)
-        |> Option.defaultValue false
+let private entityOf (effect: SymbolMatch) =
+    match effect with
+    | ConstructorOf entityFullName | MembersOf(entityFullName, _) | AnyMemberOf entityFullName -> entityFullName
 
-let private ruleFor (rules: EffectRule list) (insideFlow: bool) (symbol: FSharpSymbol) : EffectRule option =
+/// The rest of a match, once the declaring entity is known to equal the rule's.
+let private matchesMember (rule: EffectRule) (mfv: FSharpMemberOrFunctionOrValue) : bool =
+    match rule.Match with
+    | ConstructorOf _ -> mfv.IsConstructor
+    | MembersOf(_, memberNames) -> List.contains mfv.CompiledName memberNames
+    | AnyMemberOf _ -> true
+
+// Every rule names its declaring entity, so a file's symbol uses look their candidates up by that name instead of
+// trying each rule in turn. Built once per rule list; each entity's rules keep catalog order, so the first match wins
+// as before.
+let private indexes = ConditionalWeakTable<EffectRule list, Dictionary<string, EffectRule list>>()
+
+let private index (rules: EffectRule list) =
+    indexes.GetValue(rules, fun rules ->
+        let byEntity = Dictionary<string, EffectRule list>()
+        for rule in List.rev rules do
+            let entity = entityOf rule.Match
+            byEntity[entity] <- rule :: (match byEntity.TryGetValue entity with | true, existing -> existing | _ -> [])
+        byEntity)
+
+let private ruleFor (rules: EffectRule list) (insideFlow: Lazy<bool>) (symbol: FSharpSymbol) : EffectRule option =
     match symbol with
     | :? FSharpMemberOrFunctionOrValue as mfv ->
-        rules |> List.tryFind (fun r ->
-            matches r mfv && (match r.Scope with Anywhere -> true | InsideFlow -> insideFlow | OutsideFlow -> not insideFlow))
+        match mfv.DeclaringEntity |> Option.bind _.TryFullName with
+        | Some entity ->
+            match (index rules).TryGetValue entity with
+            | true, candidates ->
+                candidates |> List.tryFind (fun r ->
+                    matchesMember r mfv
+                    && (match r.Scope with Anywhere -> true | InsideFlow -> insideFlow.Value | OutsideFlow -> not insideFlow.Value))
+            | _ -> None
+        | None -> None
     | _ -> None
 
 let private contains (outer: FSharp.Compiler.Text.range) (inner: FSharp.Compiler.Text.range) =
@@ -115,24 +132,22 @@ let private completedReadRanges (ctx: CliContext) =
         | FSharpImplementationFileDeclaration.Entity(_, members) -> members |> List.collect declarations
         | FSharpImplementationFileDeclaration.MemberOrFunctionOrValue(_, _, body)
         | FSharpImplementationFileDeclaration.InitAction body -> (try walk [] [] body with _ -> [])
-    match (try ctx.TypedTree with _ -> None) with
-    | Some tree -> (try tree.Declarations |> List.collect declarations with _ -> [])
-    | None -> []
+    try SymbolIndex.declarations ctx |> List.collect declarations with _ -> []
 
 /// Every ambient-effect call site in the file for the enabled guardrails, regardless of suppression. Exposed so the
 /// suppression-integrity analyzer can cross-reference AXG001 directives against the findings they're
 /// meant to cover, without re-implementing symbol matching.
 let private collectFindings rules (ctx: CliContext) : (EffectRule * FSharp.Compiler.Text.range) list =
     let flowBodies = lazy (RaiseInFlowAnalyzer.flowBodyRanges ctx)
-    let safeReads = completedReadRanges ctx
+    let safeReads = lazy (completedReadRanges ctx)
 
     (SymbolIndex.forContext ctx).All
     |> Seq.choose (fun symbolUse ->
-        let inside = flowBodies.Value |> List.exists (fun body -> contains body symbolUse.Range)
+        let inside = lazy (flowBodies.Value |> List.exists (fun body -> contains body symbolUse.Range))
         ruleFor rules inside symbolUse.Symbol
         |> Option.filter (fun rule ->
             rule.Category <> "blocking"
-            || not (safeReads |> List.exists (fun read -> contains read symbolUse.Range)))
+            || not (safeReads.Value |> List.exists (fun read -> contains read symbolUse.Range)))
         |> Option.map (fun rule -> rule, symbolUse.Range))
     |> Seq.toList
 

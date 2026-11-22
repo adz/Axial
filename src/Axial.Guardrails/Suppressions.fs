@@ -70,12 +70,17 @@ let private ordinaryLineComment (state: LexState) (line: string) : LexState * st
                 else scan state (index + 1)
     scan state 0
 
-let private commentsByLine (sourceText: ISourceText) =
+let private lexComments (sourceText: ISourceText) =
     let mutable state = Normal
     [ for line1 in 1 .. sourceText.GetLineCount() do
           let next, comment = ordinaryLineComment state (sourceText.GetLineString(line1 - 1))
           state <- next
           yield line1, comment ]
+
+// Every finding asks whether it is allowed, and every guide message whether it is acknowledged; lex each source once.
+let private comments = System.Runtime.CompilerServices.ConditionalWeakTable<ISourceText, (int * string option) list>()
+
+let private commentsByLine (sourceText: ISourceText) = comments.GetValue(sourceText, fun text -> lexComments text)
 
 let private parseComment line1 (comment: string) =
     if not (comment.Contains(Prefix, StringComparison.OrdinalIgnoreCase)) then None
@@ -126,12 +131,15 @@ let private isInLeadingCommentBlock (sourceText: ISourceText) line1 =
         let trimmed = sourceText.GetLineString(n - 1).Trim()
         trimmed = "" || (ordinaryComments[n].IsSome && sourceText.GetLineString(n - 1).TrimStart().StartsWith("//")))
 
+let private valid = System.Runtime.CompilerServices.ConditionalWeakTable<ISourceText, Directive list>()
+
 let validDirectives (sourceText: ISourceText) =
-    allDirectives sourceText
-    |> List.filter (fun directive ->
-        directive.RuleId.IsSome
-        && directive.Reason <> ""
-        && (not directive.FileWide || isInLeadingCommentBlock sourceText directive.Line))
+    valid.GetValue(sourceText, fun sourceText ->
+        allDirectives sourceText
+        |> List.filter (fun directive ->
+            directive.RuleId.IsSome
+            && directive.Reason <> ""
+            && (not directive.FileWide || isInLeadingCommentBlock sourceText directive.Line)))
 
 /// True when a declared boundary file has a valid suppression for `ruleId` on the finding line,
 /// the line above it, or in its leading comment block.

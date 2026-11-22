@@ -58,3 +58,12 @@ type FileSymbols(uses: FSharpSymbolUse array) =
 
 let forContext (ctx: CliContext) =
     memo ctx "symbols" (fun () -> FileSymbols(ctx.GetAllSymbolUsesOfFile() |> Seq.toArray))
+
+/// The file's typed declarations, read once. FCS rebuilds `Declarations`, and every expression under it, on each
+/// read, while each expression caches its own conversion; sharing one read lets every rule walk the same converted
+/// tree instead of converting the file again (about 0.75 s per rule on Axial).
+let declarations (ctx: CliContext) =
+    memo ctx "declarations" (fun () ->
+        match (try ctx.TypedTree with _ -> None) with
+        | Some tree -> tree.Declarations
+        | None -> [])
