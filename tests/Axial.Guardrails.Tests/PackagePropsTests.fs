@@ -196,25 +196,32 @@ module PackagePropsTests =
     [<Theory>]
     [<InlineData("Fast")>]
     [<InlineData("Full")>]
-    let ``domain project can keep all effects in separate capability files`` mode =
+    let ``a file that claims a defined capability may call its API and nothing else`` mode =
         let dir = Path.Combine(Path.GetTempPath(), "axial-file-effects-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
         try
-            writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework>" "module Consumer\nlet pure x = x + 1\n"
+            writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework>" "module Consumer\nlet increment x = x + 1\n"
             let project = Path.Combine(dir, "Consumer.fsproj")
-            File.WriteAllText(project, File.ReadAllText(project).Replace("<Compile Include=\"Program.fs\" />", "<Compile Include=\"Program.fs\" /><Compile Include=\"Effects.fs\" />"))
-            File.WriteAllText(Path.Combine(dir, "Effects.fs"), "module Effects\nlet now () = System.DateTime.UtcNow\n")
+            File.WriteAllText(Path.Combine(dir, "dns.capability.toml"), "name = \"dns\"\nservice = \"IDns\"\nreplaces = [ \"any:System.Net.Dns\" ]\n")
+            let definition = "<ItemGroup><AxialCapabilityDefinition Include=\"dns.capability.toml\" /></ItemGroup>"
+            File.WriteAllText(project, File.ReadAllText(project).Replace("<Compile Include=\"Program.fs\" />", "<Compile Include=\"Program.fs\" /><Compile Include=\"Effects.fs\" AxialCapability=\"dns\" />").Replace("</Project>", definition + "</Project>"))
+            File.WriteAllText(Path.Combine(dir, "Effects.fs"), "module Effects\nlet host () = System.Net.Dns.GetHostName()\n")
             writeV2Policy dir "domain" "deny"
-            File.AppendAllText(Path.Combine(dir, "Axial.Guardrails.toml"), "\n[files]\ncapabilities = [\"Effects.fs\"]\n")
             writeFixtureLock dir
             let args = ["-p:AxialGuardrailsMode=" + mode]
-            let separated = runBuildWithArgs args project None
-            Assert.True(separated.ExitCode = 0, separated.Output)
-            Assert.DoesNotContain("AXG001", separated.Output)
-            File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet now () = System.DateTime.UtcNow\n")
+            let owned = runBuildWithArgs args project None
+            Assert.True(owned.ExitCode = 0, owned.Output)
+            Assert.DoesNotContain("AXG001", owned.Output)
+            // The implementation owns the Dns API, not every effect: the clock is reported there like anywhere else.
+            File.AppendAllText(Path.Combine(dir, "Effects.fs"), "let now () = System.DateTime.UtcNow\n")
+            let foreign = runBuildWithArgs args project None
+            Assert.Equal((mode = "Fast"), (foreign.ExitCode = 0))
+            Assert.Contains("This file claims the dns capability", foreign.Output)
+            File.WriteAllText(Path.Combine(dir, "Effects.fs"), "module Effects\nlet host () = System.Net.Dns.GetHostName()\n")
+            File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet host () = System.Net.Dns.GetHostName()\n")
             let misplaced = runBuildWithArgs args project None
             Assert.Equal((mode = "Fast"), (misplaced.ExitCode = 0))
-            Assert.Contains("AXG001", misplaced.Output)
+            Assert.Contains("Replace it with IDns", misplaced.Output)
         finally TestDirectory.delete dir
 
     [<Theory>]
@@ -971,9 +978,14 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
                     if mutateAfterLock then File.AppendAllText(Path.Combine(dir, "Axial.Guardrails.toml"), "# drift\n"))
 
 
+        let host = build "host" "deny" false
+        Assert.True(host.ExitCode = 0, host.Output)
+        Assert.DoesNotContain("AXG001", host.Output)
+
+        // A capabilities-role project grants nothing by itself: only files that claim a capability may call its API.
         let capability = build "capabilities" "deny" false
-        Assert.True(capability.ExitCode = 0, capability.Output)
-        Assert.DoesNotContain("AXG001", capability.Output)
+        Assert.NotEqual(0, capability.ExitCode)
+        Assert.Contains("error AXG001", capability.Output)
 
         let warning = build "domain" "warn" false
         Assert.True(warning.ExitCode = 0, warning.Output)
@@ -983,7 +995,7 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
         Assert.NotEqual(0, drift.ExitCode)
         Assert.Contains("Policy changed since the last review:", drift.Output)
         Assert.Contains("error AXG001", drift.Output)
-        let openDrift = build "capabilities" "deny" true
+        let openDrift = build "host" "deny" true
         Assert.True(openDrift.ExitCode = 0, openDrift.Output)
         Assert.Contains("axial policy review", openDrift.Output)
 
@@ -1148,7 +1160,7 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
         Directory.CreateDirectory dir |> ignore
         try
             writeConsumer dir
-            writeV2Policy dir "capabilities" "deny"
+            writeV2Policy dir "host" "deny"
             let project = Path.Combine(dir, "Consumer.fsproj")
             let initial = runBuild project None
             Assert.True(initial.ExitCode = 0, initial.Output)

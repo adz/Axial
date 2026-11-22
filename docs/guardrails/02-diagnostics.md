@@ -28,6 +28,15 @@ install, severity, and suppression choices; this page is the per-diagnostic refe
 | `blocking` | `Async.RunSynchronously`, `Task.Wait()`/`Wait(timeout)`, task/value-task `.Result`, and `.GetAwaiter().GetResult()` outside flows; task `.Result` and `.GetAwaiter().GetResult()` inside flows | Await asynchronously outside flows; `let!` on the task inside flows |
 | `scope` | A direct `Cache.make*`, `Hub.make`/`bounded`, or `Queue.bounded`/`unbounded` returned by a run | Use the service before the scope closes |
 
+Each finding says what to use instead. For a service that travels in `'env`, it names the environment field to add,
+the interface to implement, an example call, the live implementation and the test fake. For a platform service such as
+`Clock`, it says the runtime provides it and how tests control it. `axial capabilities` lists every service and the
+APIs it replaces.
+
+No file is exempt as a whole. A file may call a capability's raw API only when its `Compile` item claims that
+capability with [`AxialCapability` metadata](/guardrails/rule-authoring.html#claim-a-capability), and then only that
+API. Every allowed call is counted by `axial check`.
+
 Reads of `.Result` or `.GetAwaiter().GetResult()` on a task or value task are exempt when the same value's completion state is tested in the enclosing `if` branch or `when` guard, or when the value is the parameter of a `ContinueWith` callback. Other waits remain findings. Blocking waits outside flows can deadlock UI synchronization contexts.
 
 `TimeZoneInfo.ConvertTimeFromUtc(utc, zone)` is allowed when `zone` is supplied explicitly; reading
@@ -35,51 +44,35 @@ Reads of `.Result` or `.GetAwaiter().GetResult()` on a task or value task are ex
 
 The analyzer matches resolved `System.*` symbols, not source text. It does not flag an application type named `Random` or a local value named `now`.
 
-### Allow an intentional effect boundary
+### Allow an intentional raw call
 
 First replace the ambient call with the service named by the diagnostic. An automatic fix is not offered because
 introducing an explicit service usually changes the containing function's environment and often its return type.
 
-A normal live implementation belongs in a file assigned the `capabilities` role and needs no suppression:
+A file that implements a service, or tests it against the real thing, claims the capability on its `Compile` item:
 
-```toml
-[files]
-capabilities = ["src/App/Capabilities/**"]
+```xml
+<Compile Include="Live/Stripe.fs" AxialCapability="payments" />
+<Compile Include="FilesTests.fs" AxialCapability="filesystem" />
 ```
 
-For an exceptional one-off boundary outside that role, declare the exact file in policy and give each suppression a
-non-empty reason:
+The claimed file may then call that capability's API, and nothing else raw. Your own capabilities are
+[defined in `.capability.toml` files](/guardrails/rule-authoring.html#define-a-capability).
 
-```toml
-[boundaries]
-files = ["src/App/LiveClock.fs"]
-```
+When Axial or a capability cannot do the job yet, allow one call with a comment that names the gap:
 
 ```fsharp
-let live : IClock =
-    let stopwatch = System.Diagnostics.Stopwatch.StartNew() // axial-allow-AXG001: live clock implementation
-
-    { new IClock with
-        member _.UtcNow() = DateTimeOffset.UtcNow // axial-allow-AXG001: live clock implementation
-        member _.Elapsed() = stopwatch.Elapsed
-        member _.Sleep(delay, token) = Task.Delay(delay, token) }
+use pipe = new NamedPipeServerStream(name) // axial-allow-AXG001: Axial.Process has no named pipes yet (gap: process-named-pipes)
 ```
 
-The file-wide form belongs in the leading comment block:
-
-```fsharp
-// axial-allow-file-AXG001: this file provides the live console implementation
-```
-
-A rule-specific suppression allows only that diagnostic. It does not allow other Guardrails findings in the file.
-Capability-role globs are the normal home for raw I/O. `[boundaries].files` contains exact exceptional files; it is
-not a second capability-folder mechanism. A `forbid` rule cannot be suppressed even in a declared boundary.
+The allowance covers its own line or the next one. It must end with `(gap: name)`, it cannot cover a whole file, and a
+`forbid` rule cannot be allowed. A rule-specific allowance allows only that diagnostic.
 
 ## AXG002: Remove invalid suppressions
 
 `AXG002` validates every suppression. It reports legacy or malformed syntax, an unknown rule ID, a missing reason,
-a file-wide suppression outside the leading comment block, a suppression outside a TOML-declared boundary file,
-or a stale suppression that covers no finding. AXG009–013 allowances are invalid: these rules cannot be suppressed.
+a file-wide suppression outside the leading comment block, a file-wide AXG001 allowance, an AXG001 allowance that
+does not name its gap, or a stale suppression that covers no finding. AXG009–013 allowances are invalid: these rules cannot be suppressed.
 
 It also validates `axial-note` acknowledgements for guide findings (AXG010 and awaited-delay AXG013).
 A note needs a non-empty reason and a live guide finding on the same or following line. For AXG010 put the note as
@@ -89,8 +82,9 @@ errors at checkpoints.
 Valid notes leave their guide finding visible as Info; they never hide it.
 
 Remove an invalid or unused directive. AXG002 offers an automatic removal when the directive occupies its own comment
-line. For an intentional boundary, declare the file and use a rule-specific comment such as
-`// axial-allow-AXG001: <reason>` with the ID of the finding being allowed.
+line. For an intentional exception, use a rule-specific comment such as `// axial-allow-AXG003: <reason>` with the
+ID of the finding being allowed; an AXG001 allowance also names its gap. Every directive is recorded in the policy
+lock, so each new one is a review item.
 
 ## AXG003: Return typed failures from workflows
 
@@ -103,7 +97,7 @@ Use `return! Flow.fail error` for an expected failure. Use `Flow.die` when the f
 For a standalone `raise`, `failwith`, `failwithf`, or `invalidOp`, AXG003 offers a `return! Flow.fail ...` fix. Calls
 embedded in a larger expression need a manual rewrite because inserting `return!` there would be invalid.
 
-If a nearby `try/with` catches and translates the exception, declare the file as a boundary and add a reason:
+If a nearby `try/with` catches and translates the exception, add a reason:
 
 ```fsharp
 let start (proc: System.Diagnostics.Process) =
@@ -121,7 +115,7 @@ A module-level `let` value is initialized once and shared by every test in the m
 The analyzer excludes constants and point-free function definitions because they do not create the shared-state risk.
 
 Create fixtures inside each test or expose a function that returns a fresh fixture. There is no automatic fix because changing a value to a function requires updating all call sites. For a safe
-immutable value in a declared boundary test file, add a reason:
+immutable value, add a reason:
 
 ```fsharp
 let private syntheticTime = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) // axial-allow-AXG004: immutable timestamp
@@ -136,7 +130,7 @@ Task adapters receive Flow's cancellation token. Discarding that token prevents 
 Use the cancellation-aware overload of the wrapped operation and pass the token to it.
 
 No automatic fix is offered because the analyzer cannot choose the foreign API's cancellation-aware overload or know
-where its token belongs. If a legacy API has no such overload, declare the adapter file as a boundary and add a reason:
+where its token belongs. If a legacy API has no such overload, add a reason:
 
 ```fsharp
 /// An API with no cancellation support.
@@ -186,7 +180,7 @@ rendered with its own `ToString`, so give your error types an override too. `Cau
 explicit error renderer.
 
 No automatic fix is offered because rendering is domain-specific. If code never runs trimmed, such as a script or a
-test helper, declare the file as a boundary and add a reason:
+test helper, add a reason:
 
 ```fsharp
 let printDiagnostics (diagnostics: Map<string, int list>) =
@@ -253,8 +247,7 @@ let keptForUse =
 resource in each concurrent combinator.
 
 No automatic fix is offered because `forkResource`, `zipPar`, and keeping ownership inside the fiber have different
-semantics. If the fiber intentionally owns and consumes the resource, declare the file as a boundary and use
-`// axial-allow-AXG007: <reason>`.
+semantics. If the fiber intentionally owns and consumes the resource, use `// axial-allow-AXG007: <reason>`.
 
 ## AXG013: Wait for facts, not time
 
@@ -331,7 +324,7 @@ Raw task findings are errors and cannot be acknowledged or suppressed; move brid
 `lock`, `Monitor` and `Interlocked` are not reported: use `Ref` or `STM` where they fit, but the analyzer does not require it.
 Exact repository-relative paths in `[runtime].files` exempt runtime implementations from AXG009 only.
 Additions to this list appear in `axial policy review`; ordinary policy drift warns rather than blocking builds.
-`[boundaries].files` does not exempt raw concurrency.
+A capability claim does not exempt raw concurrency.
 
 ## AXG010: Do not silently swallow exceptions
 
@@ -374,7 +367,7 @@ let acknowledged () =
 
 The finding stays visible as Info with the reason. An unacknowledged finding becomes an error at a checkpoint.
 Host boundary projects may keep catch-alls under an explicit `AXG010` project-path declaration in `[exemptions]`.
-The `host` role alone, or listing a file in `[boundaries]`, is not an exemption.
+The `host` role alone, or a capability claim, is not an exemption.
 
 ## AXG011: Explain uncancellable work
 
@@ -516,9 +509,9 @@ AXG012 = ["tools/**/*.fsproj"]
 ```
 
 These lists do not change finding severities or exempt other rules.
-AXG001–008 retain their boundary-allowance and baseline behavior. AXG009–013 do not accept allowances or baseline
-severity downgrades. Only guide findings (AXG010, awaited-delay AXG013 and AXG014) accept `axial-note`; no boundary
-membership or finding approval is needed. AXG002 warns about malformed, empty, unknown, misplaced, or stale notes,
+AXG001–008 accept rule-specific allowances (an AXG001 allowance names its gap) and keep their baseline behavior.
+AXG009–013 do not accept allowances or baseline severity downgrades. Only guide findings (AXG010, awaited-delay AXG013
+and AXG014) accept `axial-note`; no finding approval is needed. AXG002 warns about malformed, empty, unknown, misplaced, or stale notes,
 and notes on block findings. Invalid notes become errors at checkpoints. No automatic fix is offered: choosing
 ownership, cancellation, or exception reporting changes behavior.
 

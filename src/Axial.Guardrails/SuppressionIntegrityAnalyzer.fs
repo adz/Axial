@@ -1,6 +1,6 @@
 /// Validates every Axial.Guardrails suppression comment. Suppressions are accepted only when they
-/// identify one rule, include a reason, and cover a finding. AXG001–008 retain boundary allowances;
-/// tiered rules accept only visible guide acknowledgements.
+/// identify one rule, include a reason, and cover a finding. An AXG001 allowance also covers one call and names the
+/// gap it stands for; tiered rules accept only visible guide acknowledgements.
 module Axial.Guardrails.SuppressionIntegrityAnalyzer
 
 open System.IO
@@ -52,10 +52,8 @@ let private isLeadingComment (sourceText: ISourceText) line1 =
 let private coversLine directiveLine findingLine = findingLine = directiveLine || findingLine = directiveLine + 1
 
 let private findingForDirective (ctx: CliContext) directive =
-    let config = load ()
     let range = rangeOfLine ctx.SourceText directive.Line
     let report = message ctx.SourceText range
-    let boundary = GuardrailConfig.isBoundaryFile config ctx.FileName
 
     match directive.RuleId with
     | None ->
@@ -68,8 +66,10 @@ let private findingForDirective (ctx: CliContext) directive =
         Some(report "Remove this allowance: tiered rules cannot be suppressed. Only guide findings accept `axial-note AXGnnn: reason` acknowledgements.")
     | Some _ when directive.FileWide && not (isLeadingComment ctx.SourceText directive.Line) ->
         Some(report "Move this file-wide suppression into the leading comment block, before the first declaration.")
-    | Some _ when not boundary ->
-        Some(report "Remove this suppression: suppressions are allowed only in files declared with `AxialGuardrailsBoundary`.")
+    | Some "AXG001" when directive.FileWide ->
+        Some(report "Remove this file-wide allowance: a file that implements a capability claims it on its Compile item (AxialCapability=\"<name>\"), and may then call that API without comments.")
+    | Some "AXG001" when (gapOf directive).IsNone ->
+        Some(report "End this allowance with the gap it stands for, such as `(gap: process-named-pipes)`, naming the missing Axial or capability feature. If the file implements a capability, claim it on its Compile item (AxialCapability=\"<name>\") instead.")
     | Some ruleId ->
         let covered =
             rangesForRule ctx ruleId

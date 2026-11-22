@@ -195,7 +195,7 @@ let analyze (ctx: CliContext) : Message list =
     rawRanges ctx
     |> List.filter (fun range ->
         let config = GuardrailConfig.load ()
-        not (isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText range.StartLine "AXG007"))
+        not (isAllowed ctx.SourceText range.StartLine "AXG007"))
     |> List.map message
 
 [<CliAnalyzer("ResourceFromFiber",

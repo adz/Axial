@@ -9,7 +9,7 @@ open Xunit
 module PolicyLockTests =
     let private empty =
         { Version=2; BaselinePath=DefaultBaseline; Hashes=Map.empty; Baseline=[]; BaselineRoles=Map.empty; Rules=Map.empty
-          Capabilities=Set.empty; Boundaries=Set.empty; Suppressions=Set.empty }
+          Capabilities=Set.empty; Boundaries=Set.empty; Suppressions=Set.empty; Definitions=Map.empty; Claims=Map.empty }
 
     let private withSuppressionRepository action =
         let root=Path.Combine(Path.GetTempPath(),"Axial.Lock.Tests",Guid.NewGuid().ToString("N"))
@@ -199,8 +199,64 @@ module PolicyLockTests =
               "  baseline entries added:  none"
               "  suppressions added:      a.fs\t1\tcomment; a.fs\t2\tcomment"
               "  boundaries added:        none"
+              "  capabilities loosened:   none"
               "  protected files changed: none" ] |> String.concat System.Environment.NewLine
         test <@ formatJsonSummary changes = expected @>
+
+    /// A repository with one project; `project` is its Compile items and `definitions` its .capability.toml files.
+    let private withCapabilityRepository action =
+        let root = Path.Combine(Path.GetTempPath(), "Axial.Capability.Lock.Tests", Guid.NewGuid().ToString("N"))
+        try
+            Directory.CreateDirectory(Path.Combine(root, "src")) |> ignore
+            File.WriteAllText(Path.Combine(root, ConfigName), "version = 2\n[default]\nrole = \"domain\"\n")
+            File.WriteAllText(Path.Combine(root, DefaultBaseline), "")
+            for name in [ "Live.fs"; "Stripe.fs"; "Other.fs" ] do File.WriteAllText(Path.Combine(root, "src", name), "module M")
+            let state (compile: string) (definition: string option) =
+                File.WriteAllText(Path.Combine(root, "src", "App.fsproj"), $"<Project><ItemGroup>{compile}</ItemGroup></Project>")
+                let path = Path.Combine(root, "src", "payments.capability.toml")
+                match definition with
+                | Some text -> File.WriteAllText(path, text)
+                | None -> if File.Exists path then File.Delete path
+                inspect root |> function Ok value -> value | Error error -> failwith error
+            action state
+        finally TestDirectory.delete root
+
+    let private definition level (replaces: string list) =
+        let entries = replaces |> List.map (fun entry -> $"\"{entry}\"") |> String.concat ", "
+        Some $"name = \"payments\"\nservice = \"IPayments\"\nlevel = \"{level}\"\nreplaces = [ {entries} ]\n"
+
+    [<Fact>]
+    let ``claims and definitions are recorded and read back`` () =
+        withCapabilityRepository (fun state ->
+            let snapshot = state "<Compile Include=\"Live.fs;Stripe.fs\" AxialCapability=\"payments\" /><Compile Include=\"Other.fs\"><AxialCapability>clock;guid</AxialCapability></Compile>" (definition "enforce" [ "any:M.Gateway" ])
+            test <@ snapshot.Claims.[("src/App.fsproj", "payments")] = set [ "src/Live.fs"; "src/Stripe.fs" ] @>
+            test <@ snapshot.Claims.[("src/App.fsproj", "guid")] = set [ "src/Other.fs" ] @>
+            test <@ snapshot.Definitions.["payments"] = { Level = "enforce"; Replaces = set [ "any:M.Gateway" ] } @>
+            let path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".lock")
+            try
+                File.WriteAllText(path, serialize snapshot)
+                let read = parseLock path |> function Ok value -> value | Error error -> failwith error
+                test <@ read.Claims = snapshot.Claims && read.Definitions = snapshot.Definitions @>
+            finally File.Delete path)
+
+    [<Fact>]
+    let ``loosening a capability needs review and tightening it does not`` () =
+        withCapabilityRepository (fun state ->
+            let one = "<Compile Include=\"Live.fs\" AxialCapability=\"payments\" /><Compile Include=\"Other.fs\" />"
+            let approved = state one (definition "enforce" [ "any:M.Gateway"; "ctor:M.Refunds" ])
+            let loosened (current: Snapshot) = (diff approved current).CapabilitiesLoosened
+            // Free: a new replaces entry, the same claim moved to another file, a claim removed.
+            test <@ loosened (state one (definition "enforce" [ "any:M.Gateway"; "ctor:M.Refunds"; "any:M.Payouts" ])) = [] @>
+            test <@ isEmpty (diff approved (state "<Compile Include=\"Stripe.fs\" AxialCapability=\"payments\" />" (definition "enforce" [ "any:M.Gateway"; "ctor:M.Refunds" ]))) @>
+            test <@ isEmpty (diff approved (state "<Compile Include=\"Live.fs\" />" (definition "enforce" [ "any:M.Gateway"; "ctor:M.Refunds" ]))) @>
+            // Review: another claimed file, a replaces entry removed, guide level, the definition removed.
+            let wider = loosened (state "<Compile Include=\"Live.fs;Other.fs\" AxialCapability=\"payments\" />" (definition "enforce" [ "any:M.Gateway"; "ctor:M.Refunds" ]))
+            test <@ wider = [ "src/App.fsproj: payments claimed by src/Live.fs, src/Other.fs (was 1)" ] @>
+            test <@ loosened (state one (definition "enforce" [ "any:M.Gateway" ])) = [ "payments: no longer replaces ctor:M.Refunds" ] @>
+            test <@ loosened (state one (definition "guide" [ "any:M.Gateway"; "ctor:M.Refunds" ])) = [ "payments: level enforce -> guide" ] @>
+            test <@ loosened (state one None) = [ "payments: definition removed" ] @>
+            let changes = diff approved (state one None)
+            test <@ not (isEmpty changes) && changes.ProtectedChanged |> List.contains LockName @>)
 
     [<Fact>]
     let ``runtime exemptions require lock approval`` () =

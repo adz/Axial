@@ -290,7 +290,7 @@ let raiseInFlowAnalyzer (ctx: CliContext) =
                 moduleExprs |> List.collect flowCeBodies |> List.collect (findRaises false)
                 |> List.choose (fun finding ->
                     let config = GuardrailConfig.load ()
-                    if isAllowed config.BoundaryFiles ctx.FileName sourceText finding.Range.StartLine "AXG003" then None
+                    if isAllowed sourceText finding.Range.StartLine "AXG003" then None
                     else Some(message ctx finding))
 
             return GuardrailConfig.applyCore ctx messages

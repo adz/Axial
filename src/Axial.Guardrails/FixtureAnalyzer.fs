@@ -36,7 +36,7 @@ let fixtureAnalyzer (ctx: CliContext) =
             let config = GuardrailConfig.load ()
             return
                 rawRanges ctx
-                |> List.filter (fun range -> not (isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText range.StartLine "AXG004"))
+                |> List.filter (fun range -> not (isAllowed ctx.SourceText range.StartLine "AXG004"))
                 |> List.map message
                 |> GuardrailConfig.applyCore ctx
         }

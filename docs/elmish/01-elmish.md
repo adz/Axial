@@ -137,8 +137,8 @@ let startDesktop
     |> Async.RunSynchronously
 ```
 
-Declare that function's exact file in `[boundaries].files` and add a rule-specific
-`// axial-allow-AXG001: synchronous desktop host boundary` with the reason. Startup must not require the blocked UI
+Put that function in its own file and claim the runtime's blocking bridge on its `Compile` item:
+`<Compile Include="DesktopStartup.fs" AxialCapability="blocking" />` (a `host`-role file needs no claim). Startup must not require the blocked UI
 dispatcher: provision asynchronously first, or supply a prebuilt environment with `ElmishRuntime.start` when
 initialization is UI-affine. If provisioning posts work back to the dispatcher and waits for it, that is a dependency
 cycle the runner cannot repair. Keep the successful runtime alive until shutdown and call its documented `Stop` or

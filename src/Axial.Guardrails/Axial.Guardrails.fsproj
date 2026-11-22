@@ -83,6 +83,7 @@
     <Compile Include="Execution.fs" />
     <Compile Include="SymbolIndex.fs" />
     <Compile Include="Suppressions.fs" />
+    <Compile Include="EffectUse.fs" />
     <Compile Include="TaskSurfaceSyntax.fs" />
     <Compile Include="RaiseInFlowAnalyzer.fs" />
     <Compile Include="EffectBoundaryAnalyzer.fs" />

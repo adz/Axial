@@ -132,7 +132,7 @@ let discardedCancellationAnalyzer (ctx: CliContext) =
                 rawRanges ctx
                 |> List.filter (fun range ->
                     let config = GuardrailConfig.load ()
-                    not (isAllowed config.BoundaryFiles ctx.FileName sourceText range.StartLine "AXG005"))
+                    not (isAllowed sourceText range.StartLine "AXG005"))
                 |> List.map message
                 |> GuardrailConfig.applyCore ctx
         }

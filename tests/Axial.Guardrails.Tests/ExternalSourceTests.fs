@@ -67,33 +67,32 @@ test = ["**/*.fsproj"]
         }
 
     [<Fact>]
-    let ``service startLayer blocking bridge requires its exact declared boundary`` () = task {
+    let ``service startLayer blocking bridge needs its own file to claim the blocking capability`` () = task {
         let f = fixture ()
         let policy = Path.Combine(f.Repo, "Axial.Guardrails.toml")
         write (Path.Combine(f.Repo, "Other.fs")) "module Other\n"
-        let source marked =
+        let source =
             "module Desktop\nopen Axial\nopen Axial.ElmishFlows\n"
             + "let start options layer input =\n"
-            + "    ElmishRuntime.startLayer options layer input |> Async.RunSynchronously"
-            + (if marked then " // axial-allow-AXG001: desktop startup owns this blocking host boundary" else "")
-            + "\n"
-        let analyze declared marked = task {
-            write policy ("version = 2\n[default]\nrole = \"services\"\n[boundaries]\nfiles = [\"" + declared + "\"]\n")
+            + "    ElmishRuntime.startLayer options layer input |> Async.RunSynchronously\n"
+        let analyze (claimed: string option) = task {
+            write policy "version = 2\n[default]\nrole = \"services\"\n"
             // GuardrailConfig caches the TSV (not policy mtimes), just as an analyzer host does per build.
-            let config = f.Config + declared + string marked
+            let config = f.Config + (claimed |> Option.map Path.GetFileName |> Option.defaultValue "none")
             File.Copy(f.Config, config, true)
+            claimed |> Option.iter (fun path -> File.AppendAllText(config, $"\ncapabilityFile\tblocking\t{path}\n"))
             Environment.SetEnvironmentVariable(GuardrailConfig.EnvironmentVariable, config)
-            let! ctx = AnalyzerTestContext.createWithAxialAt f.Internal (source marked)
+            let! ctx = AnalyzerTestContext.createWithAxialAt f.Internal source
             let errors = ctx.CheckFileResults.Diagnostics |> Array.filter (fun d -> d.Severity = FSharp.Compiler.Diagnostics.FSharpDiagnosticSeverity.Error)
             Assert.Empty errors
             return! EffectBoundaryAnalyzer.effectBoundaryAnalyzer ctx |> Async.StartAsTask
         }
         try
-            let! unmarked = analyze "Internal.fs" false
-            Assert.Contains(unmarked, fun message -> message.Code = "AXG001")
-            let! wrongFile = analyze "Other.fs" true
+            let! unclaimed = analyze None
+            Assert.Contains(unclaimed, fun message -> message.Code = "AXG001")
+            let! wrongFile = analyze (Some(Path.Combine(f.Repo, "Other.fs")))
             Assert.Contains(wrongFile, fun message -> message.Code = "AXG001")
-            let! accepted = analyze "Internal.fs" true
+            let! accepted = analyze (Some f.Internal)
             Assert.DoesNotContain(accepted, fun message -> message.Code = "AXG001")
         finally
             cleanup f

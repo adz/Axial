@@ -244,7 +244,7 @@ let analyzeWithNativeAot nativeAot (ctx: CliContext) : Message list =
     rawFindingsWithNativeAot nativeAot ctx
         |> List.filter (fun finding ->
             let config = GuardrailConfig.load ()
-            not (isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText (findingRange finding).StartLine "AXG006"))
+            not (isAllowed ctx.SourceText (findingRange finding).StartLine "AXG006"))
         |> List.map toMessage
 
 let analyze (ctx: CliContext) : Message list =

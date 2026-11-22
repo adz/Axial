@@ -139,7 +139,7 @@ module GuardrailConfigTests =
                     + "let c (v: System.Threading.Tasks.ValueTask<int>) = v.Result\n"
                     + "let d (a: Async<int>) = Async.RunSynchronously a\n"
                     + "let e (t: System.Threading.Tasks.Task) = t.GetAwaiter().GetResult()\n"
-                    + "let f (t: System.Threading.Tasks.Task<int>) = t.Result // axial-allow-AXG001: synchronous host boundary\n"
+                    + "let f (t: System.Threading.Tasks.Task<int>) = t.Result // axial-allow-AXG001: synchronous host edge (gap: sync-host)\n"
                     + "let g (x: int) = x\n")
             test <@ found = [ 1; 2; 3; 4; 5 ] @>
         }
@@ -170,28 +170,29 @@ module GuardrailConfigTests =
         }
 
     [<Fact>]
-    let ``host bridge ambient clock is reported unless its line declares the boundary`` () =
+    let ``an ambient clock read is reported unless its line names a gap allowance`` () =
         task {
             let! without = findings "let read () = System.DateTime.UtcNow\n"
             test <@ without = [ 1 ] @>
             let! withBoundary =
-                findings "let read () = System.DateTime.UtcNow // axial-allow-AXG001: desktop host bridge\n"
+                findings "let read () = System.DateTime.UtcNow // axial-allow-AXG001: desktop host bridge (gap: desktop-clock)\n"
             test <@ withBoundary = [] @>
         }
 
     [<Fact>]
-    let ``cryptographic random generation permits line-marked boundaries`` () =
+    let ``cryptographic random generation permits gap allowances`` () =
         task {
             let! found =
                 findings (
-                    "let create () = System.Security.Cryptography.RandomNumberGenerator.Create() // axial-allow-AXG001: secure random live implementation\n"
+                    "let create () = System.Security.Cryptography.RandomNumberGenerator.Create() // axial-allow-AXG001: secure random live implementation (gap: keys)\n"
                     + "let bytes (rng: System.Security.Cryptography.RandomNumberGenerator) (buffer: byte array) =\n"
-                    + "    rng.GetBytes buffer // axial-allow-AXG001: secure random live implementation\n")
+                    + "    rng.GetBytes buffer // axial-allow-AXG001: secure random live implementation (gap: keys)\n")
             test <@ found = [] @>
             let rule = builtInRules |> List.find (fun rule -> rule.Id = "random.cryptographic")
             test <@ rule.Guardrail = "Axial" @>
             test <@ rule.Category = "secure-random" @>
-            test <@ rule.Replacement = "use System.Security.Cryptography inside capability code" @>
+            test <@ rule.Replacement = "System.Security.Cryptography in a file that claims the secure-random capability" @>
+            test <@ rule.Capability = Some "secure-random" @>
         }
 
     [<Fact>]

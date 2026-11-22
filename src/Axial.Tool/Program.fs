@@ -20,7 +20,13 @@ module Program =
   4. A human reads the review, then runs axial policy approve [--yes-i-reviewed].
 
 The lock is tamper-evident, not a security boundary. Enforcement is the repository's choice.
-Approval means a human read the review. The first review requires --since <ref>."""
+Approval means a human read the review. The first review requires --since <ref>.
+
+Capabilities (services that own raw APIs):
+  axial capabilities [--json]
+     Lists Axial's capabilities and every one a built project defines in a .capability.toml file: the service to
+     use, the environment field, the live implementation, the test fake, the files that claim it and the APIs it owns.
+     `axial check` shows how many raw effect calls each project was allowed, and why."""
     let private policyWarning = "HUMAN DECISION — agents must not run this; ask the user."
     let private jsonString (value: string) = "\"" + JavaScriptEncoder.Default.Encode(value) + "\""
     let private jsonArray values = values |> List.map jsonString |> String.concat "," |> fun content -> "[" + content + "]"
@@ -28,9 +34,9 @@ Approval means a human read the review. The first review requires --since <ref>.
         values |> List.map(fun entry -> "{\"rule\":" + jsonString entry.Rule + ",\"file\":" + jsonString entry.File + ",\"fingerprint\":" + jsonString entry.Fingerprint + ",\"count\":" + string entry.Count + "}") |> String.concat "," |> fun content -> "[" + content + "]"
     let mutable private commandName = "help"
     let private jsonChanges (changes: ChangeSummary option) =
-        let c=defaultArg changes {RulesDowngraded=[];BaselineAdded=[];SuppressionsAdded=[];BoundariesAdded=[];ProtectedChanged=[]}
+        let c=defaultArg changes {RulesDowngraded=[];BaselineAdded=[];SuppressionsAdded=[];BoundariesAdded=[];CapabilitiesLoosened=[];ProtectedChanged=[]}
         {| rulesDowngraded=c.RulesDowngraded; baselineAdded=c.BaselineAdded; suppressionsAdded=c.SuppressionsAdded
-           boundariesAdded=c.BoundariesAdded; protectedChanged=c.ProtectedChanged |}
+           boundariesAdded=c.BoundariesAdded; capabilitiesLoosened=c.CapabilitiesLoosened; protectedChanged=c.ProtectedChanged |}
     let private emitWithExtra (extra: (string * string) list) (changes: ChangeSummary option) asJson ok (message: string) =
         let status = if ok then "ok" else "error"
         let errorCode : string =
@@ -77,21 +83,32 @@ Approval means a human read the review. The first review requires --since <ref>.
     /// `build` is the per-project build invocation: no trend summary. Every project/TFM of a build runs it; the build
     /// task shows its drift warning once per drift state in a build, keyed by the digest line printed here. A direct
     /// check always warns.
+    /// `[boundaries]` once allowed AXG001 comments in listed files; capabilities replaced it.
+    let private boundaryNotice () =
+        let path = Path.Combine(root(), ConfigName)
+        match (try Axial.Guardrails.Policy.parse (root()) knownRules (File.ReadAllText path) with _ -> Error []) with
+        | Ok config when not config.Boundaries.IsEmpty ->
+            [ "WARNING: [boundaries] in Axial.Guardrails.toml no longer has any effect; remove it. A file that implements a capability claims it with AxialCapability=\"<name>\" on its Compile item, and a rare AXG001 allowance in any file names its gap: // axial-allow-AXG001: reason (gap: name)." ]
+        | _ -> []
+
     let private check asJson build =
         match inspect(root()), parseLock(Path.Combine(root(),LockName)) with
         | Error e, _ | _, Error e -> emit asJson false e
         | Ok current, Ok locked ->
+            let notices = boundaryNotice ()
+            let withNotices (message: string) = String.concat "\n" (message :: notices)
             let changes=diff locked current
             let counts = if build then [] else rawTaskSummary ()
-            let extra = if build then [] else [ "rawTask", rawTaskJson counts ]
-            let withTrend message = if build || asJson then message else message + "\n" + RawTaskCount.format counts
-            if isEmpty changes then emitWithExtra extra None asJson true (withTrend "Axial policy check passed.\nThe lock is tamper-evident, not a security boundary. Enforcement is the repository's choice.")
+            let effects = if build then [] else EffectCount.count (root()) counts
+            let extra = if build then [] else [ "rawTask", rawTaskJson counts; "allowedEffects", EffectCount.json jsonString effects ]
+            let withTrend message = if build || asJson then message else message + "\n" + RawTaskCount.format counts + "\n" + EffectCount.format effects
+            if isEmpty changes then emitWithExtra extra None asJson true (withNotices (withTrend "Axial policy check passed.\nThe lock is tamper-evident, not a security boundary. Enforcement is the repository's choice."))
             else
-                let count = changes.RulesDowngraded.Length + changes.BaselineAdded.Length + changes.SuppressionsAdded.Length + changes.BoundariesAdded.Length + (changes.ProtectedChanged |> List.filter ((<>) LockName) |> List.length)
+                let count = changes.RulesDowngraded.Length + changes.BaselineAdded.Length + changes.SuppressionsAdded.Length + changes.BoundariesAdded.Length + changes.CapabilitiesLoosened.Length + (changes.ProtectedChanged |> List.filter ((<>) LockName) |> List.length)
                 let warning = $"WARNING: Policy changed since the last review: {max 1 count} changes. Run `axial policy review`."
                 let digest () = Security.Cryptography.SHA256.HashData(Text.Encoding.UTF8.GetBytes(formatSummary changes)) |> Convert.ToHexString
                 let message = if build then warning + "\nPolicy drift state: " + digest () else withTrend warning
-                emitWithExtra extra (Some changes) asJson true message
+                emitWithExtra extra (Some changes) asJson true (withNotices message)
 
     let private fullCheck asJson configuration =
         let directory = Path.Combine(Path.GetTempPath(), "axial-full-check-" + Guid.NewGuid().ToString("N"))
@@ -379,6 +396,19 @@ Approval means a human read the review. The first review requires --since <ref>.
                 | _ -> emit asJson false (policyWarning+"\nUsage: axial policy approve [--baseline-rule <id>] [--yes-i-reviewed] [--json]")
             options None false rest
         | ["policy";"baseline";"--rule";rule] -> baseline asJson rule
+        | ["capabilities"] ->
+            let listed, problems = Capabilities.discover (root())
+            if asJson then
+                let item (entry: Capabilities.Listed) =
+                    let c = entry.Capability
+                    {| name = c.Name; declaredIn = (match entry.DeclaredIn with Some project -> project | None -> "Axial")
+                       level = (match c.Level with Axial.Guardrails.EffectCatalog.Guide -> "guide" | Axial.Guardrails.EffectCatalog.Enforce -> "enforce")
+                       service = c.Service; env = c.Env; field = c.Field; example = c.Example; live = c.Live; fake = c.Fake
+                       implementation = entry.Implementation
+                       replaces = entry.Rules |> List.map Axial.Guardrails.EffectCatalog.ruleTarget |> List.distinct |}
+                printfn "%s" (System.Text.Json.JsonSerializer.Serialize {| schema = "axial.capabilities.v1"; capabilities = listed |> List.map item; problems = problems |})
+            else printfn "%s" (Capabilities.format listed problems)
+            0
         | ["--help"] | ["help"] -> help asJson
         | _ -> emit asJson false ("Unknown command.\n"+workflow)
 

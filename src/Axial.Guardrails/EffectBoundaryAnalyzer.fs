@@ -1,7 +1,7 @@
 /// The `EffectBoundary` analyzer: flags direct calls to ambient .NET effects (System.Random,
 /// DateTime.Now/UtcNow, Guid.NewGuid, Console, File/Directory, Environment, Process.Start,
-/// Thread.Sleep, new HttpClient, blocking task waits inside a flow) for every enabled guardrail,
-/// unless a declared boundary file carries a reasoned AXG001 suppression at the call site.
+/// Thread.Sleep, new HttpClient, blocking task waits inside a flow) for every enabled guardrail. `EffectUse.judge`
+/// allows a call in a file that claims the owning capability, in a host file, or under a gap allowance.
 ///
 /// This exists because Axial's architecture invariant — "operational effects are explicit,
 /// mockable dependencies visible in a signature" — was violated in practice (`Schedule.jittered`
@@ -142,6 +142,8 @@ let private collectFindings rules (ctx: CliContext) : (EffectRule * FSharp.Compi
     let safeReads = lazy (completedReadRanges ctx)
 
     (SymbolIndex.forContext ctx).All
+    // A definition is not a use: a declared capability may wrap a type the same project defines.
+    |> Seq.filter (fun symbolUse -> not symbolUse.IsFromDefinition)
     |> Seq.choose (fun symbolUse ->
         let inside = lazy (flowBodies.Value |> List.exists (fun body -> contains body symbolUse.Range))
         ruleFor rules inside symbolUse.Symbol
@@ -156,29 +158,26 @@ let rawFindingsWithConfig (config: GuardrailConfig.Config) (ctx: CliContext) : (
 
 let rawFindings ctx = rawFindingsWithConfig (GuardrailConfig.load ()) ctx
 
-let toMessage (rule: EffectRule) (range: FSharp.Compiler.Text.Range) : Message =
-    { Type = "Axial Effect Boundary"
-      Message =
-        $"This call {rule.Message}. (1) Use {rule.Replacement}; add the Axial capability/service to your env. "
-        + "(2) If Axial has no service for this effect, create a service built on capabilities with 'axial add service <Name>'. "
-        + "(3) Only genuinely new raw I/O belongs in a capability under Capabilities/."
-      Code = "AXG001"
-      Severity = Severity.Error
-      Range = range
-      // Introducing an explicit service changes the containing function's environment and often its return type;
-      // replacing only this expression is therefore not mechanically safe.
-      Fixes = [] }
+let toMessage config fileName rule range = EffectUse.toMessage config fileName rule range
+
+/// Every raw effect call in the file with its verdict, for findings and for the `effectUses` record.
+let judged (config: GuardrailConfig.Config) (ctx: CliContext) =
+    rawFindingsWithConfig config ctx
+    |> List.map (fun (rule, range) -> rule, range, EffectUse.judge config ctx.FileName ctx.SourceText range.StartLine rule)
 
 let analyzeWithConfig (config: GuardrailConfig.Config) (ctx: CliContext) =
-    let resolved = GuardrailConfig.resolvedPolicy config ctx
-    let effectFile = resolved |> Option.exists (fun policy -> policy.Role = Policy.Capabilities || policy.Role = Policy.Host)
-    let level = resolved |> Option.bind (fun policy -> policy.Rules.TryFind "effects.ambient") |> Option.defaultValue Policy.Deny
-    // Effect-role files own raw effects, except where policy forbids them outright.
-    if GuardrailConfig.isSkippedSource config ctx.FileName || (effectFile && level <> Policy.Forbid) then [] else
-    rawFindingsWithConfig config ctx
-    |> List.collect (fun (rule, range) ->
-        if level <> Policy.Forbid && isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText range.StartLine "AXG001" then []
-        else GuardrailConfig.applyWith config rule.Guardrail ctx [ toMessage rule range ])
+    if GuardrailConfig.isSkippedSource config ctx.FileName then [] else
+    judged config ctx
+    |> List.collect (fun (rule, range, verdict) ->
+        match verdict with
+        | EffectUse.Reported -> GuardrailConfig.applyWith config rule.Guardrail ctx [ toMessage config ctx.FileName rule range ]
+        | _ -> [])
+
+/// Full records its own exact count; Fast records the syntactic one.
+let private uses (ctx: CliContext) =
+    let config = GuardrailConfig.load ()
+    if GuardrailConfig.isSkippedSource config ctx.FileName then []
+    else [ EffectUse.record (judged config ctx |> List.map (fun (_, _, verdict) -> verdict)) ]
 
 [<CliAnalyzer("EffectBoundary",
               "Flags direct use of ambient .NET effects (clock, randomness, GUIDs, console, filesystem, "
@@ -189,4 +188,4 @@ let effectBoundaryAnalyzer (ctx: CliContext) =
         async {
             return analyzeWithConfig (GuardrailConfig.load ()) ctx
         }
-    Execution.track "EffectBoundary" run ctx
+    Execution.trackWith uses "EffectBoundary" run ctx

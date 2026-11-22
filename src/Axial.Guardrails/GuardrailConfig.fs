@@ -1,9 +1,10 @@
-/// Which guardrails run, their declared boundary files, and the checked-in violation baseline.
+/// Which guardrails run, the capabilities and the files that claim them, and the checked-in violation baseline.
 ///
 /// `build/Axial.Guardrails.targets` writes the resolved MSBuild items to a tab-separated config file:
 ///
 ///   guardrail  <name>
-///   boundary   <absolute file path>
+///   capabilityDefinition  <absolute path of a .capability.toml file>
+///   capabilityFile        <capability name>  <absolute file path>   (from `AxialCapability` metadata on a Compile item)
 ///   generated  <absolute file path>   (a compile item under the project's intermediate output directory)
 ///   baseline   <rule id>  <repository-relative file>  <fingerprint>[ x<count>]
 ///   setting    baselineRoot|baselineOutput|nativeAot|checkpoint|severityCap  <value>
@@ -37,7 +38,8 @@ type Config =
       FastSeverityCap: bool
       InTests: string
       AllRules: EffectRule list
-      BoundaryFiles: Set<string>
+      /// Axial's capabilities followed by those defined in `.capability.toml` files, each with the files that claim it.
+      AllCapabilities: Capability list
       /// Compile items the build generated under its intermediate output directory. No rule checks them, and their
       /// coverage is recorded as `excluded (generated)`: the consumer cannot edit generated code.
       GeneratedFiles: Set<string>
@@ -51,6 +53,9 @@ type Config =
 
     member this.Rules = this.AllRules |> List.filter (fun rule -> this.EnabledGuardrails.Contains rule.Guardrail)
     member this.KnownCategories = this.AllRules |> List.map _.Category |> Set.ofList
+    /// The capability a rule names, if it is known.
+    member this.CapabilityOf(rule: EffectRule) =
+        rule.Capability |> Option.bind (fun name -> this.AllCapabilities |> List.tryFind (fun capability -> capability.Name = name))
 
 let private parseScope (text: string) =
     match text.Trim().ToLowerInvariant() with
@@ -65,8 +70,7 @@ let defaults: Config =
       FastSeverityCap = false
       InTests = ""
       AllRules = builtInRules
-      // Direct analyzer hosts (not the MSBuild package) have no project item graph; preserve rule-unit-test support.
-      BoundaryFiles = Set.singleton "*"
+      AllCapabilities = builtInCapabilities
       GeneratedFiles = Set.empty
       BaselineRoot = Directory.GetCurrentDirectory()
       Baseline = []
@@ -99,8 +103,65 @@ let parse (lines: string seq) : Config =
                       Match = parsed
                       Scope = parseScope scope
                       Message = message.Trim()
-                      Replacement = replacement.Trim() })
+                      Replacement = replacement.Trim()
+                      Capability = None })
             | _ -> None)
+
+    // A malformed definition fails the build with its reason: silently dropping it would remove guidance unseen.
+    let declared =
+        entries
+        |> List.choose (function
+            | lineNumber, _, [| "capabilityDefinition"; path |] when path.Trim() <> "" ->
+                let path = path.Trim()
+                if not (path.EndsWith(".capability.toml", StringComparison.OrdinalIgnoreCase)) then
+                    invalidArg "lines" $"Guardrails capability definition {path}: name the file <name>.capability.toml"
+                let text =
+                    try File.ReadAllText path
+                    with error -> invalidArg "lines" $"Guardrails capability definition {path} cannot be read: {error.Message}"
+                match parseDefinition text with
+                | Ok parsed -> Some parsed
+                | Error error -> invalidArg "lines" $"Guardrails capability definition {path}: {error}"
+            | lineNumber, _, fields when fields.Length >= 1 && fields[0] = "capabilityDefinition" ->
+                invalidArg "lines" $"Guardrails rules line {lineNumber}: a capabilityDefinition line names one file"
+            | _ -> None)
+        // One project can define the same file through several props files; a definition counts once.
+        |> List.distinctBy (fun (capability, _) -> capability)
+    let duplicates =
+        (builtInCapabilities |> List.map _.Name) @ (declared |> List.map (fst >> _.Name))
+        |> List.countBy id |> List.filter (snd >> (<) 1) |> List.map fst
+    if not duplicates.IsEmpty then
+        let names = String.concat ", " duplicates
+        invalidArg "lines" $"Guardrails capability defined more than once: {names}"
+    // One API, one capability: a definition cannot claim what an existing capability or rule already covers, so
+    // defining a capability is never a way around the service that already exists.
+    let covered =
+        builtInRules @ contributed
+        |> List.map (fun rule -> matchedType rule.Match, rule)
+    for capability, rules in declared do
+        for rule in rules do
+            let target = matchedType rule.Match
+            match covered |> List.tryFind (fun (other, _) -> other = target) with
+            | Some(_, existing) ->
+                let owner = existing.Capability |> Option.defaultValue existing.Id
+                invalidArg "lines" $"Guardrails capability '{capability.Name}' claims {target}, which '{owner}' already covers: use {existing.Replacement} instead"
+            | None -> ()
+        for other, otherRules in declared do
+            if other.Name < capability.Name
+               && otherRules |> List.exists (fun o -> rules |> List.exists (fun r -> matchedType o.Match = matchedType r.Match)) then
+                invalidArg "lines" $"Guardrails capabilities '{other.Name}' and '{capability.Name}' claim the same API; one capability owns an API"
+    let known = (builtInCapabilities |> List.map _.Name) @ (declared |> List.map (fst >> _.Name)) |> Set.ofList
+    let claims =
+        entries
+        |> List.choose (function
+            | lineNumber, _, [| "capabilityFile"; name; path |] when path.Trim() <> "" ->
+                let name = name.Trim()
+                if not (known.Contains name) then
+                    let names = String.concat ", " (Set.toList known)
+                    invalidArg "lines" $"Guardrails: {path.Trim()} claims capability '{name}', which is not defined; known capabilities are {names}"
+                (try Some(name, Path.GetFullPath(path.Trim())) with _ -> None)
+            | _ -> None)
+    let claimedBy (capability: Capability) =
+        { capability with Implementation = claims |> List.filter (fst >> (=) capability.Name) |> List.map snd |> List.distinct }
 
     let setting name =
         entries
@@ -112,13 +173,6 @@ let parse (lines: string seq) : Config =
         setting "nativeAot"
         |> Option.exists (fun value -> String.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
 
-    let boundaries =
-        entries
-        |> List.choose (function
-            | _, _, [| "boundary"; path |] when path.Trim() <> "" ->
-                try Some(Path.GetFullPath(path.Trim())) with _ -> None
-            | _ -> None)
-        |> Set.ofList
 
     let generated =
         entries
@@ -167,7 +221,7 @@ let parse (lines: string seq) : Config =
             | Error errors -> invalidArg "lines" (String.concat Environment.NewLine errors)
         | _ -> None
 
-    { EnabledGuardrails = enabled
+    { EnabledGuardrails = declared |> List.fold (fun enabled (capability, _) -> Set.add capability.Guardrail enabled) enabled
       NativeAot = nativeAot
       Checkpoint = setting "checkpoint" |> Option.exists (fun value -> String.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
       FastSeverityCap =
@@ -176,11 +230,8 @@ let parse (lines: string seq) : Config =
         | Some "Fast" -> true
         | Some other -> invalidArg "lines" $"Unknown Guardrails severityCap '{other}'"
       InTests = setting "inTests" |> Option.defaultValue ""
-      AllRules = builtInRules @ contributed
-      BoundaryFiles =
-        match policy, policyRoot with
-        | Some parsed, Some root -> parsed.Boundaries |> List.map (fun path -> Path.GetFullPath(Path.Combine(root, path))) |> Set.ofList
-        | _ -> boundaries
+      AllRules = builtInRules @ contributed @ (declared |> List.collect snd)
+      AllCapabilities = (builtInCapabilities @ (declared |> List.map fst)) |> List.map claimedBy
       GeneratedFiles = generated
       BaselineRoot = setting "baselineRoot" |> Option.defaultValue (Directory.GetCurrentDirectory())
       Baseline = baseline
@@ -426,10 +477,6 @@ let skipReason (config: Config) fileName =
             Some "project path is unusable, so this source was analyzed under the default policy rather than its project's role; fix the project path"
         | _ -> None
 
-let isBoundaryFile (config: Config) fileName =
-    config.BoundaryFiles.Contains "*"
-    || (resolvableFullPath config fileName |> Option.exists config.BoundaryFiles.Contains)
-
 let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: Message list) : Message list =
     if isSkippedSource config ctx.FileName then [] else
     let sourcePath = resolvableFullPath config ctx.FileName
@@ -461,7 +508,8 @@ let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: 
 
         findings
         |> List.map (fun (message, entry) ->
-            let tiered = Set.contains message.Code (set [ "AXG009"; "AXG010"; "AXG011"; "AXG012"; "AXG013"; "AXG014" ]) || message.Type = "Axial Note Integrity"
+            // A guide-level capability finding is advice: it keeps its Info severity and never enters the baseline.
+            let tiered = Set.contains message.Code (set [ "AXG009"; "AXG010"; "AXG011"; "AXG012"; "AXG013"; "AXG014" ]) || message.Type = "Axial Note Integrity" || message.Type = "Axial Capability Guide"
             let candidate = not tiered && (not (message.Code = "AXG001") || level <> Policy.Allow)
                             && (config.BaselineRule |> Option.forall ((=) message.Code))
             if candidate then config.BaselineOutput |> Option.iter (fun output -> appendGenerated output entry)

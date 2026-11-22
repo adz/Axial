@@ -115,7 +115,7 @@ let analyze (ctx: CliContext) : Message list =
     let config = GuardrailConfig.load ()
     rawRanges ctx
     |> List.filter (fun r ->
-        not (isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText r.StartLine "AXG008"))
+        not (isAllowed ctx.SourceText r.StartLine "AXG008"))
     |> List.map (fun r ->
         { Type = "Axial Scope From Run"
           Message = "This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open."

@@ -216,6 +216,8 @@
     <Error Code="AXGINF001" Condition="'$(_AxialGuardrailsTaskEntered)' != 'true'" Text="Guardrails task-load failure: MSBuild could not load $(_AxialGuardrailsTaskAssembly)." />
     <ItemGroup>
       <_AxialGuardrailsContentInputs Include="@(_AxialGuardrailsPolicyInputs);@(EditorConfigFiles);@(AnalyzerConfigFiles);$(_AxialGuardrailsConfigFile)" Condition="Exists('%(Identity)')" />
+      <!-- The rules file names a definition by path, so its content is an input of its own. -->
+      <_AxialGuardrailsContentInputs Include="@(AxialCapabilityDefinition->'%(FullPath)')" />
       <_AxialGuardrailsContentInputs Include="$(_AxialGuardrailsFscArgsFile)" Condition="Exists('$(_AxialGuardrailsFscArgsFile)')" />
 
     </ItemGroup>
@@ -276,7 +278,8 @@
     repair instruction instead of silently skipping analysis.
   -->
   <!--
-    Resolves @(AxialGuardrail) and @(AxialGuardrailRule) into the rules file the analyzers read (see
+    Resolves @(AxialGuardrail), @(AxialGuardrailRule), @(AxialCapabilityDefinition) and the AxialCapability metadata
+    of @(Compile) into the rules file the analyzers read (see
     GuardrailConfig.fs for the format). WriteOnlyWhenDifferent keeps its timestamp stable, so the check below reruns
     only when the configuration or the sources change. Metadata must not contain semicolons; escape them as %3B.
   -->
@@ -322,6 +325,12 @@
       <_AxialGuardrailsConfigLine Include="setting&#9;nativeAot&#9;true" Condition="'$(IsAotCompatible)' == 'true' or '$(PublishAot)' == 'true'" />
       <_AxialGuardrailsConfigLine Include="setting&#9;nativeAot&#9;false" Condition="'$(IsAotCompatible)' != 'true' and '$(PublishAot)' != 'true'" />
       <_AxialGuardrailsConfigLine Include="@(AxialGuardrailRule->'rule&#9;%(Identity)&#9;%(Guardrail)&#9;%(Category)&#9;%(Match)&#9;%(Scope)&#9;%(Message)&#9;%(Replacement)')" />
+      <!-- A capability is defined in a <name>.capability.toml file, and claimed by the files that implement or test it
+           with AxialCapability="<name>[;<name>]" metadata on their Compile item. One claim item per file and name. -->
+      <_AxialGuardrailsConfigLine Include="@(AxialCapabilityDefinition->'capabilityDefinition&#9;%(FullPath)')" />
+      <_AxialGuardrailsCapabilityClaim Remove="@(_AxialGuardrailsCapabilityClaim)" />
+      <_AxialGuardrailsCapabilityClaim Include="%(Compile.AxialCapability)" File="%(Compile.FullPath)" Condition="'%(Compile.AxialCapability)' != ''" />
+      <_AxialGuardrailsConfigLine Include="@(_AxialGuardrailsCapabilityClaim->'capabilityFile&#9;%(Identity)&#9;%(File)')" />
     </ItemGroup>
     <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')" />
     <WriteLinesToFile File="$(_AxialGuardrailsConfigFile)" Lines="@(_AxialGuardrailsConfigLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />

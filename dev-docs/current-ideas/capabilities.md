@@ -1,7 +1,7 @@
 # Capabilities: platform in the runtime, and declared authority effects
 
-Status: **Part 1 (Platform in the runtime) is shipped.** Parts 2 and 3 (capability declarations, and the Guardrails
-rules rendered from them) are specified here, not yet built. No code, TOML or lock changes for Parts 2/3 until approved.
+Status: **Part 1 (Platform in the runtime) is shipped. Part 2 (capabilities own raw APIs) is built for 0.16.0.**
+Part 3 lists what is still an idea.
 
 Inputs: this file supersedes `platform-env-class.md` (withdrawn); `richer-effects.md` and `flow-as-data.md` remain the
 future-compatible neighbours.
@@ -173,135 +173,88 @@ and the `ClockEnvironment`/`TestRuntime` env members are gone. `platform-env-cla
 
 ---
 
-## 3. Part 2 — Capability declarations (spec, not built)
+## 3. Part 2 — Capabilities own raw APIs (0.16.0)
 
-### 3.1 Goal
+### 3.1 Principle
 
-Make every authority effect a declared capability, and make the declaration the single source for both the advice a
-Guardrails finding renders and the list `axial capabilities` prints.
+Raw effects are blocking errors the agent must fix, with advice precise enough to act on. One mechanism decides where a
+raw API may be called: a capability, claimed file by file. Leniency is counted, never hidden in a file or project that
+allows everything. Policy review judges changes by direction, so only loosening reaches a human.
 
-### 3.2 One record, two origins
+### 3.2 Definitions and claims
 
-A capability is data, not an interface. There is no `ICapability` type and no `System.Type` field: nothing is
-discovered by reflection, and nothing needs to be.
+- **Definition.** Axial's own capabilities are compiled into `EffectCatalog.builtInCapabilities` (`clock`, `random`,
+  `guid`, `timezone`, `blocking`, `processors`, `environment`, `console`, `filesystem`, `process`, `http`,
+  `websocket`). Anyone else's is a `<name>.capability.toml` file (`name`, `service`, `replaces`, and optional `env`,
+  `field`, `example`, `live`, `fake`, `level`, `guardrail`), named by an `<AxialCapabilityDefinition Include="…">`
+  item. A package ships both in `buildTransitive`. A definition fails the build when it is malformed, has an unknown
+  key, duplicates a name, or replaces an API that another capability or rule covers.
+- **Claim.** `AxialCapability="name[;name]"` metadata on a file's `Compile` item. Only claimed files may call the API,
+  and a claimed file may call only the APIs it claims. A claim of an undefined capability fails the build. Claims are
+  per project: a file compiled into two projects is claimed in each.
+- **Gap allowance.** `// axial-allow-AXG001: reason (gap: name)` allows one call in any file, never a whole file. It
+  marks a missing feature in Axial or a capability; `axial check` lists them by gap.
+- `[boundaries]` is gone: `axial check` warns until the toml drops it. `host` stays the one role that allows raw calls,
+  because a composition root assembles live services.
 
-```fsharp
-// src/Axial.Guardrails/EffectCatalog.fs
-type Capability =
-    { Name: string            // "filesystem"
-      Guardrail: string       // the package that provides it, "Axial.FileSystem"; turns its rules on
-      Service: string         // "IFileSystem"
-      Env: string             // "IHasFileSystem"
-      Live: string            // "FileSystem.live"
-      Fake: string            // "TestFileSystem"
-      Rules: EffectRule list } // the BCL surface it replaces; MemberPattern data, as today
-```
+### 3.3 Verdicts
 
-The record has two origins and no third:
+`EffectUse.judge` decides every raw effect call the same way in Fast and Full:
 
-- **Built in.** Axial's own capabilities (filesystem, console, process, configuration, http, websocket) are values in
-  `EffectCatalog.fs`, compiled into the analyzer. Today's `builtInRules` regroup under them; each rule's `Guardrail`
-  becomes its capability's. The existing per-package `buildTransitive` props keep switching each guardrail on.
-- **Declared by the consumer.** A repository adds its own in `Axial.Guardrails.toml`:
+| Verdict | When | Counted |
+|---|---|---|
+| Owned | The file claims the capability that owns the API | yes, per capability |
+| Allowance | An `axial-allow-AXG001` comment that names its gap | yes, per gap |
+| Host | A `host`-role file, or `effects.ambient = allow` | yes |
+| Reported | Anything else, at the role's level (`forbid` always reports) | finding |
 
-```toml
-[[capabilities]]
-name = "payments"
-service = "IPayments"
-env = "IHasPayments"
-live = "Payments.live"
-fake = "TestPayments"
-replaces = [
-  { type = "Stripe.ChargeService", members = "*" },
-  { type = "Stripe.RefundService", constructor = true },
-]
-```
+### 3.4 Review by direction
 
-There is no separate `Axial.Capabilities.toml` and no generated JSON. Putting consumer declarations in the policy file
-means they are already protected, hashed into the policy lock, and listed by `axial policy review`: a declaration
-derives rules, so it is policy, and an agent removing a `replaces` entry is a loosening a human must approve. The
-policy parser's key allowlist gains `capabilities`.
+The lock records definitions (`DEFINITION name level replaces`) and claims (`CLAIM project capability files`).
+`PolicyLock.capabilityChanges` compares two snapshots; the build's drift warning and `axial policy review` (the release
+gate) both use it.
 
-### 3.3 Validation
+| Loosens (review) | Tightens or neutral (free) |
+|---|---|
+| A definition removed | A definition added |
+| A `replaces` entry removed | A `replaces` entry added |
+| `enforce` → `guide` | `guide` → `enforce` |
+| A project claims a capability for more files | A claim removed, or a claimed file renamed or moved (same count) |
+| An allowance added (as every suppression) | Text fields (`example`, `fake`, …) |
 
-- `name`, `service`, `env`, `live`, `fake` and a non-empty `replaces` are required. An entry with no `replaces` is
-  rejected because no rule can be derived from it.
-- A consumer `name` or `replaces` type that duplicates a built-in capability is rejected.
-- `live` and `fake` are names shown in advice and in `axial capabilities`; the analyzer does not resolve them. A
-  stale name is a documentation bug, not a build failure.
+### 3.5 Advice and visibility
 
-### 3.4 Commands
+Findings are instructions: "Replace it with IPayments: add a `Payments: IPayments` field to the environment record,
+implement IHasPayments, and call the service (for example ...). Tests supply ...". An effect no capability covers
+offers a definition to write, with the match filled in; structural rules (blocking waits, raw concurrency) give only
+their rewrite. In a claimed file, a foreign effect adds which capability the file claims.
 
-```text
-axial capabilities             # built-in and declared: name, service, env, live, fake, replaced members
-axial add service <Name>       # scaffold the service interface, IHasX, Live and Fake stubs, and the [[capabilities]] entry
-```
-
-`axial add service` writes the capability code into a project or file with the `capabilities` role and appends the
-entry to `Axial.Guardrails.toml`. That edit is a policy change: it appears in `axial policy review` and a human
-approves it, like any other.
-
-### 3.5 Where the raw surface is allowed
-
-Unchanged from today: the capability's own code sits in a project or file the policy assigns the `capabilities` role
-(in this repository, `[projects].capabilities`). There is no per-capability allowlist.
+Each build result records `effectUses` per file (owned per capability, allowances per gap, host, reported).
+`axial check` prints the allowed counts per project (`--json`: `allowedEffects`); `axial capabilities` lists every
+capability with the files that claim it.
 
 ---
 
-## 4. Part 3 — Guardrails renders from the declaration (spec, not built)
+## 4. Part 3 — Still ideas
 
-### 4.1 Rule derivation
-
-Each `replaces` entry becomes an `EffectRule`, reported as `AXG001` like every effect rule today. The advice is
-rendered from the capability, not from a hand-written string:
-
-```text
-src/Foo.fs:12 — touches System.IO.File.ReadAllText directly.
-Use IFileSystem (capability "filesystem"; add IHasFileSystem to env; fake: TestFileSystem).
-```
-
-Three fixed shapes:
-
-| Situation | Advice |
-|---|---|
-| Platform member (`Clock`/`Guid`/`Random`/`Culture`/`TimeZone`) | `use Clock.now`; the runtime provides it (unchanged, from 2.7) |
-| Member a capability replaces | `use IFileSystem; add IHasFileSystem to env` |
-| No capability replaces it | `no capability replaces this; run axial add service <Name>` |
-
-### 4.2 Suppressions are unchanged
-
-No new silencer syntax. An exceptional call site keeps today's form, `// axial-allow-AXG001: <reason>`, effective only
-in a file listed under `[boundaries]`; `AXG002` still rejects a suppression that suppresses nothing. Derived rules are
-ordinary `AXG001` rules, so nothing in the suppression machinery needs to know about capabilities.
-
-### 4.3 Close the console hole
-
-`console.any` matches only `System.Console`. Add to the built-in console capability's rules:
-
-- `Microsoft.FSharp.Core.ExtraTopLevelOperators.printf`, `printfn`, `eprintf`, `eprintfn`, and the `stdout` / `stderr`
-  values. Advice: `IConsole.Write` / `WriteLine` / `WriteError` / `WriteErrorLine`.
-- `sprintf`, `failwithf`, `kprintf`, `fprintf` (to a writer the code was given) and `String.Format` stay allowed:
-  they format, they do not write to the process.
-
-Exit is not a console member, and `IConsole` gains none. `exit` (`Microsoft.FSharp.Core.Operators.exit`) and
-`System.Environment.Exit` get a rule in the core guardrail whose advice is the host: return the flow's `Exit` from
-`DotNetApp.run` (or the Node host), which maps it to the process exit code with `exitCode`. Terminating from inside a
-flow skips finalizers, so it has no capability to replace it.
-
-Measure the printf rule on the examples and tests before turning it on; it is the one addition likely to be noisy.
+- **Console hole.** `printf`/`printfn`/`eprintf`/`eprintfn` and the `stdout`/`stderr` values bypass `IConsole`.
+  Add them to the console capability's rules after measuring the noise on examples and tests; `sprintf` and
+  `failwithf` stay allowed.
+- **Exit.** `exit` and `Environment.Exit` skip finalizers. A core rule whose advice is "return the `Exit` from
+  `DotNetApp.run`" fits; `IConsole` gains no exit member.
+- **Capability attributes.** `[<Capability>]` on the service interface would let a library ship its declaration in
+  the assembly. It needs typed-tree discovery of referenced assemblies and works only in Full mode, so the MSBuild item
+  stays the declaration until that cost is justified.
 
 ---
 
 ## 5. Order of work
 
-1. Approve Part 2/3 shape.
-2. Add the `Capability` record and regroup `builtInRules` under the six built-in capabilities, with no change to any
-   finding's text. `axial capabilities` lists them.
-3. Render advice from the capability (4.1); update the advice snapshot tests.
-4. Parse `[[capabilities]]` in `Axial.Guardrails.toml` (validation from 3.3, review and lock coverage, key allowlist).
-5. `axial add service`.
-6. Console printf/stdout rules and the core exit rule (4.3), after measuring them on this repository.
-7. Docs + release notes + migration.
+1. ~~Part 2: definitions, claims, gap allowances, review by direction.~~ Built for 0.16.0 (release notes in
+   `dev-docs/releases/0.16.0.md`).
+2. Convert the repository's tests: rewrite blocking waits and delays as flows on `TestPlatform`, and claim the
+   capability on test files that check the real thing.
+3. Measure and add the printf/stdout rules; add the exit rule.
 
 ---
 
@@ -310,5 +263,5 @@ Measure the printf rule on the examples and tests before turning it on; it is th
 - No general "register any service in the runtime context" API. Platform and observation are ambient; authority stays
   in `'env`.
 - No auto-advancing test clock, no quiescence detection.
-- No reflection-based discovery: built-in capabilities are compiled values, consumer ones are TOML data.
+- No reflection-based discovery: built-in capabilities are compiled values, declared ones are MSBuild items.
 - `Schedule<'env,'input,'output>` keeps `'env`; only the clock requirement left it.

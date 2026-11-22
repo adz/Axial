@@ -4,10 +4,14 @@
 ///
 ///   // axial-allow-AXG003: foreign callback translates this exception
 ///
-/// XML documentation (`///`), block comments, and string contents are not directives. The file-wide form is
-/// `axial-allow-file-AXG001`; it must occur in the leading ordinary-comment block. Both forms are effective only in
-/// exact files declared in `[boundaries].files` in Axial.Guardrails.toml. The old
-/// `axial-allow-effect-file` spelling is not recognized; primitive effect implementations use the capabilities role.
+/// XML documentation (`///`), block comments, and string contents are not directives. The file-wide form
+/// `axial-allow-file-AXGnnn` must occur in the leading ordinary-comment block. Every directive is recorded in the
+/// policy lock, so each new one is a review item.
+///
+/// AXG001 is special: raw effects belong in a capability's claimed files, so an AXG001 allowance is a recorded gap in
+/// Axial or a capability. It covers one call, never a file, and ends with the gap it stands for:
+///
+///   // axial-allow-AXG001: Axial.Process has no named pipes yet (gap: process-named-pipes)
 module Axial.Guardrails.Suppressions
 
 open System
@@ -23,6 +27,13 @@ type Directive =
       Reason: string
       FileWide: bool
       Raw: string }
+
+let private gapPattern = Regex(@"\(gap:\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*\)\s*$", RegexOptions.Compiled)
+
+/// The gap an AXG001 allowance names with a trailing `(gap: name)`, if it names one.
+let gapOf (directive: Directive) =
+    let matched = gapPattern.Match directive.Reason
+    if matched.Success then Some matched.Groups[1].Value else None
 
 let private validDirective =
     Regex(@"\baxial-allow-(file-)?(AXG[0-9]{3})\s*:\s*(.*)$", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
@@ -141,13 +152,13 @@ let validDirectives (sourceText: ISourceText) =
             && directive.Reason <> ""
             && (not directive.FileWide || isInLeadingCommentBlock sourceText directive.Line)))
 
-/// True when a declared boundary file has a valid suppression for `ruleId` on the finding line,
-/// the line above it, or in its leading comment block.
-let isAllowed (boundaryFiles: Set<string>) (fileName: string) (sourceText: ISourceText) line1 (ruleId: string) =
-    let fullPath = try Some(IO.Path.GetFullPath fileName) with _ -> None
-    if not (boundaryFiles.Contains "*" || fullPath |> Option.exists boundaryFiles.Contains) then false
-    else
-        validDirectives sourceText
-        |> List.exists (fun directive ->
-            directive.RuleId = Some(ruleId.ToUpperInvariant())
-            && (directive.FileWide || directive.Line = line1 || directive.Line = line1 - 1))
+/// True when a valid suppression for `ruleId` sits on the finding line, the line above it, or (except for AXG001)
+/// in the file's leading comment block. An AXG001 allowance counts only when it names its gap.
+let isAllowed (sourceText: ISourceText) line1 (ruleId: string) =
+    let ruleId = ruleId.ToUpperInvariant()
+    validDirectives sourceText
+    |> List.exists (fun directive ->
+        let nearby = directive.Line = line1 || directive.Line = line1 - 1
+        directive.RuleId = Some ruleId
+        && (if ruleId = "AXG001" then nearby && not directive.FileWide && (gapOf directive).IsSome
+            else nearby || directive.FileWide))

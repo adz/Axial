@@ -114,7 +114,8 @@ module FastSyntaxTests =
 
     [<Theory>]
     [<InlineData("host", false)>]
-    [<InlineData("capabilities", false)>]
+    // A capabilities-role file owns only its own capability's API; this one owns none, so the clock is reported.
+    [<InlineData("capabilities", true)>]
     [<InlineData("domain", true)>]
     [<InlineData("services", true)>]
     [<InlineData("test", true)>]
@@ -142,11 +143,12 @@ module FastSyntaxTests =
     let ``forbid remains unsuppressible in effect role files in both modes`` role =
         withConfig role (fun original path ->
             let root = original.PolicyRoot.Value
-            let source = "// axial-allow-file-AXG001: negative control for an unsuppressible policy\nmodule M\nlet now () = System.DateTime.UtcNow\n"
+            let source = "module M\nlet now () = System.DateTime.UtcNow // axial-allow-AXG001: negative control for an unsuppressible policy (gap: none)\n"
             File.WriteAllText(path, source)
             let policy = Path.Combine(root, "Axial.Guardrails.toml")
-            File.AppendAllText(policy, $"\n[roles.{role}.rules]\n\"effects.ambient\" = \"forbid\"\n[boundaries]\nfiles = [\"Fast.fs\"]\n")
-            let config = GuardrailConfig.parse ["guardrail\tAxial"; $"setting\tpolicyRoot\t{root}"; $"setting\tpolicyFile\t{policy}"; $"setting\tprojectPath\t{root}/Tests.fsproj"]
+            File.AppendAllText(policy, $"\n[roles.{role}.rules]\n\"effects.ambient\" = \"forbid\"\n")
+            // Neither a claim nor an allowance overrides forbid.
+            let config = GuardrailConfig.parse ["guardrail\tAxial"; $"setting\tpolicyRoot\t{root}"; $"setting\tpolicyFile\t{policy}"; $"setting\tprojectPath\t{root}/Tests.fsproj"; $"capabilityFile\tclock\t{path}"]
             let ctx = AnalyzerTestContext.wait (fun () -> AnalyzerTestContext.createAt path source)
             Assert.NotEmpty(EffectBoundaryAnalyzer.analyzeWithConfig config ctx)
             Assert.Contains(FastSyntax.analyze config path ctx.SourceText ctx.ParseFileResults.ParseTree, fun (_, message) -> message.Code = "AXG001"))

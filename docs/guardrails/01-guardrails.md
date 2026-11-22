@@ -21,9 +21,11 @@ Task-returning signature as a secondary count, with the project's role (`--json`
 records these counts: each Fast or Full result (`axial-guardrails.<TFM>.result.xml` under `obj`) carries Fast's count
 per file, and cache replays keep it. `axial check` reads each project's latest complete result and parses no source;
 a project without one is listed as "not built yet — run a build" (`--json`: `"built": false`, null counts). Fixing an
-AXG014 finding lowers it after the next build. It is a trend to watch, not a gate; AXG014 gives the per-site guidance. In this repository, `scripts/axial <command>` builds and runs the live tool.
+AXG014 finding lowers it after the next build. It is a trend to watch, not a gate; AXG014 gives the per-site guidance.
+The same results carry the allowed raw effect calls per project: how many sit in files that claim a capability (per
+capability), how many gap allowances allow (per gap), and how many are in host files (`--json`: `allowedEffects`). In this repository, `scripts/axial <command>` builds and runs the live tool.
 
-Run `axial policy review [--since <ref>] [--json]` to inspect what loosened: new or changed suppression reasons and notes, relaxed roles or rule levels, runtime/boundary/ignore/baseline additions, evaluated project settings, and changes to declared automation files or analyzer versions. Removals appear briefly as tightening. The default reference is the reviewed commit recorded in the lock; the first review needs `--since <tag-or-commit>`. If that reference predates policy files, the review reports policy introduction rather than inventing historical policy, and still compares source exceptions.
+Run `axial policy review [--since <ref>] [--json]` to inspect what loosened: new or changed suppression reasons and notes, relaxed roles or rule levels, capabilities loosened (a definition or `replaces` entry removed, `enforce` to `guide`, a project claiming more files), runtime/ignore/baseline additions, evaluated project settings, and changes to declared automation files or analyzer versions. Removals appear briefly as tightening. The default reference is the reviewed commit recorded in the lock; the first review needs `--since <tag-or-commit>`. If that reference predates policy files, the review reports policy introduction rather than inventing historical policy, and still compares source exceptions.
 
 `axial check --full` first enforces `axial policy review --check`, then builds the single solution (`.slnx` or `.sln`) in the current directory with explicit Full mode and checkpoint enforcement. The configuration defaults to Release; use `--configuration <name>` to override it. It analyzes every enabled F# project and target framework, including frameworks normally restricted by a designated-framework setting. Exported results must match the build's expected project/TFM set and have complete Full coverage. Infrastructure failures, missing or incomplete records, skipped sources (`AXGINF002`, which ordinary builds only warn about; the message names each file and reason), and Error findings produce a nonzero exit; Warning, Hint and baselined findings retain their non-blocking severity. Build diagnostics stream to stderr, leaving `--json` stdout parseable. The check uses MSBuild's `CustomAfterMicrosoftCommonTargets` hook to collect coverage; a value set in the environment is imported from it rather than replaced. A first policy review still needs a human-reviewed reference recorded in the lock. The command never approves policy or generates a baseline.
 
@@ -159,15 +161,17 @@ services = ["src/App/Services/**"]
 "effects.ambient" = "allow"
 ```
 
-The five roles are `capabilities`, `services`, `domain`, `host`, and `test`. File assignments override project
-assignments, which override the default. Rule levels are `allow`, `warn`, `deny`, and `forbid`; `forbid` cannot be
+The five roles are `capabilities`, `services`, `domain`, `host`, and `test`. No role grants raw calls by itself except
+`host`: a file makes a capability's raw calls only when its `Compile` item
+[claims the capability](/guardrails/rule-authoring.html#claim-a-capability). File assignments
+override project assignments, which override the default. Rule levels are `allow`, `warn`, `deny`, and `forbid`; `forbid` cannot be
 suppressed. Suppressions remain active while policy review is pending. Policy changes warn during ordinary builds;
 `axial policy review` groups the changes for later human review. Removing suppressions or shrinking baseline entries
 tightens policy; the next approval refreshes the snapshot.
 
 Use `[suppressions]` with `ignore = ["tests/AnalyzerFixtures/**"]` to exclude fixture sources from the policy
 lock's suppression scan. Without this optional setting, every repository `.fs` file is scanned; no project paths
-are excluded automatically. Patterns use the same repository-relative glob syntax as project and boundary paths:
+are excluded automatically. Patterns use the same repository-relative glob syntax as project paths:
 `*` matches within a path segment, `**` crosses directories, and `?` matches one non-separator character.
 Ignore patterns may match no files. This setting affects only lock scanning, not analyzer execution. The TOML is
 tracked, so adding ignore entries appears in the next policy review.
@@ -180,7 +184,7 @@ its file does not add a review item. Adding a duplicate, changing its rule or re
 configured baseline path. Version-1 locks remain readable but always require one reviewed `axial policy approve`
 to migrate; they are never silently trusted.
 
-Do not set Guardrails policy through MSBuild severity, boundary, baseline-path, or test-policy settings.
+Do not set Guardrails policy through MSBuild severity, baseline-path, or test-policy settings.
 `AxialGuardrailsSeverity` (MSBuild property or environment variable) and `AXIAL_GUARDRAILS_SEVERITY` are removed:
 `AXIALGR001` fails the build or standalone analyzer/CLI invocation, even when analysis is disabled. Remove the
 setting and configure supported per-role rule levels in `Axial.Guardrails.toml`, for example
@@ -314,11 +318,11 @@ rule was newly enabled for every affected file's effective role. Preparing candi
 
 ### Migrate file-level effect allowances
 
-`axial-allow-effect-file` is not recognized in 0.12. If the file implements a primitive effect, assign it the
-`capabilities` role in `[files]` or `[projects]`. For an exceptional boundary file instead, list its exact
-repository-relative path in `[boundaries].files` and use a rule-specific allowance, for example
-`// axial-allow-file-AXG001: live system clock implementation` in the leading ordinary-comment block.
-The boundary declaration alone does not suppress findings. A `forbid` level cannot be suppressed.
+`axial-allow-effect-file` and `axial-allow-file-AXG001` are not recognized, and `[boundaries]` no longer has an effect
+(`axial check` warns until it is removed). If the file implements or tests a capability, claim it on the file's
+`Compile` item, for example `<Compile Include="LiveClock.fs" AxialCapability="clock" />`. When Axial or a capability
+cannot do the job yet, allow the one call with a comment that names the gap:
+`// axial-allow-AXG001: <reason> (gap: <name>)`. A `forbid` level cannot be suppressed.
 For legacy domain code, prepare a baseline and have a human review and approve it as described above.
 AXG009–013 do not accept file allowances or baseline downgrades.
 

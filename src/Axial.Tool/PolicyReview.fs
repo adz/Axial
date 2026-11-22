@@ -70,7 +70,7 @@ module PolicyReview =
                 elif at "\"" then quoted <- true; i <- i + 1
                 else i <- i + 1 ]
 
-    type private State = { Entries: Map<string, Set<string>>; Rules: Map<string, string>; Projects: Map<string, Map<string, string>>; EvaluationErrors: string list }
+    type private State = { Entries: Map<string, Set<string>>; Rules: Map<string, string>; Projects: Map<string, Map<string, string>>; EvaluationErrors: string list; Snapshot: Snapshot }
     let private files root tracked =
         let skipped = set [".git"; "bin"; "obj"; "artifacts"; "output"; ".livedocs"]
         let rec walk directory = seq {
@@ -174,6 +174,7 @@ module PolicyReview =
               "baseline", baseline; "automation", automation; "analyzer package", versions ]
             |> List.map (fun (name, values) -> name, Set.ofList values) |> Map.ofList
           Rules = snapshot.Rules
+          Snapshot = snapshot
           Projects = projects
           EvaluationErrors = evaluationErrors }
 
@@ -263,6 +264,9 @@ module PolicyReview =
                                 let newItems = value.Split(';', StringSplitOptions.RemoveEmptyEntries) |> Set.ofArray
                                 if not (Set.isSubset oldItems newItems) then add "project settings" detail
                             | _ -> add "project settings" detail
+                let capabilitiesLoosened, capabilitiesTightened = capabilityChanges before.Snapshot after.Snapshot
+                for detail in capabilitiesLoosened do add "capabilities" detail
+                for detail in capabilitiesTightened do remove "capabilities" (detail + " (tightened)")
                 for KeyValue(project, _) in before.Projects do
                     if not (after.Projects.ContainsKey project) then remove "project settings" project
                 Ok { Since = point; Loosened = List.ofSeq added; Removed = List.ofSeq removed }

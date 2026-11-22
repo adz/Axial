@@ -29,15 +29,18 @@ module HardeningTests =
         System.String.Join("\n", lines)
 
     [<Fact>]
-    let ``suppression requires rule reason and declared boundary`` () =
+    let ``an AXG001 allowance needs a reason that names its gap`` () =
         task {
-            let! ctx = AnalyzerTestContext.create "module M\nlet value = System.DateTime.UtcNow // axial-allow-AXG001: live clock boundary\n"
-            let directives = Suppressions.validDirectives ctx.SourceText
-            let directive = Assert.Single directives
+            let! plain = AnalyzerTestContext.create "module M\nlet value = System.DateTime.UtcNow // axial-allow-AXG001: live clock\n"
+            let directive = Assert.Single(Suppressions.validDirectives plain.SourceText)
             Assert.Equal(Some "AXG001", directive.RuleId)
-            Assert.Equal("live clock boundary", directive.Reason)
-            Assert.False(Suppressions.isAllowed Set.empty ctx.FileName ctx.SourceText 2 "AXG001")
-            Assert.True(Suppressions.isAllowed (Set.singleton ctx.FileName) ctx.FileName ctx.SourceText 2 "AXG001")
+            Assert.Equal("live clock", directive.Reason)
+            Assert.False(Suppressions.isAllowed plain.SourceText 2 "AXG001")
+            let! gap = AnalyzerTestContext.create "module M\nlet value = System.DateTime.UtcNow // axial-allow-AXG001: no clock yet (gap: clock-x)\n"
+            Assert.Equal(Some "clock-x", Suppressions.gapOf (Assert.Single(Suppressions.validDirectives gap.SourceText)))
+            Assert.True(Suppressions.isAllowed gap.SourceText 2 "AXG001")
+            let! fileWide = AnalyzerTestContext.create "// axial-allow-file-AXG001: whole file (gap: clock-x)\nmodule M\nlet value = System.DateTime.UtcNow\n"
+            Assert.False(Suppressions.isAllowed fileWide.SourceText 3 "AXG001")
         }
 
     [<Fact>]

@@ -17,12 +17,18 @@ module PolicyLock =
     let LockName = "Axial.Guardrails.lock"
 
     type BaselineEntry = { Rule: string; File: string; Fingerprint: string; Count: int }
+    /// What a capability definition contributes to policy strength: its level and the APIs it covers.
+    type Definition = { Level: string; Replaces: Set<string> }
     type Snapshot =
         { Version: int; BaselinePath: string; Hashes: Map<string,string>; Baseline: BaselineEntry list; BaselineRoles: Map<string,Set<string>>
-          Rules: Map<string,string>; Capabilities: Set<string>; Boundaries: Set<string>; Suppressions: Set<string> }
+          Rules: Map<string,string>; Capabilities: Set<string>; Boundaries: Set<string>; Suppressions: Set<string>
+          /// Capability definitions in the repository's `.capability.toml` files, by name.
+          Definitions: Map<string, Definition>
+          /// The files each project claims for each capability (`AxialCapability` metadata on Compile items).
+          Claims: Map<string * string, Set<string>> }
     type ChangeSummary =
         { RulesDowngraded: string list; BaselineAdded: BaselineEntry list; SuppressionsAdded: string list
-          BoundariesAdded: string list; ProtectedChanged: string list }
+          BoundariesAdded: string list; CapabilitiesLoosened: string list; ProtectedChanged: string list }
     type Approval = Normal | BaselineRule of string
 
     let knownRules = set [
@@ -107,6 +113,72 @@ module PolicyLock =
         |> Seq.filter (fun path -> Axial.Guardrails.Policy.isRepositorySource root (Path.Combine(root, path.Replace('/', Path.DirectorySeparatorChar))))
         |> Seq.sort |> Seq.toList
 
+    /// Capability definitions in the repository: every `.capability.toml` file, parsed as the analyzers parse it.
+    let private definitions root (files: string array) =
+        files
+        |> Array.filter (fun path -> path.EndsWith(".capability.toml", StringComparison.OrdinalIgnoreCase))
+        |> Array.map (fun path ->
+            match Axial.Guardrails.EffectCatalog.parseDefinition (File.ReadAllText path) with
+            | Ok(capability, rules) ->
+                let level = match capability.Level with Axial.Guardrails.EffectCatalog.Guide -> "guide" | Axial.Guardrails.EffectCatalog.Enforce -> "enforce"
+                capability.Name, { Level = level; Replaces = rules |> List.map (fun rule -> Axial.Guardrails.EffectCatalog.formatMatch rule.Match) |> Set.ofList }
+            | Error error -> failwith $"capability definition {relative root path}: {error}")
+        |> Map.ofArray
+
+    /// The files each project claims per capability, read from the project files as written: AxialCapability metadata
+    /// (an attribute or a child element) on Compile items, each naming one or more files and capabilities.
+    let private claims root (files: string array) =
+        files
+        |> Seq.filter (fun path -> path.EndsWith(".fsproj", StringComparison.Ordinal))
+        |> Seq.collect (fun project ->
+            let document = try Some(System.Xml.Linq.XDocument.Load project) with _ -> None
+            match document with
+            | None -> Seq.empty
+            | Some document ->
+                document.Descendants()
+                |> Seq.filter (fun element -> element.Name.LocalName = "Compile")
+                |> Seq.collect (fun item ->
+                    let attribute name = item.Attribute(System.Xml.Linq.XName.Get name) |> Option.ofObj |> Option.map _.Value
+                    let child = item.Elements() |> Seq.tryFind (fun element -> element.Name.LocalName = "AxialCapability") |> Option.map _.Value
+                    let split (value: string) = value.Split(';', StringSplitOptions.RemoveEmptyEntries ||| StringSplitOptions.TrimEntries)
+                    match attribute "Include", attribute "AxialCapability" |> Option.orElse child with
+                    | Some included, Some names ->
+                        let directory = Path.GetDirectoryName project
+                        seq {
+                            for file in split included do
+                                for name in split names do
+                                    let full = Path.GetFullPath(Path.Combine(directory, file.Replace('\\', Path.DirectorySeparatorChar)))
+                                    yield (relative root project, name), relative root full }
+                    | _ -> Seq.empty))
+        |> Seq.groupBy fst
+        |> Seq.map (fun (key, entries) -> key, entries |> Seq.map snd |> Set.ofSeq)
+        |> Map.ofSeq
+
+    /// How capabilities moved between two snapshots: loosening needs review, tightening does not. Removing a definition,
+    /// one of its `replaces` entries, or lowering it to `guide` loosens; so does a project claiming a capability for more
+    /// files than before. Renaming or moving a claimed file keeps the count, so it is neither.
+    let capabilityChanges old current =
+        let loosened = ResizeArray<string>()
+        let tightened = ResizeArray<string>()
+        for KeyValue(name, before) in old.Definitions do
+            match current.Definitions.TryFind name with
+            | None -> loosened.Add $"{name}: definition removed"
+            | Some after ->
+                if before.Level = "enforce" && after.Level = "guide" then loosened.Add $"{name}: level enforce -> guide"
+                elif before.Level = "guide" && after.Level = "enforce" then tightened.Add $"{name}: level guide -> enforce"
+                for entry in Set.difference before.Replaces after.Replaces do loosened.Add $"{name}: no longer replaces {entry}"
+                for entry in Set.difference after.Replaces before.Replaces do tightened.Add $"{name}: replaces {entry}"
+        for KeyValue(name, _) in current.Definitions do
+            if not (old.Definitions.ContainsKey name) then tightened.Add $"{name}: defined"
+        for key in Set.union (old.Claims.Keys |> Set.ofSeq) (current.Claims.Keys |> Set.ofSeq) do
+            let project, capability = key
+            let before = old.Claims.TryFind key |> Option.defaultValue Set.empty
+            let after = current.Claims.TryFind key |> Option.defaultValue Set.empty
+            let files = if after.IsEmpty then "no files" else String.concat ", " after
+            if after.Count > before.Count then loosened.Add $"{project}: {capability} claimed by {files} (was {before.Count})"
+            elif after.Count < before.Count then tightened.Add $"{project}: {capability} claimed by {files} (was {before.Count})"
+        List.ofSeq loosened, List.ofSeq tightened
+
     let inspect root =
         try
             let configPath = Path.Combine(root,ConfigName)
@@ -126,8 +198,8 @@ module PolicyLock =
                 if not missing.IsEmpty then Error $"protected file not found: {missing.Head}" else
                 let hashes = protectedPaths |> Seq.map (fun p -> p,sha256(Path.Combine(root,p))) |> Map.ofSeq
                 let capabilities = config.Files |> List.filter (fun x -> x.Role=Capabilities) |> List.collect _.Patterns |> Set.ofList
-                // Runtime exemptions are approval-sensitive like boundary declarations.
-                let boundaries = (config.Boundaries @ (config.Runtime |> List.map (fun path -> "runtime:" + path))) |> Set.ofList
+                // Runtime exemptions are approval-sensitive. `[boundaries]` no longer has an effect and is not recorded.
+                let boundaries = config.Runtime |> List.map (fun path -> "runtime:" + path) |> Set.ofList
                 let baselineEntries = baselineEntries baselinePath
                 let sourceProjects =
                     files
@@ -147,7 +219,8 @@ module PolicyLock =
                             |> Seq.map(fun resolved -> roleName resolved.Role)
                             |> Set.ofSeq))
                     |> Map.ofSeq
-                Ok { Version=2; BaselinePath=baseline; Hashes=hashes; Baseline=baselineEntries; BaselineRoles=baselineRoles; Rules=policyRules config; Capabilities=capabilities; Boundaries=boundaries; Suppressions=suppressions root config.SuppressionIgnores files }
+                Ok { Version=2; BaselinePath=baseline; Hashes=hashes; Baseline=baselineEntries; BaselineRoles=baselineRoles; Rules=policyRules config; Capabilities=capabilities; Boundaries=boundaries; Suppressions=suppressions root config.SuppressionIgnores files
+                     Definitions=definitions root files; Claims=claims root files }
         with ex -> Error ex.Message
 
     let serialize snapshot =
@@ -161,6 +234,12 @@ module PolicyLock =
             for KeyValue(rule,level) in snapshot.Rules do yield $"POLICY  {rule}\t{level}"
             for x in snapshot.Capabilities do yield $"CAPABILITY  {x}"
             for x in snapshot.Boundaries do yield $"BOUNDARY  {x}"
+            for KeyValue(name,definition) in snapshot.Definitions do
+                let replaces = String.concat "|" definition.Replaces
+                yield $"DEFINITION  {name}\t{definition.Level}\t{replaces}"
+            for KeyValue((project,capability),files) in snapshot.Claims do
+                let claimed = String.concat ";" files
+                yield $"CLAIM  {project}\t{capability}\t{claimed}"
             for x in snapshot.Suppressions do yield $"SUPPRESSION  {x}" }
         |> String.concat "\n" |> fun x -> x+"\n"
 
@@ -172,7 +251,7 @@ module PolicyLock =
             if lines.Length=0 || not (set ["version = 1"; "version = 2"] |> Set.contains lines[0]) then fail 1 "the first record must be exactly 'version = 1' or 'version = 2'"
             let mutable reviewedPointSeen=false
             let mutable baselinePathSeen=false
-            let mutable s={ Version=(if lines[0]="version = 1" then 1 else 2); BaselinePath=DefaultBaseline; Hashes=Map.empty; Baseline=[]; BaselineRoles=Map.empty; Rules=Map.empty; Capabilities=Set.empty; Boundaries=Set.empty; Suppressions=Set.empty }
+            let mutable s={ Version=(if lines[0]="version = 1" then 1 else 2); BaselinePath=DefaultBaseline; Hashes=Map.empty; Baseline=[]; BaselineRoles=Map.empty; Rules=Map.empty; Capabilities=Set.empty; Boundaries=Set.empty; Suppressions=Set.empty; Definitions=Map.empty; Claims=Map.empty }
             let unique line kind key exists = if exists then fail line $"duplicate {kind} record '{key}'"
             for index in 1..lines.Length-1 do
                 let lineNumber=index+1
@@ -219,6 +298,16 @@ module PolicyLock =
                     if String.IsNullOrWhiteSpace value then fail lineNumber "BOUNDARY requires a non-empty value"
                     unique lineNumber "BOUNDARY" value (s.Boundaries.Contains value)
                     s <- {s with Boundaries=s.Boundaries.Add value}
+                elif line.StartsWith("DEFINITION  ") then
+                    let p=line.Substring(12).Split('\t')
+                    if p.Length<>3 || String.IsNullOrWhiteSpace p[0] || not(set["enforce";"guide"]|>Set.contains p[1]) then fail lineNumber "DEFINITION requires a name, enforce/guide, and its replaces entries"
+                    unique lineNumber "DEFINITION" p[0] (s.Definitions.ContainsKey p[0])
+                    s <- {s with Definitions=s.Definitions.Add(p[0], { Level=p[1]; Replaces=p[2].Split('|',StringSplitOptions.RemoveEmptyEntries) |> Set.ofArray })}
+                elif line.StartsWith("CLAIM  ") then
+                    let p=line.Substring(7).Split('\t')
+                    if p.Length<>3 || p |> Array.exists String.IsNullOrWhiteSpace then fail lineNumber "CLAIM requires a project, a capability and its files"
+                    unique lineNumber "CLAIM" (p[0]+"/"+p[1]) (s.Claims.ContainsKey(p[0],p[1]))
+                    s <- {s with Claims=s.Claims.Add((p[0],p[1]), p[2].Split(';',StringSplitOptions.RemoveEmptyEntries) |> Set.ofArray)}
                 elif line.StartsWith("SUPPRESSION  ") then
                     let value=line.Substring(13)
                     if String.IsNullOrWhiteSpace value then fail lineNumber "SUPPRESSION requires a non-empty value"
@@ -233,16 +322,18 @@ module PolicyLock =
         let downgraded = old.Rules |> Seq.choose(fun x -> current.Rules.TryFind x.Key |> Option.filter(fun n -> rank n < rank x.Value) |> Option.map(fun n -> $"{x.Key}: {x.Value} -> {n}")) |> Seq.toList
         let oldBase=old.Baseline |> Seq.map(fun x -> (x.Rule,x.File,x.Fingerprint),x.Count) |> Map.ofSeq
         let baselineAdded=current.Baseline |> List.filter(fun x -> x.Count > (oldBase.TryFind(x.Rule,x.File,x.Fingerprint) |> Option.defaultValue 0))
+        let capabilitiesLoosened, _ = capabilityChanges old current
         { RulesDowngraded=downgraded; BaselineAdded=baselineAdded; SuppressionsAdded=Set.difference current.Suppressions old.Suppressions|>Set.toList
           BoundariesAdded=Set.union (Set.difference current.Capabilities old.Capabilities) (Set.difference current.Boundaries old.Boundaries)|>Set.toList
+          CapabilitiesLoosened=capabilitiesLoosened
           ProtectedChanged=(Set.union (old.Hashes |> Map.keys |> Set.ofSeq) (current.Hashes |> Map.keys |> Set.ofSeq)
               |> Set.filter(fun p ->
                   old.Hashes.TryFind p<>current.Hashes.TryFind p
                   && not (p=old.BaselinePath && p=current.BaselinePath && old.Baseline<>current.Baseline && baselineAdded.IsEmpty))
               |> Set.toList)
-              @ (if old.Version=2 && downgraded.IsEmpty && baselineAdded.IsEmpty && Set.isSubset current.Suppressions old.Suppressions && old.Capabilities=current.Capabilities && old.Boundaries=current.Boundaries then [] else [LockName]) }
+              @ (if old.Version=2 && downgraded.IsEmpty && baselineAdded.IsEmpty && Set.isSubset current.Suppressions old.Suppressions && old.Capabilities=current.Capabilities && old.Boundaries=current.Boundaries && capabilitiesLoosened.IsEmpty then [] else [LockName]) }
 
-    let isEmpty x = x.RulesDowngraded.IsEmpty && x.BaselineAdded.IsEmpty && x.SuppressionsAdded.IsEmpty && x.BoundariesAdded.IsEmpty && x.ProtectedChanged.IsEmpty
+    let isEmpty x = x.RulesDowngraded.IsEmpty && x.BaselineAdded.IsEmpty && x.SuppressionsAdded.IsEmpty && x.BoundariesAdded.IsEmpty && x.CapabilitiesLoosened.IsEmpty && x.ProtectedChanged.IsEmpty
     let formatJsonSummary x =
         let show label values =
             let joined = String.concat "; " values
@@ -251,6 +342,7 @@ module PolicyLock =
           show "rules downgraded:" x.RulesDowngraded
           show "baseline entries added:" (x.BaselineAdded|>List.map(fun b -> $"{b.Rule}/{b.File}/{b.Fingerprint} x{b.Count}"))
           show "suppressions added:" x.SuppressionsAdded; show "boundaries added:" x.BoundariesAdded
+          show "capabilities loosened:" x.CapabilitiesLoosened
           show "protected files changed:" x.ProtectedChanged ] |> String.concat Environment.NewLine
 
     let formatSummary x =
@@ -272,6 +364,7 @@ module PolicyLock =
           grouped "baseline entries added:" (x.BaselineAdded |> List.map (fun b -> b.File, $"{b.Rule}/{b.Fingerprint} x{b.Count}"))
           grouped "suppressions added:" (x.SuppressionsAdded |> List.map suppression)
           show "boundaries added:" x.BoundariesAdded
+          show "capabilities loosened:" x.CapabilitiesLoosened
           show "protected files changed:" x.ProtectedChanged ]
         |> List.concat |> String.concat Environment.NewLine
 
