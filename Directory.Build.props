@@ -7,7 +7,7 @@
     <ProduceReferenceAssembly Condition="'$(MSBuildProjectExtension)' == '.fsproj'">true</ProduceReferenceAssembly>
 
     <!-- Local/dev default only; the release workflow stamps the real version via -p:Version from the release tag. -->
-    <VersionPrefix>0.15.0</VersionPrefix>
+    <VersionPrefix>0.16.0</VersionPrefix>
     <ReifiedVersion Condition="'$(ReifiedVersion)' == ''">0.13.0</ReifiedVersion>
     <!-- Packs the Fable-compatible projects as Fable libraries (sources under fable/ in the nupkg). -->
     <FablePackageSdkVersion>1.4.1</FablePackageSdkVersion>
