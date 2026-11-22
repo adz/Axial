@@ -54,7 +54,7 @@ echo "Packing projects to $output_dir..."
 for project in "${projects[@]}"; do
   echo "--- Packing $(basename "$project") ---"
   project_args=()
-  if [[ "$RELEASE" == true && "$project" == "src/Axial.Guardrails/Axial.Guardrails.fsproj" ]]; then
+  if [[ "$RELEASE" == true && "$(basename "$project")" == Axial.Guardrails.fsproj ]]; then
     project_args+=("-p:AxialGuardrailsPrecompileCli=true")
   fi
   dotnet pack "$project" --configuration Release --output "$output_dir" "${version_args[@]}" "${project_args[@]}"
