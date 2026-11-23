@@ -29,7 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Http.fs" AxialCapability="http" />
+    <Compile Include="Http.fs" />
   </ItemGroup>
 
 </Project>

@@ -506,8 +506,9 @@ let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: 
 
         findings
         |> List.map (fun (message, entry) ->
-            // A guide-level capability finding is advice: it keeps its Info severity and never enters the baseline.
-            let tiered = Set.contains message.Code (set [ "AXG009"; "AXG010"; "AXG011"; "AXG012"; "AXG013"; "AXG014" ]) || message.Type = "Axial Note Integrity" || message.Type = "Axial Capability Guide"
+            // A guide-level capability finding is advice: it keeps its Info severity and never enters the baseline. An unused
+            // claim keeps its Warning the same way.
+            let tiered = Set.contains message.Code (set [ "AXG009"; "AXG010"; "AXG011"; "AXG012"; "AXG013"; "AXG014" ]) || message.Type = "Axial Note Integrity" || message.Type = "Axial Capability Guide" || message.Type = "Axial Claim Integrity"
             let candidate = not tiered && (not (message.Code = "AXG001") || level <> Policy.Allow)
                             && (config.BaselineRule |> Option.forall ((=) message.Code))
             if candidate then config.BaselineOutput |> Option.iter (fun output -> appendGenerated output entry)

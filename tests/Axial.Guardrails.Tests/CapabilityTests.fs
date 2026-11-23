@@ -136,6 +136,43 @@ module CapabilityTests =
             test <@ messages.Head.Message.Contains "This file claims the payments capability, so it may call only that API" @>
         }
 
+    let private integrityAt (config: GuardrailConfig.Config) fileName (source: string) =
+        task {
+            let! ctx = AnalyzerTestContext.createAt fileName source
+            return SuppressionIntegrityAnalyzer.analyzeWithConfig config ctx
+        }
+
+    [<Fact>]
+    let ``an allowance in a file that claims the capability is reported as unneeded`` () =
+        task {
+            let claimed = fixture "Payments.fs"
+            let source = gateway + "// axial-allow-AXG001: (why: charges directly)\nlet pay () = Gateway().Charge()\n"
+            let! messages = integrityAt (payments "" [ claimed ]) claimed source
+            let message = Assert.Single messages
+            test <@ message.Code = "AXG002" && message.Range.StartLine = 6 && message.Severity = Severity.Error @>
+            test <@ message.Message = "Remove this allowance: this file claims the payments capability, so the call needs no comment." @>
+        }
+
+    [<Fact>]
+    let ``an allowance that is what allows the call stays valid`` () =
+        task {
+            let source = gateway + "// axial-allow-AXG001: (why: charges directly)\nlet pay () = Gateway().Charge()\n"
+            let! messages = integrityAt (payments "" [ fixture "Payments.fs" ]) (fixture "Checkout.fs") source
+            test <@ messages = [] @>
+        }
+
+    [<Fact>]
+    let ``a claim on a file with no raw call for it is a warning naming the claim to remove`` () =
+        task {
+            let claimed = fixture "Payments.fs"
+            let! unused = integrityAt (payments "" [ claimed ]) claimed (gateway + "let total = 1\n")
+            let message = Assert.Single unused
+            test <@ message.Code = "AXG002" && message.Severity = Severity.Warning && message.Range.StartLine = 1 @>
+            test <@ message.Message.StartsWith "Remove the payments claim from this file's Compile item" @>
+            let! used = integrityAt (payments "" [ claimed ]) claimed (gateway + "let pay () = Gateway().Charge()\n")
+            test <@ used = [] @>
+        }
+
     [<Fact>]
     let ``Axial's own capabilities are claimed by file, not granted to a whole package`` () =
         task {

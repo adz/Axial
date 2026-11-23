@@ -75,7 +75,10 @@ a whole file, and a `forbid` rule cannot be allowed. Policy review lists every n
 
 `AXG002` validates every suppression. It reports legacy or malformed syntax, an unknown rule ID, a missing reason,
 a file-wide suppression outside the leading comment block, a file-wide AXG001 allowance, an AXG001 allowance that
-names neither a gap nor a why, or a stale suppression that covers no finding. AXG009–013 allowances are invalid: these rules cannot be suppressed.
+names neither a gap nor a why, or a stale suppression that covers no finding. An AXG001 allowance is also stale when
+it allows nothing: the file claims the capability or is a `host` file, so the call needs no comment, or the level is
+`forbid`, which no allowance overrides. A claim on a file that makes no raw call for that capability is a warning that
+names the claim to remove from the project file. AXG009–013 allowances are invalid: these rules cannot be suppressed.
 
 It also validates `axial-note` acknowledgements for guide findings (AXG010 and awaited-delay AXG013).
 A note needs a non-empty reason and a live guide finding on the same or following line. For AXG010 put the note as
