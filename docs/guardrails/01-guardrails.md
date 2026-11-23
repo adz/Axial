@@ -156,14 +156,12 @@ services = ["src/App/Services/**"]
 
 [roles.domain.rules]
 "effects.ambient" = "deny"
-
-[roles.capabilities.rules]
-"effects.ambient" = "allow"
 ```
 
 The five roles are `capabilities`, `services`, `domain`, `host`, and `test`. No role grants raw calls by itself except
 `host`: a file makes a capability's raw calls only when its `Compile` item
-[claims the capability](/guardrails/rule-authoring.html#claim-a-capability). File assignments
+[claims the capability](/guardrails/rule-authoring.html#claim-a-capability). Setting a role's `effects.ambient` to
+`allow` exempts every file in that role, so keep it for `host` or leave it out. File assignments
 override project assignments, which override the default. Rule levels are `allow`, `warn`, `deny`, and `forbid`; `forbid` cannot be
 suppressed. Suppressions remain active while policy review is pending. Policy changes warn during ordinary builds;
 `axial policy review` groups the changes for later human review. Removing suppressions or shrinking baseline entries

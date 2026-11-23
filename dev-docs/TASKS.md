@@ -53,10 +53,11 @@ lists the queue. Work on main.
   - DECIDED (owner, 2026-10-31): core `Axial` has no Reified references; packages that need Reified data (the HTTP adapters,
     `Axial.Configuration`) may. They live in this repo for now and may be extracted later.
 
-- [ ] T15b: Migrate gitkay and LogDug to Axial.FileSystem (formerly Axial.FileSystem) and Axial.ElmishFlows once 0.11 is published
-  - Remove gitkay's walk/lines/watch Guardrails suppressions and swap LogDug's Files internals for the package.
-  - Replace both apps' flow-to-Elmish bridges with the per-program runtime; replace gitkay's slots and debounce
-    with keyed commands and an inbox subscription, and await cleanup on shutdown.
+- [ ] T15b: Publish the gitkay and LogDug upgrades once Axial 0.16.0 is on NuGet
+  - Both are upgraded and committed locally against `0.16.0-local.1` (gitkay c8b70ad, LogDug f338eef), with every
+    other package at its latest. Switch `0.16.0-local.1` to `0.16.0` (package references and the `axial.tool`
+    manifest), restore from nuget.org, rebuild in Full mode, run the tests, then a human runs `axial policy approve`
+    in each repository before pushing.
 - [ ] T7: Reassess `LATER_TODO.md` Flow work against real applications
   - The remaining reference applications are work applications, reassessed from a separate (work-account) checkout.
     Brief: `dev-docs/handoffs/T7-reference-app-reassessment.md`; findings come back as
