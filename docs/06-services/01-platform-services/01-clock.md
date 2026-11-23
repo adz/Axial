@@ -104,6 +104,10 @@ let stepped: Flow<unit, Never, int> = flow {
 stepped |> Flow.runTestWith platform () |> shouldEqual (Exit.Success 1)
 ```
 
+`TestClock.awaitSleepers n` waits, without spinning, until at least `n` sleeps are registered, so a test can advance
+only once the fiber it drives is asleep. `TestClock.driveUntilDone fiber` advances to each next deadline until the fiber
+settles and returns its `Exit`.
+
 `TestClock.advance` and `sleepers` require the installed clock to be a manual clock; using them with a live clock
 produces a defect with a diagnostic message. `TestClock.advanceAll` captures the latest registered deadline when
 called and drains only through that horizon. A periodic sleeper cannot extend it; a subsequent sequential sleep

@@ -35,16 +35,14 @@ lists the queue. Work on main.
 - [ ] T24: Fiber dumps show the root, what each fiber waits on, and attach late
   - Design: `dev-docs/current-ideas/fiber-dump-root-waits-attach.md`. Benchmarks required (FiberCost, Race, Pingpong/Threadring,
     a tiny `runSync` loop); allocation identical, time within noise. The torture watchdog shows waits in its stall dump.
-- [ ] T25b: Capability declarations (`ICapability`: Live/Fake/Replaces) and the build-time manifest
-  - Spec sections 3, 4, 10. After T25a ships. Manifest in `obj/axial-capabilities.json` and the nupkg, `axial capabilities`,
-    docs and `llms.txt`, agent skill; Guardrails effect rules built from merged manifests (28 built-in rules shrink).
-- [ ] T25c: Guardrails rules for capabilities (naming, no generic IHas chains, no generic ICapability calls, Replaces resolve and
-  are unique, Live only in host role)
-  - Spec section 5. After T25b.
+- [ ] T40: Clear the repository's test warnings (548 AXG001 in a Full build)
+  - Rewrite blocking waits and delays in tests as flows run with `Flow.runTest` on the `TestPlatform` fakes, not tasks.
+  - A test file that checks the real thing (a live server, the real clock) claims that capability on its `Compile`
+    item instead. Referencing a package is not testing it.
 - [ ] T27: Research richer effects: algebraic-effects style in F# (algeff) and language-ext v5 `Eff<RT,A>` runtime traits
-  - Read both from source, write `dev-docs/current-ideas/richer-effects.md` comparing them with Platform/capabilities as
-    designed in T25. No implementation. Preliminary draft written; T25a is implemented locally, so re-check its section 5 against
-    what actually shipped (`capabilities.md` and the code), then remove this task.
+  - Read both from source, write `dev-docs/current-ideas/richer-effects.md` comparing them with Platform/capabilities. No
+    implementation. Preliminary draft written; re-check its section 5 against what shipped (`docs/guardrails/03-rule-authoring.md`,
+    the platform services docs and the code), then remove this task.
 - [ ] T26: Spike: absorb FIO's continuation runtime (MIT) behind `Flow`-as-data, torture it with T23
   - Needs T23 first. Copy only the interpreter and scheduler, with FIO's licence in THIRD-PARTY-NOTICES, a source header naming
     the upstream commit, and bugs sent upstream. Design: `dev-docs/current-ideas/flow-as-data.md`.

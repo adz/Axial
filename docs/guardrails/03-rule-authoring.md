@@ -95,6 +95,18 @@ Inside a claimed file, calls to the claimed API are allowed and counted. Any oth
 `DateTimeOffset.UtcNow` in the payments file, is still reported: the file owns the payments API, not every effect. A
 claim of a capability nobody defined fails the build.
 
+### How a raw call is decided
+
+Every raw effect call gets one verdict, the same in Fast and Full mode, checked in this order:
+
+1. The role's `effects.ambient` level is `forbid`: reported. Nothing overrides it.
+2. The file claims the capability that owns the API: allowed.
+3. The file is `host` role, or its level is `allow`: allowed.
+4. An allowance comment covers the line: allowed.
+5. Anything else: reported, at the role's level.
+
+`axial check` counts the allowed calls of each kind per project, so leniency is a number rather than something hidden.
+
 ### Allowances
 
 A raw call that no claim covers may be allowed with a comment. It ends with either the missing feature it stands for,
@@ -114,10 +126,19 @@ new one first, under its own heading.
 ### Review
 
 Every claim, definition and allowance is recorded in the policy lock, and `axial policy review` judges changes by
-direction. A change that only blocks more passes without review: a new definition, a new `replaces` entry, `guide` to
-`enforce`, a claim removed, or a claimed file renamed or moved (the project claims as many files as before). A change
-that allows more needs review: a definition or `replaces` entry removed, `enforce` to `guide`, a project claiming more
-files, or a new allowance. New allowances come first in the review output.
+direction. Only a change that allows more needs a human:
+
+| Needs review | Passes on its own |
+| --- | --- |
+| A definition removed | A definition added |
+| A `replaces` entry removed | A `replaces` entry added |
+| `enforce` lowered to `guide` | `guide` raised to `enforce` |
+| A project claims a capability for more files | A claim removed, or a claimed file renamed or moved |
+| A new allowance | An allowance removed |
+
+Claims are compared by count per project, so moving a claim to another file in the same project passes too. New
+allowances come first in the review output. AXG002 reports an allowance that allows nothing, because a claim, a `host`
+role or a `forbid` level already decides the call, and warns about a claim on a file that makes no raw call for it.
 
 `axial capabilities` lists every capability with the files that claim it (`--json` for tools). `axial check` counts
 the raw effect calls each project was allowed: in claimed files, by allowances, and in host files. A capability

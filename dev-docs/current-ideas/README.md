@@ -8,9 +8,8 @@ Active sketches:
 - `flow-stream-proving.md` — prove resource-safe, portable `FlowStream` semantics through concrete transport slices
 - `flow-transport-packages.md` — package and API direction for transports, framing, networking, serial, WebSocket, streaming HTTP/SSE, and compression
 - `streaming-uploads.md` — multipart uploads in the HTTP adapters as a `FlowStream` of parts, each file a stream of byte chunks under the per-endpoint body limit
-- `platform-env-class.md` — a base environment class so applications stop re-implementing every platform `IHas*` interface
 - `fsharp-compiler-adapter.md` — pooled-resource combinator for `core Axial`, and an `Axial.FSharpCompiler` adapter, prompted by FsLiveDocs' Axial adoption
-- `capabilities.md` — Platform in the runtime (T25a), ahead of capability declarations and their Guardrails rules
+- `capabilities.md` — what is still an idea after capabilities shipped: console output outside `IConsole`, exit, and finding capabilities on NuGet
 - `configuration.md` — configuration, culture and time zone (T32); decided, shipping in 0.12.0
 - `comparative-benchmarks.md` — Axial and FIO concurrency benchmarks side by side, as a diagnostic tool
 - `fast-feedback.md` — measured edit → build → test latency and how to shorten it

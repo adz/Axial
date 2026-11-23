@@ -72,7 +72,7 @@ So the honest delta is small:
 1. **language-ext's `Local`.** Scoped environment change is already `Flow.withClock` etc. in T25a. No gap.
 2. **A trait-bound capability-set type (`RT`) per application.** language-ext's selling point is that library code names
    only the traits it needs while the application declares one `Runtime`. Axial's equivalent is the hand-written env record with
-   `IHasX` lines. `platform-env-class.md` and the deferred env generator target the same boilerplate. Nothing new in language-ext
+   `IHasX` lines. the withdrawn base-class sketch and the deferred env generator target the same boilerplate. Nothing new in language-ext
    beyond their having chosen static abstract members, which Fable 5.x cannot call generically ("Unexpected static
    interface/override call", re-probed 2026-10-30). That alone rules out porting `Has<M,V>`.
 3. **`IO`-returning capability interfaces.** language-ext's `ConsoleIO.WriteLine : IO<Unit>` makes the capability itself a value. In

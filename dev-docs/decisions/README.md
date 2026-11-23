@@ -334,3 +334,23 @@ consumer contract is `docs/guardrails/01-guardrails.md`; these are the reasons b
   consumers. `SpanConventions.fs` therefore lives in `Axial.Telemetry.JavaScript`, and the .NET `Axial.Telemetry` links
   it. These projects also set `DebugType` back to `portable`, because `Fable.Package.SDK` switches to embedded PDBs and
   the release publishes snupkg symbol packages.
+
+## 2026-11-23: Capabilities decide where raw APIs may be called
+
+- One mechanism. A capability is defined (built in, or in a `<name>.capability.toml` file named by an
+  `<AxialCapabilityDefinition>` item) and claimed per file with `AxialCapability` metadata on a `Compile` item. Project
+  roles and `[boundaries]` no longer grant raw calls; only `host` does, because a composition root assembles live
+  services.
+- `Include` always means files. A capability's name is never an item identity, and metadata is never a comma list.
+- There is one claim, not separate "implements" and "tests" claims: a test file claims a capability only when it checks
+  the real thing. Referencing a package is not testing it.
+- Exceptions are rare, cover one call, and say why: `(gap: name)` for a missing feature, `(why: reason)` for a
+  deliberate call. File-wide AXG001 allowances are rejected.
+- Policy review judges by direction so approvals do not become rubber stamps: only changes that allow more reach a
+  human, and new allowances come first.
+- Platform (clock, random, GUID, culture, time zone) and observation (log, telemetry) live in the runtime context;
+  authority (files, environment, console, processes, HTTP, secrets) stays explicit in `'env`. There is no general
+  "register any service in the runtime" API.
+- No `[<Capability>]` attribute on service interfaces. Discovering it would need typed-tree analysis of referenced
+  assemblies, which only Full mode has, and the `.capability.toml` file a package ships already does the job.
+- No reflection-based discovery, no auto-advancing test clock and no quiescence detection.
