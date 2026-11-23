@@ -90,8 +90,6 @@ test = ["tests/**/*.fsproj"]
 [files]
 capabilities = ["src/App/Capabilities/**"]
 services = ["src/App/Services/**"]
-[boundaries]
-files = ["src/App/Boundary.fs"]
 [roles.domain.rules]
 "effects.ambient" = "forbid"
 "domain.async-return" = "deny"
@@ -104,7 +102,6 @@ files = ["src/App/Boundary.fs"]
             let policy = Result.toOption actual |> Option.get
             test <@ policy.Version = 2 && policy.DefaultRole = Domain @>
             test <@ policy.Files |> List.exists (fun assignment -> assignment.Role = Services) @>
-            test <@ policy.Boundaries = [ "src/App/Boundary.fs" ] @>
             test <@ policy.Rules[Domain]["effects.ambient"] = Forbid @>
             test <@ policy.Rules[Capabilities]["effects.ambient"] = Allow @>
             test <@ policy.Rules[Test]["effects.ambient"] = Warn @>)
@@ -201,10 +198,20 @@ host = ["../Program.fs"]
     [<Fact>]
     let ``reads arrays written one entry per line with comments and a trailing comma`` () =
         withRepository (fun root ->
-            let text = "version = 2\n[default]\nrole = \"domain\"\n[boundaries]\nfiles = [\n    \"src/App/Boundary.fs\", # exact file\n]\n"
+            let text = "version = 2\n[default]\nrole = \"domain\"\n[protected]\npaths = [\n    \"src/App/Boundary.fs\", # exact file\n]\n"
             let policy = parse root text |> Result.toOption |> Option.get
-            test <@ policy.Boundaries = [ "src/App/Boundary.fs" ] @>
-            test <@ Result.isError (parse root "version = 2\n[default]\nrole = \"domain\"\n[boundaries]\nfiles = [\n    \"src/App/Boundary.fs\"\n") @>)
+            test <@ policy.Protected = [ "src/App/Boundary.fs" ] @>
+            test <@ Result.isError (parse root "version = 2\n[default]\nrole = \"domain\"\n[protected]\npaths = [\n    \"src/App/Boundary.fs\"\n") @>)
+
+    [<Fact>]
+    let ``a boundaries table is rejected with what to do instead`` () =
+        withRepository (fun root ->
+            match parse root "version = 2\n[default]\nrole = \"domain\"\n[boundaries]\nfiles = [\"src/App/Boundary.fs\"]\n" with
+            | Ok _ -> failwith "a [boundaries] table must be rejected"
+            | Error errors ->
+                let message = String.concat "\n" errors
+                test <@ message.StartsWith "line 4: [boundaries] is not supported. Delete the whole section." @>
+                test <@ message.Contains "AxialCapability=\"name\"" && message.Contains "(why: reason)" @>)
 
     [<Fact>]
     let ``rejects unknown and redefined tables with their lines`` () =

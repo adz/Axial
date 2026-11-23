@@ -192,9 +192,10 @@ allows everything. Policy review judges changes by direction, so only loosening 
 - **Claim.** `AxialCapability="name[;name]"` metadata on a file's `Compile` item. Only claimed files may call the API,
   and a claimed file may call only the APIs it claims. A claim of an undefined capability fails the build. Claims are
   per project: a file compiled into two projects is claimed in each.
-- **Gap allowance.** `// axial-allow-AXG001: reason (gap: name)` allows one call in any file, never a whole file. It
-  marks a missing feature in Axial or a capability; `axial check` lists them by gap.
-- `[boundaries]` is gone: `axial check` warns until the toml drops it. `host` stays the one role that allows raw calls,
+- **Allowance.** `// axial-allow-AXG001: reason (gap: name)` or `(why: reason)` allows one call in any file, never a
+  whole file. A gap marks a missing feature in Axial or a capability; a why explains a deliberate raw call. `axial
+  check` counts them, and policy review lists new ones first.
+- `[boundaries]` is gone: the toml parser rejects it with what to do instead. `host` stays the one role that allows raw calls,
   because a composition root assembles live services.
 
 ### 3.3 Verdicts
@@ -204,7 +205,7 @@ allows everything. Policy review judges changes by direction, so only loosening 
 | Verdict | When | Counted |
 |---|---|---|
 | Owned | The file claims the capability that owns the API | yes, per capability |
-| Allowance | An `axial-allow-AXG001` comment that names its gap | yes, per gap |
+| Allowance | An `axial-allow-AXG001` comment that names its gap or why | yes, listed first |
 | Host | A `host`-role file, or `effects.ambient = allow` | yes |
 | Reported | Anything else, at the role's level (`forbid` always reports) | finding |
 

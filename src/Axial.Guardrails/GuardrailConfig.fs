@@ -8,7 +8,7 @@
 ///   generated  <absolute file path>   (a compile item under the project's intermediate output directory)
 ///   baseline   <rule id>  <repository-relative file>  <fingerprint>[ x<count>]
 ///   setting    baselineRoot|baselineOutput|nativeAot|checkpoint|severityCap  <value>
-///   rule       <id>  <guardrail>  <category>  <match>  <scope>  <message>  <replacement>
+///   rule       <id>  <guardrail>  <match>  <scope>  <message>  <replacement>
 module Axial.Guardrails.GuardrailConfig
 
 open System
@@ -52,7 +52,6 @@ type Config =
       ProjectPath: string option }
 
     member this.Rules = this.AllRules |> List.filter (fun rule -> this.EnabledGuardrails.Contains rule.Guardrail)
-    member this.KnownCategories = this.AllRules |> List.map _.Category |> Set.ofList
     /// The capability a rule names, if it is known.
     member this.CapabilityOf(rule: EffectRule) =
         rule.Capability |> Option.bind (fun name -> this.AllCapabilities |> List.tryFind (fun capability -> capability.Name = name))
@@ -94,12 +93,11 @@ let parse (lines: string seq) : Config =
     let contributed =
         entries
         |> List.choose (function
-            | _, _, [| "rule"; id; guardrail; category; matching; scope; message; replacement |] ->
+            | _, _, [| "rule"; id; guardrail; matching; scope; message; replacement |] ->
                 parseMatch matching
                 |> Option.map (fun parsed ->
                     { Id = id.Trim()
                       Guardrail = guardrail.Trim()
-                      Category = category.Trim().ToLowerInvariant()
                       Match = parsed
                       Scope = parseScope scope
                       Message = message.Trim()

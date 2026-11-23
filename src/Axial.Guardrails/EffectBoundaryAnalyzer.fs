@@ -148,7 +148,7 @@ let private collectFindings rules (ctx: CliContext) : (EffectRule * FSharp.Compi
         let inside = lazy (flowBodies.Value |> List.exists (fun body -> contains body symbolUse.Range))
         ruleFor rules inside symbolUse.Symbol
         |> Option.filter (fun rule ->
-            rule.Category <> "blocking"
+            rule.Capability <> Some "blocking"
             || not (safeReads.Value |> List.exists (fun read -> contains read symbolUse.Range)))
         |> Option.map (fun rule -> rule, symbolUse.Range))
     |> Seq.toList

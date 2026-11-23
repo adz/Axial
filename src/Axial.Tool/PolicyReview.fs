@@ -11,6 +11,10 @@ open Axial.Tool.PolicyLock
 /// Compares repository state, not the hashes last written to a possibly stale lock.
 module PolicyReview =
     type Finding = { Group: string; Detail: string }
+
+    /// AXG001 allowances get their own group, listed first: each is a raw effect outside any capability.
+    [<Literal>]
+    let EffectAllowances = "effect allowances"
     type Review = { Since: string; Loosened: Finding list; Removed: Finding list }
 
     let private command root executable args =
@@ -170,7 +174,7 @@ module PolicyReview =
         { Entries =
             [ "suppressions/notes", Set.toList suppressions
               "roles", ("default => " + roleName config.DefaultRole) :: (assignments "project" config.Projects @ assignments "file" config.Files)
-              "runtime", config.Runtime; "boundaries", config.Boundaries; "ignore", config.SuppressionIgnores
+              "runtime", config.Runtime; "ignore", config.SuppressionIgnores
               "baseline", baseline; "automation", automation; "analyzer package", versions ]
             |> List.map (fun (name, values) -> name, Set.ofList values) |> Map.ofList
           Rules = snapshot.Rules
@@ -228,19 +232,20 @@ module PolicyReview =
                         [ "The policy files did not exist then. Current policy:"
                           $"""roles: {roles}; projects: {after.Projects.Count}; role assignments: {after.Entries["roles"].Count - 1}"""
                           $"rule levels that are not error: {nonError}"
-                          $"""runtime: {after.Entries["runtime"].Count}; exemptions: {exemptions}; boundary: {after.Entries["boundaries"].Count}; ignore: {after.Entries["ignore"].Count}; baseline: {after.Entries["baseline"].Count}""" ]
+                          $"""runtime: {after.Entries["runtime"].Count}; exemptions: {exemptions}; ignore: {after.Entries["ignore"].Count}; baseline: {after.Entries["baseline"].Count}""" ]
                         |> String.concat Environment.NewLine
                     add ($"Policy introduced since {point}") summary
                 for KeyValue(group, current) in after.Entries do
                     let old = before.Entries[group]
                     let display (value: string) = if group = "automation" then value.Split('\t')[0] else value
-                    for value in Set.difference current old do add group (display value)
+                    let groupOf value = if group = "suppressions/notes" && isEffectAllowance value then EffectAllowances else group
+                    for value in Set.difference current old do add (groupOf value) (display value)
                     for value in Set.difference old current do
                         let detail = display value
                         let replaced = current |> Set.exists (fun entry -> display entry = detail)
                         if group = "automation" || group = "analyzer package" then
                             if not replaced then add group ($"removed {detail}")
-                        else remove group detail
+                        else remove (groupOf value) detail
                 let rank = function "allow" -> 0 | "warn" -> 1 | "deny" -> 2 | "forbid" -> 3 | _ -> 0
                 for key in Set.union (before.Rules.Keys |> Set.ofSeq) (after.Rules.Keys |> Set.ofSeq) do
                     let old = before.Rules.TryFind key |> Option.defaultValue "deny"
@@ -274,7 +279,11 @@ module PolicyReview =
         with error -> Error error.Message
 
     let format result =
-        let groups = result.Loosened |> List.groupBy _.Group |> List.collect (fun (group, entries) -> (group + ":") :: (entries |> List.map (fun entry -> "  " + entry.Detail)))
+        let allowances, others = result.Loosened |> List.partition (fun entry -> entry.Group = EffectAllowances)
+        let heading group = if group = EffectAllowances then "EFFECT ALLOWANCES (raw effects outside a capability; read each one):" else group + ":"
+        let groups =
+            (if allowances.IsEmpty then [] else [ EffectAllowances, allowances ]) @ List.groupBy _.Group others
+            |> List.collect (fun (group, entries) -> heading group :: (entries |> List.map (fun entry -> "  " + entry.Detail)))
         [ yield $"Policy review since {result.Since}"
           if result.Loosened.IsEmpty then yield "No policy loosening."
           yield! groups

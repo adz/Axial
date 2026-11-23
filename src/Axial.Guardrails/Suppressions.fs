@@ -8,10 +8,12 @@
 /// `axial-allow-file-AXGnnn` must occur in the leading ordinary-comment block. Every directive is recorded in the
 /// policy lock, so each new one is a review item.
 ///
-/// AXG001 is special: raw effects belong in a capability's claimed files, so an AXG001 allowance is a recorded gap in
-/// Axial or a capability. It covers one call, never a file, and ends with the gap it stands for:
+/// AXG001 is special: raw effects belong in a capability's claimed files, so an AXG001 allowance is rare and is
+/// highlighted in policy review. It covers one call, never a file, and ends with the gap in Axial or a capability it
+/// stands for, or with why the call is deliberate:
 ///
 ///   // axial-allow-AXG001: Axial.Process has no named pipes yet (gap: process-named-pipes)
+///   // axial-allow-AXG001: (why: this test checks the analyzer reports a real Random)
 module Axial.Guardrails.Suppressions
 
 open System
@@ -28,12 +30,23 @@ type Directive =
       FileWide: bool
       Raw: string }
 
-let private gapPattern = Regex(@"\(gap:\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*\)\s*$", RegexOptions.Compiled)
+/// What an AXG001 allowance stands for.
+type Allowed =
+    /// `(gap: name)`: a feature Axial or a capability is missing.
+    | Gap of name: string
+    /// `(why: text)`: a deliberate raw call that no feature would replace.
+    | Why of text: string
 
-/// The gap an AXG001 allowance names with a trailing `(gap: name)`, if it names one.
-let gapOf (directive: Directive) =
-    let matched = gapPattern.Match directive.Reason
-    if matched.Success then Some matched.Groups[1].Value else None
+let private gapPattern = Regex(@"\(gap:\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*\)\s*$", RegexOptions.Compiled)
+let private whyPattern = Regex(@"\(why:\s*([^()]*[^()\s])\s*\)\s*$", RegexOptions.Compiled)
+
+/// What an AXG001 allowance stands for, from its trailing `(gap: name)` or `(why: text)`.
+let allowanceOf (directive: Directive) =
+    let gap = gapPattern.Match directive.Reason
+    if gap.Success then Some(Gap gap.Groups[1].Value)
+    else
+        let why = whyPattern.Match directive.Reason
+        if why.Success then Some(Why why.Groups[1].Value) else None
 
 let private validDirective =
     Regex(@"\baxial-allow-(file-)?(AXG[0-9]{3})\s*:\s*(.*)$", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
@@ -153,12 +166,12 @@ let validDirectives (sourceText: ISourceText) =
             && (not directive.FileWide || isInLeadingCommentBlock sourceText directive.Line)))
 
 /// True when a valid suppression for `ruleId` sits on the finding line, the line above it, or (except for AXG001)
-/// in the file's leading comment block. An AXG001 allowance counts only when it names its gap.
+/// in the file's leading comment block. An AXG001 allowance counts only when it names its gap or why.
 let isAllowed (sourceText: ISourceText) line1 (ruleId: string) =
     let ruleId = ruleId.ToUpperInvariant()
     validDirectives sourceText
     |> List.exists (fun directive ->
         let nearby = directive.Line = line1 || directive.Line = line1 - 1
         directive.RuleId = Some ruleId
-        && (if ruleId = "AXG001" then nearby && not directive.FileWide && (gapOf directive).IsSome
+        && (if ruleId = "AXG001" then nearby && not directive.FileWide && (allowanceOf directive).IsSome
             else nearby || directive.FileWide))

@@ -40,17 +40,16 @@ module GuardrailConfigTests =
                 [ "guardrail\tAxial\terror"
                   "guardrail\tAxial.HttpClient\twarning"
                   "setting\tnativeAot\ttrue"
-                  "rule\tacme.clock\tAcme\tacme-clock\tmember:Acme.Clock::Now,Today\tinsideFlow\treads the Acme clock\tAcme.IClock" ]
+                  "rule\tacme.clock\tAcme\tmember:Acme.Clock::Now,Today\tinsideFlow\treads the Acme clock\tAcme.IClock" ]
 
         test <@ config.EnabledGuardrails = set [ "Axial"; "Axial.HttpClient" ] @>
         test <@ config.NativeAot @>
         test <@ config.Rules |> List.forall (fun rule -> rule.Guardrail = "Axial" || rule.Guardrail = "Axial.HttpClient") @>
         test <@ config.Rules |> List.exists (fun rule -> rule.Id = "http.new-client") @>
         test <@ not (config.Rules |> List.exists (fun rule -> rule.Guardrail = "Axial.Console")) @>
-        test <@ config.KnownCategories.Contains "acme-clock" && config.KnownCategories.Contains "console" @>
 
         let contributed = config.AllRules |> List.find (fun rule -> rule.Id = "acme.clock")
-        test <@ contributed.Match = MembersOf("Acme.Clock", [ "Now"; "Today" ]) && contributed.Scope = InsideFlow @>
+        test <@ contributed.Match = MembersOf("Acme.Clock", [ "Now"; "Today" ]) && contributed.Scope = InsideFlow && contributed.Capability = None @>
 
     [<Theory>]
     [<InlineData("test", "domain", "", false)>]
@@ -190,7 +189,6 @@ module GuardrailConfigTests =
             test <@ found = [] @>
             let rule = builtInRules |> List.find (fun rule -> rule.Id = "random.cryptographic")
             test <@ rule.Guardrail = "Axial" @>
-            test <@ rule.Category = "secure-random" @>
             test <@ rule.Replacement = "System.Security.Cryptography in a file that claims the secure-random capability" @>
             test <@ rule.Capability = Some "secure-random" @>
         }
@@ -205,7 +203,7 @@ module GuardrailConfigTests =
                     + "    System.TimeZoneInfo.ConvertTimeFromUtc(utc, zone)\n")
             test <@ found = [ 1 ] @>
             let rule = builtInRules |> List.find (fun rule -> rule.Id = "clock.local-timezone")
-            test <@ rule.Guardrail = "Axial" && rule.Category = "environment" @>
+            test <@ rule.Guardrail = "Axial" && rule.Capability = Some "timezone" @>
             test <@ rule.Replacement.Contains("TimeZone.local") @>
         }
 

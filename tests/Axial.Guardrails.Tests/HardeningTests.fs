@@ -29,7 +29,7 @@ module HardeningTests =
         System.String.Join("\n", lines)
 
     [<Fact>]
-    let ``an AXG001 allowance needs a reason that names its gap`` () =
+    let ``an AXG001 allowance needs a reason that names its gap or why`` () =
         task {
             let! plain = AnalyzerTestContext.create "module M\nlet value = System.DateTime.UtcNow // axial-allow-AXG001: live clock\n"
             let directive = Assert.Single(Suppressions.validDirectives plain.SourceText)
@@ -37,8 +37,13 @@ module HardeningTests =
             Assert.Equal("live clock", directive.Reason)
             Assert.False(Suppressions.isAllowed plain.SourceText 2 "AXG001")
             let! gap = AnalyzerTestContext.create "module M\nlet value = System.DateTime.UtcNow // axial-allow-AXG001: no clock yet (gap: clock-x)\n"
-            Assert.Equal(Some "clock-x", Suppressions.gapOf (Assert.Single(Suppressions.validDirectives gap.SourceText)))
+            Assert.Equal(Some(Suppressions.Gap "clock-x"), Suppressions.allowanceOf (Assert.Single(Suppressions.validDirectives gap.SourceText)))
             Assert.True(Suppressions.isAllowed gap.SourceText 2 "AXG001")
+            let! why = AnalyzerTestContext.create "module M\n// axial-allow-AXG001: (why: this test checks the real clock)\nlet value = System.DateTime.UtcNow\n"
+            Assert.Equal(Some(Suppressions.Why "this test checks the real clock"), Suppressions.allowanceOf (Assert.Single(Suppressions.validDirectives why.SourceText)))
+            Assert.True(Suppressions.isAllowed why.SourceText 3 "AXG001")
+            let! emptyWhy = AnalyzerTestContext.create "module M\nlet value = System.DateTime.UtcNow // axial-allow-AXG001: live clock (why: )\n"
+            Assert.False(Suppressions.isAllowed emptyWhy.SourceText 2 "AXG001")
             let! fileWide = AnalyzerTestContext.create "// axial-allow-file-AXG001: whole file (gap: clock-x)\nmodule M\nlet value = System.DateTime.UtcNow\n"
             Assert.False(Suppressions.isAllowed fileWide.SourceText 3 "AXG001")
         }

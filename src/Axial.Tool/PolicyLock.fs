@@ -333,6 +333,9 @@ module PolicyLock =
               |> Set.toList)
               @ (if old.Version=2 && downgraded.IsEmpty && baselineAdded.IsEmpty && Set.isSubset current.Suppressions old.Suppressions && old.Capabilities=current.Capabilities && old.Boundaries=current.Boundaries && capabilitiesLoosened.IsEmpty then [] else [LockName]) }
 
+    /// An AXG001 allowance: a raw effect outside any capability. These are rare, so review shows them first.
+    let isEffectAllowance (value: string) = value.Contains("axial-allow-AXG001", StringComparison.OrdinalIgnoreCase)
+
     let isEmpty x = x.RulesDowngraded.IsEmpty && x.BaselineAdded.IsEmpty && x.SuppressionsAdded.IsEmpty && x.BoundariesAdded.IsEmpty && x.CapabilitiesLoosened.IsEmpty && x.ProtectedChanged.IsEmpty
     let formatJsonSummary x =
         let show label values =
@@ -359,10 +362,13 @@ module PolicyLock =
             match value.Split([|'\t'|], 3) with
             | [|file; occurrence; comment|] -> file, $"#{occurrence}  {comment}"
             | _ -> value, value
+        let allowances, suppressions = x.SuppressionsAdded |> List.partition isEffectAllowance
         [ ["AXIAL GUARDRAILS POLICY CHANGED"]
+          (if allowances.IsEmpty then []
+           else grouped "EFFECT ALLOWANCES ADDED (raw effects outside a capability; read each one):" (allowances |> List.map suppression))
           show "rules downgraded:" x.RulesDowngraded
           grouped "baseline entries added:" (x.BaselineAdded |> List.map (fun b -> b.File, $"{b.Rule}/{b.Fingerprint} x{b.Count}"))
-          grouped "suppressions added:" (x.SuppressionsAdded |> List.map suppression)
+          grouped "suppressions added:" (suppressions |> List.map suppression)
           show "boundaries added:" x.BoundariesAdded
           show "capabilities loosened:" x.CapabilitiesLoosened
           show "protected files changed:" x.ProtectedChanged ]

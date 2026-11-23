@@ -36,6 +36,7 @@ Capabilities (services that own raw APIs):
     let private jsonChanges (changes: ChangeSummary option) =
         let c=defaultArg changes {RulesDowngraded=[];BaselineAdded=[];SuppressionsAdded=[];BoundariesAdded=[];CapabilitiesLoosened=[];ProtectedChanged=[]}
         {| rulesDowngraded=c.RulesDowngraded; baselineAdded=c.BaselineAdded; suppressionsAdded=c.SuppressionsAdded
+           effectAllowancesAdded=c.SuppressionsAdded |> List.filter PolicyLock.isEffectAllowance
            boundariesAdded=c.BoundariesAdded; capabilitiesLoosened=c.CapabilitiesLoosened; protectedChanged=c.ProtectedChanged |}
     let private emitWithExtra (extra: (string * string) list) (changes: ChangeSummary option) asJson ok (message: string) =
         let status = if ok then "ok" else "error"
@@ -83,32 +84,22 @@ Capabilities (services that own raw APIs):
     /// `build` is the per-project build invocation: no trend summary. Every project/TFM of a build runs it; the build
     /// task shows its drift warning once per drift state in a build, keyed by the digest line printed here. A direct
     /// check always warns.
-    /// `[boundaries]` once allowed AXG001 comments in listed files; capabilities replaced it.
-    let private boundaryNotice () =
-        let path = Path.Combine(root(), ConfigName)
-        match (try Axial.Guardrails.Policy.parse (root()) knownRules (File.ReadAllText path) with _ -> Error []) with
-        | Ok config when not config.Boundaries.IsEmpty ->
-            [ "WARNING: [boundaries] in Axial.Guardrails.toml no longer has any effect; remove it. A file that implements a capability claims it with AxialCapability=\"<name>\" on its Compile item, and a rare AXG001 allowance in any file names its gap: // axial-allow-AXG001: reason (gap: name)." ]
-        | _ -> []
-
     let private check asJson build =
         match inspect(root()), parseLock(Path.Combine(root(),LockName)) with
         | Error e, _ | _, Error e -> emit asJson false e
         | Ok current, Ok locked ->
-            let notices = boundaryNotice ()
-            let withNotices (message: string) = String.concat "\n" (message :: notices)
             let changes=diff locked current
             let counts = if build then [] else rawTaskSummary ()
             let effects = if build then [] else EffectCount.count (root()) counts
             let extra = if build then [] else [ "rawTask", rawTaskJson counts; "allowedEffects", EffectCount.json jsonString effects ]
             let withTrend message = if build || asJson then message else message + "\n" + RawTaskCount.format counts + "\n" + EffectCount.format effects
-            if isEmpty changes then emitWithExtra extra None asJson true (withNotices (withTrend "Axial policy check passed.\nThe lock is tamper-evident, not a security boundary. Enforcement is the repository's choice."))
+            if isEmpty changes then emitWithExtra extra None asJson true (withTrend "Axial policy check passed.\nThe lock is tamper-evident, not a security boundary. Enforcement is the repository's choice.")
             else
                 let count = changes.RulesDowngraded.Length + changes.BaselineAdded.Length + changes.SuppressionsAdded.Length + changes.BoundariesAdded.Length + changes.CapabilitiesLoosened.Length + (changes.ProtectedChanged |> List.filter ((<>) LockName) |> List.length)
                 let warning = $"WARNING: Policy changed since the last review: {max 1 count} changes. Run `axial policy review`."
                 let digest () = Security.Cryptography.SHA256.HashData(Text.Encoding.UTF8.GetBytes(formatSummary changes)) |> Convert.ToHexString
                 let message = if build then warning + "\nPolicy drift state: " + digest () else withTrend warning
-                emitWithExtra extra (Some changes) asJson true (withNotices message)
+                emitWithExtra extra (Some changes) asJson true message
 
     let private fullCheck asJson configuration =
         let directory = Path.Combine(Path.GetTempPath(), "axial-full-check-" + Guid.NewGuid().ToString("N"))

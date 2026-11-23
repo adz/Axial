@@ -1,8 +1,8 @@
 /// The table of ambient .NET effects that Axial's packages ask callers not to use directly.
 ///
 /// Each rule belongs to a guardrail, named after the package whose service replaces the effect (`Axial.HttpClient`
-/// for `new HttpClient`). A rule names a category for grouping/documentation, a symbol match,
-/// where the match applies, a human message, and the explicit replacement. Which guardrails run, and at which
+/// for `new HttpClient`). A rule names the capability that owns the API (if one does), a symbol
+/// match, where the match applies, a human message, and the explicit replacement. Which guardrails run, and at which
 /// severity, comes from `GuardrailConfig`.
 #if AXIAL_TOOL
 // Axial.Tool links this file for `axial capabilities`; internal there, so no assembly exposes two copies of its types.
@@ -32,12 +32,12 @@ type RuleScope =
 type EffectRule =
     { Id: string
       Guardrail: string
-      Category: string
       Match: SymbolMatch
       Scope: RuleScope
       Message: string
       Replacement: string
-      /// The capability that replaces the matched API, by name; its advice is rendered into the finding.
+      /// The capability that owns the matched API, by name: files that claim it may call the API, and its advice is
+      /// rendered into the finding. None for a rule no capability owns.
       Capability: string option }
 
 /// How a capability treats a use of its API outside its implementation.
@@ -76,15 +76,18 @@ type Capability =
 [<Literal>]
 let CoreGuardrail = "Axial"
 
-let private rule id guardrail category matching message replacement =
+let private rule id guardrail capability matching message replacement =
     { Id = id
       Guardrail = guardrail
-      Category = category
       Match = matching
       Scope = Anywhere
       Message = message
       Replacement = replacement
-      Capability = None }
+      Capability = Some capability }
+
+/// A rule that registers an id for a dedicated analyzer. No capability owns it, and no symbol ever matches it.
+let private marker id matching message replacement =
+    { rule id CoreGuardrail "" matching message replacement with Capability = None }
 
 let private platform name service live fake =
     { Name = name; Guardrail = CoreGuardrail; Service = service; Env = ""; Field = ""; Example = ""; Live = live; Fake = fake; Level = Enforce; Implementation = [] }
@@ -96,7 +99,7 @@ let private service name guardrail serviceType envType field example live fake =
 let builtInCapabilities: Capability list =
     [ platform "clock" "Clock" "Clock.live" "the manual clock of Flow.runTest (TestClock.advance)"
       // The runtime's own bridges: running a flow from blocking host code, and sizing work by the machine.
-      platform "blocking" "Flow.fromTask (let!/do!), with RunSynchronously or StartAsTask only at the host edge" "Flow.RunSynchronously" "Flow.runTest"
+      platform "blocking" "Flow.fromTask (let!/do!), with RunSynchronously or StartAsTask only at the host edge" "Flow.RunSynchronously" ""
       platform "processors" "Parallelism.ofProcessors" "Parallelism.ofProcessors" "an explicit size passed to Parallelism"
       // Secrets, tokens and nonces: no fake can be secure, so the live API stays in the files that claim it.
       platform "secure-random" "A secure-random file (System.Security.Cryptography)" "RandomNumberGenerator" "a fixed key or nonce passed in"
@@ -110,17 +113,6 @@ let builtInCapabilities: Capability list =
       service "process" "Axial.Process" "IProcess" "IHasProcess" "Process: IProcess" "cmd $\"git status\" |> Process.run" "Process.live fileSystem console" "Process.test ()"
       service "http" "Axial.HttpClient" "IHttp" "IHasHttp" "Http: IHttp" "Http.get url |> Http.send" "Http.live sharedClient" "TestHttp()"
       service "websocket" "Axial.WebSocket" "IWebSocket" "IHasWebSocket" "WebSocket: IWebSocket" "WebSocket.connect url" "WebSocket.live ()" "TestWebSocket inbound" ]
-
-let private capabilityOf (rule: EffectRule) =
-    match rule.Category, rule.Id with
-    | ("console" | "filesystem" | "process" | "http" | "websocket" | "random" | "guid" | "clock"), _ -> Some rule.Category
-    | "sleep", _ -> Some "clock"
-    | "blocking", _ -> Some "blocking"
-    | "secure-random", _ -> Some "secure-random"
-    | _, "clock.local-timezone" -> Some "timezone"
-    | _, "environment.processor-count" -> Some "processors"
-    | _, "environment.state" -> Some "environment"
-    | _ -> None
 
 let private builtInRuleTable: EffectRule list =
     [ rule "random.new" CoreGuardrail "random" (ConstructorOf "System.Random")
@@ -149,7 +141,7 @@ let private builtInRuleTable: EffectRule list =
           "reads the ambient system clock through System.DateTimeOffset, which makes timing untestable"
           "Axial.IClock (Clock.now)"
 
-      rule "clock.local-timezone" CoreGuardrail "environment"
+      rule "clock.local-timezone" CoreGuardrail "timezone"
           (MembersOf("System.TimeZoneInfo", [ "get_Local"; "Local" ]))
           "reads TimeZoneInfo.Local, which depends on the machine's configured time zone"
           "TimeZone.local, or TimeZone.toLocal with an explicit TimeZone value"
@@ -176,7 +168,7 @@ let private builtInRuleTable: EffectRule list =
           "reads or writes ambient process/OS environment state directly"
           "ConfigSource.environment / Config.required from Axial.Configuration, or an explicit config value passed through 'env"
 
-      rule "environment.processor-count" CoreGuardrail "environment"
+      rule "environment.processor-count" CoreGuardrail "processors"
           (MembersOf("System.Environment", [ "get_ProcessorCount"; "ProcessorCount" ]))
           "reads Environment.ProcessorCount directly to size concurrency"
           "Parallelism.ofProcessors (fun n -> ...)"
@@ -185,7 +177,7 @@ let private builtInRuleTable: EffectRule list =
           "calls Task.Delay directly, which makes scheduled waits untestable and bypasses fiber interruption"
           "Flow.sleep / Schedule, or Axial.IClock.Sleep for a raw delay"
 
-      rule "sleep.thread" CoreGuardrail "sleep" (MembersOf("System.Threading.Thread", [ "Sleep" ]))
+      rule "sleep.thread" CoreGuardrail "clock" (MembersOf("System.Threading.Thread", [ "Sleep" ]))
           "blocks a thread with Thread.Sleep, an ambient and untestable delay outside the fiber scheduler"
           "Flow.sleep / Schedule"
 
@@ -237,22 +229,22 @@ let private builtInRuleTable: EffectRule list =
             "blocks the calling thread waiting for a task"
             "await the task asynchronously" with Scope = OutsideFlow }
 
-      // Dedicated analyzers implement AXG009–AXG012; catalog entries register their categories.
-      rule "concurrency.raw" CoreGuardrail "concurrency" (MembersOf("Axial.__RawConcurrency", []))
+      // Dedicated analyzers implement AXG009–AXG012; these entries register their ids.
+      marker "concurrency.raw" (MembersOf("Axial.__RawConcurrency", []))
           "uses raw concurrency" "Flow concurrency or a reasoned OS bridge"
-      rule "exception.swallowed" CoreGuardrail "exception" (MembersOf("Axial.__SwallowedException", []))
+      marker "exception.swallowed" (MembersOf("Axial.__SwallowedException", []))
           "discards an exception" "propagate, record, or report the exception"
-      rule "cancellation.none" CoreGuardrail "cancellation" (MembersOf("Axial.__UncancellableWork", []))
+      marker "cancellation.none" (MembersOf("Axial.__UncancellableWork", []))
           "disables cancellation" "the owning cancellation token"
-      rule "concurrency.discarded" CoreGuardrail "concurrency" (MembersOf("Axial.__DiscardedWork", []))
+      marker "concurrency.discarded" (MembersOf("Axial.__DiscardedWork", []))
           "discards concurrent work" "await or retain ownership"
       // AXG013 is structural; no ambient-effect symbol match is registered here.
-      rule "test.wait-for-facts" CoreGuardrail "test-wait" (MembersOf("Axial.__WaitForFacts", []))
+      marker "test.wait-for-facts" (MembersOf("Axial.__WaitForFacts", []))
           "Wait for a fact, not elapsed time."
           "Complete a Deferred or TaskCompletionSource and wait with a deadline, or step the test clock."
 
-      // AXG008 is syntactic; this entry registers its suppression category.
-      rule "scope.run" CoreGuardrail "scope" (MembersOf("Axial.__ScopeFromRun", []))
+      // AXG008 is syntactic; this entry registers its id.
+      marker "scope.run" (MembersOf("Axial.__ScopeFromRun", []))
           "returns a scope-owned service" "use the service within its run"
 
       rule "console.any" "Axial.Console" "console" (AnyMemberOf "System.Console")
@@ -282,7 +274,7 @@ let private builtInRuleTable: EffectRule list =
           "Axial.HttpClient's IHttp service (Http.live with one shared HttpClient)" ]
 
 let builtInRules: EffectRule list =
-    builtInRuleTable |> List.map (fun rule -> { rule with Capability = capabilityOf rule })
+    builtInRuleTable
 
 /// Every guardrail that Axial.Guardrails ships rules for.
 let builtInGuardrails: Set<string> =
@@ -421,7 +413,6 @@ let parseDefinition (text: string) : Result<Capability * EffectRule list, string
                     let matching = Option.get matching
                     { Id = $"{name}.{index + 1}"
                       Guardrail = capability.Guardrail
-                      Category = name.ToLowerInvariant()
                       Match = matching
                       Scope = Anywhere
                       Message = $"{describe matching}, which the {name} capability wraps"

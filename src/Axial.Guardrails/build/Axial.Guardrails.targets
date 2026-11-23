@@ -324,7 +324,7 @@
       <_AxialGuardrailsConfigLine Include="setting&#9;projectPath&#9;$(MSBuildProjectFullPath)" Condition="'$(_AxialGuardrailsPolicyRoot)' != ''" />
       <_AxialGuardrailsConfigLine Include="setting&#9;nativeAot&#9;true" Condition="'$(IsAotCompatible)' == 'true' or '$(PublishAot)' == 'true'" />
       <_AxialGuardrailsConfigLine Include="setting&#9;nativeAot&#9;false" Condition="'$(IsAotCompatible)' != 'true' and '$(PublishAot)' != 'true'" />
-      <_AxialGuardrailsConfigLine Include="@(AxialGuardrailRule->'rule&#9;%(Identity)&#9;%(Guardrail)&#9;%(Category)&#9;%(Match)&#9;%(Scope)&#9;%(Message)&#9;%(Replacement)')" />
+      <_AxialGuardrailsConfigLine Include="@(AxialGuardrailRule->'rule&#9;%(Identity)&#9;%(Guardrail)&#9;%(Match)&#9;%(Scope)&#9;%(Message)&#9;%(Replacement)')" />
       <!-- A capability is defined in a <name>.capability.toml file, and claimed by the files that implement or test it
            with AxialCapability="<name>[;<name>]" metadata on their Compile item. One claim item per file and name. -->
       <_AxialGuardrailsConfigLine Include="@(AxialCapabilityDefinition->'capabilityDefinition&#9;%(FullPath)')" />

@@ -1,6 +1,6 @@
 /// Validates every Axial.Guardrails suppression comment. Suppressions are accepted only when they
 /// identify one rule, include a reason, and cover a finding. An AXG001 allowance also covers one call and names the
-/// gap it stands for; tiered rules accept only visible guide acknowledgements.
+/// gap or why it stands for; tiered rules accept only visible guide acknowledgements.
 module Axial.Guardrails.SuppressionIntegrityAnalyzer
 
 open System.IO
@@ -68,8 +68,8 @@ let private findingForDirective (ctx: CliContext) directive =
         Some(report "Move this file-wide suppression into the leading comment block, before the first declaration.")
     | Some "AXG001" when directive.FileWide ->
         Some(report "Remove this file-wide allowance: a file that implements a capability claims it on its Compile item (AxialCapability=\"<name>\"), and may then call that API without comments.")
-    | Some "AXG001" when (gapOf directive).IsNone ->
-        Some(report "End this allowance with the gap it stands for, such as `(gap: process-named-pipes)`, naming the missing Axial or capability feature. If the file implements a capability, claim it on its Compile item (AxialCapability=\"<name>\") instead.")
+    | Some "AXG001" when (allowanceOf directive).IsNone ->
+        Some(report "End this allowance with the gap it stands for, such as `(gap: process-named-pipes)` for a missing Axial or capability feature, or with `(why: reason)` for a deliberate raw call. If the file implements a capability, claim it on its Compile item (AxialCapability=\"<name>\") instead.")
     | Some ruleId ->
         let covered =
             rangesForRule ctx ruleId

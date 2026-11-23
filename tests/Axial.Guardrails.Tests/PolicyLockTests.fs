@@ -183,6 +183,15 @@ module PolicyLockTests =
         test <@ changes.SuppressionsAdded = items @ ["src/Other.fs\t1\t// axial-allow-AXG002: other"] @>
 
     [<Fact>]
+    let ``readable summary lists effect allowances first under their own heading`` () =
+        let changes = { diff empty empty with SuppressionsAdded=["src/App.fs\t1\t// axial-allow-AXG002: other"; "src/Pay.fs\t1\t// axial-allow-AXG001: (why: checks the live clock)"] }
+        let lines = (formatSummary changes).Split(System.Environment.NewLine)
+        test <@ lines[1] = "  EFFECT ALLOWANCES ADDED (raw effects outside a capability; read each one):" @>
+        test <@ lines[2] = "    src/Pay.fs" && lines[3] = "      #1  // axial-allow-AXG001: (why: checks the live clock)" @>
+        test <@ not (lines |> Array.skip 4 |> Array.exists (fun line -> line.Contains "AXG001")) @>
+        test <@ lines |> Array.contains "      #1  // axial-allow-AXG002: other" @>
+
+    [<Fact>]
     let ``readable summary puts other category items on separate indented lines`` () =
         let changes = { diff empty empty with RulesDowngraded=["rule A";"rule B"]; ProtectedChanged=["a.props";"b.props"]; BoundariesAdded=["src/**";"vendor/**"] }
         let lines = (formatSummary changes).Split(System.Environment.NewLine)

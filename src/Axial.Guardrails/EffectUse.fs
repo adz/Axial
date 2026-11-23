@@ -15,8 +15,8 @@ open Axial.Guardrails.EffectCatalog
 type Verdict =
     /// In a file that claims the capability owning the API.
     | Owned of capability: string
-    /// An `axial-allow-AXG001: reason (gap: name)` comment: a recorded gap in Axial or a capability.
-    | Allowance of gap: string
+    /// An `axial-allow-AXG001` comment ending in `(gap: name)` or `(why: text)`.
+    | Allowance of Suppressions.Allowed
     /// A `host`-role file, or a role whose `effects.ambient` level is `allow`.
     | Host
     /// Not allowed: the agent must use the service.
@@ -28,13 +28,13 @@ let private fullPath (fileName: string) = try Some(Path.GetFullPath fileName) wi
 let owns fileName (capability: Capability) =
     fullPath fileName |> Option.exists (fun path -> List.contains path capability.Implementation)
 
-/// The gap named by a valid AXG001 allowance covering `line`, if any.
+/// What a valid AXG001 allowance covering `line` stands for, if there is one.
 let private allowanceAt (source: ISourceText) line =
     if not (Suppressions.isAllowed source line "AXG001") then None
     else
         Suppressions.validDirectives source
         |> List.tryPick (fun directive ->
-            if directive.RuleId = Some "AXG001" && (directive.Line = line || directive.Line = line - 1) then Suppressions.gapOf directive
+            if directive.RuleId = Some "AXG001" && (directive.Line = line || directive.Line = line - 1) then Suppressions.allowanceOf directive
             else None)
 
 /// The verdict for one raw effect call at `line`.
@@ -50,10 +50,8 @@ let judge (config: GuardrailConfig.Config) fileName (source: ISourceText) line (
         | _ when level = Policy.Allow || role = Some Policy.Host -> Host
         | _ ->
             match allowanceAt source line with
-            | Some gap -> Allowance gap
+            | Some allowed -> Allowance allowed
             | None -> Reported
-
-let private structural = set [ "blocking"; "concurrency"; "exception"; "cancellation"; "test-wait"; "scope" ]
 
 /// The finding text, written as an instruction to whoever edits the code: what to change and where.
 let advice (config: GuardrailConfig.Config) fileName (rule: EffectRule) =
@@ -61,8 +59,8 @@ let advice (config: GuardrailConfig.Config) fileName (rule: EffectRule) =
     let claimed = config.AllCapabilities |> List.filter (owns fileName)
     let fix =
         match capability with
-        // Waits, raw concurrency and similar are code shapes with a direct rewrite.
-        | _ when structural.Contains rule.Category -> $"Replace it with {rule.Replacement}."
+        // A blocking wait is a code shape with a direct rewrite: there is nothing to fake.
+        | Some capability when capability.Env = "" && capability.Fake = "" -> $"Replace it with {rule.Replacement}."
         | Some capability when capability.Env = "" ->
             $"Replace it with {rule.Replacement}. {capability.Service} needs no environment change; tests use {capability.Fake}."
         | Some capability ->
@@ -103,12 +101,14 @@ let toMessage (config: GuardrailConfig.Config) fileName (rule: EffectRule) (rang
 /// and why, so `axial check` shows leniency as a number instead of hiding it.
 let record (verdicts: Verdict list) =
     let owned = verdicts |> List.choose (function Owned name -> Some name | _ -> None)
-    let gaps = verdicts |> List.choose (function Allowance gap -> Some gap | _ -> None)
+    let allowances = verdicts |> List.choose (function Allowance allowed -> Some allowed | _ -> None)
+    let gaps = allowances |> List.choose (function Suppressions.Gap name -> Some name | _ -> None)
     let count verdict = verdicts |> List.filter ((=) verdict) |> List.length
     XElement(
         XName.Get "effectUses",
         XAttribute(XName.Get "owned", owned.Length),
-        XAttribute(XName.Get "allowance", gaps.Length),
+        XAttribute(XName.Get "allowance", allowances.Length),
+        XAttribute(XName.Get "why", allowances.Length - gaps.Length),
         XAttribute(XName.Get "host", count Host),
         XAttribute(XName.Get "reported", count Reported),
         (owned

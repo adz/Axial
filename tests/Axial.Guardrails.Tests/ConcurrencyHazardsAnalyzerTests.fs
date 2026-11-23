@@ -214,7 +214,7 @@ type ConcurrencyPolicyEnvironmentCollection() = class end
 
 [<Collection("Concurrency policy environment")>]
 type ConcurrencyHazardsPolicyTests() =
-    let runWithSettings (settings: string list) (role: string) runtime boundary project source code =
+    let runWithSettings (settings: string list) (role: string) runtime project source code =
         task {
             let! ctx = AnalyzerTestContext.createWithAxial true source
             let root = System.IO.Path.GetDirectoryName ctx.FileName
@@ -223,12 +223,11 @@ type ConcurrencyHazardsPolicyTests() =
             let configPath = System.IO.Path.Combine(root, "config.tsv")
             let exemptionTable = settings |> List.tryPick (fun s -> if s.StartsWith("policy:") then Some(s.Substring(7)) else None) |> Option.defaultValue ""
             let runtimeTable = if runtime then "\n[runtime]\nfiles = [\"Fixture.fs\"]\n" else ""
-            let boundaryTable = if boundary then "\n[boundaries]\nfiles = [\"Fixture.fs\"]\n" else ""
             System.IO.File.WriteAllText(ctx.FileName, ctx.SourceText.ToString())
             let projectPath = System.IO.Path.Combine(root, project)
             System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName projectPath) |> ignore
             System.IO.File.WriteAllText(projectPath, "<Project />")
-            System.IO.File.WriteAllText(policyPath, $"version = 2\n[default]\nrole = \"{role}\"\n" + runtimeTable + boundaryTable + exemptionTable)
+            System.IO.File.WriteAllText(policyPath, $"version = 2\n[default]\nrole = \"{role}\"\n" + runtimeTable + exemptionTable)
             System.IO.File.WriteAllLines(configPath,
                 [| "guardrail\tAxial"
                    "setting\tpolicyRoot\t" + root
@@ -244,10 +243,10 @@ type ConcurrencyHazardsPolicyTests() =
                 TestDirectory.delete root
         }
 
-    let runWith role runtime boundary project source code = runWithSettings [] role runtime boundary project source code
+    let runWith role runtime project source code = runWithSettings [] role runtime project source code
 
     let source = "module M\nopen System.Threading\nopen System.Threading.Tasks\nlet source = TaskCompletionSource<int>()\nlet token = CancellationToken.None\nlet swallowed () = try failwith \"bad\" with _ -> ()\nlet discarded () = Task.FromResult 1 |> ignore\n"
-    let run role runtime boundary code = runWith role runtime boundary "Fixture.fsproj" source code
+    let run role runtime code = runWith role runtime "Fixture.fsproj" source code
 
     [<Fact>]
     member _.``analyzer source has no repository path exemptions`` () =
@@ -344,7 +343,7 @@ type ConcurrencyHazardsPolicyTests() =
     member _.``domain services and ordinary hosts report concurrency hazards`` role =
         task {
             for code in [ "AXG009"; "AXG010"; "AXG011"; "AXG012" ] do
-                let! messages = run role false false code
+                let! messages = run role false code
                 Assert.NotEmpty messages
         }
 
@@ -355,7 +354,7 @@ type ConcurrencyHazardsPolicyTests() =
     [<InlineData("AXG012")>]
     member _.``test role is exempt`` code =
         task {
-            let! messages = run "test" false false code
+            let! messages = run "test" false code
             Assert.Empty messages
         }
 
@@ -366,30 +365,30 @@ type ConcurrencyHazardsPolicyTests() =
     [<InlineData("AXG012")>]
     member _.``all test analyzers report tiered findings too`` code =
         task {
-            let! messages = runWithSettings [ "setting\tinTests\tall" ] "test" false false "Fixture.fsproj" source code
+            let! messages = runWithSettings [ "setting\tinTests\tall" ] "test" false "Fixture.fsproj" source code
             Assert.NotEmpty messages
         }
 
     [<Fact>]
     member _.``runtime list exempts raw primitives and discarded work but not uncancellable work`` () =
         task {
-            let! raw = run "services" true false "AXG009"
+            let! raw = run "services" true "AXG009"
             Assert.Empty raw
-            let! discarded = run "services" true false "AXG012"
+            let! discarded = run "services" true "AXG012"
             Assert.Empty discarded
-            let! discardedOutside = run "services" false false "AXG012"
+            let! discardedOutside = run "services" false "AXG012"
             Assert.NotEmpty discardedOutside
-            let! uncancellable = run "services" true false "AXG011"
+            let! uncancellable = run "services" true "AXG011"
             Assert.Single(uncancellable) |> ignore
         }
 
     [<Fact>]
     member _.``capability role owns raw task bridges but not discarded work`` () =
         task {
-            let! raw = run "capabilities" false false "AXG009"
+            let! raw = run "capabilities" false "AXG009"
             Assert.Empty raw
             for code in [ "AXG010"; "AXG011"; "AXG012" ] do
-                let! messages = run "capabilities" false false code
+                let! messages = run "capabilities" false code
                 Assert.NotEmpty messages
         }
 
@@ -400,12 +399,12 @@ type ConcurrencyHazardsPolicyTests() =
     member _.``host tooling projects are exempt from concurrency rules`` project =
         task {
             for code in [ "AXG009"; "AXG010"; "AXG011"; "AXG012" ] do
-                let! missing = runWith "host" false false project source code
+                let! missing = runWith "host" false project source code
                 Assert.NotEmpty missing
                 let declaration = $"policy:\n[exemptions]\n{code} = [\"{project}\"]\n"
-                let! messages = runWithSettings [declaration] "host" false false project source code
+                let! messages = runWithSettings [declaration] "host" false project source code
                 Assert.Empty messages
-                let! service = runWithSettings [declaration] "services" false false project source code
+                let! service = runWithSettings [declaration] "services" false project source code
                 Assert.NotEmpty service
         }
 
@@ -415,14 +414,14 @@ type ConcurrencyHazardsPolicyTests() =
     member _.``benchmark projects permit measured raw concurrency baselines`` code =
         task {
             let project = "benchmarks/Axial.Benchmarks/Axial.Benchmarks.fsproj"
-            let! missing = runWith "host" false false project source code
+            let! missing = runWith "host" false project source code
             Assert.NotEmpty missing
             let declaration = $"policy:\n[exemptions]\n{code} = [\"benchmarks/**/*.fsproj\"]\n"
-            let! messages = runWithSettings [declaration] "host" false false project source code
+            let! messages = runWithSettings [declaration] "host" false project source code
             Assert.Empty messages
-            let! outside = runWith "host" false false "samples/benchmarks/Axial.Benchmarks.fsproj" source code
+            let! outside = runWith "host" false "samples/benchmarks/Axial.Benchmarks.fsproj" source code
             Assert.NotEmpty outside
-            let! service = runWithSettings [declaration] "services" false false project source code
+            let! service = runWithSettings [declaration] "services" false project source code
             Assert.NotEmpty service
         }
 
@@ -431,7 +430,7 @@ type ConcurrencyHazardsPolicyTests() =
     [<InlineData("AXG011")>]
     member _.``benchmark projects retain exception and cancellation checks`` code =
         task {
-            let! messages = runWith "host" false false "benchmarks/Axial.Benchmarks/Axial.Benchmarks.fsproj" source code
+            let! messages = runWith "host" false "benchmarks/Axial.Benchmarks/Axial.Benchmarks.fsproj" source code
             Assert.NotEmpty messages
         }
 
@@ -442,7 +441,7 @@ type ConcurrencyHazardsPolicyTests() =
     member _.``tooling exemption requires both host role and tooling project path`` role project =
         task {
             for code in [ "AXG009"; "AXG010"; "AXG011"; "AXG012" ] do
-                let! messages = runWith role false false project source code
+                let! messages = runWith role false project source code
                 Assert.NotEmpty messages
         }
 
@@ -454,7 +453,7 @@ type ConcurrencyHazardsPolicyTests() =
         task {
             for role in [ "domain"; "services"; "capabilities"; "host"; "test" ] do
                 let input = "module M\nopen System.Threading\n" + body
-                let! messages = runWith role false false "Fixture.fsproj" input "AXG009"
+                let! messages = runWith role false "Fixture.fsproj" input "AXG009"
                 Assert.Empty messages
         }
 
@@ -466,7 +465,7 @@ type ConcurrencyHazardsPolicyTests() =
     member _.``guide findings remain visible and checkpoints reject only unacknowledged sites`` (checkpoint: bool) (note: string) (expected: string) =
         task {
             let input = "module M\n" + note + "let f () = try failwith \"bad\" with _ -> ()"
-            let! messages = runWithSettings [ $"setting\tcheckpoint\t{checkpoint.ToString().ToLowerInvariant()}" ] "services" false false "Fixture.fsproj" input "AXG010"
+            let! messages = runWithSettings [ $"setting\tcheckpoint\t{checkpoint.ToString().ToLowerInvariant()}" ] "services" false "Fixture.fsproj" input "AXG010"
             let message = Assert.Single messages
             Assert.Equal(expected, string message.Severity)
             Assert.Contains("Consider", message.Message)
@@ -477,7 +476,7 @@ type ConcurrencyHazardsPolicyTests() =
     member _.``only the Cancellation never definition owns the uncancellable token`` () =
         task {
             let input = "module Axial.Platform.Cancellation\nopen System.Threading\nlet never: CancellationToken = CancellationToken.None\nlet other = CancellationToken.None"
-            let! messages = runWith "services" false false "Fixture.fsproj" input "AXG011"
+            let! messages = runWith "services" false "Fixture.fsproj" input "AXG011"
             let message = Assert.Single messages
             Assert.Equal(4, message.Range.StartLine)
             Assert.Equal(Severity.Error, message.Severity)
@@ -491,9 +490,9 @@ type ConcurrencyHazardsPolicyTests() =
         task {
             for checkpoint in [ "false"; "true" ] do
                 let input = $"module M\n// axial-note {code}: intentional witness\n{body}"
-                let! messages = runWithSettings [ $"setting\tcheckpoint\t{checkpoint}" ] "services" false false "Fixture.fsproj" input code
+                let! messages = runWithSettings [ $"setting\tcheckpoint\t{checkpoint}" ] "services" false "Fixture.fsproj" input code
                 Assert.Equal(expected, string (Assert.Single messages).Severity)
-                let! invalid = runWithSettings [ $"setting\tcheckpoint\t{checkpoint}" ] "services" false false "Fixture.fsproj" input "AXG002"
+                let! invalid = runWithSettings [ $"setting\tcheckpoint\t{checkpoint}" ] "services" false "Fixture.fsproj" input "AXG002"
                 Assert.Equal((if checkpoint = "true" then Severity.Error else Severity.Warning), (Assert.Single invalid).Severity)
         }
 
@@ -507,7 +506,7 @@ type ConcurrencyHazardsPolicyTests() =
         task {
             for checkpoint in [ "false"; "true" ] do
                 let input = $"module M\n{note}\nlet value = 1"
-                let! messages = runWithSettings [ $"setting\tcheckpoint\t{checkpoint}" ] "services" false false "Fixture.fsproj" input "AXG002"
+                let! messages = runWithSettings [ $"setting\tcheckpoint\t{checkpoint}" ] "services" false "Fixture.fsproj" input "AXG002"
                 Assert.Equal((if checkpoint = "true" then Severity.Error else Severity.Warning), (Assert.Single messages).Severity)
         }
 
@@ -515,7 +514,7 @@ type ConcurrencyHazardsPolicyTests() =
     member _.``AXG002 names the handler body as the AXG010 note anchor`` () =
         task {
             let input = "module M\nopen System\nlet f () =\n    try\n        failwith \"bad\"\n    // axial-note AXG010: best effort\n    with _ ->\n        ()"
-            let! messages = runWithSettings [] "services" false false "Fixture.fsproj" input "AXG002"
+            let! messages = runWithSettings [] "services" false "Fixture.fsproj" input "AXG002"
             let message = Assert.Single messages
             Assert.Contains("first line inside the handler body", message.Message)
             Assert.Contains("not above 'with'", message.Message)
@@ -525,9 +524,9 @@ type ConcurrencyHazardsPolicyTests() =
     member _.``AXG010 note first inside the handler body is accepted`` () =
         task {
             let input = "module M\nopen System\nlet f () =\n    try\n        failwith \"bad\"\n    with _ ->\n        // axial-note AXG010: best effort\n        ()"
-            let! integrity = runWithSettings [] "services" false false "Fixture.fsproj" input "AXG002"
+            let! integrity = runWithSettings [] "services" false "Fixture.fsproj" input "AXG002"
             Assert.Empty integrity
-            let! messages = runWithSettings [] "services" false false "Fixture.fsproj" input "AXG010"
+            let! messages = runWithSettings [] "services" false "Fixture.fsproj" input "AXG010"
             Assert.Equal(Severity.Info, (Assert.Single messages).Severity)
         }
 
@@ -539,10 +538,10 @@ type ConcurrencyHazardsPolicyTests() =
     member _.``AXG002 distinguishes live delay notes from blocking and misplaced notes`` (body: string) valid =
         task {
             let input = "module M\n" + body
-            let! messages = runWith "test" false false "Fixture.fsproj" input "AXG002"
+            let! messages = runWith "test" false "Fixture.fsproj" input "AXG002"
             if valid then Assert.Empty messages
             else Assert.Equal(Severity.Warning, (Assert.Single messages).Severity)
-            let! findings = runWith "test" false false "Fixture.fsproj" input "AXG013"
+            let! findings = runWith "test" false "Fixture.fsproj" input "AXG013"
             Assert.Single findings |> ignore
             if valid then Assert.Equal(Severity.Info, findings.Head.Severity)
         }
@@ -551,9 +550,9 @@ type ConcurrencyHazardsPolicyTests() =
     member _.``notes must cover live scoped findings`` () =
         task {
             let input = "module M\n// axial-note AXG010: irrelevant in test role\nlet f () = try failwith \"bad\" with _ -> ()"
-            let! invalid = runWith "test" false false "Fixture.fsproj" input "AXG002"
+            let! invalid = runWith "test" false "Fixture.fsproj" input "AXG002"
             Assert.Equal(Severity.Warning, (Assert.Single invalid).Severity)
-            let! valid = runWith "services" false false "Fixture.fsproj" input "AXG002"
+            let! valid = runWith "services" false "Fixture.fsproj" input "AXG002"
             Assert.Empty valid
         }
 
@@ -564,15 +563,9 @@ type ConcurrencyHazardsPolicyTests() =
     member _.``quoted notes never acknowledge findings or produce invalid note diagnostics`` prefix =
         task {
             let input = "module M\n" + prefix + "\nlet f () = try failwith \"bad\" with _ -> ()"
-            let! findings = runWith "services" false false "Fixture.fsproj" input "AXG010"
+            let! findings = runWith "services" false "Fixture.fsproj" input "AXG010"
             Assert.Equal(Severity.Warning, (Assert.Single findings).Severity)
-            let! invalid = runWith "services" false false "Fixture.fsproj" input "AXG002"
+            let! invalid = runWith "services" false "Fixture.fsproj" input "AXG002"
             Assert.Empty invalid
         }
 
-    [<Fact>]
-    member _.``adapter boundary is not a raw concurrency exemption`` () =
-        task {
-            let! messages = run "services" false true "AXG009"
-            Assert.Single(messages) |> ignore
-        }

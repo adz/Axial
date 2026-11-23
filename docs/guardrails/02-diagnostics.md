@@ -65,14 +65,17 @@ When Axial or a capability cannot do the job yet, allow one call with a comment 
 use pipe = new NamedPipeServerStream(name) // axial-allow-AXG001: Axial.Process has no named pipes yet (gap: process-named-pipes)
 ```
 
-The allowance covers its own line or the next one. It must end with `(gap: name)`, it cannot cover a whole file, and a
-`forbid` rule cannot be allowed. A rule-specific allowance allows only that diagnostic.
+For a raw call that is deliberate rather than a missing feature, say why instead:
+`// axial-allow-AXG001: (why: this test checks the real clock)`.
+
+The allowance covers its own line or the next one. It must end with `(gap: name)` or `(why: reason)`, it cannot cover
+a whole file, and a `forbid` rule cannot be allowed. Policy review lists every new AXG001 allowance first. A rule-specific allowance allows only that diagnostic.
 
 ## AXG002: Remove invalid suppressions
 
 `AXG002` validates every suppression. It reports legacy or malformed syntax, an unknown rule ID, a missing reason,
 a file-wide suppression outside the leading comment block, a file-wide AXG001 allowance, an AXG001 allowance that
-does not name its gap, or a stale suppression that covers no finding. AXG009–013 allowances are invalid: these rules cannot be suppressed.
+names neither a gap nor a why, or a stale suppression that covers no finding. AXG009–013 allowances are invalid: these rules cannot be suppressed.
 
 It also validates `axial-note` acknowledgements for guide findings (AXG010 and awaited-delay AXG013).
 A note needs a non-empty reason and a live guide finding on the same or following line. For AXG010 put the note as
@@ -83,7 +86,7 @@ Valid notes leave their guide finding visible as Info; they never hide it.
 
 Remove an invalid or unused directive. AXG002 offers an automatic removal when the directive occupies its own comment
 line. For an intentional exception, use a rule-specific comment such as `// axial-allow-AXG003: <reason>` with the
-ID of the finding being allowed; an AXG001 allowance also names its gap. Every directive is recorded in the policy
+ID of the finding being allowed; an AXG001 allowance also names its gap or why. Every directive is recorded in the policy
 lock, so each new one is a review item.
 
 ## AXG003: Return typed failures from workflows
@@ -509,7 +512,7 @@ AXG012 = ["tools/**/*.fsproj"]
 ```
 
 These lists do not change finding severities or exempt other rules.
-AXG001–008 accept rule-specific allowances (an AXG001 allowance names its gap) and keep their baseline behavior.
+AXG001–008 accept rule-specific allowances (an AXG001 allowance names its gap or why) and keep their baseline behavior.
 AXG009–013 do not accept allowances or baseline severity downgrades. Only guide findings (AXG010, awaited-delay AXG013
 and AXG014) accept `axial-note`; no finding approval is needed. AXG002 warns about malformed, empty, unknown, misplaced, or stale notes,
 and notes on block findings. Invalid notes become errors at checkpoints. No automatic fix is offered: choosing

@@ -202,7 +202,7 @@ module CapabilityTests =
         let config =
             GuardrailConfig.parse
                 [ "guardrail\tAxial"; "guardrail\tAxial.FileSystem"
-                  "rule\tdns.lookup\tAxial\tdns\tany:System.Net.Dns\tanywhere\tresolves names through System.Net.Dns directly\tan explicit resolver" ]
+                  "rule\tdns.lookup\tAxial\tany:System.Net.Dns\tanywhere\tresolves names through System.Net.Dns directly\tan explicit resolver" ]
         let message (rule: EffectRule) = (EffectUse.toMessage config "/tmp/Domain.fs" rule Range.range0).Message
         let builtIn id = message (builtInRules |> List.find (fun rule -> rule.Id = id))
         let file = builtIn "filesystem.file"

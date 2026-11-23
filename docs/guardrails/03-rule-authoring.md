@@ -95,17 +95,21 @@ Inside a claimed file, calls to the claimed API are allowed and counted. Any oth
 `DateTimeOffset.UtcNow` in the payments file, is still reported: the file owns the payments API, not every effect. A
 claim of a capability nobody defined fails the build.
 
-### Allowances for gaps
+### Allowances
 
-When Axial or a capability cannot do something yet, one call may be allowed with a comment that names the gap:
+A raw call that no claim covers may be allowed with a comment. It ends with either the missing feature it stands for,
+`(gap: name)`, or why the call is deliberate, `(why: reason)`:
 
 ```fsharp
 use pipe = new NamedPipeServerStream(name) // axial-allow-AXG001: Axial.Process has no named pipes yet (gap: process-named-pipes)
+
+// axial-allow-AXG001: (why: this test checks that the analyzer reports a real clock read)
+let now = DateTime.UtcNow
 ```
 
-An allowance covers its own line or the next one, never a whole file, and it must end with `(gap: name)`. It works in
-any file unless the rule level is `forbid`. Allowances should be rare: each is a missing feature, and `axial check`
-lists them by gap name.
+An allowance covers its own line or the next one, never a whole file. It works in any file unless the rule level is
+`forbid`. Allowances should be rare. `axial check` counts them per gap name and per why, and policy review lists every
+new one first, under its own heading.
 
 ### Review
 
@@ -113,10 +117,10 @@ Every claim, definition and allowance is recorded in the policy lock, and `axial
 direction. A change that only blocks more passes without review: a new definition, a new `replaces` entry, `guide` to
 `enforce`, a claim removed, or a claimed file renamed or moved (the project claims as many files as before). A change
 that allows more needs review: a definition or `replaces` entry removed, `enforce` to `guide`, a project claiming more
-files, or a new allowance.
+files, or a new allowance. New allowances come first in the review output.
 
 `axial capabilities` lists every capability with the files that claim it (`--json` for tools). `axial check` counts
-the raw effect calls each project was allowed: in claimed files, by gap allowances, and in host files. A capability
+the raw effect calls each project was allowed: in claimed files, by allowances, and in host files. A capability
 that several projects use is a candidate for its own effect package.
 
 ## Declaring rules
@@ -134,7 +138,6 @@ Each rule is one `<AxialGuardrailRule>` item:
   <AxialGuardrail Include="Acme.Payments" />
   <AxialGuardrailRule Include="acme.gateway-client"
       Guardrail="Acme.Payments"
-      Category="payments"
       Match="ctor:Acme.Gateway.GatewayClient"
       Scope="anywhere"
       Message="constructs the gateway client directly, which bypasses the payments service"
@@ -143,7 +146,7 @@ Each rule is one `<AxialGuardrailRule>` item:
 ```
 
 Findings are reported as `AXG001`. No file can claim a rule declared this way; define a capability instead when a
-service owns the API. A rare [gap allowance](#allowances-for-gaps) allows one call unless the rule level is `forbid`.
+service owns the API. A rare [allowance](#allowances) allows one call unless the rule level is `forbid`.
 
 ## Metadata
 
@@ -151,7 +154,6 @@ service owns the API. A rare [gap allowance](#allowances-for-gaps) allows one ca
 | --- | --- |
 | `Include` | A stable rule id, conventionally `{guardrail}.{name}`. |
 | `Guardrail` | The guardrail the rule belongs to, matching an `<AxialGuardrail>` item. |
-| `Category` | The effect category used to group and document the contributed rule. |
 | `Match` | The symbol to flag; see the grammar below. |
 | `Scope` | `anywhere`, or `insideFlow` to report the call only inside `flow { }`. |
 | `Message` | The diagnostic text naming the direct call and what it bypasses. |

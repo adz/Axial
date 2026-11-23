@@ -22,7 +22,6 @@ module Policy =
           Files: Assignment list
           Rules: Map<Role, Map<string, RuleLevel>>
           Protected: string list
-          Boundaries: string list
           Exemptions: Map<string, string list>
           Runtime: string list
           SuppressionIgnores: string list
@@ -80,6 +79,14 @@ module Policy =
             elif line[index] = '#' && not quoted && cut = line.Length then cut <- index
         line.Substring(0, cut).Trim()
 
+    /// `[boundaries]` let listed files make any raw effect call. A capability claim replaced it.
+    [<Literal>]
+    let BoundariesRemoved =
+        "[boundaries] is not supported. Delete the whole section. "
+        + "It let a file make any raw effect call. Now a file that implements a capability claims that capability in its project file, "
+        + "<Compile Include=\"File.fs\" AxialCapability=\"name\" />, and may then call only that capability's API. "
+        + "A single raw call that no capability covers takes `// axial-allow-AXG001: reason (gap: name)` or `(why: reason)` on the line above it."
+
     let private parseDocument (text: string) =
         let mutable table = ""
         let mutable tables = Set.empty
@@ -109,9 +116,10 @@ module Policy =
                 if line.StartsWith("[") && line.EndsWith("]") then
                     table <- line.Substring(1, line.Length - 2).Trim()
                     let allowedTable =
-                        table = "exemptions" || table = "default" || table = "projects" || table = "files" || table = "protected" || table = "boundaries" || table = "runtime" || table = "suppressions" || table = "review"
+                        table = "exemptions" || table = "default" || table = "projects" || table = "files" || table = "protected" || table = "runtime" || table = "suppressions" || table = "review"
                         || (table.StartsWith("roles.") && table.EndsWith(".rules") && table.Split('.').Length = 3)
                     if table = "" then error <- Some $"line {lineNumber}: empty table name"
+                    elif table = "boundaries" then error <- Some($"line {lineNumber}: " + BoundariesRemoved)
                     elif not allowedTable then error <- Some $"line {lineNumber}: unknown policy table '{table}'"
                     elif tables.Contains table then error <- Some $"line {lineNumber}: table '{table}' is already declared; combine its entries under one declaration"
                     else tables <- tables.Add table
@@ -258,7 +266,7 @@ module Policy =
         | Error message -> fail message
         | Ok entries ->
             let allowed path =
-                (List.contains path [ "exemptions.AXG009"; "exemptions.AXG010"; "exemptions.AXG011"; "exemptions.AXG012" ]) || path = "version" || path = "baseline" || path = "default.role" || path = "protected.paths" || path = "boundaries.files" || path = "runtime.files" || path = "suppressions.ignore" || path = "review.automation"
+                (List.contains path [ "exemptions.AXG009"; "exemptions.AXG010"; "exemptions.AXG011"; "exemptions.AXG012" ]) || path = "version" || path = "baseline" || path = "default.role" || path = "protected.paths" || path = "runtime.files" || path = "suppressions.ignore" || path = "review.automation"
                 || path.StartsWith("projects.") || path.StartsWith("files.")
                 || (path.StartsWith("roles.") && path.Contains(".rules."))
             match entries |> Map.toSeq |> Seq.tryFind (fst >> allowed >> not) with
@@ -273,9 +281,9 @@ module Policy =
                 let getStrings key =
                     match entries.TryFind key with None -> Ok [] | Some(Strings values) -> Ok values | _ -> Error $"'{key}' must be an array of strings"
                 let version = match entries.TryFind "version" with Some(Integer 2) -> Ok 2 | Some(Integer value) -> Error $"unsupported policy version {value}; expected 2" | Some _ -> Error "'version' must be integer 2" | None -> Error "missing required key 'version'"
-                match version, getString "default.role" true, getString "baseline" false, getStrings "protected.paths", getStrings "boundaries.files", getStrings "suppressions.ignore" with
-                | Error e, _, _, _, _, _ | _, Error e, _, _, _, _ | _, _, Error e, _, _, _ | _, _, _, Error e, _, _ | _, _, _, _, Error e, _ | _, _, _, _, _, Error e -> fail e
-                | Ok version, Ok(Some defaultName), Ok baseline, Ok protectedPaths, Ok boundaryPaths, Ok suppressionIgnores ->
+                match version, getString "default.role" true, getString "baseline" false, getStrings "protected.paths", getStrings "suppressions.ignore" with
+                | Error e, _, _, _, _ | _, Error e, _, _, _ | _, _, Error e, _, _ | _, _, _, Error e, _ | _, _, _, _, Error e -> fail e
+                | Ok version, Ok(Some defaultName), Ok baseline, Ok protectedPaths, Ok suppressionIgnores ->
                     let baselineResult =
                         match baseline with
                         | None -> Ok None
@@ -288,7 +296,7 @@ module Policy =
                     match parseRole defaultName, baselineResult with
                     | Error e, _ | _, Error e -> fail e
                     | Ok defaultRole, Ok baseline ->
-                        let needsFiles = entries |> Map.exists (fun key _ -> key.StartsWith("exemptions.") || key.StartsWith("projects.") || key.StartsWith("files.") || key = "protected.paths" || key = "boundaries.files" || key = "runtime.files" || key = "suppressions.ignore" || key = "review.automation")
+                        let needsFiles = entries |> Map.exists (fun key _ -> key.StartsWith("exemptions.") || key.StartsWith("projects.") || key.StartsWith("files.") || key = "protected.paths" || key = "runtime.files" || key = "suppressions.ignore" || key = "review.automation")
                         let allFiles = if needsFiles then filesUnder repositoryRoot else [||]
                         let assignments prefix allowCapabilitiesEmpty =
                             entries |> Map.toList |> List.choose (fun (key, value) ->
@@ -337,10 +345,10 @@ module Policy =
                                   let automation =
                                       getStrings "review.automation"
                                       |> Result.bind (validatePatterns repositoryRoot allFiles true)
-                                  match validatePaths "protected" protectedPaths, validatePaths "boundary" boundaryPaths, (getStrings "runtime.files" |> Result.bind (validatePaths "runtime")), ignores, automation with
-                                  | Error e, _, _, _, _ | _, Error e, _, _, _ | _, _, Error e, _, _ | _, _, _, Error e, _ | _, _, _, _, Error e -> fail e
-                                  | Ok protectedFiles, Ok boundaries, Ok runtime, Ok ignores, Ok automation ->
-                                    Ok { Exemptions = exemptions; Version = version; Baseline = baseline; DefaultRole = defaultRole; Projects = projects; Files = files; Rules = rules; Protected = protectedFiles; Boundaries = boundaries; Runtime = runtime; SuppressionIgnores = ignores; Automation = automation }
+                                  match validatePaths "protected" protectedPaths, (getStrings "runtime.files" |> Result.bind (validatePaths "runtime")), ignores, automation with
+                                  | Error e, _, _, _ | _, Error e, _, _ | _, _, Error e, _ | _, _, _, Error e -> fail e
+                                  | Ok protectedFiles, Ok runtime, Ok ignores, Ok automation ->
+                                    Ok { Exemptions = exemptions; Version = version; Baseline = baseline; DefaultRole = defaultRole; Projects = projects; Files = files; Rules = rules; Protected = protectedFiles; Runtime = runtime; SuppressionIgnores = ignores; Automation = automation }
                 | _ -> fail "invalid policy"
 
     let private matchingRoles (path: string) assignments =

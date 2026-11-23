@@ -25,7 +25,7 @@ module WaitForFactsAnalyzerTests =
                 | Policy.Capabilities -> "capabilities"
                 | Policy.Services -> "services"
                 | Policy.Host -> "host"
-            System.IO.File.WriteAllText(policyFile, $"version = 2\n[default]\nrole = \"{roleName}\"\n[boundaries]\nfiles = [\"{System.IO.Path.GetFileName ctx.FileName}\"]\n[roles.test.rules]\n\"test.wait-for-facts\" = \"{level}\"\n")
+            System.IO.File.WriteAllText(policyFile, $"version = 2\n[default]\nrole = \"{roleName}\"\n[roles.test.rules]\n\"test.wait-for-facts\" = \"{level}\"\n")
             try
                 // Axial.Tool also compiles Policy.fs; parsing avoids mixing assembly-local types.
                 let project = System.IO.Path.ChangeExtension(ctx.FileName, ".fsproj")

@@ -163,6 +163,20 @@ module PolicyReviewTests =
             Assert.DoesNotContain("cannot evaluate", output)
             Assert.Contains("App.fsproj: AxialGuardrailsEnabled: true -> false", output))
 
+    [<Fact>]
+    let ``review lists effect allowances first under their own heading`` () =
+        repository (fun _ write _ cli ->
+            write "App.fs" "module App\n// axial-allow-AXG002: foreign callback\n// axial-allow-AXG001: (why: checks the live clock)\n"
+            let code, output = cli ["policy"; "review"; "--since"; "v0.11.3"]
+            Assert.Equal(0, code)
+            let lines = output.Split('\n') |> Array.map _.TrimEnd()
+            let heading = Array.findIndex ((=) "EFFECT ALLOWANCES (raw effects outside a capability; read each one):") lines
+            Assert.Equal(1, heading)
+            Assert.Contains("axial-allow-AXG001: (why: checks the live clock)", lines[heading + 1])
+            let other = Array.findIndex ((=) "suppressions/notes:") lines
+            Assert.True(other > heading + 1)
+            Assert.Contains("axial-allow-AXG002", lines[other + 1]))
+
     [<Theory>]
     [<InlineData("<Project><Import Project=\"missing.targets\" /></Project>", "missing.targets")>]
     [<InlineData("<Project>", "MSB4025")>]
@@ -257,7 +271,6 @@ module PolicyReviewTests =
     [<InlineData("role")>]
     [<InlineData("rule")>]
     [<InlineData("runtime")>]
-    [<InlineData("boundary")>]
     [<InlineData("ignore")>]
     [<InlineData("baseline")>]
     [<InlineData("enabled")>]
@@ -273,7 +286,6 @@ module PolicyReviewTests =
             | "role" -> write ConfigName (config.Replace("role = \"domain\"", "role = \"host\""))
             | "rule" -> write ConfigName (config.Replace("= \"deny\"", "= \"allow\""))
             | "runtime" -> write ConfigName (config + "\n[runtime]\nfiles = [\"App.fs\"]\n")
-            | "boundary" -> write ConfigName (config + "\n[boundaries]\nfiles = [\"App.fs\"]\n")
             | "ignore" -> write ConfigName (config + "\n[suppressions]\nignore = [\"App.fs\"]\n")
             | "baseline" -> write DefaultBaseline "clock.datetime\tApp.fs\tfingerprint\n"
             | "enabled" -> write "App.fsproj" (project.Replace("Enabled>true", "Enabled>false"))

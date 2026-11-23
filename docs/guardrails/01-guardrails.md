@@ -23,7 +23,7 @@ per file, and cache replays keep it. `axial check` reads each project's latest c
 a project without one is listed as "not built yet — run a build" (`--json`: `"built": false`, null counts). Fixing an
 AXG014 finding lowers it after the next build. It is a trend to watch, not a gate; AXG014 gives the per-site guidance.
 The same results carry the allowed raw effect calls per project: how many sit in files that claim a capability (per
-capability), how many gap allowances allow (per gap), and how many are in host files (`--json`: `allowedEffects`). In this repository, `scripts/axial <command>` builds and runs the live tool.
+capability), how many allowances allow (per gap, plus a count of whys), and how many are in host files (`--json`: `allowedEffects`). In this repository, `scripts/axial <command>` builds and runs the live tool.
 
 Run `axial policy review [--since <ref>] [--json]` to inspect what loosened: new or changed suppression reasons and notes, relaxed roles or rule levels, capabilities loosened (a definition or `replaces` entry removed, `enforce` to `guide`, a project claiming more files), runtime/ignore/baseline additions, evaluated project settings, and changes to declared automation files or analyzer versions. Removals appear briefly as tightening. The default reference is the reviewed commit recorded in the lock; the first review needs `--since <tag-or-commit>`. If that reference predates policy files, the review reports policy introduction rather than inventing historical policy, and still compares source exceptions.
 
@@ -318,11 +318,12 @@ rule was newly enabled for every affected file's effective role. Preparing candi
 
 ### Migrate file-level effect allowances
 
-`axial-allow-effect-file` and `axial-allow-file-AXG001` are not recognized, and `[boundaries]` no longer has an effect
-(`axial check` warns until it is removed). If the file implements or tests a capability, claim it on the file's
+`axial-allow-effect-file` and `axial-allow-file-AXG001` are not recognized. A `[boundaries]` table in
+`Axial.Guardrails.toml` is an error: delete it. If the file implements or tests a capability, claim it on the file's
 `Compile` item, for example `<Compile Include="LiveClock.fs" AxialCapability="clock" />`. When Axial or a capability
 cannot do the job yet, allow the one call with a comment that names the gap:
-`// axial-allow-AXG001: <reason> (gap: <name>)`. A `forbid` level cannot be suppressed.
+`// axial-allow-AXG001: <reason> (gap: <name>)`. For a deliberate raw call, say why instead:
+`// axial-allow-AXG001: (why: <reason>)`. A `forbid` level cannot be suppressed.
 For legacy domain code, prepare a baseline and have a human review and approve it as described above.
 AXG009–013 do not accept file allowances or baseline downgrades.
 

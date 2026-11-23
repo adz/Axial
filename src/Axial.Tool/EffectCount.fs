@@ -6,12 +6,14 @@ open System.Xml.Linq
 
 /// Allowed raw effect calls per project for `axial check`: the leniency the analyzers granted, as a number. Every
 /// Guardrails build records, per file, how many raw effect calls it allowed and why (`effectUses` on the EffectBoundary
-/// coverage entry): in a file that claims the capability, by a gap allowance, or in a host-role file. This
+/// coverage entry): in a file that claims the capability, by an allowance (a gap or a why), or in a host-role file. This
 /// tool reads only the latest complete result of each project, parses no source and never gates.
 module EffectCount =
     type Counts =
         { Owned: int
           Allowance: int
+          /// Allowances that name why the call is deliberate rather than a gap.
+          Why: int
           Host: int
           /// Owned calls per capability.
           Capabilities: (string * int) list
@@ -35,7 +37,7 @@ module EffectCount =
             if not (value "project" result |> Option.exists samePath) || value "complete" result <> Some "true"
                || uses |> List.exists isNull then None
             else
-                let total name = uses |> List.sumBy (fun record -> int (record.Attribute(xn name).Value))
+                let total name = uses |> List.sumBy (fun record -> value name record |> Option.map int |> Option.defaultValue 0)
                 let named element countName =
                     uses
                     |> List.collect (fun record -> record.Elements(xn element) |> Seq.toList)
@@ -43,7 +45,7 @@ module EffectCount =
                     |> List.groupBy fst
                     |> List.map (fun (name, entries) -> name, entries |> List.sumBy snd)
                     |> List.sort
-                Some { Owned = total "owned"; Allowance = total "allowance"; Host = total "host"
+                Some { Owned = total "owned"; Allowance = total "allowance"; Why = total "why"; Host = total "host"
                        Capabilities = named "capability" "owned"; Gaps = named "gap" "uses" }
         with _ -> None
 
@@ -69,9 +71,10 @@ module EffectCount =
             entries |> List.map (fun (name, uses) -> $"{name} {uses}") |> String.concat ", "
         let detail (c: Counts) =
             [ if not c.Capabilities.IsEmpty then listed c.Capabilities
-              if not c.Gaps.IsEmpty then "gaps: " + listed c.Gaps ]
+              if not c.Gaps.IsEmpty then "gaps: " + listed c.Gaps
+              if c.Why > 0 then $"why: {c.Why}" ]
             |> function [] -> "" | parts -> "  (" + String.concat "; " parts + ")"
-        [ yield $"Allowed raw effects (leniency, not a gate): {total _.Owned} in files that claim a capability, {total _.Allowance} by gap allowances, {total _.Host} in host files."
+        [ yield $"Allowed raw effects (leniency, not a gate): {total _.Owned} in files that claim a capability, {total _.Allowance} by allowances, {total _.Host} in host files."
           for count, c in lenient ->
               $"  {count.Project.PadRight width}  {c.Owned,4} owned  {c.Allowance,4} allowance  {c.Host,4} host{role count}{detail c}" ]
         |> String.concat "\n"
@@ -84,6 +87,6 @@ module EffectCount =
                 count.Counts
                 |> Option.map (fun c -> f c |> List.map (fun (name, uses) -> jsonString name + ":" + string uses) |> String.concat ",")
                 |> Option.defaultValue ""
-            "{\"project\":" + jsonString count.Project + ",\"owned\":" + number _.Owned + ",\"allowance\":" + number _.Allowance
+            "{\"project\":" + jsonString count.Project + ",\"owned\":" + number _.Owned + ",\"allowance\":" + number _.Allowance + ",\"why\":" + number _.Why
             + ",\"host\":" + number _.Host + ",\"capabilities\":{" + map _.Capabilities + "},\"gaps\":{" + map _.Gaps + "}}")
         |> String.concat "," |> fun content -> "[" + content + "]"
