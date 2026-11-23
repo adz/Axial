@@ -87,6 +87,17 @@ module Policy =
         + "<Compile Include=\"File.fs\" AxialCapability=\"name\" />, and may then call only that capability's API. "
         + "A single raw call that no capability covers takes `// axial-allow-AXG001: reason (gap: name)` or `(why: reason)` on the line above it."
 
+    /// The policy text without its `[boundaries]` table, for reading a commit from before the table was removed. Only
+    /// history is read this way; the current policy must not have the table.
+    let withoutBoundaries (text: string) =
+        let mutable skipping = false
+        [ for line in text.Replace("\r\n", "\n").Split('\n') do
+            let trimmed = line.Trim()
+            if trimmed.StartsWith("[") && not (trimmed.StartsWith("[[")) && trimmed.EndsWith("]") && not (trimmed.Contains("\"")) then
+                skipping <- trimmed = "[boundaries]"
+            if not skipping then yield line ]
+        |> String.concat "\n"
+
     let private parseDocument (text: string) =
         let mutable table = ""
         let mutable tables = Set.empty

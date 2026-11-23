@@ -334,7 +334,7 @@ module PolicyLock =
               @ (if old.Version=2 && downgraded.IsEmpty && baselineAdded.IsEmpty && Set.isSubset current.Suppressions old.Suppressions && old.Capabilities=current.Capabilities && old.Boundaries=current.Boundaries && capabilitiesLoosened.IsEmpty then [] else [LockName]) }
 
     /// An AXG001 allowance: a raw effect outside any capability. These are rare, so review shows them first.
-    let isEffectAllowance (value: string) = value.Contains("axial-allow-AXG001", StringComparison.OrdinalIgnoreCase)
+    let isEffectAllowance (value: string) = Regex.IsMatch(value, @"axial-allow-(file-)?AXG001\b", RegexOptions.IgnoreCase)
 
     let isEmpty x = x.RulesDowngraded.IsEmpty && x.BaselineAdded.IsEmpty && x.SuppressionsAdded.IsEmpty && x.BoundariesAdded.IsEmpty && x.CapabilitiesLoosened.IsEmpty && x.ProtectedChanged.IsEmpty
     let formatJsonSummary x =

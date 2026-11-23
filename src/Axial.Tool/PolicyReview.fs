@@ -201,7 +201,9 @@ module PolicyReview =
                     let target = Path.GetFullPath(Path.Combine(historicalRoot, path))
                     if not (target.StartsWith(historicalRoot + string Path.DirectorySeparatorChar, StringComparison.Ordinal)) then failwith "Unsafe git path"
                     Directory.CreateDirectory(Path.GetDirectoryName target) |> ignore
-                    File.WriteAllText(target, command root "git" ["show"; commit + ":" + path])
+                    let text = command root "git" ["show"; commit + ":" + path]
+                    // A reviewed point from before `[boundaries]` was removed still reads; the table never counts.
+                    File.WriteAllText(target, if path = ConfigName then Axial.Guardrails.Policy.withoutBoundaries text else text)
                 let after = inspectState root true
                 let introduced = not (File.Exists(Path.Combine(historicalRoot, ConfigName))) && not (File.Exists(Path.Combine(historicalRoot, LockName)))
                 let before =
@@ -278,13 +280,91 @@ module PolicyReview =
             finally Directory.Delete(historicalRoot, true)
         with error -> Error error.Message
 
+    /// Groups in the order a reviewer should read them, each with what its entries let through.
+    let private groups =
+        [ EffectAllowances, "Effect allowances: raw effects outside any capability. Read each one."
+          "capabilities", "Capabilities: files that may now call a raw API, or definitions that now cover less."
+          "rule levels", "Rule levels: rules that now report less."
+          "roles", "Roles: where files and projects get their rules."
+          "runtime", "Runtime exemptions: files allowed raw concurrency."
+          "baseline", "Baseline: existing findings accepted without a fix."
+          "suppressions/notes", "Suppressions and notes."
+          "ignore", "Ignored files: suppressions in these files are not tracked."
+          "project settings", "Project settings."
+          "analyzer package", "Analyzer package versions."
+          "automation", "Automation: files that run in CI or a release." ]
+
+    let private rank group =
+        groups |> List.tryFindIndex (fst >> (=) group) |> Option.defaultValue groups.Length
+
+    let private claimPattern = Regex(@"^(?<project>[^:]+): (?<capability>\S+) claimed by (?<files>.*) \(was (?<was>\d+)\)$")
+
+    /// A source comment entry, `path<TAB>#n comment`, as its file and the rest.
+    let private sourceEntry (detail: string) =
+        match detail.Split('\t', 2) with
+        | [| file; rest |] -> Some(file, rest)
+        | _ -> None
+
+    let private entryLines group (entries: Finding list) =
+        let details = entries |> List.map _.Detail
+        let sources = details |> List.choose sourceEntry
+        let claims = details |> List.map claimPattern.Match |> List.filter _.Success
+        if sources.Length = details.Length then
+            sources |> List.groupBy fst |> List.collect (fun (file, items) ->
+                ("  " + file) :: (items |> List.map (fun (_, rest) -> "    " + rest)))
+        elif group = "capabilities" then
+            let width = claims |> List.map _.Groups["capability"].Value.Length |> List.fold max 0
+            let fileOf (project: string) (path: string) =
+                let directory = (Path.GetDirectoryName project).Replace('\\', '/')
+                if directory <> "" && path.StartsWith(directory + "/") then path.Substring(directory.Length + 1) else path
+            let filesOf (row: Match) =
+                row.Groups["files"].Value.Split(", ", StringSplitOptions.RemoveEmptyEntries)
+                |> Array.map (fileOf row.Groups["project"].Value) |> String.concat ", "
+            let filesWidth = claims |> List.map (filesOf >> _.Length) |> List.fold max 0
+            let claimLines =
+                claims
+                |> List.groupBy _.Groups["project"].Value
+                |> List.collect (fun (project, rows) ->
+                    ("  " + project) :: (rows |> List.map (fun row ->
+                        let was =
+                            match row.Groups["was"].Value with
+                            | "0" -> "new"
+                            | "1" -> "was 1 file"
+                            | count -> $"was {count} files"
+                        let capability = row.Groups["capability"].Value
+                        $"    {capability.PadRight width}  {(filesOf row).PadRight filesWidth}  {was}")))
+            let others = details |> List.filter (fun detail -> not (claimPattern.IsMatch detail)) |> List.map (fun detail -> "  " + detail)
+            others @ claimLines
+        else details |> List.map (fun detail -> "  " + detail)
+
+    let private plural count (word: string) = if count = 1 then $"1 {word}" else $"{count} {word}s"
+
     let format result =
-        let allowances, others = result.Loosened |> List.partition (fun entry -> entry.Group = EffectAllowances)
-        let heading group = if group = EffectAllowances then "EFFECT ALLOWANCES (raw effects outside a capability; read each one):" else group + ":"
-        let groups =
-            (if allowances.IsEmpty then [] else [ EffectAllowances, allowances ]) @ List.groupBy _.Group others
-            |> List.collect (fun (group, entries) -> heading group :: (entries |> List.map (fun entry -> "  " + entry.Detail)))
-        [ yield $"Policy review since {result.Since}"
-          if result.Loosened.IsEmpty then yield "No policy loosening."
-          yield! groups
-          for entry in result.Removed do yield $"removed {entry.Group}: {entry.Detail}" ] |> String.concat Environment.NewLine
+        let since = if Regex.IsMatch(result.Since, "^[0-9a-f]{40}$") then result.Since.Substring(0, 9) else result.Since
+        let ordered (findings: Finding list) = findings |> List.groupBy _.Group |> List.sortBy (fst >> rank)
+        let heading group = groups |> List.tryFind (fst >> (=) group) |> Option.map snd |> Option.defaultValue (group + ":")
+        let removed =
+            ordered result.Removed |> List.collect (fun (group, entries) ->
+                let sources = entries |> List.choose (_.Detail >> sourceEntry)
+                if sources.Length = entries.Length then
+                    let files = sources |> List.map fst |> List.distinct
+                    let named = if files.Length <= 3 then " (" + String.concat ", " files + ")" else ""
+                    let fileCount = plural files.Length "file"
+                    [ $"  {group}: {entries.Length} removed from {fileCount}{named}" ]
+                else entries |> List.map (fun entry -> $"  {group}: {entry.Detail}"))
+        [ yield $"Policy review since {since}"
+          yield ""
+          if result.Loosened.IsEmpty then yield "NEEDS APPROVAL: nothing. No policy loosening."
+          else
+              let count = plural result.Loosened.Length "change"
+              yield $"NEEDS APPROVAL: {count} that allow more. A human reads each one, then runs `axial policy approve`."
+              for group, entries in ordered result.Loosened do
+                  yield ""
+                  yield heading group
+                  yield! entryLines group entries
+          if not removed.IsEmpty then
+              yield ""
+              let count = plural result.Removed.Length "change"
+              yield $"TIGHTENED: {count} that only block more. No approval needed."
+              yield! removed ]
+        |> String.concat Environment.NewLine

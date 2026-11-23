@@ -164,18 +164,36 @@ module PolicyReviewTests =
             Assert.Contains("App.fsproj: AxialGuardrailsEnabled: true -> false", output))
 
     [<Fact>]
+    let ``review reads a reviewed point whose policy still had a boundaries table`` () =
+        repository (fun root write git cli ->
+            let config = File.ReadAllText(Path.Combine(root, ConfigName))
+            write ConfigName (config + "\n[boundaries]\nfiles = [\"App.fs\"]\n")
+            git ["commit"; "-qam"; "boundaries"] |> ignore
+            git ["tag"; "with-boundaries"] |> ignore
+            write ConfigName config
+            let code, output = cli ["policy"; "review"; "--since"; "with-boundaries"]
+            Assert.Equal(0, code)
+            Assert.DoesNotContain("not supported", output)
+            write ConfigName (config + "\n[boundaries]\nfiles = [\"App.fs\"]\n")
+            let code, output = cli ["policy"; "review"; "--since"; "with-boundaries"]
+            Assert.NotEqual(0, code)
+            Assert.Contains("[boundaries] is not supported", output))
+
+    [<Fact>]
     let ``review lists effect allowances first under their own heading`` () =
         repository (fun _ write _ cli ->
             write "App.fs" "module App\n// axial-allow-AXG002: foreign callback\n// axial-allow-AXG001: (why: checks the live clock)\n"
             let code, output = cli ["policy"; "review"; "--since"; "v0.11.3"]
             Assert.Equal(0, code)
             let lines = output.Split('\n') |> Array.map _.TrimEnd()
-            let heading = Array.findIndex ((=) "EFFECT ALLOWANCES (raw effects outside a capability; read each one):") lines
-            Assert.Equal(1, heading)
-            Assert.Contains("axial-allow-AXG001: (why: checks the live clock)", lines[heading + 1])
-            let other = Array.findIndex ((=) "suppressions/notes:") lines
-            Assert.True(other > heading + 1)
-            Assert.Contains("axial-allow-AXG002", lines[other + 1]))
+            Assert.StartsWith("NEEDS APPROVAL: 2 changes that allow more.", lines[2])
+            let heading = Array.findIndex ((=) "Effect allowances: raw effects outside any capability. Read each one.") lines
+            Assert.Equal(4, heading)
+            Assert.Equal("  App.fs", lines[heading + 1])
+            Assert.Contains("axial-allow-AXG001: (why: checks the live clock)", lines[heading + 2])
+            let other = Array.findIndex ((=) "Suppressions and notes.") lines
+            Assert.True(other > heading + 2)
+            Assert.Contains("axial-allow-AXG002", lines[other + 2]))
 
     [<Theory>]
     [<InlineData("<Project><Import Project=\"missing.targets\" /></Project>", "missing.targets")>]
@@ -223,7 +241,7 @@ module PolicyReviewTests =
             write path "changed\n"
             let code, output = cli ["policy"; "review"; "--since"; "HEAD"; "--check"]
             Assert.Equal(declared, code <> 0)
-            if declared then Assert.Contains("automation:\n  " + path, output.ReplaceLineEndings "\n")
+            if declared then Assert.Contains("Automation: files that run in CI or a release.\n  " + path, output.ReplaceLineEndings "\n")
             else Assert.DoesNotContain(path, output))
 
     [<Fact>]
@@ -441,7 +459,7 @@ module PolicyReviewTests =
             File.Delete(Path.Combine(root, "Other.fs"))
             let code, output = cli ["policy"; "review"; "--since"; "HEAD"; "--check"]
             Assert.True((code = 0), output)
-            Assert.Contains("removed suppressions/notes: Other.fs", output)
+            Assert.Contains("suppressions/notes: 1 removed from 1 file (Other.fs)", output)
             let code, output = cli ["check"]
             Assert.True((code = 0), output))
 
