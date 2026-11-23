@@ -54,7 +54,7 @@ lists the queue. Work on main.
     `Axial.Configuration`) may. They live in this repo for now and may be extracted later.
 
 - [ ] T15b: Publish the gitkay and LogDug upgrades once Axial 0.16.0 is on NuGet
-  - Both are upgraded and committed locally against `0.16.0-local.1` (gitkay c8b70ad, LogDug f338eef), with every
+  - Both are upgraded and committed locally against `0.16.0-local.1` (gitkay c8b70ad and d1fb0b6, LogDug f338eef and e159934, both on the .NET 11.0.100 SDK), with every
     other package at its latest. Switch `0.16.0-local.1` to `0.16.0` (package references and the `axial.tool`
     manifest), restore from nuget.org, rebuild in Full mode, run the tests, then a human runs `axial policy approve`
     in each repository before pushing.
