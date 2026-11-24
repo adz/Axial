@@ -17,14 +17,14 @@ type Tier =
     | Bridge
     | Off
 
-/// Domain and service code is strict; capability and host files may bridge. Declared runtime files implement Flow on
-/// raw tasks and are exempt. Test-role files run only with AxialGuardrailsInTests=all, and then as bridges: test
+/// Domain and service code is strict; capability and host files may bridge. Files that claim the concurrency
+/// capability implement Flow on raw tasks and are exempt. Test-role files run only with AxialGuardrailsInTests=all, and then as bridges: test
 /// frameworks require Task-returning tests.
 let tier (config: GuardrailConfig.Config) fileName =
     let role = GuardrailConfig.resolvedFilePolicy config fileName |> Option.map _.Role
     let allTests = System.String.Equals(config.InTests, "all", System.StringComparison.OrdinalIgnoreCase)
     match role with
-    | _ when GuardrailConfig.isRuntimeFile config fileName -> Off
+    | _ when GuardrailConfig.claimsConcurrency config fileName -> Off
     | Some Policy.Test when not allTests -> Off
     | Some Policy.Test -> Bridge
     | Some(Policy.Capabilities | Policy.Host) -> Bridge

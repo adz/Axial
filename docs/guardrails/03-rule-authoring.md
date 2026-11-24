@@ -14,7 +14,8 @@ says what callers use instead, and which files may call the raw API because they
 There are two parts:
 
 - **A definition** says what the capability is and which APIs it replaces. Axial's own capabilities (`clock`,
-  `filesystem`, `process`, `http` and the rest) are built in; `axial capabilities` lists them.
+  `filesystem`, `process`, `http` and the rest) are built in; `axial capabilities` lists them. `concurrency` is built
+  in too: a file whose job is raw tasks and threads claims it ([AXG009](/guardrails/diagnostics.html#axg009-keep-raw-concurrency-where-it-is-claimed)).
 - **A claim** marks a file as working directly with the capability. It is `AxialCapability` metadata on the file's
   `Compile` item. Only claimed files may call the API, and a claimed file may call only the APIs it claims.
 

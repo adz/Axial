@@ -144,7 +144,7 @@ module GuardrailConfigTests =
         }
 
     [<Fact>]
-    let ``unrelated Result fields and synchronization waits are not blocking task waits`` () =
+    let ``unrelated Result fields are not task waits, and synchronization waits are their own blocking waits`` () =
         task {
             let! found =
                 findings (
@@ -153,7 +153,7 @@ module GuardrailConfigTests =
                     + "let b (r: Record) = r.Result\n"
                     + "let c (s: System.Threading.SemaphoreSlim) = s.Wait()\n"
                     + "let d (e: System.Threading.ManualResetEventSlim) = e.Wait()\n")
-            test <@ found = [] @>
+            test <@ found = [ 4; 5 ] @>
         }
 
     [<Fact>]
@@ -191,6 +191,22 @@ module GuardrailConfigTests =
             test <@ rule.Guardrail = "Axial" @>
             test <@ rule.Replacement = "System.Security.Cryptography in a file that claims the secure-random capability" @>
             test <@ rule.Capability = Some "secure-random" @>
+        }
+
+    [<Fact>]
+    let ``blocking coordination is a blocking wait but mutual exclusion is not reported`` () =
+        task {
+            let! found =
+                findings (
+                    "let gate = new System.Threading.SemaphoreSlim(1)\n"
+                    + "let take () = gate.Wait()\n"
+                    + "let guarded = lock (obj ()) (fun () -> 1)\n"
+                    + "let park (o: obj) = System.Threading.Monitor.Wait o\n"
+                    + "let signal (handle: System.Threading.ManualResetEvent) = handle.WaitOne()\n"
+                    + "let count = let mutable n = 0 in System.Threading.Interlocked.Increment(&n)\n")
+            test <@ found = [ 2; 4; 5 ] @>
+            let rule = builtInRules |> List.find (fun rule -> rule.Id = "blocking.semaphore-wait")
+            test <@ rule.Capability = Some "blocking" && rule.Replacement.Contains "Semaphore.withPermit" @>
         }
 
     [<Fact>]

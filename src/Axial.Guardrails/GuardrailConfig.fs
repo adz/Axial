@@ -385,18 +385,23 @@ let resolvedFilePolicy (config: Config) fileName =
 
 let resolvedPolicy config (ctx: CliContext) = resolvedFilePolicy config ctx.FileName
 
-/// Whether `[runtime].files` declares this source: the runtime implements Flow on top of raw tasks.
-let isRuntimeFile (config: Config) fileName =
-    match config.Policy, config.PolicyRoot with
-    | Some policy, Some root ->
-        (try Some(Path.GetFullPath fileName) with _ -> None)
-        |> Option.exists (fun full -> policy.Runtime |> List.exists (fun file -> Path.GetFullPath(Path.Combine(root, file)) = full))
-    | _ -> false
+/// The built-in capability a file claims when its job is raw concurrency: Flow's own runtime, or an OS bridge.
+[<Literal>]
+let ConcurrencyCapability = "concurrency"
 
-/// Raw-concurrency placement exemptions do not require typed facts; Fast and Full share them.
+/// Whether the file claims the concurrency capability (`AxialCapability="concurrency"` on its Compile item). Such a
+/// file implements Flow-level concurrency on raw tasks, so AXG009, AXG012 and AXG014 do not apply to it.
+let claimsConcurrency (config: Config) fileName =
+    (try Some(Path.GetFullPath fileName) with _ -> None)
+    |> Option.exists (fun full ->
+        config.AllCapabilities
+        |> List.exists (fun capability -> capability.Name = ConcurrencyCapability && List.contains full capability.Implementation))
+
+/// Raw-concurrency exemptions do not require typed facts; Fast and Full share them. A per-call AXG009 allowance is
+/// checked where each finding is reported.
 let exemptsRawConcurrency (config: Config) fileName =
     let role = resolvedFilePolicy config fileName |> Option.map _.Role
-    let runtime = isRuntimeFile config fileName
+    let claimed = claimsConcurrency config fileName
     let host =
         match role, config.Policy, config.PolicyRoot, config.ProjectPath with
         | Some Policy.Host, Some policy, Some root, Some project ->
@@ -404,7 +409,7 @@ let exemptsRawConcurrency (config: Config) fileName =
             policy.Exemptions.TryFind "AXG009" |> Option.defaultValue [] |> List.exists (fun pattern -> Policy.matchesGlob pattern relative)
         | _ -> false
     let test = role = Some Policy.Test && not (String.Equals(config.InTests, "all", StringComparison.OrdinalIgnoreCase))
-    runtime || host || test || role = Some Policy.Capabilities
+    claimed || host || test
 
 // Only the declared project role selects the reduced set; file-role overrides cannot opt a project out.
 let usesTestAnalyzerSet (config: Config) =

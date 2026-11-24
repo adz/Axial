@@ -12,7 +12,8 @@ open Axial.Tool.PolicyLock
 module PolicyReview =
     type Finding = { Group: string; Detail: string }
 
-    /// AXG001 allowances get their own group, listed first: each is a raw effect outside any capability.
+    /// AXG001 and AXG009 allowances get their own group, listed first: each is a raw effect or raw concurrency outside
+    /// any capability.
     [<Literal>]
     let EffectAllowances = "effect allowances"
     type Review = { Since: string; Loosened: Finding list; Removed: Finding list }
@@ -174,7 +175,7 @@ module PolicyReview =
         { Entries =
             [ "suppressions/notes", Set.toList suppressions
               "roles", ("default => " + roleName config.DefaultRole) :: (assignments "project" config.Projects @ assignments "file" config.Files)
-              "runtime", config.Runtime; "ignore", config.SuppressionIgnores
+              "ignore", config.SuppressionIgnores
               "baseline", baseline; "automation", automation; "analyzer package", versions ]
             |> List.map (fun (name, values) -> name, Set.ofList values) |> Map.ofList
           Rules = snapshot.Rules
@@ -234,7 +235,7 @@ module PolicyReview =
                         [ "The policy files did not exist then. Current policy:"
                           $"""roles: {roles}; projects: {after.Projects.Count}; role assignments: {after.Entries["roles"].Count - 1}"""
                           $"rule levels that are not error: {nonError}"
-                          $"""runtime: {after.Entries["runtime"].Count}; exemptions: {exemptions}; ignore: {after.Entries["ignore"].Count}; baseline: {after.Entries["baseline"].Count}""" ]
+                          $"""exemptions: {exemptions}; ignore: {after.Entries["ignore"].Count}; baseline: {after.Entries["baseline"].Count}""" ]
                         |> String.concat Environment.NewLine
                     add ($"Policy introduced since {point}") summary
                 for KeyValue(group, current) in after.Entries do
@@ -282,11 +283,10 @@ module PolicyReview =
 
     /// Groups in the order a reviewer should read them, each with what its entries let through.
     let private groups =
-        [ EffectAllowances, "Effect allowances: raw effects outside any capability. Read each one."
+        [ EffectAllowances, "Effect allowances: raw effects or raw concurrency outside any capability. Read each one."
           "capabilities", "Capabilities: files that may now call a raw API, or definitions that now cover less."
           "rule levels", "Rule levels: rules that now report less."
           "roles", "Roles: where files and projects get their rules."
-          "runtime", "Runtime exemptions: files allowed raw concurrency."
           "baseline", "Baseline: existing findings accepted without a fix."
           "suppressions/notes", "Suppressions and notes."
           "ignore", "Ignored files: suppressions in these files are not tracked."

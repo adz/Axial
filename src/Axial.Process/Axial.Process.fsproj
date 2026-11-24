@@ -38,8 +38,8 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ProcessTypes.fs" />
     <Compile Include="ProcessInfrastructure.fs" />
-    <Compile Include="ProcessLive.fs" />
-    <Compile Include="ProcessRun.fs" AxialCapability="process" />
+    <Compile Include="ProcessLive.fs" AxialCapability="concurrency" />
+    <Compile Include="ProcessRun.fs" AxialCapability="process;concurrency" />
     <Compile Include="Process.fs" />
     <Compile Include="ProcessStream.fs" />
     <Compile Include="ProcessDsl.fs" />

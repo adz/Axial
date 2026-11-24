@@ -222,17 +222,17 @@ type ConcurrencyHazardsPolicyTests() =
             let policyPath = System.IO.Path.Combine(root, "Axial.Guardrails.toml")
             let configPath = System.IO.Path.Combine(root, "config.tsv")
             let exemptionTable = settings |> List.tryPick (fun s -> if s.StartsWith("policy:") then Some(s.Substring(7)) else None) |> Option.defaultValue ""
-            let runtimeTable = if runtime then "\n[runtime]\nfiles = [\"Fixture.fs\"]\n" else ""
             System.IO.File.WriteAllText(ctx.FileName, ctx.SourceText.ToString())
             let projectPath = System.IO.Path.Combine(root, project)
             System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName projectPath) |> ignore
             System.IO.File.WriteAllText(projectPath, "<Project />")
-            System.IO.File.WriteAllText(policyPath, $"version = 2\n[default]\nrole = \"{role}\"\n" + runtimeTable + exemptionTable)
+            System.IO.File.WriteAllText(policyPath, $"version = 2\n[default]\nrole = \"{role}\"\n" + exemptionTable)
             System.IO.File.WriteAllLines(configPath,
                 [| "guardrail\tAxial"
                    "setting\tpolicyRoot\t" + root
                    "setting\tpolicyFile\t" + policyPath
                    "setting\tprojectPath\t" + projectPath
+                   if runtime then "capabilityFile\tconcurrency\t" + System.IO.Path.GetFullPath ctx.FileName
                    yield! settings |> List.filter (fun s -> not(s.StartsWith("policy:"))) |])
             let previous = Environment.GetEnvironmentVariable GuardrailConfig.EnvironmentVariable
             try
@@ -370,7 +370,7 @@ type ConcurrencyHazardsPolicyTests() =
         }
 
     [<Fact>]
-    member _.``runtime list exempts raw primitives and discarded work but not uncancellable work`` () =
+    member _.``a concurrency claim exempts raw primitives and discarded work but not uncancellable work`` () =
         task {
             let! raw = run "services" true "AXG009"
             Assert.Empty raw
@@ -383,13 +383,22 @@ type ConcurrencyHazardsPolicyTests() =
         }
 
     [<Fact>]
-    member _.``capability role owns raw task bridges but not discarded work`` () =
+    member _.``the capabilities role no longer exempts raw task bridges`` () =
         task {
-            let! raw = run "capabilities" false "AXG009"
-            Assert.Empty raw
-            for code in [ "AXG010"; "AXG011"; "AXG012" ] do
+            for code in [ "AXG009"; "AXG010"; "AXG011"; "AXG012" ] do
                 let! messages = run "capabilities" false code
                 Assert.NotEmpty messages
+        }
+
+    [<Fact>]
+    member _.``an AXG009 allowance that says why allows its one call`` () =
+        task {
+            let allowed = source.Replace("let source = TaskCompletionSource<int>()", "// axial-allow-AXG009: (why: an OS callback completes it)\nlet source = TaskCompletionSource<int>()")
+            let! messages = runWith "services" false "Fixture.fsproj" allowed "AXG009"
+            Assert.Empty messages
+            let unexplained = source.Replace("let source = TaskCompletionSource<int>()", "// axial-allow-AXG009: an OS callback completes it\nlet source = TaskCompletionSource<int>()")
+            let! reported = runWith "services" false "Fixture.fsproj" unexplained "AXG009"
+            Assert.NotEmpty reported
         }
 
     [<Theory>]

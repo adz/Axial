@@ -23,7 +23,6 @@ module Policy =
           Rules: Map<Role, Map<string, RuleLevel>>
           Protected: string list
           Exemptions: Map<string, string list>
-          Runtime: string list
           SuppressionIgnores: string list
           Automation: string list }
 
@@ -87,14 +86,22 @@ module Policy =
         + "<Compile Include=\"File.fs\" AxialCapability=\"name\" />, and may then call only that capability's API. "
         + "A single raw call that no capability covers takes `// axial-allow-AXG001: reason (gap: name)` or `(why: reason)` on the line above it."
 
-    /// The policy text without its `[boundaries]` table, for reading a commit from before the table was removed. Only
-    /// history is read this way; the current policy must not have the table.
+    /// `[runtime].files` let listed files use raw tasks. A concurrency claim replaced it.
+    [<Literal>]
+    let RuntimeRemoved =
+        "[runtime] is not supported. Delete the whole section. "
+        + "It let a file use raw tasks and threads. Now a file whose job is raw concurrency claims it in its project file, "
+        + "<Compile Include=\"File.fs\" AxialCapability=\"concurrency\" />. "
+        + "A single deliberate raw call takes `// axial-allow-AXG009: (why: reason)` on the line above it."
+
+    /// The policy text without its `[boundaries]` and `[runtime]` tables, for reading a commit from before they were
+    /// removed. Only history is read this way; the current policy must not have them.
     let withoutBoundaries (text: string) =
         let mutable skipping = false
         [ for line in text.Replace("\r\n", "\n").Split('\n') do
             let trimmed = line.Trim()
             if trimmed.StartsWith("[") && not (trimmed.StartsWith("[[")) && trimmed.EndsWith("]") && not (trimmed.Contains("\"")) then
-                skipping <- trimmed = "[boundaries]"
+                skipping <- trimmed = "[boundaries]" || trimmed = "[runtime]"
             if not skipping then yield line ]
         |> String.concat "\n"
 
@@ -127,10 +134,11 @@ module Policy =
                 if line.StartsWith("[") && line.EndsWith("]") then
                     table <- line.Substring(1, line.Length - 2).Trim()
                     let allowedTable =
-                        table = "exemptions" || table = "default" || table = "projects" || table = "files" || table = "protected" || table = "runtime" || table = "suppressions" || table = "review"
+                        table = "exemptions" || table = "default" || table = "projects" || table = "files" || table = "protected" || table = "suppressions" || table = "review"
                         || (table.StartsWith("roles.") && table.EndsWith(".rules") && table.Split('.').Length = 3)
                     if table = "" then error <- Some $"line {lineNumber}: empty table name"
                     elif table = "boundaries" then error <- Some($"line {lineNumber}: " + BoundariesRemoved)
+                    elif table = "runtime" then error <- Some($"line {lineNumber}: " + RuntimeRemoved)
                     elif not allowedTable then error <- Some $"line {lineNumber}: unknown policy table '{table}'"
                     elif tables.Contains table then error <- Some $"line {lineNumber}: table '{table}' is already declared; combine its entries under one declaration"
                     else tables <- tables.Add table
@@ -277,7 +285,7 @@ module Policy =
         | Error message -> fail message
         | Ok entries ->
             let allowed path =
-                (List.contains path [ "exemptions.AXG009"; "exemptions.AXG010"; "exemptions.AXG011"; "exemptions.AXG012" ]) || path = "version" || path = "baseline" || path = "default.role" || path = "protected.paths" || path = "runtime.files" || path = "suppressions.ignore" || path = "review.automation"
+                (List.contains path [ "exemptions.AXG009"; "exemptions.AXG010"; "exemptions.AXG011"; "exemptions.AXG012" ]) || path = "version" || path = "baseline" || path = "default.role" || path = "protected.paths" || path = "suppressions.ignore" || path = "review.automation"
                 || path.StartsWith("projects.") || path.StartsWith("files.")
                 || (path.StartsWith("roles.") && path.Contains(".rules."))
             match entries |> Map.toSeq |> Seq.tryFind (fst >> allowed >> not) with
@@ -307,7 +315,7 @@ module Policy =
                     match parseRole defaultName, baselineResult with
                     | Error e, _ | _, Error e -> fail e
                     | Ok defaultRole, Ok baseline ->
-                        let needsFiles = entries |> Map.exists (fun key _ -> key.StartsWith("exemptions.") || key.StartsWith("projects.") || key.StartsWith("files.") || key = "protected.paths" || key = "runtime.files" || key = "suppressions.ignore" || key = "review.automation")
+                        let needsFiles = entries |> Map.exists (fun key _ -> key.StartsWith("exemptions.") || key.StartsWith("projects.") || key.StartsWith("files.") || key = "protected.paths" || key = "suppressions.ignore" || key = "review.automation")
                         let allFiles = if needsFiles then filesUnder repositoryRoot else [||]
                         let assignments prefix allowCapabilitiesEmpty =
                             entries |> Map.toList |> List.choose (fun (key, value) ->
@@ -340,7 +348,7 @@ module Policy =
                             | Error e -> fail e
                             | Ok rules ->
                                 let validatePaths kind (paths: string list) =
-                                    paths |> List.fold (fun state p -> state |> Result.bind (fun xs -> (if kind = "runtime" && (p.Contains('*') || p.Contains('?')) then Error "runtime.files requires exact file paths, not globs" else validatePattern repositoryRoot allFiles false p) |> Result.map (fun x -> x::xs))) (Ok [])
+                                    paths |> List.fold (fun state p -> state |> Result.bind (fun xs -> validatePattern repositoryRoot allFiles false p |> Result.map (fun x -> x::xs))) (Ok [])
                                     |> Result.map List.rev
                                 let ignores = validatePatterns repositoryRoot allFiles true suppressionIgnores
                                 let exemptions =
@@ -356,10 +364,10 @@ module Policy =
                                   let automation =
                                       getStrings "review.automation"
                                       |> Result.bind (validatePatterns repositoryRoot allFiles true)
-                                  match validatePaths "protected" protectedPaths, (getStrings "runtime.files" |> Result.bind (validatePaths "runtime")), ignores, automation with
-                                  | Error e, _, _, _ | _, Error e, _, _ | _, _, Error e, _ | _, _, _, Error e -> fail e
-                                  | Ok protectedFiles, Ok runtime, Ok ignores, Ok automation ->
-                                    Ok { Exemptions = exemptions; Version = version; Baseline = baseline; DefaultRole = defaultRole; Projects = projects; Files = files; Rules = rules; Protected = protectedFiles; Runtime = runtime; SuppressionIgnores = ignores; Automation = automation }
+                                  match validatePaths "protected" protectedPaths, ignores, automation with
+                                  | Error e, _, _ | _, Error e, _ | _, _, Error e -> fail e
+                                  | Ok protectedFiles, Ok ignores, Ok automation ->
+                                    Ok { Exemptions = exemptions; Version = version; Baseline = baseline; DefaultRole = defaultRole; Projects = projects; Files = files; Rules = rules; Protected = protectedFiles; SuppressionIgnores = ignores; Automation = automation }
                 | _ -> fail "invalid policy"
 
     let private matchingRoles (path: string) assignments =

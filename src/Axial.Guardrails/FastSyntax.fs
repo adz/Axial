@@ -308,7 +308,7 @@ let analyzeRuleWith (judged: range -> EffectRule -> EffectUse.Verdict -> unit) r
                                 || spellsMember "System.Threading.Tasks.Task.Factory" "StartNew" text
                                 || (text.Contains '.' && spells "System.Threading.ThreadPool" (text.Substring(0, text.LastIndexOf '.')))))
                     if wants "RawConcurrency" && not rawExempt && raw then
-                        add "RawConcurrency" "AXG009" expr.Range "Use Flow concurrency rather than raw TPL coordination; move an OS bridge into a capability-role module."
+                        add "RawConcurrency" "AXG009" expr.Range ConcurrencyHazardsAnalyzer.RawConcurrencyAdvice
                     if wants "WaitForFacts" && role = Some Policy.Test && not constructor && spellsMember "System.Threading.Thread" "Sleep" text
                        && (match expr with SynExpr.App _ -> true | _ -> false) && not (approvedHelper path) then
                         add "WaitForFacts" "AXG013" expr.Range "Wait for a fact, not elapsed time. Complete a Deferred or TaskCompletionSource and wait with a deadline, or step the test clock. Full checks cancellation waits and timeout constants."

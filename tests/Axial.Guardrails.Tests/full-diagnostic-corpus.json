@@ -57,8 +57,8 @@
   {
     "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nlet f () = Task.Run(fun () -\u003E 1)\nlet token = System.Threading.CancellationToken.None\nlet source = TaskCompletionSource\u003Cint\u003E()\n",
     "Findings": [
-      "AXG009|Error|4:11-4:19|Use Flow concurrency rather than raw TPL coordination; move an OS bridge into a capability-role module.",
-      "AXG009|Error|6:13-6:33|Use Flow concurrency rather than raw TPL coordination; move an OS bridge into a capability-role module.",
+      "AXG009|Error|4:11-4:19|Use Flow concurrency (Flow.fork, race, Queue, Deferred, Semaphore) instead of raw TPL. A file whose job is raw concurrency, such as an OS bridge, claims it on its Compile item (AxialCapability=\u0022concurrency\u0022); one deliberate call may carry \u0060// axial-allow-AXG009: (why: reason)\u0060 on the line above.",
+      "AXG009|Error|6:13-6:33|Use Flow concurrency (Flow.fork, race, Queue, Deferred, Semaphore) instead of raw TPL. A file whose job is raw concurrency, such as an OS bridge, claims it on its Compile item (AxialCapability=\u0022concurrency\u0022); one deliberate call may carry \u0060// axial-allow-AXG009: (why: reason)\u0060 on the line above.",
       "AXG011|Error|5:12-5:51|Use the runtime\u0027s uninterruptible cleanup primitive instead of CancellationToken.None."
     ]
   },

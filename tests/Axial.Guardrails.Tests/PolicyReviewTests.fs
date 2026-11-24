@@ -187,7 +187,7 @@ module PolicyReviewTests =
             Assert.Equal(0, code)
             let lines = output.Split('\n') |> Array.map _.TrimEnd()
             Assert.StartsWith("NEEDS APPROVAL: 2 changes that allow more.", lines[2])
-            let heading = Array.findIndex ((=) "Effect allowances: raw effects outside any capability. Read each one.") lines
+            let heading = Array.findIndex ((=) "Effect allowances: raw effects or raw concurrency outside any capability. Read each one.") lines
             Assert.Equal(4, heading)
             Assert.Equal("  App.fs", lines[heading + 1])
             Assert.Contains("axial-allow-AXG001: (why: checks the live clock)", lines[heading + 2])
@@ -288,7 +288,6 @@ module PolicyReviewTests =
     [<Theory>]
     [<InlineData("role")>]
     [<InlineData("rule")>]
-    [<InlineData("runtime")>]
     [<InlineData("ignore")>]
     [<InlineData("baseline")>]
     [<InlineData("enabled")>]
@@ -303,7 +302,6 @@ module PolicyReviewTests =
             match kind with
             | "role" -> write ConfigName (config.Replace("role = \"domain\"", "role = \"host\""))
             | "rule" -> write ConfigName (config.Replace("= \"deny\"", "= \"allow\""))
-            | "runtime" -> write ConfigName (config + "\n[runtime]\nfiles = [\"App.fs\"]\n")
             | "ignore" -> write ConfigName (config + "\n[suppressions]\nignore = [\"App.fs\"]\n")
             | "baseline" -> write DefaultBaseline "clock.datetime\tApp.fs\tfingerprint\n"
             | "enabled" -> write "App.fsproj" (project.Replace("Enabled>true", "Enabled>false"))
@@ -423,7 +421,6 @@ module PolicyReviewTests =
             Assert.Contains("policy files did not exist", output)
             Assert.Contains("projects: 1", output)
             Assert.Contains("roles:", output)
-            Assert.Contains("runtime: 0", output)
             Assert.Contains("baseline: 0", output)
             let code, output = cli ["policy"; "review"; "--since"; "legacy"; "--check"; "--json"]
             Assert.NotEqual(0, code)

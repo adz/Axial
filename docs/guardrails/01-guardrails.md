@@ -16,7 +16,7 @@ than one per project/TFM. The next build that rechecks the policy shows it again
 temporary files. It is always a warning, never an error;
 `axial check --full` and release behaviour are unchanged. Run directly, `axial check` always prints the warning and
 also a per-project raw-Task trend on AXG014's scale: Fast's AXG014 findings in scope (with file roles, tiers,
-`[files]` overrides and `[runtime].files`), how many of them are acknowledged, and every raw `task { }` and
+`[files]` overrides and `concurrency` claims), how many of them are acknowledged, and every raw `task { }` and
 Task-returning signature as a secondary count, with the project's role (`--json` adds a `rawTask` array). The build
 records these counts: each Fast or Full result (`axial-guardrails.<TFM>.result.xml` under `obj`) carries Fast's count
 per file, and cache replays keep it. `axial check` reads each project's latest complete result and parses no source;

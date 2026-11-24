@@ -198,8 +198,8 @@ module PolicyLock =
                 if not missing.IsEmpty then Error $"protected file not found: {missing.Head}" else
                 let hashes = protectedPaths |> Seq.map (fun p -> p,sha256(Path.Combine(root,p))) |> Map.ofSeq
                 let capabilities = config.Files |> List.filter (fun x -> x.Role=Capabilities) |> List.collect _.Patterns |> Set.ofList
-                // Runtime exemptions are approval-sensitive. `[boundaries]` no longer has an effect and is not recorded.
-                let boundaries = config.Runtime |> List.map (fun path -> "runtime:" + path) |> Set.ofList
+                // `[boundaries]` and `[runtime]` are gone: claims (recorded below) took their place.
+                let boundaries = Set.empty
                 let baselineEntries = baselineEntries baselinePath
                 let sourceProjects =
                     files
@@ -333,8 +333,9 @@ module PolicyLock =
               |> Set.toList)
               @ (if old.Version=2 && downgraded.IsEmpty && baselineAdded.IsEmpty && Set.isSubset current.Suppressions old.Suppressions && old.Capabilities=current.Capabilities && old.Boundaries=current.Boundaries && capabilitiesLoosened.IsEmpty then [] else [LockName]) }
 
-    /// An AXG001 allowance: a raw effect outside any capability. These are rare, so review shows them first.
-    let isEffectAllowance (value: string) = Regex.IsMatch(value, @"axial-allow-(file-)?AXG001\b", RegexOptions.IgnoreCase)
+    /// An AXG001 or AXG009 allowance: a raw effect or raw concurrency outside any capability. These are rare, so review
+    /// shows them first.
+    let isEffectAllowance (value: string) = Regex.IsMatch(value, @"axial-allow-(file-)?AXG00[19]\b", RegexOptions.IgnoreCase)
 
     let isEmpty x = x.RulesDowngraded.IsEmpty && x.BaselineAdded.IsEmpty && x.SuppressionsAdded.IsEmpty && x.BoundariesAdded.IsEmpty && x.CapabilitiesLoosened.IsEmpty && x.ProtectedChanged.IsEmpty
     let formatJsonSummary x =
@@ -365,7 +366,7 @@ module PolicyLock =
         let allowances, suppressions = x.SuppressionsAdded |> List.partition isEffectAllowance
         [ ["AXIAL GUARDRAILS POLICY CHANGED"]
           (if allowances.IsEmpty then []
-           else grouped "EFFECT ALLOWANCES ADDED (raw effects outside a capability; read each one):" (allowances |> List.map suppression))
+           else grouped "EFFECT ALLOWANCES ADDED (raw effects or concurrency outside a capability; read each one):" (allowances |> List.map suppression))
           show "rules downgraded:" x.RulesDowngraded
           grouped "baseline entries added:" (x.BaselineAdded |> List.map (fun b -> b.File, $"{b.Rule}/{b.Fingerprint} x{b.Count}"))
           grouped "suppressions added:" (suppressions |> List.map suppression)

@@ -311,13 +311,12 @@ including at checkpoints. `Thread.Sleep` cannot be acknowledged or suppressed.
 
 `Flow.run`, `Flow.runSync`, `Flow.RunSynchronously`, and `StartAsTask` close their scope after completion. Returning `Queue.makeScoped`, `Hub.makeScoped`, or `Hub.subscribe` directly leaves a shut-down service. Caches made by `Cache.make`, `makeBounded`, `makeBoundedWithExpiry`, or `makeRec` capture the creating runtime; closing its scope interrupts lookups. Use these services inside the flow or keep their owning scope open. `Queue.make` (and its `bounded`, `unbounded`, `dropping`, and `sliding` shorthands) and `Hub.make` do not register with the scope and may be returned. The syntax check sees direct calls and pipelines ending in a scoped constructor; the result-type check catches composed cache flows but does not flag Queue or Hub by type because it cannot distinguish scoped from unscoped construction. No automatic fix is offered because the correct lifetime depends on the caller. At an intentional boundary, declare the file and use `// axial-allow-AXG008: <reason>`.
 
-## AXG009: Keep raw concurrency inside the runtime
+## AXG009: Keep raw concurrency where it is claimed
 
 Reports `Task`, `TaskCompletionSource`, and `CancellationTokenSource` construction, `Task.Run`,
-`Task.Factory.StartNew`, `ContinueWith`, `Thread` construction, and `ThreadPool` calls outside runtime files
-and the `capabilities` role. Prefer Flow concurrency; raw coordination belongs at an OS bridge, not throughout
-an adapter. `Interlocked`, F# `lock`, and `Monitor` are reported as warnings outside declared runtime files,
-including in capability, host-tooling, and test code.
+`Task.Factory.StartNew`, `ContinueWith`, `Thread` construction, and `ThreadPool` calls. Work started that way escapes
+Flow's ownership: nothing interrupts it, waits for its cleanup or reports its crash. Use Flow concurrency instead:
+`Flow.fork`, `race`, `Queue`, `Deferred` and `Semaphore`.
 
 ```fsharp
 // Reported: scheduling bypasses Flow ownership.
@@ -326,11 +325,20 @@ let rawWork () = System.Threading.Tasks.Task.Run(fun () -> 1)
 let ownedWork () = Flow.succeed 1
 ```
 
-Raw task findings are errors and cannot be acknowledged or suppressed; move bridges into capability-role modules.
-`lock`, `Monitor` and `Interlocked` are not reported: use `Ref` or `STM` where they fit, but the analyzer does not require it.
-Exact repository-relative paths in `[runtime].files` exempt runtime implementations from AXG009 only.
-Additions to this list appear in `axial policy review`; ordinary policy drift warns rather than blocking builds.
-A capability claim does not exempt raw concurrency.
+Raw concurrency works like raw effects:
+
+- **A claim**, for a file whose job is raw concurrency, such as Flow's own runtime or an OS bridge:
+  `<Compile Include="Bridge.fs" AxialCapability="concurrency" />`. AXG009, AXG012 and AXG014 do not apply to it.
+- **An allowance**, for one deliberate call anywhere else:
+  `// axial-allow-AXG009: (why: the OS callback completes it on its own thread)` on the line above, or `(gap: name)`
+  for a missing Axial feature. It covers one call, never a file, and policy review lists every new one first.
+
+Test projects, and `host` projects listed under `[exemptions] AXG009`, are exempt. No role exempts a file by itself.
+
+Mutual exclusion is not reported: F# `lock`, `Monitor.Enter` and `Exit`, `Interlocked` and `Volatile` guard shared
+state and start nothing. Use `Ref` or `STM` where the state lives in a flow, but the analyzer does not require it.
+Blocking coordination (`Monitor.Wait`, wait handles, `ManualResetEventSlim.Wait`, `SemaphoreSlim.Wait`,
+`Thread.Join`, `CountdownEvent.Wait`, `Barrier.SignalAndWait`) is reported by AXG001 as a `blocking` wait.
 
 ## AXG010: Do not silently swallow exceptions
 
@@ -418,7 +426,7 @@ What it reports depends on the file's resolved role (`[files]` overrides `[proje
 | --- | --- |
 | `domain`, `services` | Every `task { }` and `backgroundTask { }` expression, and every public function, value, member or abstract slot whose return type is `Task`, `Task<'T>`, `ValueTask` or `ValueTask<'T>` |
 | `capabilities`, `host` | Only a task expression that composes: more than one `let!`/`do!`/`use!`/`match!`/`return!`, a loop, or an `if`/`match` that decides what to await (it contains an await or comes before the first one) in its own body |
-| `[runtime].files` | Nothing: the runtime implements Flow on raw tasks |
+| a file that claims `concurrency` | Nothing: it implements Flow-level concurrency on raw tasks |
 | `test` | Nothing, unless `AxialGuardrailsInTests=all`; then the bridge rule applies |
 
 Translating the one awaited result is what a bridge is for: a `try/with` that maps its exceptions, or a `match` on

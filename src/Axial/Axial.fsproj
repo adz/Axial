@@ -39,29 +39,29 @@
 
   <ItemGroup>
     <Compile Include="Outcome.fs" />
-    <Compile Include="Platform.fs" AxialCapability="blocking;clock;timezone;random;console" />
+    <Compile Include="Platform.fs" AxialCapability="blocking;clock;timezone;random;console;concurrency" />
     <Compile Include="TelemetryTypes.fs" />
     <Compile Include="PlatformTypes.fs" />
-    <Compile Include="Core.fs" AxialCapability="blocking;clock;random;guid" />
-    <Compile Include="Interop.fs" />
+    <Compile Include="Core.fs" AxialCapability="blocking;clock;random;guid;concurrency" />
+    <Compile Include="Interop.fs" AxialCapability="concurrency" />
     <Compile Include="Foundation.fs" />
     <Compile Include="Runtime.fs" />
     <Compile Include="Policy.fs" />
     <Compile Include="Schedule.fs" />
     <Compile Include="Parallelism.fs" AxialCapability="processors" />
-    <Compile Include="Flow.fs" AxialCapability="blocking" />
+    <Compile Include="Flow.fs" AxialCapability="blocking;concurrency" />
     <Compile Include="Layer.fs" />
     <Compile Include="LayerBuilder.fs" />
     <Compile Include="FiberLocal.fs" />
     <Compile Include="Cache.fs" />
-    <Compile Include="App.fs" AxialCapability="blocking" />
-    <Compile Include="BindError.fs" />
-    <Compile Include="Concurrency.fs" />
+    <Compile Include="App.fs" AxialCapability="blocking;concurrency" />
+    <Compile Include="BindError.fs" AxialCapability="concurrency" />
+    <Compile Include="Concurrency.fs" AxialCapability="concurrency" />
     <Compile Include="Queue.fs" />
     <Compile Include="Hub.fs" />
     <Compile Include="Ref.fs" />
     <Compile Include="State.fs" />
-    <Compile Include="Stream.fs" />
+    <Compile Include="Stream.fs" AxialCapability="concurrency" />
     <Compile Include="SubscriptionRef.fs" />
     <Compile Include="FlowBuilder.fs" />
     <Compile Include="AssemblyInfo.fs" />

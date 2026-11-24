@@ -187,8 +187,15 @@ let private collectRanges code (ctx: CliContext) =
 let rawRanges code (ctx: CliContext) =
     SymbolIndex.memo ctx (code + ".ranges") (fun () -> collectRanges code ctx)
 
+/// AXG009's advice, shared by Fast and Full.
+[<Literal>]
+let RawConcurrencyAdvice =
+    "Use Flow concurrency (Flow.fork, race, Queue, Deferred, Semaphore) instead of raw TPL. A file whose job is raw "
+    + "concurrency, such as an OS bridge, claims it on its Compile item (AxialCapability=\"concurrency\"); one "
+    + "deliberate call may carry `// axial-allow-AXG009: (why: reason)` on the line above."
+
 let private descriptions =
-    Map.ofList [ "AXG009", "Use Flow concurrency rather than raw TPL coordination; move an OS bridge into a capability-role module."
+    Map.ofList [ "AXG009", RawConcurrencyAdvice
                  "AXG010", "This catch-all handler ignores the exception. Consider narrowing the catch to the specific exception type(s), for example | :? FileNotFoundException ->. A typed catch need not use the exception value."
                  "AXG011", "Use the runtime's uninterruptible cleanup primitive instead of CancellationToken.None."
                  "AXG012", "Concurrent work is discarded. Await it or retain and join its owning fiber." ]
@@ -202,10 +209,7 @@ let private analyzeContained (config: GuardrailConfig.Config) code (ctx: CliCont
             policy.Exemptions |> Map.tryFind code |> Option.defaultValue []
             |> List.exists (fun pattern -> Policy.matchesGlob pattern relative)
         | _ -> false
-    let runtime =
-        match config.Policy, config.PolicyRoot with
-        | Some policy, Some root -> policy.Runtime |> List.exists (fun path -> Path.GetFullPath(Path.Combine(root, path)) = Path.GetFullPath ctx.FileName)
-        | _ -> false
+    let runtime = GuardrailConfig.claimsConcurrency config ctx.FileName
     // The one definition that owns the uncancellable token: nothing else in src may name CancellationToken.None.
     let rec primitiveDefinitions declaration =
         match declaration with
@@ -219,12 +223,13 @@ let private analyzeContained (config: GuardrailConfig.Config) code (ctx: CliCont
             SymbolIndex.declarations ctx |> List.collect primitiveDefinitions
         else [])
     if exempt || ((code = "AXG009" || code = "AXG012") && runtime)
-       || (role = Some Policy.Test && not (String.Equals(config.InTests, "all", StringComparison.OrdinalIgnoreCase)))
-       || (code = "AXG009" && role = Some Policy.Capabilities) then []
+       || (role = Some Policy.Test && not (String.Equals(config.InTests, "all", StringComparison.OrdinalIgnoreCase))) then []
     else
         rawRanges code ctx
         |> List.filter (fun r ->
             not (code = "AXG011" && primitives.Value |> List.exists (fun definition -> Range.rangeContainsRange definition r)))
+        // One deliberate raw call may carry `// axial-allow-AXG009: (why: reason)` or `(gap: name)`.
+        |> List.filter (fun r -> not (code = "AXG009" && Suppressions.isAllowed ctx.SourceText r.StartLine "AXG009"))
         |> List.map (fun r ->
             { Type = "Axial Concurrency Hazard"; Code = code; Message = descriptions[code]
               Severity = Severity.Error; Range = r; Fixes = [] })

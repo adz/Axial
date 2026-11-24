@@ -186,7 +186,7 @@ module PolicyLockTests =
     let ``readable summary lists effect allowances first under their own heading`` () =
         let changes = { diff empty empty with SuppressionsAdded=["src/App.fs\t1\t// axial-allow-AXG002: other"; "src/Pay.fs\t1\t// axial-allow-AXG001: (why: checks the live clock)"] }
         let lines = (formatSummary changes).Split(System.Environment.NewLine)
-        test <@ lines[1] = "  EFFECT ALLOWANCES ADDED (raw effects outside a capability; read each one):" @>
+        test <@ lines[1] = "  EFFECT ALLOWANCES ADDED (raw effects or concurrency outside a capability; read each one):" @>
         test <@ lines[2] = "    src/Pay.fs" && lines[3] = "      #1  // axial-allow-AXG001: (why: checks the live clock)" @>
         test <@ not (lines |> Array.skip 4 |> Array.exists (fun line -> line.Contains "AXG001")) @>
         test <@ lines |> Array.contains "      #1  // axial-allow-AXG002: other" @>
@@ -268,21 +268,16 @@ module PolicyLockTests =
             test <@ not (isEmpty changes) && changes.ProtectedChanged |> List.contains LockName @>)
 
     [<Fact>]
-    let ``runtime exemptions require lock approval`` () =
+    let ``a runtime table is rejected with what to do instead`` () =
         let root = Path.Combine(Path.GetTempPath(), "Axial.Runtime.Lock.Tests", Guid.NewGuid().ToString("N"))
         try
             Directory.CreateDirectory root |> ignore
             File.WriteAllText(Path.Combine(root, DefaultBaseline), "")
             File.WriteAllText(Path.Combine(root, "Runtime.fs"), "module Runtime")
-            let policy = "version = 2\n[default]\nrole = \"domain\"\n"
-            File.WriteAllText(Path.Combine(root, ConfigName), policy)
-            let before = inspect root |> Result.toOption |> Option.get
-            File.WriteAllText(Path.Combine(root, ConfigName), policy + "[runtime]\nfiles = [\"Runtime.fs\"]\n")
-            let after = inspect root |> Result.toOption |> Option.get
-            let changes = diff before after
-            test <@ changes.BoundariesAdded = [ "runtime:Runtime.fs" ] @>
-            test <@ not (isEmpty changes) @>
-            test <@ changes.ProtectedChanged |> List.contains ConfigName @>
+            File.WriteAllText(Path.Combine(root, ConfigName), "version = 2\n[default]\nrole = \"domain\"\n[runtime]\nfiles = [\"Runtime.fs\"]\n")
+            match inspect root with
+            | Ok _ -> failwith "a [runtime] table must be rejected"
+            | Error error -> test <@ error.Contains "[runtime] is not supported" && error.Contains "AxialCapability=\"concurrency\"" @>
         finally TestDirectory.delete root
 
     [<Fact>]

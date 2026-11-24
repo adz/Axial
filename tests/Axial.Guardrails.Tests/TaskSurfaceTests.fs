@@ -20,11 +20,15 @@ module TaskSurfaceTests =
         Directory.CreateDirectory dir |> ignore
         let policy = Path.Combine(dir, "Axial.Guardrails.toml")
         File.WriteAllText(Path.Combine(dir, "Fast.fs"), "module M\n")
+        // "claim:concurrency" is not policy text: Fast.fs claims the concurrency capability on its Compile item.
+        let claimed = Path.Combine(dir, "Fast.fs")
+        let claims = if extra = "claim:concurrency" then [ "capabilityFile\tconcurrency\t" + claimed ] else []
+        let extra = if extra = "claim:concurrency" then "" else extra
         File.WriteAllText(policy, $"version = 2\n[default]\nrole = \"{role}\"\n{extra}")
         try
             let config =
                 GuardrailConfig.parse (
-                    [ "guardrail\tAxial"; $"setting\tpolicyRoot\t{dir}"; $"setting\tpolicyFile\t{policy}"; $"setting\tprojectPath\t{dir}/App.fsproj" ] @ settings)
+                    [ "guardrail\tAxial"; $"setting\tpolicyRoot\t{dir}"; $"setting\tpolicyFile\t{policy}"; $"setting\tprojectPath\t{dir}/App.fsproj" ] @ claims @ settings)
             action config (Path.Combine(dir, "Fast.fs"))
         finally TestDirectory.delete dir
 
@@ -96,8 +100,8 @@ module TaskSurfaceTests =
             Assert.NotEmpty(fast config path ("module M\n" + opening + "\nlet run () = backgroundTask { return 1 }\n")))
 
     [<Fact>]
-    let ``declared runtime files are exempt even in a domain project`` () =
-        withPolicy "domain" "[runtime]\nfiles = [\"Fast.fs\"]\n" [] (fun config path ->
+    let ``files that claim concurrency are exempt even in a domain project`` () =
+        withPolicy "domain" "claim:concurrency" [] (fun config path ->
             let composing = "module M\nlet run () : System.Threading.Tasks.Task = task {\n    do! System.Threading.Tasks.Task.Yield()\n    do! System.Threading.Tasks.Task.Yield() }\n"
             Assert.Empty(fast config path composing)
             Assert.Empty(full config path composing))
@@ -219,7 +223,7 @@ module TaskSurfaceTests =
     [<InlineData("domain", "", "let run () : System.Threading.Tasks.Task<int> =\n    task { return 1 }", 2, 0, 2)>]
     [<InlineData("domain", "", "// axial-note AXG014: interop entry point for a .NET host\nlet run () = task { return 1 }", 1, 1, 1)>]
     [<InlineData("capabilities", "", "let run () = task { return! System.Threading.Tasks.Task.FromResult 1 }", 0, 0, 1)>]
-    [<InlineData("domain", "[runtime]\nfiles = [\"Fast.fs\"]\n", "let run () = task { return 1 }", 0, 0, 1)>]
+    [<InlineData("domain", "claim:concurrency", "let run () = task { return 1 }", 0, 0, 1)>]
     [<InlineData("domain", "[files]\ncapabilities = [\"Fast.fs\"]\n", "let run () = task { return 1 }", 0, 0, 1)>]
     [<InlineData("test", "", "let run () = task {\n    do! System.Threading.Tasks.Task.Yield()\n    do! System.Threading.Tasks.Task.Yield() }", 0, 0, 1)>]
     let ``the recorded raw Task trend counts on AXG014's scale with roles tiers and overrides``

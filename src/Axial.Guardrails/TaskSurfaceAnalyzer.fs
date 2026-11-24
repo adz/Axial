@@ -119,6 +119,10 @@ let analyzeWithConfig (config: GuardrailConfig.Config) (ctx: CliContext) : Messa
 /// Ranges of current findings, for `axial-note AXG014` validation.
 let liveRanges (config: GuardrailConfig.Config) (ctx: CliContext) = analyzeWithConfig config ctx |> List.map _.Range
 
+/// Every raw Task site the file would be reported for at the strict tier, whatever its role or claims: whether a
+/// concurrency claim on the file has anything to exempt from AXG014.
+let rawSites (ctx: CliContext) = collect TaskSurfaceSyntax.Strict ctx |> List.map _.Range
+
 /// Full records Fast's trend count, so `axial check` reads the same scale whichever mode built last.
 let private trend (ctx: CliContext) =
     [ FastSyntax.taskSites (GuardrailConfig.load ()) ctx.FileName ctx.SourceText ctx.ParseFileResults.ParseTree ]

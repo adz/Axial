@@ -344,6 +344,9 @@ consumer contract is `docs/guardrails/01-guardrails.md`; these are the reasons b
 - `Include` always means files. A capability's name is never an item identity, and metadata is never a comma list.
 - There is one claim, not separate "implements" and "tests" claims: a test file claims a capability only when it checks
   the real thing. Referencing a package is not testing it.
+- Raw concurrency works the same way: the built-in `concurrency` capability replaces `[runtime].files` and the
+  `capabilities` role's exemption, and AXG009 accepts the same one-call allowances. Mutual exclusion (`lock`,
+  `Interlocked`) is not reported; blocking coordination is a `blocking` wait.
 - Exceptions are rare, cover one call, and say why: `(gap: name)` for a missing feature, `(why: reason)` for a
   deliberate call. File-wide AXG001 allowances are rejected.
 - Policy review judges by direction so approvals do not become rubber stamps: only changes that allow more reach a

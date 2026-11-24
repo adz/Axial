@@ -8,9 +8,9 @@
 /// `axial-allow-file-AXGnnn` must occur in the leading ordinary-comment block. Every directive is recorded in the
 /// policy lock, so each new one is a review item.
 ///
-/// AXG001 is special: raw effects belong in a capability's claimed files, so an AXG001 allowance is rare and is
-/// highlighted in policy review. It covers one call, never a file, and ends with the gap in Axial or a capability it
-/// stands for, or with why the call is deliberate:
+/// AXG001 and AXG009 are special: raw effects and raw concurrency belong in files that claim a capability, so their
+/// allowances are rare and are highlighted in policy review. One covers one call, never a file, and ends with the gap
+/// in Axial or a capability it stands for, or with why the call is deliberate:
 ///
 ///   // axial-allow-AXG001: Axial.Process has no named pipes yet (gap: process-named-pipes)
 ///   // axial-allow-AXG001: (why: this test checks the analyzer reports a real Random)
@@ -165,13 +165,16 @@ let validDirectives (sourceText: ISourceText) =
             && directive.Reason <> ""
             && (not directive.FileWide || isInLeadingCommentBlock sourceText directive.Line)))
 
-/// True when a valid suppression for `ruleId` sits on the finding line, the line above it, or (except for AXG001)
-/// in the file's leading comment block. An AXG001 allowance counts only when it names its gap or why.
+/// The rules whose allowances cover one call and must name a gap or a why: raw effects and raw concurrency.
+let claimRuleIds = set [ "AXG001"; "AXG009" ]
+
+/// True when a valid suppression for `ruleId` sits on the finding line, the line above it, or (except for AXG001 and
+/// AXG009) in the file's leading comment block. An AXG001 or AXG009 allowance counts only when it names its gap or why.
 let isAllowed (sourceText: ISourceText) line1 (ruleId: string) =
     let ruleId = ruleId.ToUpperInvariant()
     validDirectives sourceText
     |> List.exists (fun directive ->
         let nearby = directive.Line = line1 || directive.Line = line1 - 1
         directive.RuleId = Some ruleId
-        && (if ruleId = "AXG001" then nearby && not directive.FileWide && (allowanceOf directive).IsSome
+        && (if claimRuleIds.Contains ruleId then nearby && not directive.FileWide && (allowanceOf directive).IsSome
             else nearby || directive.FileWide))

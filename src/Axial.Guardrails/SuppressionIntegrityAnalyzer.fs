@@ -79,7 +79,7 @@ let private findingForDirective (config: Config) (ctx: CliContext) directive =
         Some(report $"Remove this suppression or replace its unknown rule id `{ruleId}` with the diagnostic id it is intended to allow.")
     | Some _ when directive.Reason = "" ->
         Some(report "Add a non-empty reason explaining why this intentional boundary cannot use the recommended API.")
-    | Some ruleId when Set.contains ruleId (set [ "AXG009"; "AXG010"; "AXG011"; "AXG012"; "AXG013"; "AXG014" ]) ->
+    | Some ruleId when Set.contains ruleId (set [ "AXG010"; "AXG011"; "AXG012"; "AXG013"; "AXG014" ]) ->
         Some(report "Remove this allowance: tiered rules cannot be suppressed. Only guide findings accept `axial-note AXGnnn: reason` acknowledgements.")
     | Some _ when directive.FileWide && not (isLeadingComment ctx.SourceText directive.Line) ->
         Some(report "Move this file-wide suppression into the leading comment block, before the first declaration.")
@@ -89,6 +89,14 @@ let private findingForDirective (config: Config) (ctx: CliContext) directive =
         Some(report "End this allowance with the gap it stands for, such as `(gap: process-named-pipes)` for a missing Axial or capability feature, or with `(why: reason)` for a deliberate raw call. If the file implements a capability, claim it on its Compile item (AxialCapability=\"<name>\") instead.")
     | Some "AXG001" when (unneededAllowance config ctx directive).IsSome ->
         unneededAllowance config ctx directive |> Option.map report
+    | Some "AXG009" when directive.FileWide ->
+        Some(report "Remove this file-wide allowance: a file whose job is raw concurrency claims it on its Compile item (AxialCapability=\"concurrency\").")
+    | Some "AXG009" when (allowanceOf directive).IsNone ->
+        Some(report "End this allowance with why the raw call is deliberate, such as `(why: the OS callback runs on its own thread)`, or with the gap it stands for, such as `(gap: name)`. If the file's job is raw concurrency, claim it on its Compile item (AxialCapability=\"concurrency\") instead.")
+    | Some "AXG009" when GuardrailConfig.claimsConcurrency config ctx.FileName ->
+        Some(report "Remove this allowance: this file claims the concurrency capability, so the call needs no comment.")
+    | Some "AXG009" when GuardrailConfig.exemptsRawConcurrency config ctx.FileName ->
+        Some(report "Remove this allowance: AXG009 does not apply to this file (a test, or a host project listed under [exemptions] AXG009), so the call needs no comment.")
     | Some ruleId ->
         let covered =
             rangesForRule config ctx ruleId
@@ -119,6 +127,13 @@ let private unusedClaims (config: Config) (ctx: CliContext) =
         EffectBoundaryAnalyzer.judged config ctx
         |> List.choose (fun (rule: Axial.Guardrails.EffectCatalog.EffectRule, _, _) -> rule.Capability)
         |> Set.ofList
+    // The concurrency claim is used by raw tasks (AXG009), work it starts and lets run (AXG012), or a raw Task surface
+    // (AXG014).
+    let used =
+        if not (ConcurrencyHazardsAnalyzer.rawRanges "AXG009" ctx).IsEmpty || not (ConcurrencyHazardsAnalyzer.rawRanges "AXG012" ctx).IsEmpty
+           || not (TaskSurfaceAnalyzer.rawSites ctx).IsEmpty
+        then used.Add GuardrailConfig.ConcurrencyCapability
+        else used
     let project = config.ProjectPath |> Option.map Path.GetFileName |> Option.defaultValue "the project file"
     config.AllCapabilities
     |> List.filter (fun capability ->

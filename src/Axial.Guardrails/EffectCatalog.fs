@@ -101,6 +101,8 @@ let builtInCapabilities: Capability list =
       // The runtime's own bridges: running a flow from blocking host code, and sizing work by the machine.
       platform "blocking" "Flow.fromTask (let!/do!), with RunSynchronously or StartAsTask only at the host edge" "Flow.RunSynchronously" ""
       platform "processors" "Parallelism.ofProcessors" "Parallelism.ofProcessors" "an explicit size passed to Parallelism"
+      // Raw tasks, threads and their coordination (AXG009, AXG012, AXG014): Flow's own runtime, and OS bridges.
+      platform "concurrency" "Flow concurrency (Flow.fork, race, Queue, Deferred, Semaphore)" "" ""
       // Secrets, tokens and nonces: no fake can be secure, so the live API stays in the files that claim it.
       platform "secure-random" "A secure-random file (System.Security.Cryptography)" "RandomNumberGenerator" "a fixed key or nonce passed in"
       { platform "environment" "ConfigSource.environment" "ConfigSource.environment prefix" "ConfigSource.environmentOf prefix pairs" with
@@ -228,6 +230,36 @@ let private builtInRuleTable: EffectRule list =
             (MembersOf("System.Runtime.CompilerServices.TaskAwaiter", [ "GetResult" ]))
             "blocks the calling thread waiting for a task"
             "await the task asynchronously" with Scope = OutsideFlow }
+
+      // Blocking coordination: a thread parks until another thread signals it, which holds the thread, ignores
+      // interruption and can deadlock a UI thread. Mutual exclusion (lock, Interlocked, Volatile) is not reported.
+      rule "blocking.monitor-wait" CoreGuardrail "blocking" (MembersOf("System.Threading.Monitor", [ "Wait" ]))
+          "parks the thread with Monitor.Wait until another thread pulses it, which holds the thread and ignores interruption"
+          "a Deferred completed by the other side, awaited with Deferred.await"
+
+      rule "blocking.wait-handle" CoreGuardrail "blocking" (MembersOf("System.Threading.WaitHandle", [ "WaitOne"; "WaitAll"; "WaitAny"; "SignalAndWait" ]))
+          "parks the thread on a wait handle (an event, mutex or semaphore), which holds the thread and ignores interruption"
+          "a Deferred awaited with Deferred.await, or Semaphore.withPermit"
+
+      rule "blocking.event-wait" CoreGuardrail "blocking" (MembersOf("System.Threading.ManualResetEventSlim", [ "Wait" ]))
+          "parks the thread on ManualResetEventSlim.Wait, which holds the thread and ignores interruption"
+          "a Deferred completed by the other side, awaited with Deferred.await"
+
+      rule "blocking.semaphore-wait" CoreGuardrail "blocking" (MembersOf("System.Threading.SemaphoreSlim", [ "Wait" ]))
+          "parks the thread on SemaphoreSlim.Wait, which holds the thread and ignores interruption"
+          "Semaphore.withPermit, or SemaphoreSlim.WaitAsync bound with Flow.fromTask"
+
+      rule "blocking.thread-join" CoreGuardrail "blocking" (MembersOf("System.Threading.Thread", [ "Join" ]))
+          "parks the thread until another thread ends, which holds the thread and ignores interruption"
+          "Flow.fork and Fiber.join"
+
+      rule "blocking.countdown-wait" CoreGuardrail "blocking" (MembersOf("System.Threading.CountdownEvent", [ "Wait" ]))
+          "parks the thread on CountdownEvent.Wait, which holds the thread and ignores interruption"
+          "Flow.forEachPar, Flow.traversePar or Flow.zipPar, which wait for every branch"
+
+      rule "blocking.barrier" CoreGuardrail "blocking" (MembersOf("System.Threading.Barrier", [ "SignalAndWait" ]))
+          "parks the thread at a Barrier until every participant arrives, which holds the thread and ignores interruption"
+          "Deferred values awaited together, or Flow.zipPar"
 
       // Dedicated analyzers implement AXG009–AXG012; these entries register their ids.
       marker "concurrency.raw" (MembersOf("Axial.__RawConcurrency", []))
