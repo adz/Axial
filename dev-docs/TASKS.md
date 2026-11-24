@@ -54,10 +54,13 @@ lists the queue. Work on main.
     `Axial.Configuration`) may. They live in this repo for now and may be extracted later.
 
 - [ ] T15b: Publish the gitkay and LogDug upgrades once Axial 0.16.0 is on NuGet
-  - Both are upgraded and committed locally against `0.16.0-local.1` (gitkay c8b70ad and d1fb0b6, LogDug f338eef and e159934, both on the .NET 11.0.100 SDK), with every
-    other package at its latest. Switch `0.16.0-local.1` to `0.16.0` (package references and the `axial.tool`
-    manifest), restore from nuget.org, rebuild in Full mode, run the tests, then a human runs `axial policy approve`
-    in each repository before pushing.
+  - Both are upgraded and committed locally against `0.16.0-local.2` (gitkay c8b70ad, d1fb0b6, c7d0e65, 9d5e17e and
+    87d62a4; LogDug f338eef, e159934 and c16dd6d; both on the .NET 11.0.100 SDK), with every other package at its
+    latest. local.2 has the rule names, the concurrency claim and the blocking-wait rules: Full builds pass with
+    findings only in test files, the tests pass (gitkay 450, LogDug 58) and both AOT self-tests pass. Switch
+    `0.16.0-local.2` to `0.16.0` (package references, the `axial.tool` manifest and LogDug's untracked NuGet.config),
+    restore from nuget.org, rebuild in Full mode, run the tests, then a human runs `axial policy approve` in each
+    repository before pushing.
 - [ ] T7: Reassess `LATER_TODO.md` Flow work against real applications
   - The remaining reference applications are work applications, reassessed from a separate (work-account) checkout.
     Brief: `dev-docs/handoffs/T7-reference-app-reassessment.md`; findings come back as
