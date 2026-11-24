@@ -257,3 +257,37 @@ module FiberDiagnosticsTests =
         test <@ Flow.runSync () workflow = Exit.Success () @>
         test <@ registry.Settled() |> List.map (fun fiber -> fiber.Fiber.Name) = [ Some "job-8"; Some "job-9"; Some "job-10" ] @>
         test <@ registry.Stats().Length = 10 @>
+
+    /// The text a debugger shows for a value: its DebuggerDisplay member, read the way the debugger reads it.
+    let private debuggerText (value: obj) =
+        let attribute = Attribute.GetCustomAttribute(value.GetType(), typeof<System.Diagnostics.DebuggerDisplayAttribute>, false) :?> System.Diagnostics.DebuggerDisplayAttribute
+        test <@ attribute.Value = "{DebuggerDisplay,nq}" @>
+        // A union case is a subclass, so the member lives on a base type, where a debugger also finds it.
+        let rec property (t: Type) =
+            match t.GetProperty("DebuggerDisplay", Reflection.BindingFlags.Instance ||| Reflection.BindingFlags.NonPublic ||| Reflection.BindingFlags.DeclaredOnly) with
+            | null -> property t.BaseType
+            | found -> found
+        (property (value.GetType())).GetValue value :?> string
+
+    [<Fact>]
+    let ``a debugger shows a fiber's id, name, parent and status`` () =
+        let workflow : Flow<unit, Never, Fiber<Never, int> * Fiber<Never, int>> =
+            flow {
+                let! fiber = Flow.forkNamed "worker" (Flow.succeed 42)
+                let! _ = Fiber.join fiber
+                let! unnamed = Flow.fork (Flow.succeed 1)
+                let! _ = Fiber.join unnamed
+                return fiber, unnamed
+            }
+
+        match Flow.runSync () workflow with
+        | Exit.Success(named, unnamed) ->
+            let parent = match named.Metadata.ParentId with Some parent -> $" parent {parent}" | None -> ""
+            test <@ debuggerText named = $"Fiber {named.Metadata.Id} \"worker\"{parent} Succeeded" @>
+            test <@ (debuggerText unnamed).StartsWith $"Fiber {unnamed.Metadata.Id}" && not ((debuggerText unnamed).Contains "\"") @>
+        | other -> failwith $"unexpected exit: {other}"
+
+    [<Fact>]
+    let ``a debugger shows a flow's node kind without formatting its closure`` () =
+        let text = debuggerText (Flow.succeed 1 : Flow<unit, Never, int>)
+        Assert.Equal("Flow (operation)", text)

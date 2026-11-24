@@ -793,6 +793,7 @@ type internal FiberDefectTracker(metadata: FiberMetadata, observer: FiberObserve
 /// <typeparam name="error">The failure type of the running workflow.</typeparam>
 /// <typeparam name="value">The success type of the running workflow.</typeparam>
 [<Sealed>]
+[<System.Diagnostics.DebuggerDisplay("{DebuggerDisplay,nq}")>]
 type Fiber<'error, 'value>
     internal
     (
@@ -819,6 +820,18 @@ type Fiber<'error, 'value>
 
     /// The fiber's exit once it has settled.
     member internal _.Settled = settled.Value
+
+    /// Debugger summary: id, optional fork-site name, parent and status. Built by hand, without reflection.
+    member private _.DebuggerDisplay =
+        let name =
+            match metadata.Name with
+            | Some name -> " \"" + name + "\""
+            | None -> ""
+        let parent =
+            match metadata.ParentId with
+            | Some parent -> " parent " + parent.ToString()
+            | None -> ""
+        "Fiber " + metadata.Id.ToString() + name + parent + " " + metadata.Status.ToString()
 
 #if !FABLE_COMPILER
 /// <summary>
@@ -1472,6 +1485,7 @@ type internal ReleaseCauseException(cause: Cause<obj>) =
     inherit Exception("Resource release failed.")
     member _.Cause = cause
 
+[<System.Diagnostics.DebuggerDisplay("{DebuggerDisplay,nq}")>]
 type Flow<'env, 'error, 'value> =
     internal
     | Flow of ('env -> CancellationToken -> Execution<'value, 'error>)
@@ -1540,6 +1554,15 @@ type Flow<'env, 'error, 'value> =
 
                     return result
                 })
+#endif
+
+    /// Debugger summary of the node kind. A closure-backed flow cannot show more until flows become data.
+    member private this.DebuggerDisplay =
+        match this with
+        | Flow _ -> "Flow (operation)"
+#if !FABLE_COMPILER
+        | FlowDelay _ -> "Flow (delayed)"
+        | FlowContinue _ -> "Flow (bind)"
 #endif
 
     member internal this.Invoke(environment: 'env, cancellationToken: CancellationToken) : Execution<'value, 'error> =
