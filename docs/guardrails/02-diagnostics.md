@@ -62,7 +62,7 @@ The claimed file may then call that capability's API, and nothing else raw. Your
 When Axial or a capability cannot do the job yet, allow one call with a comment that names the gap:
 
 ```fsharp
-use pipe = new NamedPipeServerStream(name) // axial-allow-raw-effect: Axial.Process has no named pipes yet (gap: process-named-pipes)
+let pipe = new System.IO.Pipes.NamedPipeServerStream("app-control") // axial-allow-raw-effect: Axial.Process has no named pipes yet (gap: process-named-pipes)
 ```
 
 For a raw call that is deliberate rather than a missing feature, say why instead:

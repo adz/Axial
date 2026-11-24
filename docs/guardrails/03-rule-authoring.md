@@ -114,7 +114,7 @@ A raw call that no claim covers may be allowed with a comment. It ends with eith
 `(gap: name)`, or why the call is deliberate, `(why: reason)`:
 
 ```fsharp
-use pipe = new NamedPipeServerStream(name) // axial-allow-raw-effect: Axial.Process has no named pipes yet (gap: process-named-pipes)
+let pipe = new System.IO.Pipes.NamedPipeServerStream("app-control") // axial-allow-raw-effect: Axial.Process has no named pipes yet (gap: process-named-pipes)
 
 // axial-allow-raw-effect: (why: this test checks that the analyzer reports a real clock read)
 let now = DateTime.UtcNow
