@@ -82,7 +82,43 @@ module PolicyLock =
         let explicitFiles = Regex.Matches(File.ReadAllText project, "Compile\\s+Include=\"([^\"]+\\.fs)\"") |> Seq.cast<Match> |> Seq.choose (fun m -> contain m.Groups[1].Value) |> Seq.filter File.Exists |> Seq.toArray
         if explicitFiles.Length > 0 then explicitFiles else Directory.GetFiles(directory,"*.fs",SearchOption.TopDirectoryOnly) |> Array.choose contain
 
-    /// A recorded allowance or note with its rule named: `// axial-allow-raw-effect: …` (before 0.16) reads as
+    /// Each ordinary `//` comment in a source file, from its `//` to the end of the line. Strings, XML docs (`///`)
+    /// and block comments are skipped, as the analyzer skips them, so a directive quoted in a message or a doc is
+    /// not an allowance. The lock snapshot and policy review both read comments through it.
+    let ordinaryLineComments (text: string) =
+        let mutable depth = 0
+        let mutable triple = false
+        let mutable verbatim = false
+        [ for line in text.Replace("\r\n", "\n").Split('\n') do
+            let mutable i = 0
+            let mutable quoted = false
+            while i < line.Length do
+                let at (value: string) = line.IndexOf(value, i, StringComparison.Ordinal) = i
+                if depth > 0 then
+                    if at "(*" then depth <- depth + 1; i <- i + 2
+                    elif at "*)" then depth <- depth - 1; i <- i + 2
+                    else i <- i + 1
+                elif triple then
+                    if at "\"\"\"" then triple <- false; i <- i + 3 else i <- i + 1
+                elif verbatim then
+                    if at "\"\"" then i <- i + 2
+                    elif at "\"" then verbatim <- false; i <- i + 1
+                    else i <- i + 1
+                elif quoted then
+                    if at "\\" then i <- min line.Length (i + 2)
+                    elif at "\"" then quoted <- false; i <- i + 1
+                    else i <- i + 1
+                elif at "///" then i <- line.Length
+                elif at "//" then
+                    yield line.Substring(i).Trim()
+                    i <- line.Length
+                elif at "(*" then depth <- 1; i <- i + 2
+                elif at "\"\"\"" then triple <- true; i <- i + 3
+                elif at "@\"" then verbatim <- true; i <- i + 2
+                elif at "\"" then quoted <- true; i <- i + 1
+                else i <- i + 1 ]
+
+    /// A recorded allowance or note with its rule named: `// axial-allow-AXG001: …` (before 0.16) reads as
     /// `// axial-allow-raw-effect: …`, so a lock or a commit from before 0.16 compares with the current one.
     let namedSuppression (value: string) =
         Regex.Replace(value, @"(axial-allow-(?:file-)?|axial-note\s+)(AXG[0-9]{3})\b",
@@ -94,7 +130,8 @@ module PolicyLock =
             && Axial.Guardrails.Policy.isRepositorySource root p
             && not (ignores |> List.exists (fun pattern -> matchesGlob pattern (relative root p))))
         |> Seq.collect (fun path ->
-            File.ReadLines path
+            File.ReadAllText path
+            |> ordinaryLineComments
             |> Seq.choose (fun text ->
                 let matched=Regex.Match(text,"//\\s*(axial-allow-(?:file-)?[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9]|axial-note\\s+[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])\\s*:(.*)$", RegexOptions.IgnoreCase)
                 if matched.Success then Some(namedSuppression $"// {matched.Groups[1].Value}:{matched.Groups[2].Value.Trim()}") else None)

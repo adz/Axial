@@ -345,6 +345,22 @@ module PolicyReviewTests =
             Assert.Contains("removed", output))
 
     [<Fact>]
+    let ``the lock records allowances in comments, not ones quoted in strings or docs`` () =
+        repository (fun root write _ _ ->
+            write "App.fs" (String.concat "\n" [
+                "module App"
+                "/// Write `// axial-allow-raw-effect: (why: reason)` above the call."
+                "let advice = \"Add `// axial-allow-raw-concurrency: (why: reason)` on the line above.\""
+                "let verbatim = @\"// axial-allow-raise-in-flow: quoted\""
+                "(* // axial-allow-shared-fixture: in a block comment *)"
+                "let now = System.DateTime.UtcNow // axial-allow-raw-effect: (why: the real clock)"
+                "" ])
+            let snapshot = inspect root |> function Ok s -> s | Error e -> failwith e
+            Assert.Equal<string list>(
+                [ "App.fs\t1\t// axial-allow-raw-effect:(why: the real clock)" ],
+                snapshot.Suppressions |> Set.toList))
+
+    [<Fact>]
     let ``review defaults to recorded commit and rejects invalid refs`` () =
         repository (fun root write git cli ->
             let sha = git ["rev-parse"; "HEAD"]

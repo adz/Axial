@@ -228,7 +228,7 @@ let private analyzeContained (config: GuardrailConfig.Config) code (ctx: CliCont
         rawRanges code ctx
         |> List.filter (fun r ->
             not (code = "AXG011" && primitives.Value |> List.exists (fun definition -> Range.rangeContainsRange definition r)))
-        // One deliberate raw call may carry `// axial-allow-raw-concurrency: (why: reason)` or `(gap: name)`.
+        // One deliberate raw call may carry a raw-concurrency allowance ending in `(why: reason)` or `(gap: name)`.
         |> List.filter (fun r -> not (code = "AXG009" && Suppressions.isAllowed ctx.SourceText r.StartLine "AXG009"))
         |> List.map (fun r ->
             { Type = "Axial Concurrency Hazard"; Code = code; Message = descriptions[code]

@@ -39,43 +39,11 @@ module PolicyReview =
             |> Seq.tryPick (fun line -> if line.StartsWith("REVIEWED_POINT  ") then Some(line.Substring(16)) else None)
             |> Ok
 
-    // The lexer deliberately excludes strings, XML docs and nested block comments. Both git and
-    // working-tree inventories use it, so line movement does not look like a new exception.
+    // By name (raw-effect); a commit from before 0.16 spells the rule by number and reads as its name.
     let private comments (text: string) =
-        let mutable depth = 0
-        let mutable triple = false
-        let mutable verbatim = false
-        [ for line in text.Replace("\r\n", "\n").Split('\n') do
-            let mutable i = 0
-            let mutable quoted = false
-            while i < line.Length do
-                let at (value: string) = line.IndexOf(value, i, StringComparison.Ordinal) = i
-                if depth > 0 then
-                    if at "(*" then depth <- depth + 1; i <- i + 2
-                    elif at "*)" then depth <- depth - 1; i <- i + 2
-                    else i <- i + 1
-                elif triple then
-                    if at "\"\"\"" then triple <- false; i <- i + 3 else i <- i + 1
-                elif verbatim then
-                    if at "\"\"" then i <- i + 2
-                    elif at "\"" then verbatim <- false; i <- i + 1
-                    else i <- i + 1
-                elif quoted then
-                    if at "\\" then i <- min line.Length (i + 2)
-                    elif at "\"" then quoted <- false; i <- i + 1
-                    else i <- i + 1
-                elif at "///" then i <- line.Length
-                elif at "//" then
-                    let comment = line.Substring(i).Trim()
-                    // By name (raw-effect); a commit from before 0.16 spells the rule by number and reads as its name.
-                    if Regex.IsMatch(comment, @"\baxial-(?:allow-(?:file-)?|note\s+)[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9]\s*:", RegexOptions.IgnoreCase) then
-                        yield namedSuppression comment
-                    i <- line.Length
-                elif at "(*" then depth <- 1; i <- i + 2
-                elif at "\"\"\"" then triple <- true; i <- i + 3
-                elif at "@\"" then verbatim <- true; i <- i + 2
-                elif at "\"" then quoted <- true; i <- i + 1
-                else i <- i + 1 ]
+        PolicyLock.ordinaryLineComments text
+        |> List.filter (fun comment -> Regex.IsMatch(comment, @"\baxial-(?:allow-(?:file-)?|note\s+)[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9]\s*:", RegexOptions.IgnoreCase))
+        |> List.map PolicyLock.namedSuppression
 
     type private State = { Entries: Map<string, Set<string>>; Rules: Map<string, string>; Projects: Map<string, Map<string, string>>; EvaluationErrors: string list; Snapshot: Snapshot }
     let private files root tracked =
