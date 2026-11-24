@@ -170,7 +170,7 @@ module ConcurrencyHazardsAnalyzerTests =
     let ``legacy allowances no longer hide tiered findings`` code (site: string) =
         task {
             let other = site.Replace("value", "other")
-            let source = $"// axial-allow-{code}: deliberate test witness of an OS bridge\n{site}\n{other}"
+            let source = $"// axial-allow-{Axial.Guardrails.RuleNames.nameOf code}: deliberate test witness of an OS bridge\n{site}\n{other}"
             let! messages = findings code source
             Assert.Equal(2, messages.Length)
         }
@@ -182,7 +182,7 @@ module ConcurrencyHazardsAnalyzerTests =
     [<InlineData("AXG012")>]
     let ``AXG002 rejects new rule suppressions without a reason`` (code: string) =
         task {
-            let! messages = findings "AXG002" $"// axial-allow-{code}:\nlet value = 1"
+            let! messages = findings "AXG002" $"// axial-allow-{Axial.Guardrails.RuleNames.nameOf code}:\nlet value = 1"
             let message = Assert.Single messages
             Assert.Contains("reason", message.Message, StringComparison.OrdinalIgnoreCase)
         }
@@ -393,10 +393,10 @@ type ConcurrencyHazardsPolicyTests() =
     [<Fact>]
     member _.``an AXG009 allowance that says why allows its one call`` () =
         task {
-            let allowed = source.Replace("let source = TaskCompletionSource<int>()", "// axial-allow-AXG009: (why: an OS callback completes it)\nlet source = TaskCompletionSource<int>()")
+            let allowed = source.Replace("let source = TaskCompletionSource<int>()", "// axial-allow-raw-concurrency: (why: an OS callback completes it)\nlet source = TaskCompletionSource<int>()")
             let! messages = runWith "services" false "Fixture.fsproj" allowed "AXG009"
             Assert.Empty messages
-            let unexplained = source.Replace("let source = TaskCompletionSource<int>()", "// axial-allow-AXG009: an OS callback completes it\nlet source = TaskCompletionSource<int>()")
+            let unexplained = source.Replace("let source = TaskCompletionSource<int>()", "// axial-allow-raw-concurrency: an OS callback completes it\nlet source = TaskCompletionSource<int>()")
             let! reported = runWith "services" false "Fixture.fsproj" unexplained "AXG009"
             Assert.NotEmpty reported
         }
@@ -410,7 +410,7 @@ type ConcurrencyHazardsPolicyTests() =
             for code in [ "AXG009"; "AXG010"; "AXG011"; "AXG012" ] do
                 let! missing = runWith "host" false project source code
                 Assert.NotEmpty missing
-                let declaration = $"policy:\n[exemptions]\n{code} = [\"{project}\"]\n"
+                let declaration = $"policy:\n[exemptions]\n{Axial.Guardrails.RuleNames.nameOf code} = [\"{project}\"]\n"
                 let! messages = runWithSettings [declaration] "host" false project source code
                 Assert.Empty messages
                 let! service = runWithSettings [declaration] "services" false project source code
@@ -425,7 +425,7 @@ type ConcurrencyHazardsPolicyTests() =
             let project = "benchmarks/Axial.Benchmarks/Axial.Benchmarks.fsproj"
             let! missing = runWith "host" false project source code
             Assert.NotEmpty missing
-            let declaration = $"policy:\n[exemptions]\n{code} = [\"benchmarks/**/*.fsproj\"]\n"
+            let declaration = $"policy:\n[exemptions]\n{Axial.Guardrails.RuleNames.nameOf code} = [\"benchmarks/**/*.fsproj\"]\n"
             let! messages = runWithSettings [declaration] "host" false project source code
             Assert.Empty messages
             let! outside = runWith "host" false "samples/benchmarks/Axial.Benchmarks.fsproj" source code
@@ -469,8 +469,8 @@ type ConcurrencyHazardsPolicyTests() =
     [<Theory>]
     [<InlineData(false, "", "Warning")>]
     [<InlineData(true, "", "Error")>]
-    [<InlineData(false, "// axial-note AXG010: foreign observer is best effort\n", "Info")>]
-    [<InlineData(true, "// axial-note AXG010: foreign observer is best effort\n", "Info")>]
+    [<InlineData(false, "// axial-note swallowed-exn: foreign observer is best effort\n", "Info")>]
+    [<InlineData(true, "// axial-note swallowed-exn: foreign observer is best effort\n", "Info")>]
     member _.``guide findings remain visible and checkpoints reject only unacknowledged sites`` (checkpoint: bool) (note: string) (expected: string) =
         task {
             let input = "module M\n" + note + "let f () = try failwith \"bad\" with _ -> ()"
@@ -498,7 +498,7 @@ type ConcurrencyHazardsPolicyTests() =
     member _.``block and deferred block findings cannot be noted or checkpoint promoted`` (code: string) (body: string) (expected: string) =
         task {
             for checkpoint in [ "false"; "true" ] do
-                let input = $"module M\n// axial-note {code}: intentional witness\n{body}"
+                let input = $"module M\n// axial-note {Axial.Guardrails.RuleNames.nameOf code}: intentional witness\n{body}"
                 let! messages = runWithSettings [ $"setting\tcheckpoint\t{checkpoint}" ] "services" false "Fixture.fsproj" input code
                 Assert.Equal(expected, string (Assert.Single messages).Severity)
                 let! invalid = runWithSettings [ $"setting\tcheckpoint\t{checkpoint}" ] "services" false "Fixture.fsproj" input "AXG002"
@@ -506,11 +506,11 @@ type ConcurrencyHazardsPolicyTests() =
         }
 
     [<Theory>]
-    [<InlineData("// axial-note AXG010:")>]
+    [<InlineData("// axial-note swallowed-exn:")>]
     [<InlineData("// axial-note AXG999: unknown")>]
-    [<InlineData("// axial-note AXG001: not a guide")>]
+    [<InlineData("// axial-note raw-effect: not a guide")>]
     [<InlineData("// axial-note: malformed")>]
-    [<InlineData("// axial-note AXG010: stale\nlet unrelated = 1")>]
+    [<InlineData("// axial-note swallowed-exn: stale\nlet unrelated = 1")>]
     member _.``invalid notes warn and fail checkpoints`` (note: string) =
         task {
             for checkpoint in [ "false"; "true" ] do
@@ -522,7 +522,7 @@ type ConcurrencyHazardsPolicyTests() =
     [<Fact>]
     member _.``AXG002 names the handler body as the AXG010 note anchor`` () =
         task {
-            let input = "module M\nopen System\nlet f () =\n    try\n        failwith \"bad\"\n    // axial-note AXG010: best effort\n    with _ ->\n        ()"
+            let input = "module M\nopen System\nlet f () =\n    try\n        failwith \"bad\"\n    // axial-note swallowed-exn: best effort\n    with _ ->\n        ()"
             let! messages = runWithSettings [] "services" false "Fixture.fsproj" input "AXG002"
             let message = Assert.Single messages
             Assert.Contains("first line inside the handler body", message.Message)
@@ -532,7 +532,7 @@ type ConcurrencyHazardsPolicyTests() =
     [<Fact>]
     member _.``AXG010 note first inside the handler body is accepted`` () =
         task {
-            let input = "module M\nopen System\nlet f () =\n    try\n        failwith \"bad\"\n    with _ ->\n        // axial-note AXG010: best effort\n        ()"
+            let input = "module M\nopen System\nlet f () =\n    try\n        failwith \"bad\"\n    with _ ->\n        // axial-note swallowed-exn: best effort\n        ()"
             let! integrity = runWithSettings [] "services" false "Fixture.fsproj" input "AXG002"
             Assert.Empty integrity
             let! messages = runWithSettings [] "services" false "Fixture.fsproj" input "AXG010"
@@ -540,10 +540,10 @@ type ConcurrencyHazardsPolicyTests() =
         }
 
     [<Theory>]
-    [<InlineData("let f () = task { do! System.Threading.Tasks.Task.Delay 10 } // axial-note AXG013: simulates latency", true)>]
-    [<InlineData("// axial-note AXG013: simulates latency\nlet f () = task { do! System.Threading.Tasks.Task.Delay 10 }", true)>]
-    [<InlineData("let f () = System.Threading.Thread.Sleep 10 // axial-note AXG013: blocking is not a guide", false)>]
-    [<InlineData("// axial-note AXG013: too far away\nlet unrelated = 1\nlet f () = task { do! System.Threading.Tasks.Task.Delay 10 }", false)>]
+    [<InlineData("let f () = task { do! System.Threading.Tasks.Task.Delay 10 } // axial-note guessed-wait: simulates latency", true)>]
+    [<InlineData("// axial-note guessed-wait: simulates latency\nlet f () = task { do! System.Threading.Tasks.Task.Delay 10 }", true)>]
+    [<InlineData("let f () = System.Threading.Thread.Sleep 10 // axial-note guessed-wait: blocking is not a guide", false)>]
+    [<InlineData("// axial-note guessed-wait: too far away\nlet unrelated = 1\nlet f () = task { do! System.Threading.Tasks.Task.Delay 10 }", false)>]
     member _.``AXG002 distinguishes live delay notes from blocking and misplaced notes`` (body: string) valid =
         task {
             let input = "module M\n" + body
@@ -558,7 +558,7 @@ type ConcurrencyHazardsPolicyTests() =
     [<Fact>]
     member _.``notes must cover live scoped findings`` () =
         task {
-            let input = "module M\n// axial-note AXG010: irrelevant in test role\nlet f () = try failwith \"bad\" with _ -> ()"
+            let input = "module M\n// axial-note swallowed-exn: irrelevant in test role\nlet f () = try failwith \"bad\" with _ -> ()"
             let! invalid = runWith "test" false "Fixture.fsproj" input "AXG002"
             Assert.Equal(Severity.Warning, (Assert.Single invalid).Severity)
             let! valid = runWith "services" false "Fixture.fsproj" input "AXG002"
@@ -566,9 +566,9 @@ type ConcurrencyHazardsPolicyTests() =
         }
 
     [<Theory>]
-    [<InlineData("let text = \"// axial-note AXG010: not a comment\"")>]
-    [<InlineData("(* // axial-note AXG010: block comment *)")>]
-    [<InlineData("/// axial-note AXG010: documentation")>]
+    [<InlineData("let text = \"// axial-note swallowed-exn: not a comment\"")>]
+    [<InlineData("(* // axial-note swallowed-exn: block comment *)")>]
+    [<InlineData("/// axial-note swallowed-exn: documentation")>]
     member _.``quoted notes never acknowledge findings or produce invalid note diagnostics`` prefix =
         task {
             let input = "module M\n" + prefix + "\nlet f () = try failwith \"bad\" with _ -> ()"

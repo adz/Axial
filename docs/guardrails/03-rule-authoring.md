@@ -15,7 +15,7 @@ There are two parts:
 
 - **A definition** says what the capability is and which APIs it replaces. Axial's own capabilities (`clock`,
   `filesystem`, `process`, `http` and the rest) are built in; `axial capabilities` lists them. `concurrency` is built
-  in too: a file whose job is raw tasks and threads claims it ([AXG009](/guardrails/diagnostics.html#axg009-keep-raw-concurrency-where-it-is-claimed)).
+  in too: a file whose job is raw tasks and threads claims it ([raw-concurrency](/guardrails/diagnostics.html#raw-concurrency-axg009-keep-raw-concurrency-where-it-is-claimed)).
 - **A claim** marks a file as working directly with the capability. It is `AxialCapability` metadata on the file's
   `Compile` item. Only claimed files may call the API, and a claimed file may call only the APIs it claims.
 
@@ -64,10 +64,10 @@ A malformed definition fails the build with its reason, and so does an unknown k
 that another capability or rule already covers: `replaces = [ "any:System.IO.File" ]` fails and names
 Axial.FileSystem's `IFileSystem` instead.
 
-A call to `Stripe.ChargeService` outside a claimed file is an `AXG001` error that says what to change:
+A call to `Stripe.ChargeService` outside a claimed file is an `raw-effect` error that says what to change:
 
 ```text
-error AXG001: This call uses Stripe.ChargeService directly, which the payments capability wraps. Replace it with
+error raw-effect: This call uses Stripe.ChargeService directly, which the payments capability wraps. Replace it with
 IPayments: add a `Payments: IPayments` field to the environment record, implement IHasPayments, and call the service
 (for example `Payments.charge order`). Tests supply TestPayments().
 ```
@@ -114,9 +114,9 @@ A raw call that no claim covers may be allowed with a comment. It ends with eith
 `(gap: name)`, or why the call is deliberate, `(why: reason)`:
 
 ```fsharp
-use pipe = new NamedPipeServerStream(name) // axial-allow-AXG001: Axial.Process has no named pipes yet (gap: process-named-pipes)
+use pipe = new NamedPipeServerStream(name) // axial-allow-raw-effect: Axial.Process has no named pipes yet (gap: process-named-pipes)
 
-// axial-allow-AXG001: (why: this test checks that the analyzer reports a real clock read)
+// axial-allow-raw-effect: (why: this test checks that the analyzer reports a real clock read)
 let now = DateTime.UtcNow
 ```
 
@@ -138,7 +138,7 @@ direction. Only a change that allows more needs a human:
 | A new allowance | An allowance removed |
 
 Claims are compared by count per project, so moving a claim to another file in the same project passes too. New
-allowances come first in the review output. AXG002 reports an allowance that allows nothing, because a claim, a `host`
+allowances come first in the review output. stale-allow reports an allowance that allows nothing, because a claim, a `host`
 role or a `forbid` level already decides the call, and warns about a claim on a file that makes no raw call for it.
 
 `axial capabilities` lists every capability with the files that claim it (`--json` for tools). `axial check` counts
@@ -167,7 +167,7 @@ Each rule is one `<AxialGuardrailRule>` item:
 </ItemGroup>
 ```
 
-Findings are reported as `AXG001`. No file can claim a rule declared this way; define a capability instead when a
+Findings are reported as `raw-effect`. No file can claim a rule declared this way; define a capability instead when a
 service owns the API. A rare [allowance](#allowances) allows one call unless the rule level is `forbid`.
 
 ## Metadata

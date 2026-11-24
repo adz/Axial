@@ -504,11 +504,11 @@ module FiberObserver =
         }
 
     let internal notifyStart (observer: FiberObserver) (metadata: FiberMetadata) : unit =
-        // axial-note AXG010: an observer's OnStart failure must not prevent the observed fiber from starting.
+        // axial-note swallowed-exn: an observer's OnStart failure must not prevent the observed fiber from starting.
         try observer.OnStart metadata with _ -> ()
 
     let internal notifyEnd (observer: FiberObserver) (metadata: FiberMetadata) (defect: exn option) : unit =
-        // axial-note AXG010: OnEnd is diagnostic; its failure must not replace the fiber's already settled exit.
+        // axial-note swallowed-exn: OnEnd is diagnostic; its failure must not replace the fiber's already settled exit.
         try observer.OnEnd metadata defect with _ -> ()
 
     let internal notifyUnobservedDefect
@@ -516,7 +516,7 @@ module FiberObserver =
         (metadata: FiberMetadata option)
         (defect: exn)
         : unit =
-        // axial-note AXG010: the unobserved-defect sink is the last reporting destination; recursively reporting its failure would call the same sink.
+        // axial-note swallowed-exn: the unobserved-defect sink is the last reporting destination; recursively reporting its failure would call the same sink.
         try observer.OnUnobservedDefect metadata defect with _ -> ()
 
 /// <summary>A forked fiber that has settled, as recorded by a <see cref="T:Axial.FiberRegistry" />.</summary>
@@ -778,7 +778,7 @@ type internal FiberDefectTracker(metadata: FiberMetadata, observer: FiberObserve
         sentinels.Add(fiberHandle, tracker)
 
     override this.Finalize() =
-        // axial-note AXG010: GC finalization must not terminate the process if the last-chance defect reporter fails.
+        // axial-note swallowed-exn: GC finalization must not terminate the process if the last-chance defect reporter fails.
         try this.TryReport() with _ -> ()
 #endif
 
@@ -1203,11 +1203,11 @@ module internal FiberContext =
 [<RequireQualifiedAccess>]
 module LogSink =
     let internal enabled (sink: ILogSink) level =
-        // axial-note AXG010: a broken observation gate cannot fail the application.
+        // axial-note swallowed-exn: a broken observation gate cannot fail the application.
         try sink.IsEnabled level with _ -> false
     /// <summary>Writes one log entry to a sink, swallowing observation failures.</summary>
     let write (sink: ILogSink) entry =
-        // axial-note AXG010: log destinations are write-only observations.
+        // axial-note swallowed-exn: log destinations are write-only observations.
         try sink.Write entry with _ -> ()
     let none : ILogSink =
         { new ILogSink with

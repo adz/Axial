@@ -67,7 +67,9 @@ module PolicyReview =
                 elif at "///" then i <- line.Length
                 elif at "//" then
                     let comment = line.Substring(i).Trim()
-                    if Regex.IsMatch(comment, @"\baxial-(?:allow-(?:file-)?AXG[0-9]+|note\s+AXG[0-9]+)\s*:", RegexOptions.IgnoreCase) then yield comment
+                    // By name (raw-effect); a commit from before 0.16 spells the rule by number and reads as its name.
+                    if Regex.IsMatch(comment, @"\baxial-(?:allow-(?:file-)?|note\s+)[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9]\s*:", RegexOptions.IgnoreCase) then
+                        yield namedSuppression comment
                     i <- line.Length
                 elif at "(*" then depth <- 1; i <- i + 2
                 elif at "\"\"\"" then triple <- true; i <- i + 3

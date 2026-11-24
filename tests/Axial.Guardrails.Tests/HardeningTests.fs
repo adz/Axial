@@ -31,20 +31,20 @@ module HardeningTests =
     [<Fact>]
     let ``an AXG001 allowance needs a reason that names its gap or why`` () =
         task {
-            let! plain = AnalyzerTestContext.create "module M\nlet value = System.DateTime.UtcNow // axial-allow-AXG001: live clock\n"
+            let! plain = AnalyzerTestContext.create "module M\nlet value = System.DateTime.UtcNow // axial-allow-raw-effect: live clock\n"
             let directive = Assert.Single(Suppressions.validDirectives plain.SourceText)
             Assert.Equal(Some "AXG001", directive.RuleId)
             Assert.Equal("live clock", directive.Reason)
             Assert.False(Suppressions.isAllowed plain.SourceText 2 "AXG001")
-            let! gap = AnalyzerTestContext.create "module M\nlet value = System.DateTime.UtcNow // axial-allow-AXG001: no clock yet (gap: clock-x)\n"
+            let! gap = AnalyzerTestContext.create "module M\nlet value = System.DateTime.UtcNow // axial-allow-raw-effect: no clock yet (gap: clock-x)\n"
             Assert.Equal(Some(Suppressions.Gap "clock-x"), Suppressions.allowanceOf (Assert.Single(Suppressions.validDirectives gap.SourceText)))
             Assert.True(Suppressions.isAllowed gap.SourceText 2 "AXG001")
-            let! why = AnalyzerTestContext.create "module M\n// axial-allow-AXG001: (why: this test checks the real clock)\nlet value = System.DateTime.UtcNow\n"
+            let! why = AnalyzerTestContext.create "module M\n// axial-allow-raw-effect: (why: this test checks the real clock)\nlet value = System.DateTime.UtcNow\n"
             Assert.Equal(Some(Suppressions.Why "this test checks the real clock"), Suppressions.allowanceOf (Assert.Single(Suppressions.validDirectives why.SourceText)))
             Assert.True(Suppressions.isAllowed why.SourceText 3 "AXG001")
-            let! emptyWhy = AnalyzerTestContext.create "module M\nlet value = System.DateTime.UtcNow // axial-allow-AXG001: live clock (why: )\n"
+            let! emptyWhy = AnalyzerTestContext.create "module M\nlet value = System.DateTime.UtcNow // axial-allow-raw-effect: live clock (why: )\n"
             Assert.False(Suppressions.isAllowed emptyWhy.SourceText 2 "AXG001")
-            let! fileWide = AnalyzerTestContext.create "// axial-allow-file-AXG001: whole file (gap: clock-x)\nmodule M\nlet value = System.DateTime.UtcNow\n"
+            let! fileWide = AnalyzerTestContext.create "// axial-allow-file-raw-effect: whole file (gap: clock-x)\nmodule M\nlet value = System.DateTime.UtcNow\n"
             Assert.False(Suppressions.isAllowed fileWide.SourceText 3 "AXG001")
         }
 
@@ -53,7 +53,7 @@ module HardeningTests =
         task {
             let! ctx =
                 AnalyzerTestContext.create
-                    "module M\nlet text = \"axial-allow-AXG003: example\"\n/// axial-allow-AXG004: docs\n(* axial-allow-AXG005: block *)\nlet value = 1\n"
+                    "module M\nlet text = \"axial-allow-raise-in-flow: example\"\n/// axial-allow-shared-fixture: docs\n(* axial-allow-dropped-cancel: block *)\nlet value = 1\n"
             Assert.Empty(Suppressions.allDirectives ctx.SourceText)
         }
 
@@ -66,11 +66,37 @@ module HardeningTests =
     [<InlineData("AXG008")>]
     let ``AXG002 rejects stale suppressions for every structural rule`` ruleId =
         task {
-            let source = $"module M\n// axial-allow-{ruleId}: obsolete boundary\nlet value = 1\n"
+            let source = $"module M\n// axial-allow-{RuleNames.nameOf ruleId}: obsolete boundary\nlet value = 1\n"
             let! messages = run SuppressionIntegrityAnalyzer.suppressionIntegrityAnalyzer source
             let message = Assert.Single messages
             Assert.Equal("AXG002", message.Code)
             Assert.Contains("stale suppression", message.Message)
+        }
+
+    [<Theory>]
+    [<InlineData("// axial-allow-AXG003: foreign callback", "Rename `axial-allow-AXG003` to `axial-allow-raise-in-flow`: rules are named in comments, and AXG003 is raise-in-flow.")>]
+    [<InlineData("// axial-allow-file-AXG004: shared", "Rename `axial-allow-file-AXG004` to `axial-allow-file-shared-fixture`: rules are named in comments, and AXG004 is shared-fixture.")>]
+    [<InlineData("// axial-note AXG014: bridge", "Rename `axial-note AXG014` to `axial-note task-surface`: rules are named in comments, and AXG014 is task-surface.")>]
+    let ``a numbered allowance or note is rejected with the name to use`` (comment: string) (expected: string) =
+        task {
+            let! messages = run SuppressionIntegrityAnalyzer.suppressionIntegrityAnalyzer $"{comment}\nmodule M\nlet value = 1\n"
+            let message = Assert.Single messages
+            Assert.Equal("AXG002", message.Code)
+            Assert.Equal("stale-allow: " + expected, message.Message)
+        }
+
+    [<Fact>]
+    let ``a numbered allowance allows nothing`` () =
+        task {
+            let! ctx = AnalyzerTestContext.create "module M\n// axial-allow-AXG001: (why: old spelling)\nlet value = System.DateTime.UtcNow\n"
+            Assert.False(Suppressions.isAllowed ctx.SourceText 3 "AXG001")
+        }
+
+    [<Fact>]
+    let ``an unknown rule name is reported`` () =
+        task {
+            let! messages = run SuppressionIntegrityAnalyzer.suppressionIntegrityAnalyzer "module M\n// axial-allow-raw-efect: typo\nlet value = 1\n"
+            Assert.Contains("unknown rule `raw-efect`", (Assert.Single messages).Message)
         }
 
     [<Fact>]

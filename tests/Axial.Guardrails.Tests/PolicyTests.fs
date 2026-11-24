@@ -35,10 +35,10 @@ module PolicyTests =
     let private parse root text = Policy.parse root (set [ "effects.ambient"; "domain.async-return" ]) text
 
     [<Theory>]
-    [<InlineData("AXG008 = [\"src/App/App.fsproj\"]")>]
-    [<InlineData("AXG009 = \"src/App/App.fsproj\"")>]
-    [<InlineData("AXG009 = [\"missing/**/*.fsproj\"]")>]
-    [<InlineData("AXG009 = [\"../outside.fsproj\"]")>]
+    [<InlineData("escaped-scope = [\"src/App/App.fsproj\"]")>]
+    [<InlineData("raw-concurrency = \"src/App/App.fsproj\"")>]
+    [<InlineData("raw-concurrency = [\"missing/**/*.fsproj\"]")>]
+    [<InlineData("raw-concurrency = [\"../outside.fsproj\"]")>]
     let ``exemptions reject unknown rules wrong types and invalid paths`` entry =
         withRepository (fun root ->
             let actual = parse root ("version = 2\n[default]\nrole = \"host\"\n[exemptions]\n" + entry)
@@ -74,8 +74,22 @@ module PolicyTests =
     [<Fact>]
     let ``exemptions accept consumer project globs`` () =
         withRepository (fun root ->
-            let actual = parse root "version = 2\n[default]\nrole = \"host\"\n[exemptions]\nAXG009 = [\"src/**/*.fsproj\"]"
+            let actual = parse root "version = 2\n[default]\nrole = \"host\"\n[exemptions]\nraw-concurrency = [\"src/**/*.fsproj\"]"
             let policy = actual |> Result.toOption |> Option.get
+            Assert.Equal<string list>(["src/**/*.fsproj"], policy.Exemptions["AXG009"]))
+
+    [<Fact>]
+    let ``a numbered exemption is rejected with the rule name to use`` () =
+        withRepository (fun root ->
+            match parse root "version = 2\n[default]\nrole = \"host\"\n[exemptions]\nAXG009 = [\"src/**/*.fsproj\"]" with
+            | Error [ message ] -> Assert.Equal("[exemptions] AXG009: rename the key to raw-concurrency. Rules are named in Axial.Guardrails.toml, and AXG009 is raw-concurrency.", message)
+            | other -> failwith $"expected one rename error, got %A{other}")
+
+    [<Fact>]
+    let ``history from before 0.16 reads numbered exemptions by name`` () =
+        withRepository (fun root ->
+            let old = "version = 2\n[default]\nrole = \"host\"\n[exemptions]\nAXG009 = [\"src/**/*.fsproj\"]"
+            let policy = parse root (Policy.withoutBoundaries old) |> Result.defaultWith (String.concat "; " >> failwith)
             Assert.Equal<string list>(["src/**/*.fsproj"], policy.Exemptions["AXG009"]))
 
     [<Fact>]

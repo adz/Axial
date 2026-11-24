@@ -106,7 +106,7 @@ module ReflectionFormattingAnalyzerTests =
                     + "let b = string C\n"
                     + "let c = sprintf \"%d %s\" r.X \"x\"\n"
                     + "let d = System.String.Concat(\"x\", box 3)\n"
-                    + "// axial-allow-AXG006: diagnostic-only code never runs trimmed\n"
+                    + "// axial-allow-reflection-format: diagnostic-only code never runs trimmed\n"
                     + "let e = string r\n"
                     + "let f = string System.DayOfWeek.Monday\n"
                     + "let g = System.String.Join(\", \", [ \"a\"; \"b\" ])\n")

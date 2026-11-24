@@ -143,7 +143,7 @@ module FastSyntaxTests =
     let ``forbid remains unsuppressible in effect role files in both modes`` role =
         withConfig role (fun original path ->
             let root = original.PolicyRoot.Value
-            let source = "module M\nlet now () = System.DateTime.UtcNow // axial-allow-AXG001: negative control for an unsuppressible policy (gap: none)\n"
+            let source = "module M\nlet now () = System.DateTime.UtcNow // axial-allow-raw-effect: negative control for an unsuppressible policy (gap: none)\n"
             File.WriteAllText(path, source)
             let policy = Path.Combine(root, "Axial.Guardrails.toml")
             File.AppendAllText(policy, $"\n[roles.{role}.rules]\n\"effects.ambient\" = \"forbid\"\n")

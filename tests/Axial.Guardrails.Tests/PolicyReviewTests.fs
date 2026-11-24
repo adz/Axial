@@ -49,9 +49,9 @@ module PolicyReviewTests =
         finally TestDirectory.delete root
 
     [<Theory>]
-    [<InlineData("// axial-allow-AXG001: foreign boundary")>]
-    [<InlineData("// axial-allow-file-AXG001: foreign boundary")>]
-    [<InlineData("// axial-note AXG001: reviewed guide")>]
+    [<InlineData("// axial-allow-raw-effect: foreign boundary")>]
+    [<InlineData("// axial-allow-file-raw-effect: foreign boundary")>]
+    [<InlineData("// axial-note raw-effect: reviewed guide")>]
     let ``check warns once and succeeds for policy changes`` directive =
         repository (fun _ write _ cli ->
             write "App.fs" ("module App\n" + directive + "\n")
@@ -64,7 +64,7 @@ module PolicyReviewTests =
     [<Fact>]
     let ``build checks always report drift with a stable state digest and keep no temporary state`` () =
         repository (fun _ write _ cli ->
-            write "App.fs" "module App\n// axial-allow-AXG001: foreign boundary\n"
+            write "App.fs" "module App\n// axial-allow-raw-effect: foreign boundary\n"
             let warnings (output: string) = output.Split("WARNING").Length - 1
             let state (output: string) =
                 output.Split('\n') |> Array.filter (fun line -> line.StartsWith "Policy drift state: ") |> Array.exactlyOne
@@ -82,7 +82,7 @@ module PolicyReviewTests =
             Assert.Equal(1, warnings (snd direct))
             Assert.DoesNotContain("Policy drift state", snd direct)
             // A different drift state has a different digest.
-            write "App.fs" "module App\n// axial-allow-AXG001: another foreign boundary\n"
+            write "App.fs" "module App\n// axial-allow-raw-effect: another foreign boundary\n"
             Assert.NotEqual<string>(state (snd first), state (snd (cli ["check"; "--build"]))))
 
     /// The Guardrails result a Fast build of App.fsproj writes under `directory`, from the real Fast runner.
@@ -128,7 +128,7 @@ module PolicyReviewTests =
             recordResult root "obj/Debug/net8.0" |> ignore
             let code, output = cli ["check"]
             Assert.Equal(0, code)
-            Assert.Contains("Raw Task (AXG014 trend, not a gate): 2 AXG014 findings (0 acknowledged); 2 raw task sites in 1 of 1 projects.", output)
+            Assert.Contains("Raw Task (task-surface trend, not a gate): 2 task-surface findings (0 acknowledged); 2 raw task sites in 1 of 1 projects.", output)
             Assert.DoesNotContain("not built yet", output)
             let code, json = cli ["check"; "--json"]
             Assert.Equal(0, code)
@@ -182,7 +182,7 @@ module PolicyReviewTests =
     [<Fact>]
     let ``review lists effect allowances first under their own heading`` () =
         repository (fun _ write _ cli ->
-            write "App.fs" "module App\n// axial-allow-AXG002: foreign callback\n// axial-allow-AXG001: (why: checks the live clock)\n"
+            write "App.fs" "module App\n// axial-allow-stale-allow: foreign callback\n// axial-allow-raw-effect: (why: checks the live clock)\n"
             let code, output = cli ["policy"; "review"; "--since"; "v0.11.3"]
             Assert.Equal(0, code)
             let lines = output.Split('\n') |> Array.map _.TrimEnd()
@@ -190,10 +190,10 @@ module PolicyReviewTests =
             let heading = Array.findIndex ((=) "Effect allowances: raw effects or raw concurrency outside any capability. Read each one.") lines
             Assert.Equal(4, heading)
             Assert.Equal("  App.fs", lines[heading + 1])
-            Assert.Contains("axial-allow-AXG001: (why: checks the live clock)", lines[heading + 2])
+            Assert.Contains("axial-allow-raw-effect: (why: checks the live clock)", lines[heading + 2])
             let other = Array.findIndex ((=) "Suppressions and notes.") lines
             Assert.True(other > heading + 2)
-            Assert.Contains("axial-allow-AXG002", lines[other + 2]))
+            Assert.Contains("axial-allow-stale-allow", lines[other + 2]))
 
     [<Theory>]
     [<InlineData("<Project><Import Project=\"missing.targets\" /></Project>", "missing.targets")>]
@@ -201,7 +201,7 @@ module PolicyReviewTests =
     let ``review reports unevaluable projects and continues reviewing other projects`` contents reason =
         repository (fun _ write _ cli ->
             write "Broken.fsproj" contents
-            write "App.fs" "module App\n// axial-allow-AXG001: foreign boundary\n"
+            write "App.fs" "module App\n// axial-allow-raw-effect: foreign boundary\n"
             let code, output = cli ["policy"; "review"; "--since"; "v0.11.3"]
             Assert.Equal(0, code)
             Assert.Contains("cannot evaluate Broken.fsproj:", output)
@@ -255,9 +255,9 @@ module PolicyReviewTests =
             Assert.Contains("No policy loosening", output))
 
     [<Theory>]
-    [<InlineData("// axial-allow-AXG001: foreign boundary")>]
-    [<InlineData("// axial-allow-file-AXG001: foreign boundary")>]
-    [<InlineData("// axial-note AXG001: reviewed guide")>]
+    [<InlineData("// axial-allow-raw-effect: foreign boundary")>]
+    [<InlineData("// axial-allow-file-raw-effect: foreign boundary")>]
+    [<InlineData("// axial-note raw-effect: reviewed guide")>]
     let ``review scans legacy sources and detects added exceptions`` directive =
         repository (fun _ write _ cli ->
             write "App.fs" ("module App\n" + directive + "\n")
@@ -273,14 +273,14 @@ module PolicyReviewTests =
     [<Fact>]
     let ``reason changes are reviewed but movement and quoted directives are not`` () =
         repository (fun _ write git cli ->
-            write "App.fs" "module App\n// axial-allow-AXG001: original\n"
+            write "App.fs" "module App\n// axial-allow-raw-effect: original\n"
             git ["add"; "."] |> ignore
             git ["commit"; "-qm"; "exception"] |> ignore
-            write "App.fs" "module App\n\n// axial-allow-AXG001: original\nlet quoted = \"// axial-allow-AXG002: not a directive\"\n"
+            write "App.fs" "module App\n\n// axial-allow-raw-effect: original\nlet quoted = \"// axial-allow-stale-allow: not a directive\"\n"
             let code, output = cli ["policy"; "review"; "--since"; "HEAD"; "--check"]
             Assert.Equal(0, code)
             Assert.DoesNotContain("not a directive", output)
-            write "App.fs" "module App\n// axial-allow-AXG001: changed reason\n"
+            write "App.fs" "module App\n// axial-allow-raw-effect: changed reason\n"
             let code, output = cli ["policy"; "review"; "--since"; "HEAD"; "--check"]
             Assert.NotEqual(0, code)
             Assert.Contains("changed reason", output))
@@ -334,7 +334,7 @@ module PolicyReviewTests =
     [<Fact>]
     let ``tightening and removals do not fail check`` () =
         repository (fun root write git cli ->
-            write "App.fs" "module App\n// axial-allow-AXG001: original\n"
+            write "App.fs" "module App\n// axial-allow-raw-effect: original\n"
             git ["add"; "."] |> ignore
             git ["commit"; "-qm"; "exception"] |> ignore
             write "App.fs" "module App\n"
@@ -426,7 +426,7 @@ module PolicyReviewTests =
             Assert.NotEqual(0, code)
             use json = System.Text.Json.JsonDocument.Parse output
             Assert.Equal(1, json.RootElement.GetProperty("loosened").GetArrayLength())
-            write "App.fs" "module App\n// axial-note AXG001: introduced note\n"
+            write "App.fs" "module App\n// axial-note raw-effect: introduced note\n"
             let code, output = cli ["policy"; "review"; "--since"; "legacy"; "--check"; "--json"]
             Assert.NotEqual(0, code)
             use json = System.Text.Json.JsonDocument.Parse output
@@ -442,7 +442,7 @@ module PolicyReviewTests =
             write LockName text
             let code, output = cli ["policy"; "review"; "--check"]
             Assert.True((code = 0), output)
-            write "App.fs" "module App\n// axial-note AXG001: after review\n"
+            write "App.fs" "module App\n// axial-note raw-effect: after review\n"
             let code, output = cli ["policy"; "review"; "--check"]
             Assert.NotEqual(0, code)
             Assert.Contains("after review", output))
@@ -450,7 +450,7 @@ module PolicyReviewTests =
     [<Fact>]
     let ``deleted source exceptions are reported as removals`` () =
         repository (fun root write git cli ->
-            write "Other.fs" "module Other\n// axial-note AXG001: old exception\n"
+            write "Other.fs" "module Other\n// axial-note raw-effect: old exception\n"
             git ["add"; "."] |> ignore
             git ["commit"; "-qm"; "exception file"] |> ignore
             File.Delete(Path.Combine(root, "Other.fs"))

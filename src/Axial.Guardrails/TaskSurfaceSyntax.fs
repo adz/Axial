@@ -1,6 +1,6 @@
 /// AXG014 TaskSurface, shared by Fast and Full: where raw `task { }` and Task-returning signatures are reported, how
 /// a computation expression composes, and the guidance text. AXG014 is a guide: findings are Info, never block a
-/// build (not even under warnings-as-errors) and accept `// axial-note AXG014: <reason>` acknowledgements.
+/// build (not even under warnings-as-errors) and accept `// axial-note task-surface: <reason>` acknowledgements.
 module Axial.Guardrails.TaskSurfaceSyntax
 
 open FSharp.Analyzers.SDK
@@ -162,7 +162,7 @@ let private why = "Raw Task escapes Flow's cancellation, supervision and testabi
 
 /// Strict-tier message for a task expression.
 let expressionMessage builder =
-    $"AXG014 guide: `{builder} {{ }}` in domain/service code. {why}. Write the logic as `flow {{ }}`; where it must await a .NET Task API, lift that one call at the edge with `Flow.fromTask (fun ct -> ...)` (or `Flow.fromValueTask`), ideally in a capability-role file."
+    $"Guide: `{builder} {{ }}` in domain/service code. {why}. Write the logic as `flow {{ }}`; where it must await a .NET Task API, lift that one call at the edge with `Flow.fromTask (fun ct -> ...)` (or `Flow.fromValueTask`), ideally in a capability-role file."
 
 /// Bridge-tier message for a task expression that composes.
 let bridgeMessage builder (expression: Expression) =
@@ -171,13 +171,13 @@ let bridgeMessage builder (expression: Expression) =
           if expression.Loops > 0 then "a loop"
           if expression.Branches > 0 then "branching" ]
         |> String.concat ", "
-    $"AXG014 guide: this `{builder} {{ }}` bridge composes ({parts}). {why}. Keep the bridge to one awaited .NET call lifted with `Flow.fromTask (fun ct -> ...)`, and move the sequencing, branching and loops into `flow {{ }}`."
+    $"Guide: this `{builder} {{ }}` bridge composes ({parts}). {why}. Keep the bridge to one awaited .NET call lifted with `Flow.fromTask (fun ct -> ...)`, and move the sequencing, branching and loops into `flow {{ }}`."
 
 /// Strict-tier message for a public Task/ValueTask-returning signature.
 let signatureMessage name taskType =
-    $"AXG014 guide: public `{name}` returns {taskType}. {why}, and every caller inherits it. Return a `Flow<'env, 'error, 'value>` and let the host run it (`flow.StartAsTask(env, ct)`); lift inbound .NET tasks with `Flow.fromTask`."
+    $"Guide: public `{name}` returns {taskType}. {why}, and every caller inherits it. Return a `Flow<'env, 'error, 'value>` and let the host run it (`flow.StartAsTask(env, ct)`); lift inbound .NET tasks with `Flow.fromTask`."
 
-/// The reason of a valid `axial-note AXG014` on the finding's line or the line above.
+/// The reason of a valid `axial-note task-surface` on the finding's line or the line above.
 let acknowledgement (source: ISourceText) (range: range) =
     Suppressions.allNotes source
     |> List.tryFind (fun note -> note.RuleId = Some Code && note.Reason <> "" && (note.Line = range.StartLine || note.Line + 1 = range.StartLine))

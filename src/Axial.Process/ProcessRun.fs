@@ -51,7 +51,7 @@ module internal ProcessRun =
         | :? StackOverflowException
         | :? AccessViolationException -> reraise ()
         | _ ->
-            // axial-note AXG010: shutdown cleanup is best-effort; ordinary pipe, process or timer failures must not replace the original outcome.
+            // axial-note swallowed-exn: shutdown cleanup is best-effort; ordinary pipe, process or timer failures must not replace the original outcome.
             ()
 
     let internal classifyInputExit =
@@ -386,7 +386,7 @@ module internal ProcessRun =
                     | Error error -> Deferred.fail error reply |> Flow.ignore
 
                 let isLive (stage: RunStage) =
-                    // axial-note AXG010: an inaccessible or disposed process handle is treated as not live during shutdown, not as a new pipeline failure.
+                    // axial-note swallowed-exn: an inaccessible or disposed process handle is treated as not live during shutdown, not as a new pipeline failure.
                     try not stage.Process.HasExited with _ -> false
 
                 let terminateAll () =
@@ -648,12 +648,12 @@ module internal ProcessRun =
                                             pending.Append value |> ignore
                                             if pending.Length > specification.MaxLineLength
                                                && not (pending.Length = specification.MaxLineLength + 1 && value = '\r') then
-                                                // axial-allow-AXG003: task bridge translates this back to the typed channel
+                                                // axial-allow-raise-in-flow: task bridge translates this back to the typed channel
                                                 raise (ProcessPumpFailure (ProcessError.LineTooLong {
                                                     Stage = stage; OriginalChannel = original; Limit = specification.MaxLineLength }))
                                     if flush && pending.Length > 0 then
                                         if pending.Length > specification.MaxLineLength then
-                                            // axial-allow-AXG003: task bridge translates this back to the typed channel
+                                            // axial-allow-raise-in-flow: task bridge translates this back to the typed channel
                                             raise (ProcessPumpFailure (ProcessError.LineTooLong {
                                                 Stage = stage; OriginalChannel = original; Limit = specification.MaxLineLength }))
                                         do! publish (pending.ToString())

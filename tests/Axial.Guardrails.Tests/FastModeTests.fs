@@ -57,7 +57,7 @@ module FastModeTests =
 
     [<Fact>]
     let ``acknowledged AXG014 guides stay out of the minimal console while open ones show`` () = withFixture (fun dir ->
-        File.WriteAllText(Path.Combine(dir, "Other.fs"), "module Other\nlet pending () = task { return 1 }\n// axial-note AXG014: interop entry point for a .NET host\nlet noted () = task { return 2 }\n")
+        File.WriteAllText(Path.Combine(dir, "Other.fs"), "module Other\nlet pending () = task { return 1 }\n// axial-note task-surface: interop entry point for a .NET host\nlet noted () = task { return 2 }\n")
         let result = build dir ["-p:AxialGuardrailsMode=Fast"]
         checkSuccess result
         Assert.Contains("Other.fs(2,", snd result)
@@ -278,7 +278,7 @@ public static string Run(string input) {
     [<Fact>]
     let ``Fast and Full results record the same raw Task trend and cache replays keep it`` () = withFixture (fun dir ->
         File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet value = 1\n")
-        File.WriteAllText(Path.Combine(dir, "Other.fs"), "module Other\nlet pending () = task { return 1 }\n// axial-note AXG014: interop entry point for a .NET host\nlet noted () = task { return 2 }\n")
+        File.WriteAllText(Path.Combine(dir, "Other.fs"), "module Other\nlet pending () = task { return 1 }\n// axial-note task-surface: interop entry point for a .NET host\nlet noted () = task { return 2 }\n")
         let trend (doc: XDocument) =
             // Generated sources under obj/ (AssemblyInfo) are excluded and carry no trend record.
             let records = doc.Root.Elements(XName.Get "coverage") |> Seq.filter (fun e -> attr "rule" e = "TaskSurface" && attr "status" e <> "excluded (generated)") |> Seq.map (fun e -> e.Element(XName.Get "taskSites")) |> Seq.toList

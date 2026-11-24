@@ -10,9 +10,9 @@ Each `AXG` diagnostic has a narrow contract: the effect or convention it detects
 it, and the suppression directive that allows an intentional boundary. The [adoption guide](/guardrails/guardrails.html) covers
 install, severity, and suppression choices; this page is the per-diagnostic reference.
 
-## AXG001: Use explicit effect services
+## raw-effect (AXG001): Use explicit effect services
 
-`AXG001` detects direct calls to ambient .NET effects.
+`raw-effect` detects direct calls to ambient .NET effects.
 
 | Category | Detects | Use instead |
 | --- | --- | --- |
@@ -62,61 +62,61 @@ The claimed file may then call that capability's API, and nothing else raw. Your
 When Axial or a capability cannot do the job yet, allow one call with a comment that names the gap:
 
 ```fsharp
-use pipe = new NamedPipeServerStream(name) // axial-allow-AXG001: Axial.Process has no named pipes yet (gap: process-named-pipes)
+use pipe = new NamedPipeServerStream(name) // axial-allow-raw-effect: Axial.Process has no named pipes yet (gap: process-named-pipes)
 ```
 
 For a raw call that is deliberate rather than a missing feature, say why instead:
-`// axial-allow-AXG001: (why: this test checks the real clock)`.
+`// axial-allow-raw-effect: (why: this test checks the real clock)`.
 
 The allowance covers its own line or the next one. It must end with `(gap: name)` or `(why: reason)`, it cannot cover
-a whole file, and a `forbid` rule cannot be allowed. Policy review lists every new AXG001 allowance first. A rule-specific allowance allows only that diagnostic.
+a whole file, and a `forbid` rule cannot be allowed. Policy review lists every new raw-effect allowance first. A rule-specific allowance allows only that diagnostic.
 
-## AXG002: Remove invalid suppressions
+## stale-allow (AXG002): Remove invalid suppressions
 
-`AXG002` validates every suppression. It reports legacy or malformed syntax, an unknown rule ID, a missing reason,
-a file-wide suppression outside the leading comment block, a file-wide AXG001 allowance, an AXG001 allowance that
-names neither a gap nor a why, or a stale suppression that covers no finding. An AXG001 allowance is also stale when
+`stale-allow` validates every suppression. It reports legacy or malformed syntax, an unknown rule name, an old numbered spelling (`axial-allow-AXG001`, with the name to use), a missing reason,
+a file-wide suppression outside the leading comment block, a file-wide raw-effect allowance, an raw-effect allowance that
+names neither a gap nor a why, or a stale suppression that covers no finding. An raw-effect allowance is also stale when
 it allows nothing: the file claims the capability or is a `host` file, so the call needs no comment, or the level is
 `forbid`, which no allowance overrides. A claim on a file that makes no raw call for that capability is a warning that
-names the claim to remove from the project file. AXG009–013 allowances are invalid: these rules cannot be suppressed.
+names the claim to remove from the project file. swallowed-exn, cancel-none, dropped-work, guessed-wait and task-surface allowances are invalid: these rules cannot be suppressed. A raw-concurrency allowance covers one call and names its why or gap.
 
-It also validates `axial-note` acknowledgements for guide findings (AXG010 and awaited-delay AXG013).
-A note needs a non-empty reason and a live guide finding on the same or following line. For AXG010 put the note as
+It also validates `axial-note` acknowledgements for guide findings (swallowed-exn and awaited-delay guessed-wait).
+A note needs a non-empty reason and a live guide finding on the same or following line. For swallowed-exn put the note as
 the first line inside the handler body, immediately before its first expression (not above `with` or the pattern).
 Notes for block findings, unknown rule IDs, malformed notes, and stale notes warn during development and become
 errors at checkpoints.
 Valid notes leave their guide finding visible as Info; they never hide it.
 
-Remove an invalid or unused directive. AXG002 offers an automatic removal when the directive occupies its own comment
-line. For an intentional exception, use a rule-specific comment such as `// axial-allow-AXG003: <reason>` with the
-ID of the finding being allowed; an AXG001 allowance also names its gap or why. Every directive is recorded in the policy
+Remove an invalid or unused directive. stale-allow offers an automatic removal when the directive occupies its own comment
+line. For an intentional exception, use a rule-specific comment such as `// axial-allow-raise-in-flow: <reason>` with the
+name of the rule being allowed; an raw-effect allowance also names its gap or why. Every directive is recorded in the policy
 lock, so each new one is a review item.
 
-## AXG003: Return typed failures from workflows
+## raise-in-flow (AXG003): Return typed failures from workflows
 
 A `Flow<'env, 'error, 'value>` represents expected failures through its `'error` channel. Raising an exception inside `flow { }` creates an unhandled defect instead, so callers cannot handle it as an expected error.
 
-`AXG003` detects direct calls to `raise`, `failwith`, `failwithf`, `invalidOp`, `invalidArg`, and `reraise` inside `flow { }`. It also checks nested conditionals, matches, bindings, and lambdas.
+`raise-in-flow` detects direct calls to `raise`, `failwith`, `failwithf`, `invalidOp`, `invalidArg`, and `reraise` inside `flow { }`. It also checks nested conditionals, matches, bindings, and lambdas.
 
 Use `return! Flow.fail error` for an expected failure. Use `Flow.die` when the failure is an unrecoverable defect.
 
-For a standalone `raise`, `failwith`, `failwithf`, or `invalidOp`, AXG003 offers a `return! Flow.fail ...` fix. Calls
+For a standalone `raise`, `failwith`, `failwithf`, or `invalidOp`, raise-in-flow offers a `return! Flow.fail ...` fix. Calls
 embedded in a larger expression need a manual rewrite because inserting `return!` there would be invalid.
 
 If a nearby `try/with` catches and translates the exception, add a reason:
 
 ```fsharp
 let start (proc: System.Diagnostics.Process) =
-    if not (proc.Start()) then raise (Exception "Process did not start") // axial-allow-AXG003: caught and translated by caller
+    if not (proc.Start()) then raise (Exception "Process did not start") // axial-allow-raise-in-flow: caught and translated by caller
 ```
 
 Use this directive only when the same local boundary catches and translates the exception.
 
-## AXG004: Create fresh test fixtures
+## shared-fixture (AXG004): Create fresh test fixtures
 
 A module-level `let` value is initialized once and shared by every test in the module. Mutable or stateful values can therefore make parallel xUnit tests interfere with each other.
 
-`AXG004` checks modules that contain an xUnit `[<Fact>]` or `[<Theory>]`, or an FsCheck `[<Property>]`. It reports module-level values but not functions such as `let fixture () = ...`.
+`shared-fixture` checks modules that contain an xUnit `[<Fact>]` or `[<Theory>]`, or an FsCheck `[<Property>]`. It reports module-level values but not functions such as `let fixture () = ...`.
 
 The analyzer excludes constants and point-free function definitions because they do not create the shared-state risk.
 
@@ -124,14 +124,14 @@ Create fixtures inside each test or expose a function that returns a fresh fixtu
 immutable value, add a reason:
 
 ```fsharp
-let private syntheticTime = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) // axial-allow-AXG004: immutable timestamp
+let private syntheticTime = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) // axial-allow-shared-fixture: immutable timestamp
 ```
 
-## AXG005: Preserve cancellation tokens
+## dropped-cancel (AXG005): Preserve cancellation tokens
 
 Task adapters receive Flow's cancellation token. Discarding that token prevents cancellation from stopping the underlying operation.
 
-`AXG005` checks `ColdTask`, `ColdTask.create`, `Flow.fromTask`, and `Flow.fromTaskResult`. It reports a single-argument lambda when the argument is a bare discard, such as `fun _ -> ...`.
+`dropped-cancel` checks `ColdTask`, `ColdTask.create`, `Flow.fromTask`, and `Flow.fromTaskResult`. It reports a single-argument lambda when the argument is a bare discard, such as `fun _ -> ...`.
 
 Use the cancellation-aware overload of the wrapped operation and pass the token to it.
 
@@ -142,20 +142,20 @@ where its token belongs. If a legacy API has no such overload, add a reason:
 /// An API with no cancellation support.
 let legacyCall () : Task<int> = Task.FromResult 42
 
-let legacy = ColdTask(fun _ -> legacyCall ()) // axial-allow-AXG005: legacy API has no token overload
+let legacy = ColdTask(fun _ -> legacyCall ()) // axial-allow-dropped-cancel: legacy API has no token overload
 ```
 
 This check is omitted from the declared `test` project's default analyzer set. Test adapters often wrap completed
 tasks that have no work to cancel. `AxialGuardrailsInTests=all` enables it; `IsTestProject` does not select the set.
 
-## AXG006: Format without reflection
+## reflection-format (AXG006): Format without reflection
 
 F# unions and records get a compiler-generated `ToString()` that calls `sprintf "%+A"`. `%A` walks the value with
 `FSharp.Reflection`, and FSharp.Core's `option`, `voption`, `list`, `Result`, `Choice`, `Map`, and `Set` print their
 contents the same way. NativeAOT and full trimming remove the metadata this needs. The call then throws or prints the
 wrong text, and the build gives no specific warning because the reflection happens inside FSharp.Core.
 
-`AXG006` reports these formatting sites in typed code:
+`reflection-format` reports these formatting sites in typed code:
 
 - `x.ToString()`, `string x`, and interpolation holes such as `$"{x}"` when `x` is an F# union, record, anonymous
   record, exception, or one of the FSharp.Core types above, and the type has no hand-written `ToString` override
@@ -190,7 +190,7 @@ test helper, add a reason:
 
 ```fsharp
 let printDiagnostics (diagnostics: Map<string, int list>) =
-    printfn "%A" diagnostics // axial-allow-AXG006: diagnostic helper never runs trimmed
+    printfn "%A" diagnostics // axial-allow-reflection-format: diagnostic helper never runs trimmed
 ```
 
 Axial's packable libraries are compiled with F#'s `--reflectionfree` option. This prevents the compiler from
@@ -213,7 +213,7 @@ release checks catch a regression that the analyzer cannot see. The probe itself
 its publish currently reports the two aggregate FSharp.Core warnings above; it reports no such warning for an Axial
 assembly.
 
-## AXG007: Keep resources acquired by a fiber
+## fiber-resource (AXG007): Keep resources acquired by a fiber
 
 A forked fiber owns the [scoped resources](/scopes/index.html#scoped-resources) it acquires and releases them when it
 settles. `Fiber.join` returns the fiber's value after that, so a resource the fiber returns is already released:
@@ -236,7 +236,7 @@ The code compiles and reads like ZIO, where a forked fiber shares its parent's `
 fiber's own scope closes when it settles, so the release runs before `Fiber.join` returns: the stream is
 already disposed, and the first use after the join throws `ObjectDisposedException`.
 
-`AXG007` reports a `Flow.fork`, `forkNamed`, `forkGraceful`, `forkDetached`, `forkReplacing`, or `forkReplacingKey` of
+`fiber-resource` reports a `Flow.fork`, `forkNamed`, `forkGraceful`, `forkDetached`, `forkReplacing`, or `forkReplacingKey` of
 a flow that is a `Flow.scopeResource` or `Flow.scopeAcquireRelease` call, or a `flow { }` that returns what it acquired
 with one of them. Acquire the resource with `Flow.forkResource` to keep it in the caller's scope, or with `Flow.zipPar`
 or `Flow.sequencePar` to acquire several in parallel:
@@ -253,11 +253,11 @@ let keptForUse =
 resource in each concurrent combinator.
 
 No automatic fix is offered because `forkResource`, `zipPar`, and keeping ownership inside the fiber have different
-semantics. If the fiber intentionally owns and consumes the resource, use `// axial-allow-AXG007: <reason>`.
+semantics. If the fiber intentionally owns and consumes the resource, use `// axial-allow-fiber-resource: <reason>`.
 
-## AXG013: Wait for facts, not time
+## guessed-wait (AXG013): Wait for facts, not time
 
-In policy role `test`, `AXG013` reports `Thread.Sleep` as an error and directly awaited
+In policy role `test`, `guessed-wait` reports `Thread.Sleep` as an error and directly awaited
 `Task.Delay` or `Async.Sleep` (`do!` or `let!`) as guide warnings. The legacy `test.wait-for-facts`
 level does not change these tiers. A guessed pause does not prove
 that background work reached the point an assertion needs.
@@ -304,14 +304,14 @@ The analyzer checks direct awaited delay calls, not aliases or data flow through
 `Flow.sleep` and `Clock.sleep` are out of scope: their syntax does not establish whether the environment supplies
 live or controlled time. Manual-clock advance operations are also allowed. No automatic fix is offered because
 only the test author knows which fact must be observed. For an intentional awaited delay, put
-`// axial-note AXG013: <reason>` on the finding's line or the preceding line. It stays visible as Info,
+`// axial-note guessed-wait: <reason>` on the finding's line or the preceding line. It stays visible as Info,
 including at checkpoints. `Thread.Sleep` cannot be acknowledged or suppressed.
 
-## AXG008: Keep scope-owned services inside their run
+## escaped-scope (AXG008): Keep scope-owned services inside their run
 
-`Flow.run`, `Flow.runSync`, `Flow.RunSynchronously`, and `StartAsTask` close their scope after completion. Returning `Queue.makeScoped`, `Hub.makeScoped`, or `Hub.subscribe` directly leaves a shut-down service. Caches made by `Cache.make`, `makeBounded`, `makeBoundedWithExpiry`, or `makeRec` capture the creating runtime; closing its scope interrupts lookups. Use these services inside the flow or keep their owning scope open. `Queue.make` (and its `bounded`, `unbounded`, `dropping`, and `sliding` shorthands) and `Hub.make` do not register with the scope and may be returned. The syntax check sees direct calls and pipelines ending in a scoped constructor; the result-type check catches composed cache flows but does not flag Queue or Hub by type because it cannot distinguish scoped from unscoped construction. No automatic fix is offered because the correct lifetime depends on the caller. At an intentional boundary, declare the file and use `// axial-allow-AXG008: <reason>`.
+`Flow.run`, `Flow.runSync`, `Flow.RunSynchronously`, and `StartAsTask` close their scope after completion. Returning `Queue.makeScoped`, `Hub.makeScoped`, or `Hub.subscribe` directly leaves a shut-down service. Caches made by `Cache.make`, `makeBounded`, `makeBoundedWithExpiry`, or `makeRec` capture the creating runtime; closing its scope interrupts lookups. Use these services inside the flow or keep their owning scope open. `Queue.make` (and its `bounded`, `unbounded`, `dropping`, and `sliding` shorthands) and `Hub.make` do not register with the scope and may be returned. The syntax check sees direct calls and pipelines ending in a scoped constructor; the result-type check catches composed cache flows but does not flag Queue or Hub by type because it cannot distinguish scoped from unscoped construction. No automatic fix is offered because the correct lifetime depends on the caller. At an intentional boundary, declare the file and use `// axial-allow-escaped-scope: <reason>`.
 
-## AXG009: Keep raw concurrency where it is claimed
+## raw-concurrency (AXG009): Keep raw concurrency where it is claimed
 
 Reports `Task`, `TaskCompletionSource`, and `CancellationTokenSource` construction, `Task.Run`,
 `Task.Factory.StartNew`, `ContinueWith`, `Thread` construction, and `ThreadPool` calls. Work started that way escapes
@@ -328,19 +328,19 @@ let ownedWork () = Flow.succeed 1
 Raw concurrency works like raw effects:
 
 - **A claim**, for a file whose job is raw concurrency, such as Flow's own runtime or an OS bridge:
-  `<Compile Include="Bridge.fs" AxialCapability="concurrency" />`. AXG009, AXG012 and AXG014 do not apply to it.
+  `<Compile Include="Bridge.fs" AxialCapability="concurrency" />`. raw-concurrency, dropped-work and task-surface do not apply to it.
 - **An allowance**, for one deliberate call anywhere else:
-  `// axial-allow-AXG009: (why: the OS callback completes it on its own thread)` on the line above, or `(gap: name)`
+  `// axial-allow-raw-concurrency: (why: the OS callback completes it on its own thread)` on the line above, or `(gap: name)`
   for a missing Axial feature. It covers one call, never a file, and policy review lists every new one first.
 
-Test projects, and `host` projects listed under `[exemptions] AXG009`, are exempt. No role exempts a file by itself.
+Test projects, and `host` projects listed under `[exemptions] raw-concurrency`, are exempt. No role exempts a file by itself.
 
 Mutual exclusion is not reported: F# `lock`, `Monitor.Enter` and `Exit`, `Interlocked` and `Volatile` guard shared
 state and start nothing. Use `Ref` or `STM` where the state lives in a flow, but the analyzer does not require it.
 Blocking coordination (`Monitor.Wait`, wait handles, `ManualResetEventSlim.Wait`, `SemaphoreSlim.Wait`,
-`Thread.Join`, `CountdownEvent.Wait`, `Barrier.SignalAndWait`) is reported by AXG001 as a `blocking` wait.
+`Thread.Join`, `CountdownEvent.Wait`, `Barrier.SignalAndWait`) is reported by raw-effect as a `blocking` wait.
 
-## AXG010: Do not silently swallow exceptions
+## swallowed-exn (AXG010): Do not silently swallow exceptions
 
 Reports only catch-all `try/with` handlers (`_`, a bound exception, or a type test for `exn` / `System.Exception`)
 that neither use the exception nor call `raise` or `reraise`. Handlers for narrower exception types are not reported;
@@ -360,14 +360,14 @@ let narrowed () =
 ```
 
 This is a guide warning. When an exception is intentionally irrelevant, put
-`// axial-note AXG010: <specific reason>` as the first line inside the handler body, immediately before its first
+`// axial-note swallowed-exn: <specific reason>` as the first line inside the handler body, immediately before its first
 expression. The note must not sit above `with` or the pattern.
 
 ```fsharp
 let invalid () =
     try
         failwith "failed"
-    // axial-note AXG010: too far from the handler body
+    // axial-note swallowed-exn: too far from the handler body
     with _ ->
         ()
 
@@ -375,15 +375,15 @@ let acknowledged () =
     try
         failwith "failed"
     with _ ->
-        // axial-note AXG010: best-effort cleanup; the failure is reported elsewhere
+        // axial-note swallowed-exn: best-effort cleanup; the failure is reported elsewhere
         ()
 ```
 
 The finding stays visible as Info with the reason. An unacknowledged finding becomes an error at a checkpoint.
-Host boundary projects may keep catch-alls under an explicit `AXG010` project-path declaration in `[exemptions]`.
+Host boundary projects may keep catch-alls under an explicit `swallowed-exn` project-path declaration in `[exemptions]`.
 The `host` role alone, or a capability claim, is not an exemption.
 
-## AXG011: Explain uncancellable work
+## cancel-none (AXG011): Explain uncancellable work
 
 `CancellationToken.None` is an error everywhere except the runtime's single `Cancellation.never` definition. Pass the
 owner's token; cleanup that must finish after cancellation belongs in the runtime's uninterruptible cleanup primitive.
@@ -395,14 +395,14 @@ let ownedToken (token: System.Threading.CancellationToken) = token
 
 Neither `axial-allow` nor `axial-note` exempts this finding. It is already an error, so checkpoints change nothing.
 
-## AXG012: Retain ownership of concurrent work
+## dropped-work (AXG012): Retain ownership of concurrent work
 
 Reports discarded Task, ValueTask, and Fiber values in wildcard bindings, statements, and pipelines to `ignore`.
 The typed check follows type abbreviations and catches aliased task factories. Both direct calls and pipelines
 to F#'s `ignore` count; a same-named user function does not. `Async.Start` / `Async.StartImmediate` return unit and
 are out of scope. Awaited `let!` / `do!` expressions and array/list elements retained in a collection are not
 discarded statements. Explicit casts do not hide a discarded Task. A discarded `Flow.fork` description is cold:
-without executing the returned Flow, no fiber starts, so AXG012 does not report it.
+without executing the returned Flow, no fiber starts, so dropped-work does not report it.
 Retaining a value alone does not prove it will be
 awaited: this rule detects local discards, not whole-program ownership.
 
@@ -413,9 +413,9 @@ let retained () = System.Threading.Tasks.Task.FromResult 1
 
 This is an error. Await the task or retain and join the fiber; neither `axial-allow` nor `axial-note` exempts it.
 
-## AXG014: Keep raw Task at the edge
+## task-surface (AXG014): Keep raw Task at the edge
 
-`AXG014` (`TaskSurface`) is guidance, never a gate. A raw `Task` escapes Flow's cancellation, supervision and
+`task-surface` (`TaskSurface`) is guidance, never a gate. A raw `Task` escapes Flow's cancellation, supervision and
 testability: nothing owns it, cancels it or replaces it in a test. The rule nudges code toward `flow { }` and keeps
 the remaining Task use in thin, one-call bridges. Its findings are Info in every mode, including Full checkpoints and
 `axial check --full`, and under warnings-as-errors.
@@ -496,8 +496,8 @@ let readBoth (client: HttpClient) (first: string) (second: string) : Flow<unit, 
 ```
 
 To hand a flow to a Task-based host, run it at the host boundary (`flow.StartAsTask(env, ct)`), not in domain code.
-For an intentional Task surface, put `// axial-note AXG014: <reason>` on the finding's line or the preceding line;
-the finding stays visible as acknowledged Info, logged below the minimal console verbosity. `axial-allow-AXG014` is
+For an intentional Task surface, put `// axial-note task-surface: <reason>` on the finding's line or the preceding line;
+the finding stays visible as acknowledged Info, logged below the minimal console verbosity. `axial-allow-task-surface` is
 not accepted.
 
 Full resolves the builder's type, so an aliased builder (`let t = task`) is reported and a shadowing `task` value
@@ -506,31 +506,31 @@ of another type is not, and it follows type abbreviations and inferred return ty
 names shadowed in the file and does not see aliases, abbreviations or unannotated return types. A file that opens
 `FSharp.Control.Tasks` (Ply, TaskBuilder.fs) may rebind `task`: Full reports only FSharp.Core's builders, and Fast
 does not claim `task` there. A binding such as `let run () = task { ... }` has one finding, the expression; its
-inferred Task signature is not reported again. Both apply the same role and composition rules. `axial check` prints a per-project count of Fast's AXG014 findings (and of all raw task
+inferred Task signature is not reported again. Both apply the same role and composition rules. `axial check` prints a per-project count of Fast's task-surface findings (and of all raw task
 sites), recorded by the latest build, so the trend stays visible; it never gates.
 
-AXG009–AXG012 exempt the `test` role unless `AxialGuardrailsInTests=all` enables full test analysis. Host-role projects are exempt only when their
+raw-concurrency, swallowed-exn, cancel-none and dropped-work exempt the `test` role unless `AxialGuardrailsInTests=all` enables full test analysis. Host-role projects are exempt only when their
 repository-relative project path matches that rule's `[exemptions]` list in `Axial.Guardrails.toml`.
-The table accepts only `AXG009`, `AXG010`, `AXG011`, and `AXG012`, each an array of project-path globs.
+The table accepts only `raw-concurrency`, `swallowed-exn`, `cancel-none`, and `dropped-work`, each an array of project-path globs.
 Paths must stay inside the repository and match existing files. Other roles ignore these lists;
 an ordinary host with no matching declaration is not exempt. For example:
 
 ```toml
 [exemptions]
-AXG009 = ["tools/**/*.fsproj"]
-AXG010 = ["tools/**/*.fsproj"]
-AXG012 = ["tools/**/*.fsproj"]
+raw-concurrency = ["tools/**/*.fsproj"]
+swallowed-exn = ["tools/**/*.fsproj"]
+dropped-work = ["tools/**/*.fsproj"]
 ```
 
 These lists do not change finding severities or exempt other rules.
-AXG001–008 accept rule-specific allowances (an AXG001 allowance names its gap or why) and keep their baseline behavior.
-AXG009–013 do not accept allowances or baseline severity downgrades. Only guide findings (AXG010, awaited-delay AXG013
-and AXG014) accept `axial-note`; no finding approval is needed. AXG002 warns about malformed, empty, unknown, misplaced, or stale notes,
+raw-effect through escaped-scope accept rule-specific allowances (a raw-effect allowance names its gap or why) and keep their baseline behavior.
+A raw-concurrency allowance covers one call and names its why or gap; swallowed-exn, cancel-none, dropped-work and guessed-wait accept no allowances, and none of them accept baseline severity downgrades. Only guide findings (swallowed-exn, awaited-delay guessed-wait
+and task-surface) accept `axial-note`; no finding approval is needed. stale-allow warns about malformed, empty, unknown, misplaced, or stale notes,
 and notes on block findings. Invalid notes become errors at checkpoints. No automatic fix is offered: choosing
 ownership, cancellation, or exception reporting changes behavior.
 
 The verification build and release workflow set `AxialGuardrailsCheckpoint=true`. Ordinary builds, including
-ordinary Release builds, do not enable it automatically. At checkpoints, unacknowledged AXG010 and AXG013 guide findings become errors (AXG014 stays Info);
+ordinary Release builds, do not enable it automatically. At checkpoints, unacknowledged swallowed-exn and guessed-wait guide findings become errors (task-surface stays Info);
 acknowledged findings remain Info with their reasons. Build output shows current findings; `axial policy review`
 separately lists added notes and suppressions, changed reasons, and policy loosening since the reviewed commit.
 Suppressions and notes stay active pending human review. `axial check` warns on policy drift; corrupt policy still

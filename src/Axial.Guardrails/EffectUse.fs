@@ -15,7 +15,7 @@ open Axial.Guardrails.EffectCatalog
 type Verdict =
     /// In a file that claims the capability owning the API.
     | Owned of capability: string
-    /// An `axial-allow-AXG001` comment ending in `(gap: name)` or `(why: text)`.
+    /// An `axial-allow-raw-effect` comment ending in `(gap: name)` or `(why: text)`.
     | Allowance of Suppressions.Allowed
     /// A `host`-role file, or a role whose `effects.ambient` level is `allow`.
     | Host

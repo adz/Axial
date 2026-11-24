@@ -102,7 +102,7 @@ let runWith
                         let started = System.Diagnostics.Stopwatch.GetTimestamp()
                         try
                             for _, finding in visit (Some rule) config path source tree do
-                                entry.Add(XElement(xn "finding", attribute "code" finding.Code, attribute "severity" (string finding.Severity), attribute "line" finding.Range.StartLine, attribute "column" finding.Range.StartColumn, finding.Message))
+                                entry.Add(XElement(xn "finding", attribute "code" finding.Code, attribute "severity" (string finding.Severity), attribute "line" finding.Range.StartLine, attribute "column" finding.Range.StartColumn, RuleNames.label finding.Code finding.Message))
                             if rule = "TaskSurface" then entry.Add(FastSyntax.taskSites config path source tree)
                             if rule = "EffectBoundary" then entry.Add(FastSyntax.effectUses config path source tree)
                         with error ->

@@ -2,18 +2,19 @@
 ///
 /// Only ordinary F# line comments are directives:
 ///
-///   // axial-allow-AXG003: foreign callback translates this exception
+///   // axial-allow-raise-in-flow: foreign callback translates this exception
 ///
-/// XML documentation (`///`), block comments, and string contents are not directives. The file-wide form
-/// `axial-allow-file-AXGnnn` must occur in the leading ordinary-comment block. Every directive is recorded in the
+/// A directive names its rule by name (`RuleNames`); the old numeric spelling (`axial-allow-raise-in-flow`) is rejected with
+/// the name to use. XML documentation (`///`), block comments, and string contents are not directives. The file-wide form
+/// `axial-allow-file-<rule>` must occur in the leading ordinary-comment block. Every directive is recorded in the
 /// policy lock, so each new one is a review item.
 ///
-/// AXG001 and AXG009 are special: raw effects and raw concurrency belong in files that claim a capability, so their
+/// raw-effect (AXG001) and raw-concurrency (AXG009) are special: raw effects and raw concurrency belong in files that claim a capability, so their
 /// allowances are rare and are highlighted in policy review. One covers one call, never a file, and ends with the gap
 /// in Axial or a capability it stands for, or with why the call is deliberate:
 ///
-///   // axial-allow-AXG001: Axial.Process has no named pipes yet (gap: process-named-pipes)
-///   // axial-allow-AXG001: (why: this test checks the analyzer reports a real Random)
+///   // axial-allow-raw-effect: Axial.Process has no named pipes yet (gap: process-named-pipes)
+///   // axial-allow-raw-effect: (why: this test checks the analyzer reports a real Random)
 module Axial.Guardrails.Suppressions
 
 open System
@@ -25,6 +26,7 @@ let Prefix = "axial-allow-"
 
 type Directive =
     { Line: int
+      /// The rule id (AXG001) the directive's rule name stands for.
       RuleId: string option
       Reason: string
       FileWide: bool
@@ -49,7 +51,18 @@ let allowanceOf (directive: Directive) =
         if why.Success then Some(Why why.Groups[1].Value) else None
 
 let private validDirective =
-    Regex(@"\baxial-allow-(file-)?(AXG[0-9]{3})\s*:\s*(.*)$", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
+    Regex(@"\baxial-allow-(file-)?([A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])\s*:\s*(.*)$", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
+
+/// The rule a directive or note names: its id for a known name; the spelling itself (an unknown rule) otherwise. An
+/// old numeric spelling stays as written, so integrity reports it with the name to use.
+let private ruleOf (spelled: string) =
+    if RuleNames.isNumber spelled then spelled.ToUpperInvariant()
+    else RuleNames.idOf spelled |> Option.defaultValue (spelled.ToLowerInvariant())
+
+/// The old numeric spelling of a directive or note (`AXG001`), when it uses one.
+let numericSpelling (directive: Directive) =
+    let matched = Regex.Match(directive.Raw, @"\baxial-(?:allow-(?:file-)?|note\s+)(AXG[0-9]{3})\b", RegexOptions.IgnoreCase)
+    if matched.Success then Some(matched.Groups[1].Value.ToUpperInvariant()) else None
 
 type private LexState =
     | Normal
@@ -113,7 +126,7 @@ let private parseComment line1 (comment: string) =
         if matched.Success then
             Some
                 { Line = line1
-                  RuleId = Some(matched.Groups[2].Value.ToUpperInvariant())
+                  RuleId = Some(ruleOf matched.Groups[2].Value)
                   Reason = matched.Groups[3].Value.Trim()
                   FileWide = matched.Groups[1].Success
                   Raw = comment.Trim() }
@@ -125,7 +138,7 @@ let allDirectives (sourceText: ISourceText) : Directive list =
     |> List.choose (fun (line1, comment) -> comment |> Option.bind (parseComment line1))
 
 let private notePattern =
-    Regex(@"\baxial-note\s+(AXG[0-9]{3})\s*:\s*(.*)$", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
+    Regex(@"\baxial-note\s+([A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])\s*:\s*(.*)$", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
 
 /// Notes acknowledge guide findings, never suppress them. Reuse the ordinary-comment lexer so quoted
 /// documentation and string contents cannot acknowledge a finding.
@@ -137,13 +150,13 @@ let allNotes (sourceText: ISourceText) : Directive list =
             else
                 let matched = notePattern.Match text
                 Some { Line = line
-                       RuleId = if matched.Success then Some(matched.Groups[1].Value.ToUpperInvariant()) else None
+                       RuleId = if matched.Success then Some(ruleOf matched.Groups[1].Value) else None
                        Reason = if matched.Success then matched.Groups[2].Value.Trim() else ""
                        FileWide = false; Raw = text.Trim() }))
 
 let guideMessage (config: GuardrailConfig.Config) (ctx: FSharp.Analyzers.SDK.CliContext) (message: FSharp.Analyzers.SDK.Message) =
     match allNotes ctx.SourceText |> List.tryFind (fun note ->
-        note.RuleId = Some message.Code && note.Reason <> ""
+        note.RuleId = Some message.Code && note.Reason <> "" && (numericSpelling note).IsNone
         && (note.Line = message.Range.StartLine || note.Line + 1 = message.Range.StartLine)) with
     | Some note -> { message with Severity = FSharp.Analyzers.SDK.Severity.Info; Message = $"{message.Message} Acknowledged: {note.Reason}" }
     | None -> { message with Severity = if config.Checkpoint then FSharp.Analyzers.SDK.Severity.Error else FSharp.Analyzers.SDK.Severity.Warning }
@@ -161,15 +174,15 @@ let validDirectives (sourceText: ISourceText) =
     valid.GetValue(sourceText, fun sourceText ->
         allDirectives sourceText
         |> List.filter (fun directive ->
-            directive.RuleId.IsSome
+            directive.RuleId.IsSome && (numericSpelling directive).IsNone
             && directive.Reason <> ""
             && (not directive.FileWide || isInLeadingCommentBlock sourceText directive.Line)))
 
 /// The rules whose allowances cover one call and must name a gap or a why: raw effects and raw concurrency.
 let claimRuleIds = set [ "AXG001"; "AXG009" ]
 
-/// True when a valid suppression for `ruleId` sits on the finding line, the line above it, or (except for AXG001 and
-/// AXG009) in the file's leading comment block. An AXG001 or AXG009 allowance counts only when it names its gap or why.
+/// True when a valid suppression for `ruleId` (AXG001) sits on the finding line, the line above it, or (except for AXG001
+/// and AXG009) in the file's leading comment block. An AXG001 or AXG009 allowance counts only when it names its gap or why.
 let isAllowed (sourceText: ISourceText) line1 (ruleId: string) =
     let ruleId = ruleId.ToUpperInvariant()
     validDirectives sourceText

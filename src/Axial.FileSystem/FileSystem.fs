@@ -1619,7 +1619,7 @@ module Files =
                         owned <- false
                     with error ->
                         if owned then
-                            // axial-note AXG010: temporary-file cleanup must not replace the original atomic-write failure rethrown below.
+                            // axial-note swallowed-exn: temporary-file cleanup must not replace the original atomic-write failure rethrown below.
                             try fs.DeleteFile temporary with _ -> ()
                         System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
                 |> Flow.mapError (FileSystemError.fromException (Some path))
@@ -1840,7 +1840,7 @@ module AppendLog =
                             log.Stream <- log.FileSystem.OpenFile(log.Path, FileMode.Open, FileAccess.ReadWrite, FileShare.Read)
                             log.Stream.Position <- log.Stream.Length
                         else log.Failed <- true
-                    // axial-note AXG010: failed recovery poisons the log; rethrow the original write failure below rather than replace it with the reopen failure.
+                    // axial-note swallowed-exn: failed recovery poisons the log; rethrow the original write failure below rather than replace it with the reopen failure.
                     with _ -> log.Failed <- true
                     System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw()
             let stream = log.Stream

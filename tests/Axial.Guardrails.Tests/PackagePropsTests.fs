@@ -363,7 +363,7 @@ module PackagePropsTests =
             let lockPath = Path.Combine(dir, "Axial.Guardrails.lock")
             let snapshot = Axial.Tool.PolicyLock.inspect dir |> function Ok value -> value | Error error -> failwith error
             File.WriteAllText(lockPath, Axial.Tool.PolicyReview.prepareReviewedLock dir snapshot)
-            if scenario = "review" || scenario = "json-review" then File.AppendAllText(Path.Combine(dir, "Program.fs"), "// axial-allow-AXG001: new boundary\n")
+            if scenario = "review" || scenario = "json-review" then File.AppendAllText(Path.Combine(dir, "Program.fs"), "// axial-allow-raw-effect: new boundary\n")
             let baselinePath = Path.Combine(dir, "Axial.Guardrails.baseline")
             let lockBytes = File.ReadAllBytes lockPath
             let baselineBytes = File.ReadAllBytes baselinePath
@@ -765,7 +765,7 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
             let checkpoint = runBuildWithArgs [ "-p:AxialGuardrailsCheckpoint=true" ] project None
             Assert.NotEqual(0, checkpoint.ExitCode)
             Assert.Contains("error AXG010", checkpoint.Output)
-            File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet f () = try failwith \"bad\" with _ -> () // axial-note AXG010: best effort observer\n")
+            File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet f () = try failwith \"bad\" with _ -> () // axial-note swallowed-exn: best effort observer\n")
             // Acknowledged Info is logged below the minimal console verbosity.
             let noted = runBuildWithArgs [ "-p:AxialGuardrailsCheckpoint=true"; "-v:normal" ] project None
             Assert.True(noted.ExitCode = 0, noted.Output)
@@ -777,7 +777,7 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
             Assert.DoesNotContain("Running Axial.Guardrails analysis", repeated.Output)
             Assert.Contains("info axg010", repeated.Output.ToLowerInvariant())
             Assert.Contains("best effort observer", repeated.Output)
-            File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\n// axial-note AXG010: stale\nlet value = 1\n")
+            File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\n// axial-note swallowed-exn: stale\nlet value = 1\n")
             let invalid = runBuild project None
             Assert.True(invalid.ExitCode = 0, invalid.Output)
             Assert.Contains("warning AXG002", invalid.Output)
@@ -798,7 +798,7 @@ let finding: Analyzer<CliContext> = Axial.Guardrails.Execution.track "InjectedFi
             let checkpoint = runBuildWithArgs [ "-p:AxialGuardrailsCheckpoint=true" ] project None
             Assert.True(checkpoint.ExitCode = 0, checkpoint.Output)
             Assert.DoesNotContain("AXG009", checkpoint.Output)
-            File.AppendAllText(Path.Combine(dir, "Program.fs"), "// axial-note AXG010: stale\n")
+            File.AppendAllText(Path.Combine(dir, "Program.fs"), "// axial-note swallowed-exn: stale\n")
             let invalid = runBuild project None
             Assert.True(invalid.ExitCode = 0, invalid.Output)
             Assert.Contains("warning AXG002", invalid.Output)

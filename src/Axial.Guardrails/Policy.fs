@@ -84,7 +84,7 @@ module Policy =
         "[boundaries] is not supported. Delete the whole section. "
         + "It let a file make any raw effect call. Now a file that implements a capability claims that capability in its project file, "
         + "<Compile Include=\"File.fs\" AxialCapability=\"name\" />, and may then call only that capability's API. "
-        + "A single raw call that no capability covers takes `// axial-allow-AXG001: reason (gap: name)` or `(why: reason)` on the line above it."
+        + "A single raw call that no capability covers takes `// axial-allow-raw-effect: reason (gap: name)` or `(why: reason)` on the line above it."
 
     /// `[runtime].files` let listed files use raw tasks. A concurrency claim replaced it.
     [<Literal>]
@@ -92,17 +92,24 @@ module Policy =
         "[runtime] is not supported. Delete the whole section. "
         + "It let a file use raw tasks and threads. Now a file whose job is raw concurrency claims it in its project file, "
         + "<Compile Include=\"File.fs\" AxialCapability=\"concurrency\" />. "
-        + "A single deliberate raw call takes `// axial-allow-AXG009: (why: reason)` on the line above it."
+        + "A single deliberate raw call takes `// axial-allow-raw-concurrency: (why: reason)` on the line above it."
 
-    /// The policy text without its `[boundaries]` and `[runtime]` tables, for reading a commit from before they were
-    /// removed. Only history is read this way; the current policy must not have them.
+    /// The policy text as 0.16 reads it, for a commit from before 0.16: without its `[boundaries]` and `[runtime]` tables,
+    /// and with `[exemptions]` keys renamed from rule numbers (AXG009) to names (raw-concurrency). Only history is read
+    /// this way; the current policy must use the 0.16 form.
     let withoutBoundaries (text: string) =
         let mutable skipping = false
+        let mutable table = ""
         [ for line in text.Replace("\r\n", "\n").Split('\n') do
             let trimmed = line.Trim()
             if trimmed.StartsWith("[") && not (trimmed.StartsWith("[[")) && trimmed.EndsWith("]") && not (trimmed.Contains("\"")) then
+                table <- trimmed
                 skipping <- trimmed = "[boundaries]" || trimmed = "[runtime]"
-            if not skipping then yield line ]
+            if not skipping then
+                let numbered = System.Text.RegularExpressions.Regex.Match(line, @"^(\s*)(AXG[0-9]{3})(\s*=.*)$")
+                if table = "[exemptions]" && numbered.Success then
+                    yield numbered.Groups[1].Value + RuleNames.nameOf numbered.Groups[2].Value + numbered.Groups[3].Value
+                else yield line ]
         |> String.concat "\n"
 
     let private parseDocument (text: string) =
@@ -284,8 +291,18 @@ module Policy =
         match parseDocument text with
         | Error message -> fail message
         | Ok entries ->
+          // Exemptions name their rule: `raw-concurrency = [...]`. The old numeric key is rejected with the name to use.
+          let exemptionRules = [ "AXG009"; "AXG010"; "AXG011"; "AXG012" ]
+          let numericExemption =
+              entries |> Map.toSeq |> Seq.map fst
+              |> Seq.tryFind (fun path -> path.StartsWith("exemptions.") && RuleNames.isNumber (path.Substring 11))
+          match numericExemption with
+          | Some path ->
+              let number = path.Substring(11).ToUpperInvariant()
+              fail $"[exemptions] {number}: rename the key to {RuleNames.nameOf number}. Rules are named in Axial.Guardrails.toml, and {number} is {RuleNames.nameOf number}."
+          | None ->
             let allowed path =
-                (List.contains path [ "exemptions.AXG009"; "exemptions.AXG010"; "exemptions.AXG011"; "exemptions.AXG012" ]) || path = "version" || path = "baseline" || path = "default.role" || path = "protected.paths" || path = "suppressions.ignore" || path = "review.automation"
+                (exemptionRules |> List.exists (fun code -> path = "exemptions." + RuleNames.nameOf code)) || path = "version" || path = "baseline" || path = "default.role" || path = "protected.paths" || path = "suppressions.ignore" || path = "review.automation"
                 || path.StartsWith("projects.") || path.StartsWith("files.")
                 || (path.StartsWith("roles.") && path.Contains(".rules."))
             match entries |> Map.toSeq |> Seq.tryFind (fst >> allowed >> not) with
@@ -352,10 +369,10 @@ module Policy =
                                     |> Result.map List.rev
                                 let ignores = validatePatterns repositoryRoot allFiles true suppressionIgnores
                                 let exemptions =
-                                    [ "AXG009"; "AXG010"; "AXG011"; "AXG012" ]
+                                    exemptionRules
                                     |> List.fold (fun state code ->
                                         state |> Result.bind (fun result ->
-                                            getStrings ("exemptions." + code)
+                                            getStrings ("exemptions." + RuleNames.nameOf code)
                                             |> Result.bind (validatePaths "exemption")
                                             |> Result.map (fun paths -> Map.add code paths result))) (Ok Map.empty)
                                 match exemptions with

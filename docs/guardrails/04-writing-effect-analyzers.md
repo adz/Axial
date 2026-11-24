@@ -101,7 +101,7 @@ let makeClient () = new System.Net.Http.HttpClient() // contoso-http-allow: http
 Run the same pair for every rule the analyzer ships, once at `warning` (build succeeds, finding reported) and once
 at `error` (build fails). `tests/Axial.Guardrails.Tests/PackagePropsTests.fs` is the reference implementation of this
 loop: it writes a consumer into a temp directory, runs `dotnet build`, and asserts on the exit code and the reported
-`AXG001`/`AXG002` findings.
+`raw-effect`/`stale-allow` findings.
 
 ## Package the analyzer
 

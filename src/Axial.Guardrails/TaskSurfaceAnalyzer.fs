@@ -116,7 +116,7 @@ let analyzeWithConfig (config: GuardrailConfig.Config) (ctx: CliContext) : Messa
         SymbolIndex.memo ctx ("AXG014.findings", tier) (fun () -> collect tier ctx)
         |> GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx
 
-/// Ranges of current findings, for `axial-note AXG014` validation.
+/// Ranges of current findings, for `axial-note task-surface` validation.
 let liveRanges (config: GuardrailConfig.Config) (ctx: CliContext) = analyzeWithConfig config ctx |> List.map _.Range
 
 /// Every raw Task site the file would be reported for at the strict tier, whatever its role or claims: whether a

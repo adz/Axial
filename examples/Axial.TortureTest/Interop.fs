@@ -40,7 +40,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
 
                 match kind with
                 // The scenario checks that an exception thrown by foreign code becomes a defect.
-                | Thrown -> return raise (InvalidOperationException "thrown") // axial-allow-AXG003: foreign API communicates failure by exception
+                | Thrown -> return raise (InvalidOperationException "thrown") // axial-allow-raise-in-flow: foreign API communicates failure by exception
                 | _ -> return 7
             }
 
@@ -57,7 +57,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
 
             let produce () =
                 match kind with
-                | Thrown -> raise (InvalidOperationException "thrown") // axial-allow-AXG003: foreign API communicates failure by exception
+                | Thrown -> raise (InvalidOperationException "thrown") // axial-allow-raise-in-flow: foreign API communicates failure by exception
                 | _ -> 7
 
             match index % 7 with
@@ -125,7 +125,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
         let coldAsExpected = startedBeforeBinding = 0 && coldValues = [ 1..6 ] && runValue = 1 && startedCold.Value = 5
 
         // startTask runs the flow to completion by itself, so there is no token to pass on.
-        let! viaTask = Flow.fromTask (fun _ -> Flow.startTask clockEnvironment sample) // axial-allow-AXG005: wrapped operation has no cancellation-token overload
+        let! viaTask = Flow.fromTask (fun _ -> Flow.startTask clockEnvironment sample) // axial-allow-dropped-cancel: wrapped operation has no cancellation-token overload
 #endif
 
 

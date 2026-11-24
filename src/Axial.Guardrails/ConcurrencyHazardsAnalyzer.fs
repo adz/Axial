@@ -192,7 +192,7 @@ let rawRanges code (ctx: CliContext) =
 let RawConcurrencyAdvice =
     "Use Flow concurrency (Flow.fork, race, Queue, Deferred, Semaphore) instead of raw TPL. A file whose job is raw "
     + "concurrency, such as an OS bridge, claims it on its Compile item (AxialCapability=\"concurrency\"); one "
-    + "deliberate call may carry `// axial-allow-AXG009: (why: reason)` on the line above."
+    + "deliberate call may carry `// axial-allow-raw-concurrency: (why: reason)` on the line above."
 
 let private descriptions =
     Map.ofList [ "AXG009", RawConcurrencyAdvice
@@ -228,7 +228,7 @@ let private analyzeContained (config: GuardrailConfig.Config) code (ctx: CliCont
         rawRanges code ctx
         |> List.filter (fun r ->
             not (code = "AXG011" && primitives.Value |> List.exists (fun definition -> Range.rangeContainsRange definition r)))
-        // One deliberate raw call may carry `// axial-allow-AXG009: (why: reason)` or `(gap: name)`.
+        // One deliberate raw call may carry `// axial-allow-raw-concurrency: (why: reason)` or `(gap: name)`.
         |> List.filter (fun r -> not (code = "AXG009" && Suppressions.isAllowed ctx.SourceText r.StartLine "AXG009"))
         |> List.map (fun r ->
             { Type = "Axial Concurrency Hazard"; Code = code; Message = descriptions[code]

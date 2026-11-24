@@ -70,8 +70,8 @@ module RawTaskCount =
         let width = used |> List.map (fst >> _.Project.Length) |> List.append (unbuilt |> List.map _.Project.Length) |> List.fold max 0
         let role (count: ProjectCount) = if count.Role = "" then "" else $" [{count.Role}]"
         let pending = if unbuilt.IsEmpty then "" else $" {unbuilt.Length} not built yet — run a build."
-        [ yield $"Raw Task (AXG014 trend, not a gate): {total _.Findings} AXG014 findings ({total _.Acknowledged} acknowledged); {total _.Sites} raw task sites in {used.Length} of {counts.Length} projects.{pending}"
+        [ yield $"Raw Task (task-surface trend, not a gate): {total _.Findings} task-surface findings ({total _.Acknowledged} acknowledged); {total _.Sites} raw task sites in {used.Length} of {counts.Length} projects.{pending}"
           for count, c in used ->
-              $"  {count.Project.PadRight width}  {c.Findings,4} AXG014 ({c.Acknowledged} acknowledged)  {c.Sites,4} sites{role count}"
+              $"  {count.Project.PadRight width}  {c.Findings,4} task-surface ({c.Acknowledged} acknowledged)  {c.Sites,4} sites{role count}"
           for count in unbuilt -> $"  {count.Project.PadRight width}  {NotBuilt}{role count}" ]
         |> String.concat "\n"

@@ -18,6 +18,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="FullCheck.targets" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Compile Include="../Axial.Guardrails/RuleNames.fs" Link="RuleNames.fs" />
     <Compile Include="../Axial.Guardrails/EffectCatalog.fs" Link="EffectCatalog.fs" />
     <Compile Include="../Axial.Guardrails/Policy.fs" Link="Policy.fs" />
     <Compile Include="Command.fs" />

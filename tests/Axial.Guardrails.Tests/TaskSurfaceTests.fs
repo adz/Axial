@@ -56,7 +56,7 @@ module TaskSurfaceTests =
             Assert.NotEmpty findings
             for finding in findings do
                 Assert.Equal(FSharp.Analyzers.SDK.Severity.Info, finding.Severity)
-                Assert.StartsWith("[fast/unverified] AXG014 guide:", finding.Message)
+                Assert.StartsWith("[fast/unverified] Guide:", finding.Message)
             Assert.Contains(findings, fun m -> m.Message.Contains expected)
             Assert.Contains(findings, fun m -> m.Message.Contains "Flow.fromTask"))
 
@@ -143,7 +143,7 @@ module TaskSurfaceTests =
     [<Fact>]
     let ``Full findings stay Info guides at checkpoints and notes acknowledge them`` () =
         withPolicy "domain" "" [ "setting\tcheckpoint\ttrue" ] (fun config path ->
-            let source = "module M\nlet run () = task { return 1 }\n// axial-note AXG014: interop entry point for a .NET host\nlet other () = task { return 2 }\n"
+            let source = "module M\nlet run () = task { return 1 }\n// axial-note task-surface: interop entry point for a .NET host\nlet other () = task { return 2 }\n"
             let findings = full config path source
             // One finding per binding: the inferred Task signature of `let run () = task { }` is the expression's.
             Assert.Equal(2, findings.Length)
@@ -221,7 +221,7 @@ module TaskSurfaceTests =
     [<InlineData("domain", "", "let run () = task { return 1 }", 1, 0, 1)>]
     [<InlineData("domain", "", "// task { }\nlet text = \"task { }\"\n(* backgroundTask { } *)\nlet x = 1", 0, 0, 0)>]
     [<InlineData("domain", "", "let run () : System.Threading.Tasks.Task<int> =\n    task { return 1 }", 2, 0, 2)>]
-    [<InlineData("domain", "", "// axial-note AXG014: interop entry point for a .NET host\nlet run () = task { return 1 }", 1, 1, 1)>]
+    [<InlineData("domain", "", "// axial-note task-surface: interop entry point for a .NET host\nlet run () = task { return 1 }", 1, 1, 1)>]
     [<InlineData("capabilities", "", "let run () = task { return! System.Threading.Tasks.Task.FromResult 1 }", 0, 0, 1)>]
     [<InlineData("domain", "claim:concurrency", "let run () = task { return 1 }", 0, 0, 1)>]
     [<InlineData("domain", "[files]\ncapabilities = [\"Fast.fs\"]\n", "let run () = task { return 1 }", 0, 0, 1)>]
@@ -252,8 +252,8 @@ module TaskSurfaceTests =
                 // The recorded findings are the AXG014 findings the same entry reports.
                 Assert.Equal(entry.Elements(XName.Get "finding") |> Seq.length, count "findings")
                 entry.Attribute(XName.Get "cacheHit").Value, (count "findings", count "acknowledged", count "sites")
-            File.WriteAllText(source, "module App\nlet run () = task { return 1 }\n// axial-note AXG014: interop entry point for a .NET host\nlet other () = task { return 2 }\n")
+            File.WriteAllText(source, "module App\nlet run () = task { return 1 }\n// axial-note task-surface: interop entry point for a .NET host\nlet other () = task { return 2 }\n")
             Assert.Equal(("false", (2, 1, 2)), recorded ())
             Assert.Equal(("true", (2, 1, 2)), recorded ())
-            File.WriteAllText(source, "module App\nopen Axial\nlet run () : Flow<unit, string, int> = flow { return 1 }\n// axial-note AXG014: interop entry point for a .NET host\nlet other () = task { return 2 }\n")
+            File.WriteAllText(source, "module App\nopen Axial\nlet run () : Flow<unit, string, int> = flow { return 1 }\n// axial-note task-surface: interop entry point for a .NET host\nlet other () = task { return 2 }\n")
             Assert.Equal(("false", (1, 1, 1)), recorded ()))

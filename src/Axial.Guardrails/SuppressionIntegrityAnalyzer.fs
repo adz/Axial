@@ -49,6 +49,18 @@ let private isLeadingComment (sourceText: ISourceText) line1 =
         let text = sourceText.GetLineString(line - 1).TrimStart()
         text = "" || text.StartsWith "//")
 
+/// The rename an old numeric spelling needs: `axial-allow-raw-effect` is now `axial-allow-raw-effect`.
+let private renameOf (directive: Directive) =
+    numericSpelling directive |> Option.map (fun number ->
+        let name = RuleNames.nameOf number
+        let isNote = directive.Raw.Contains("axial-note", System.StringComparison.OrdinalIgnoreCase)
+        let fileWide = directive.Raw.Contains("axial-allow-file-", System.StringComparison.OrdinalIgnoreCase)
+        let old, renamed =
+            if isNote then $"axial-note {number}", $"axial-note {name}"
+            elif fileWide then $"axial-allow-file-{number}", $"axial-allow-file-{name}"
+            else $"axial-allow-{number}", $"axial-allow-{name}"
+        $"Rename `{old}` to `{renamed}`: rules are named in comments, and {number} is {name}.")
+
 let private coversLine directiveLine findingLine = findingLine = directiveLine || findingLine = directiveLine + 1
 
 /// Why an AXG001 allowance next to raw calls allows none of them, if it allows none. An allowance counts only when it
@@ -75,12 +87,13 @@ let private findingForDirective (config: Config) (ctx: CliContext) directive =
     match directive.RuleId with
     | None ->
         Some(report "Remove this malformed suppression, or replace it with a rule-specific suppression and a non-empty reason as documented.")
+    | Some _ when (renameOf directive).IsSome -> renameOf directive |> Option.map report
     | Some ruleId when not (knownRuleIds.Contains ruleId) ->
-        Some(report $"Remove this suppression or replace its unknown rule id `{ruleId}` with the diagnostic id it is intended to allow.")
+        Some(report $"Replace the unknown rule `{ruleId}` with the name of the rule this allows, such as `raw-effect` (the rule names are listed in docs/guardrails/01-guardrails.md), or remove the comment.")
     | Some _ when directive.Reason = "" ->
         Some(report "Add a non-empty reason explaining why this intentional boundary cannot use the recommended API.")
     | Some ruleId when Set.contains ruleId (set [ "AXG010"; "AXG011"; "AXG012"; "AXG013"; "AXG014" ]) ->
-        Some(report "Remove this allowance: tiered rules cannot be suppressed. Only guide findings accept `axial-note AXGnnn: reason` acknowledgements.")
+        Some(report "Remove this allowance: tiered rules cannot be suppressed. Only guide findings accept `axial-note <rule>: reason` acknowledgements.")
     | Some _ when directive.FileWide && not (isLeadingComment ctx.SourceText directive.Line) ->
         Some(report "Move this file-wide suppression into the leading comment block, before the first declaration.")
     | Some "AXG001" when directive.FileWide ->
@@ -96,15 +109,20 @@ let private findingForDirective (config: Config) (ctx: CliContext) directive =
     | Some "AXG009" when GuardrailConfig.claimsConcurrency config ctx.FileName ->
         Some(report "Remove this allowance: this file claims the concurrency capability, so the call needs no comment.")
     | Some "AXG009" when GuardrailConfig.exemptsRawConcurrency config ctx.FileName ->
-        Some(report "Remove this allowance: AXG009 does not apply to this file (a test, or a host project listed under [exemptions] AXG009), so the call needs no comment.")
+        Some(report "Remove this allowance: raw-concurrency does not apply to this file (a test, or a host project listed under [exemptions] raw-concurrency), so the call needs no comment.")
     | Some ruleId ->
         let covered =
             rangesForRule config ctx ruleId
             |> List.exists (fun findingRange -> directive.FileWide || coversLine directive.Line findingRange.StartLine)
         if covered then None
-        else Some(report $"Remove this stale suppression or move it next to the `{ruleId}` finding it intentionally allows.")
+        else Some(report $"Remove this stale suppression or move it next to the `{RuleNames.nameOf ruleId}` finding it intentionally allows.")
 
 let private findingForNote (config: Config) (ctx: CliContext) (note: Directive) =
+  match renameOf note with
+  | Some rename ->
+      let diagnostic = message ctx.SourceText (rangeOfLine ctx.SourceText note.Line) rename
+      Some { diagnostic with Type = "Axial Note Integrity"; Severity = if config.Checkpoint then Severity.Error else Severity.Warning }
+  | None ->
     let live =
         match note.RuleId with
         | Some "AXG010" -> ConcurrencyHazardsAnalyzer.analyzeWithConfig config "AXG010" ctx |> List.map _.Range
@@ -117,7 +135,7 @@ let private findingForNote (config: Config) (ctx: CliContext) (note: Directive) 
     if note.Reason <> "" && live |> List.exists (fun r -> coversLine note.Line r.StartLine) then None
     else
         let diagnostic = message ctx.SourceText (rangeOfLine ctx.SourceText note.Line)
-                            "Remove this invalid note: for AXG010 put the note as the first line inside the handler body, immediately before its first expression (not above 'with' or the pattern). For AXG013 and AXG014 use the finding's line or the preceding line. Block findings cannot be acknowledged."
+                            "Remove this invalid note: for swallowed-exn put the note as the first line inside the handler body, immediately before its first expression (not above 'with' or the pattern). For guessed-wait and task-surface use the finding's line or the preceding line. Block findings cannot be acknowledged."
         Some { diagnostic with Type = "Axial Note Integrity"; Severity = if config.Checkpoint then Severity.Error else Severity.Warning }
 
 /// A claim on a file that makes no raw call for that capability: a reviewed permission nothing uses. A warning, at the

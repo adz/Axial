@@ -210,7 +210,7 @@ module WaitForFactsAnalyzerTests =
     let ``legacy suppression cannot hide a blocking wait`` expression =
         task {
             let! found = findings Policy.Test (
-                "let check () =\n    " + expression + " // axial-allow-AXG013: exercises the foreign blocking boundary\n    ignore 42")
+                "let check () =\n    " + expression + " // axial-allow-guessed-wait: exercises the foreign blocking boundary\n    ignore 42")
             Assert.Equal(Severity.Error, (Assert.Single found).Severity)
         }
 
@@ -218,7 +218,7 @@ module WaitForFactsAnalyzerTests =
     let ``legacy suppression cannot hide either site`` () =
         task {
             let! found = findings Policy.Test (
-                "let check () =\n    Thread.Sleep 10 // axial-allow-AXG013: exercises the foreign blocking boundary\n\n    Thread.Sleep 20\n    ignore 42")
+                "let check () =\n    Thread.Sleep 10 // axial-allow-guessed-wait: exercises the foreign blocking boundary\n\n    Thread.Sleep 20\n    ignore 42")
             Assert.Equal(2, found.Length)
         }
 
@@ -230,11 +230,11 @@ module WaitForFactsAnalyzerTests =
         task {
             for checkpoint in [ "false"; "true" ] do
                 let settings = [ $"setting\tcheckpoint\t{checkpoint}" ]
-                let! blocked = findingsWith settings level Policy.Test "let f () = Thread.Sleep 10 // axial-note AXG013: a simulation"
+                let! blocked = findingsWith settings level Policy.Test "let f () = Thread.Sleep 10 // axial-note guessed-wait: a simulation"
                 Assert.Equal(Severity.Error, (Assert.Single blocked).Severity)
                 let! guide = findingsWith settings level Policy.Test "let f () = task { do! Task.Delay 10 }"
                 Assert.Equal((if checkpoint = "true" then Severity.Error else Severity.Warning), (Assert.Single guide).Severity)
-                let! noted = findingsWith settings level Policy.Test "let f () = task { do! Task.Delay 10 } // axial-note AXG013: a simulation"
+                let! noted = findingsWith settings level Policy.Test "let f () = task { do! Task.Delay 10 } // axial-note guessed-wait: a simulation"
                 let message = Assert.Single noted
                 Assert.Equal(Severity.Info, message.Severity)
                 Assert.Contains("a simulation", message.Message)

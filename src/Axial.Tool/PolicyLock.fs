@@ -82,6 +82,12 @@ module PolicyLock =
         let explicitFiles = Regex.Matches(File.ReadAllText project, "Compile\\s+Include=\"([^\"]+\\.fs)\"") |> Seq.cast<Match> |> Seq.choose (fun m -> contain m.Groups[1].Value) |> Seq.filter File.Exists |> Seq.toArray
         if explicitFiles.Length > 0 then explicitFiles else Directory.GetFiles(directory,"*.fs",SearchOption.TopDirectoryOnly) |> Array.choose contain
 
+    /// A recorded allowance or note with its rule named: `// axial-allow-raw-effect: …` (before 0.16) reads as
+    /// `// axial-allow-raw-effect: …`, so a lock or a commit from before 0.16 compares with the current one.
+    let namedSuppression (value: string) =
+        Regex.Replace(value, @"(axial-allow-(?:file-)?|axial-note\s+)(AXG[0-9]{3})\b",
+                      (fun (m: Match) -> m.Groups[1].Value + Axial.Guardrails.RuleNames.nameOf m.Groups[2].Value), RegexOptions.IgnoreCase)
+
     let private suppressions root ignores (files: string array) =
         files |> Seq.filter (fun p ->
             p.EndsWith(".fs",StringComparison.Ordinal)
@@ -90,8 +96,8 @@ module PolicyLock =
         |> Seq.collect (fun path ->
             File.ReadLines path
             |> Seq.choose (fun text ->
-                let matched=Regex.Match(text,"//\\s*(axial-allow-(?:file-)?AXG[0-9]+|axial-note\\s+AXG[0-9]+):(.*)$", RegexOptions.IgnoreCase)
-                if matched.Success then Some $"// {matched.Groups[1].Value}:{matched.Groups[2].Value.Trim()}" else None)
+                let matched=Regex.Match(text,"//\\s*(axial-allow-(?:file-)?[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9]|axial-note\\s+[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])\\s*:(.*)$", RegexOptions.IgnoreCase)
+                if matched.Success then Some(namedSuppression $"// {matched.Groups[1].Value}:{matched.Groups[2].Value.Trim()}") else None)
             |> Seq.countBy id
             |> Seq.collect (fun (text,count) ->
                 seq { for occurrence in 1..count -> $"{relative root path}\t{occurrence}\t{text}" }))
@@ -311,6 +317,7 @@ module PolicyLock =
                 elif line.StartsWith("SUPPRESSION  ") then
                     let value=line.Substring(13)
                     if String.IsNullOrWhiteSpace value then fail lineNumber "SUPPRESSION requires a non-empty value"
+                    let value = namedSuppression value
                     unique lineNumber "SUPPRESSION" value (s.Suppressions.Contains value)
                     s <- {s with Suppressions=s.Suppressions.Add value}
                 elif line.Trim()<>"" then fail lineNumber "unknown or malformed lock record"
@@ -335,7 +342,7 @@ module PolicyLock =
 
     /// An AXG001 or AXG009 allowance: a raw effect or raw concurrency outside any capability. These are rare, so review
     /// shows them first.
-    let isEffectAllowance (value: string) = Regex.IsMatch(value, @"axial-allow-(file-)?AXG00[19]\b", RegexOptions.IgnoreCase)
+    let isEffectAllowance (value: string) = Regex.IsMatch(value, @"axial-allow-(file-)?(raw-effect|raw-concurrency|AXG00[19])\b", RegexOptions.IgnoreCase)
 
     let isEmpty x = x.RulesDowngraded.IsEmpty && x.BaselineAdded.IsEmpty && x.SuppressionsAdded.IsEmpty && x.BoundariesAdded.IsEmpty && x.CapabilitiesLoosened.IsEmpty && x.ProtectedChanged.IsEmpty
     let formatJsonSummary x =
@@ -385,6 +392,8 @@ module PolicyLock =
         if not changes.BaselineAdded.IsEmpty then
             match approval with
             | BaselineRule selected ->
+                // A rule may be given by name (raw-effect) or number (AXG001).
+                let selected = Axial.Guardrails.RuleNames.idOf selected |> Option.defaultValue selected
                 let rule = if selected = "AXG001" then "effects.ambient" else selected
                 let diagnostic = baselineDiagnostic rule |> Option.defaultValue rule
                 let reporting = function "warn"|"deny"|"forbid" -> true | _ -> false

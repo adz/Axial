@@ -342,7 +342,7 @@ module WorkflowSchedulingTests =
                     Flow.scopeFinalizer (
                         Flow.fromAsync (
                             async {
-                                // axial-note AXG013: suspend inside cleanup to prove scope shutdown awaits asynchronous finalizers.
+                                // axial-note guessed-wait: suspend inside cleanup to prove scope shutdown awaits asynchronous finalizers.
                                 do! Async.Sleep 10
                                 cleanedUp.Value <- true
                             }

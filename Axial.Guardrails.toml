@@ -34,19 +34,19 @@ test = ["tests/**/*.fsproj"]
 
 # Project exemptions apply only to host-role projects.
 [exemptions]
-AXG009 = [
+raw-concurrency = [
     "src/Axial.Guardrails/Axial.Guardrails.fsproj",
     "src/Axial.Tool*/Axial.Tool*.fsproj",
 ]
-AXG010 = [
+swallowed-exn = [
     "src/Axial.Guardrails/Axial.Guardrails.fsproj",
     "src/Axial.Tool*/Axial.Tool*.fsproj",
 ]
-AXG011 = [
+cancel-none = [
     "src/Axial.Guardrails/Axial.Guardrails.fsproj",
     "src/Axial.Tool*/Axial.Tool*.fsproj",
 ]
-AXG012 = [
+dropped-work = [
     "src/Axial.Guardrails/Axial.Guardrails.fsproj",
     "src/Axial.Tool*/Axial.Tool*.fsproj",
 ]

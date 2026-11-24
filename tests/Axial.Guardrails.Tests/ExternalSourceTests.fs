@@ -103,7 +103,7 @@ test = ["**/*.fsproj"]
         + "open System\n"
         + "let ambient = DateTime.UtcNow\n"
         + "let raw = Threading.Tasks.Task.FromResult 1\n"
-        + "let invalid = 1 // axial-note AXG010: not a handler\n"
+        + "let invalid = 1 // axial-note swallowed-exn: not a handler\n"
         + "let formatting = sprintf \"%A\" [1]\n"
         + "let raising () = raise (InvalidOperationException())\n"
 
@@ -191,7 +191,7 @@ test = ["**/*.fsproj"]
         task {
             let f = fixture ()
             try
-                File.WriteAllText(f.External, "module DefaultRunnerReporters\nlet value = 1 // axial-note AXG010: outside\n")
+                File.WriteAllText(f.External, "module DefaultRunnerReporters\nlet value = 1 // axial-note swallowed-exn: outside\n")
                 let baselinePath = Path.Combine(f.Repo, "Axial.Guardrails.baseline")
                 File.WriteAllText(baselinePath, "AXG010\t../.nuget/packages/xunit.v3.extensibility.core/4.0.1/_content/DefaultRunnerReporters.fs\t" + String('0', 64) + "\n")
                 let snapshot =
@@ -202,11 +202,11 @@ test = ["**/*.fsproj"]
                 Assert.DoesNotContain(snapshot.Suppressions, fun entry -> entry.Contains("DefaultRunnerReporters.fs"))
 
                 let before = snapshot.Suppressions
-                File.WriteAllText(f.External, "module DefaultRunnerReporters\nlet value = 2 // axial-note AXG010: changed outside\n")
+                File.WriteAllText(f.External, "module DefaultRunnerReporters\nlet value = 2 // axial-note swallowed-exn: changed outside\n")
                 let afterExternal = (Axial.Tool.PolicyLock.inspect f.Repo |> Result.defaultWith failwith).Suppressions
                 Assert.Equal<Set<string>>(before, afterExternal)
 
-                File.WriteAllText(f.Internal, "module Internal\nlet value = 2 // axial-note AXG010: internal change\n")
+                File.WriteAllText(f.Internal, "module Internal\nlet value = 2 // axial-note swallowed-exn: internal change\n")
                 let afterInternal = (Axial.Tool.PolicyLock.inspect f.Repo |> Result.defaultWith failwith).Suppressions
                 Assert.NotEqual<Set<string>>(before, afterInternal)
             finally cleanup f

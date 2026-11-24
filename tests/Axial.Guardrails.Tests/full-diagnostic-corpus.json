@@ -2,28 +2,28 @@
   {
     "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nlet f () = Cache.make (fun k -\u003E Flow.ok k) |\u003E Flow.run ()\n",
     "Findings": [
-      "AXG008|Error|4:11-4:57|This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open.",
-      "AXG008|Error|4:46-4:57|This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open."
+      "AXG008|Error|4:11-4:57|escaped-scope: This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open.",
+      "AXG008|Error|4:46-4:57|escaped-scope: This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open."
     ]
   },
   {
     "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nlet f () = Flow.run () (Hub.makeScoped ())\nlet g () = Flow.run () (Queue.makeScoped QueueStrategy.Unbounded)\n",
     "Findings": [
-      "AXG008|Error|4:11-4:42|This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open.",
-      "AXG008|Error|5:11-5:65|This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open."
+      "AXG008|Error|4:11-4:42|escaped-scope: This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open.",
+      "AXG008|Error|5:11-5:65|escaped-scope: This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open."
     ]
   },
   {
     "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nlet f () = Flow.run () (Cache.make (fun k -\u003E Flow.ok k) |\u003E Flow.map id)\n",
     "Findings": [
-      "AXG008|Error|4:11-4:71|This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open."
+      "AXG008|Error|4:11-4:71|escaped-scope: This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open."
     ]
   },
   {
     "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nmodule C = Axial.Cache\nlet f () = C.make (fun k -\u003E Flow.ok k) |\u003E Flow.run ()\n",
     "Findings": [
-      "AXG008|Error|5:11-5:53|This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open.",
-      "AXG008|Error|5:42-5:53|This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open."
+      "AXG008|Error|5:11-5:53|escaped-scope: This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open.",
+      "AXG008|Error|5:42-5:53|escaped-scope: This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open."
     ]
   },
   {
@@ -33,9 +33,9 @@
   {
     "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nlet f () = Task.FromResult 1 |\u003E ignore\nlet g () = ignore (Task.FromResult 2)\nlet h () = let _ = ValueTask\u003Cint\u003E(1) in ()\n",
     "Findings": [
-      "AXG012|Error|4:11-4:28|Concurrent work is discarded. Await it or retain and join its owning fiber.",
-      "AXG012|Error|5:18-5:37|Concurrent work is discarded. Await it or retain and join its owning fiber.",
-      "AXG012|Error|6:19-6:36|Concurrent work is discarded. Await it or retain and join its owning fiber."
+      "AXG012|Error|4:11-4:28|dropped-work: Concurrent work is discarded. Await it or retain and join its owning fiber.",
+      "AXG012|Error|5:18-5:37|dropped-work: Concurrent work is discarded. Await it or retain and join its owning fiber.",
+      "AXG012|Error|6:19-6:36|dropped-work: Concurrent work is discarded. Await it or retain and join its owning fiber."
     ]
   },
   {
@@ -57,23 +57,23 @@
   {
     "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nlet f () = Task.Run(fun () -\u003E 1)\nlet token = System.Threading.CancellationToken.None\nlet source = TaskCompletionSource\u003Cint\u003E()\n",
     "Findings": [
-      "AXG009|Error|4:11-4:19|Use Flow concurrency (Flow.fork, race, Queue, Deferred, Semaphore) instead of raw TPL. A file whose job is raw concurrency, such as an OS bridge, claims it on its Compile item (AxialCapability=\u0022concurrency\u0022); one deliberate call may carry \u0060// axial-allow-AXG009: (why: reason)\u0060 on the line above.",
-      "AXG009|Error|6:13-6:33|Use Flow concurrency (Flow.fork, race, Queue, Deferred, Semaphore) instead of raw TPL. A file whose job is raw concurrency, such as an OS bridge, claims it on its Compile item (AxialCapability=\u0022concurrency\u0022); one deliberate call may carry \u0060// axial-allow-AXG009: (why: reason)\u0060 on the line above.",
-      "AXG011|Error|5:12-5:51|Use the runtime\u0027s uninterruptible cleanup primitive instead of CancellationToken.None."
+      "AXG009|Error|4:11-4:19|raw-concurrency: Use Flow concurrency (Flow.fork, race, Queue, Deferred, Semaphore) instead of raw TPL. A file whose job is raw concurrency, such as an OS bridge, claims it on its Compile item (AxialCapability=\u0022concurrency\u0022); one deliberate call may carry \u0060// axial-allow-raw-concurrency: (why: reason)\u0060 on the line above.",
+      "AXG009|Error|6:13-6:33|raw-concurrency: Use Flow concurrency (Flow.fork, race, Queue, Deferred, Semaphore) instead of raw TPL. A file whose job is raw concurrency, such as an OS bridge, claims it on its Compile item (AxialCapability=\u0022concurrency\u0022); one deliberate call may carry \u0060// axial-allow-raw-concurrency: (why: reason)\u0060 on the line above.",
+      "AXG011|Error|5:12-5:51|cancel-none: Use the runtime\u0027s uninterruptible cleanup primitive instead of CancellationToken.None."
     ]
   },
   {
     "Source": "module M\nopen Axial\nopen System.Threading.Tasks\ntype Item = { Name: string }\nlet f () = sprintf \u0022%A\u0022 { Name = \u0022x\u0022 }\nlet g () = string { Name = \u0022x\u0022 }\n",
     "Findings": [
-      "AXG006|Error|5:11-5:23|This formats with F#\u0027s reflection-based structured printer (formatting a hole where Item is an F# record whose generated ToString uses sprintf \u0022%\u002BA\u0022), which throws under NativeAOT and trimming. Replace it with explicit rendering: a describe/render function or a hand-written ToString override.",
-      "AXG006|Error|6:11-6:32|This formats with F#\u0027s reflection-based structured printer (\u0060string\u0060 on Item is an F# record whose generated ToString uses sprintf \u0022%\u002BA\u0022), which throws under NativeAOT and trimming. Replace it with explicit rendering: a describe/render function or a hand-written ToString override."
+      "AXG006|Error|5:11-5:23|reflection-format: This formats with F#\u0027s reflection-based structured printer (formatting a hole where Item is an F# record whose generated ToString uses sprintf \u0022%\u002BA\u0022), which throws under NativeAOT and trimming. Replace it with explicit rendering: a describe/render function or a hand-written ToString override.",
+      "AXG006|Error|6:11-6:32|reflection-format: This formats with F#\u0027s reflection-based structured printer (\u0060string\u0060 on Item is an F# record whose generated ToString uses sprintf \u0022%\u002BA\u0022), which throws under NativeAOT and trimming. Replace it with explicit rendering: a describe/render function or a hand-written ToString override."
     ]
   },
   {
     "Source": "module M\nopen Axial\nopen System.Threading.Tasks\nlet f () = flow { return raise (System.Exception()) }\nlet g () = System.DateTimeOffset.UtcNow\n",
     "Findings": [
-      "AXG001|Error|5:11-5:39|This call reads the ambient system clock through System.DateTimeOffset, which makes timing untestable. Replace it with Axial.IClock (Clock.now). Clock needs no environment change; tests use the manual clock of Flow.runTest (TestClock.advance).",
-      "AXG003|Error|4:25-4:51|\u0060raise\u0060 is called directly inside a \u0060flow { }\u0060 block. Flow already has a typed \u0027error channel for expected failures - an ordinary exception here silently becomes a defect (Cause.Die) instead, which callers matching on \u0027error never see. Replace it with \u0060return! Flow.fail err\u0060 for an expected failure, or \u0060return! Flow.die defect\u0060 for an unrecoverable defect."
+      "AXG001|Error|5:11-5:39|raw-effect: This call reads the ambient system clock through System.DateTimeOffset, which makes timing untestable. Replace it with Axial.IClock (Clock.now). Clock needs no environment change; tests use the manual clock of Flow.runTest (TestClock.advance).",
+      "AXG003|Error|4:25-4:51|raise-in-flow: \u0060raise\u0060 is called directly inside a \u0060flow { }\u0060 block. Flow already has a typed \u0027error channel for expected failures - an ordinary exception here silently becomes a defect (Cause.Die) instead, which callers matching on \u0027error never see. Replace it with \u0060return! Flow.fail err\u0060 for an expected failure, or \u0060return! Flow.die defect\u0060 for an unrecoverable defect."
     ]
   }
 ]

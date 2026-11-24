@@ -146,7 +146,7 @@ module CapabilityTests =
     let ``an allowance in a file that claims the capability is reported as unneeded`` () =
         task {
             let claimed = fixture "Payments.fs"
-            let source = gateway + "// axial-allow-AXG001: (why: charges directly)\nlet pay () = Gateway().Charge()\n"
+            let source = gateway + "// axial-allow-raw-effect: (why: charges directly)\nlet pay () = Gateway().Charge()\n"
             let! messages = integrityAt (payments "" [ claimed ]) claimed source
             let message = Assert.Single messages
             test <@ message.Code = "AXG002" && message.Range.StartLine = 6 && message.Severity = Severity.Error @>
@@ -156,7 +156,7 @@ module CapabilityTests =
     [<Fact>]
     let ``an allowance that is what allows the call stays valid`` () =
         task {
-            let source = gateway + "// axial-allow-AXG001: (why: charges directly)\nlet pay () = Gateway().Charge()\n"
+            let source = gateway + "// axial-allow-raw-effect: (why: charges directly)\nlet pay () = Gateway().Charge()\n"
             let! messages = integrityAt (payments "" [ fixture "Payments.fs" ]) (fixture "Checkout.fs") source
             test <@ messages = [] @>
         }
@@ -205,7 +205,7 @@ module CapabilityTests =
             "module Payments\n"
             + "let a () = M.Refunds()\n"
             + "let b () = M.Refunds()\n"
-            + "// axial-allow-AXG001: the gateway signs requests with the wall clock (gap: payments-clock)\n"
+            + "// axial-allow-raw-effect: the gateway signs requests with the wall clock (gap: payments-clock)\n"
             + "let c () = System.DateTimeOffset.UtcNow\n"
             + "let d () = System.DateTimeOffset.UtcNow\n"
         let record = FastSyntax.effectUses config claimed (SourceText.ofString source) (parse source)
@@ -221,8 +221,8 @@ module CapabilityTests =
             FastSyntax.analyze config "/tmp/Ipc.fs" (SourceText.ofString source) (parse source)
             |> List.map snd |> List.filter (fun message -> message.Code = "AXG001")
         let call = "let now () = System.DateTimeOffset.UtcNow"
-        test <@ findings ("module Ipc\n" + call + " // axial-allow-AXG001: signed with the wall clock (gap: signing-clock)\n") = [] @>
-        test <@ (findings ("module Ipc\n" + call + " // axial-allow-AXG001: signed with the wall clock\n")).Length = 1 @>
+        test <@ findings ("module Ipc\n" + call + " // axial-allow-raw-effect: signed with the wall clock (gap: signing-clock)\n") = [] @>
+        test <@ (findings ("module Ipc\n" + call + " // axial-allow-raw-effect: signed with the wall clock\n")).Length = 1 @>
 
     [<Fact>]
     let ``Fast reports a use outside the claimed files and allows the claimed file's own calls`` () =

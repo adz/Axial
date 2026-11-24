@@ -92,6 +92,6 @@ module ScopeFromRunAnalyzerTests =
             let! found = findings ("let a = Flow.run (Ref.make 2)\n"
                                    + "let source = Cache.make 2\n"
                                    + "let b = Flow.run source\n"
-                                   + "let c = Flow.run (Cache.make 4) // axial-allow-AXG008: scope intentionally remains open\n")
+                                   + "let c = Flow.run (Cache.make 4) // axial-allow-escaped-scope: scope intentionally remains open\n")
             test <@ found = [] @>
         }

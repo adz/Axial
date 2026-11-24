@@ -27,11 +27,11 @@ module PolicyLockTests =
         finally TestDirectory.delete root
 
     [<Theory>]
-    [<InlineData("module App\n// axial-allow-AXG001: live boundary\n")>]
-    [<InlineData("module App\n\n\n\n// axial-allow-AXG001: live boundary\n")>]
+    [<InlineData("module App\n// axial-allow-raw-effect: live boundary\n")>]
+    [<InlineData("module App\n\n\n\n// axial-allow-raw-effect: live boundary\n")>]
     let ``suppression line movement does not require approval`` source =
         withSuppressionRepository (fun _ write current approved ->
-            write "App.fs" "module App\n\n// axial-allow-AXG001: live boundary\n"
+            write "App.fs" "module App\n\n// axial-allow-raw-effect: live boundary\n"
             let old=approved ()
             write "App.fs" source
             test <@ diff old (current ()) |> isEmpty @>)
@@ -49,7 +49,7 @@ module PolicyLockTests =
             File.WriteAllText(fixture,"module Fixture\n")
             File.AppendAllText(Path.Combine(root,ConfigName),"\n[suppressions]\nignore = [\"tests/Axial.Guardrails*/**\", \"tests/Axial.PrintfFixture/**\", \"benchmarks/Axial.Comparative/**\"]\n")
             let old=approved ()
-            let text="let fixture = \"// axial-allow-AXG001: x\"\n"
+            let text="let fixture = \"// axial-allow-raw-effect: x\"\n"
             File.AppendAllText(fixture,text)
             test <@ diff old (current ()) |> isEmpty @>
             write "App.fs" text
@@ -63,7 +63,7 @@ module PolicyLockTests =
             let directory=Path.Combine(root,"tests/Axial.Guardrails.Tests")
             Directory.CreateDirectory(directory) |> ignore
             let old=approved ()
-            File.WriteAllText(Path.Combine(directory,"Fixture.fs"),"let fixture = \"// axial-allow-AXG001: x\"\n")
+            File.WriteAllText(Path.Combine(directory,"Fixture.fs"),"let fixture = \"// axial-allow-raw-effect: x\"\n")
             test <@ (diff old (current ())).SuppressionsAdded.Length=1 @>)
 
     [<Fact>]
@@ -71,7 +71,7 @@ module PolicyLockTests =
         withSuppressionRepository (fun _ write current approved ->
             write "App.fs" "module App\n"
             let old=approved ()
-            write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
+            write "App.fs" "module App\n// axial-allow-raw-effect: live boundary\n"
             let changes=diff old (current ())
             test <@ changes.SuppressionsAdded.Length=1 @>
             test <@ not (isEmpty changes) @>)
@@ -79,19 +79,19 @@ module PolicyLockTests =
     [<Fact>]
     let ``second identical suppression counts as an addition without counting line movement`` () =
         withSuppressionRepository (fun _ write current approved ->
-            write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
+            write "App.fs" "module App\n// axial-allow-raw-effect: live boundary\n"
             let old=approved ()
-            write "App.fs" "module App\n\n// axial-allow-AXG001: live boundary\n\n// axial-allow-AXG001: live boundary\n"
+            write "App.fs" "module App\n\n// axial-allow-raw-effect: live boundary\n\n// axial-allow-raw-effect: live boundary\n"
             let changes=diff old (current ())
             test <@ changes.SuppressionsAdded.Length=1 @>
             test <@ not (isEmpty changes) @>)
 
     [<Theory>]
-    [<InlineData("// axial-allow-AXG002: live boundary")>]
-    [<InlineData("// axial-allow-AXG001: different reason")>]
+    [<InlineData("// axial-allow-stale-allow: live boundary")>]
+    [<InlineData("// axial-allow-raw-effect: different reason")>]
     let ``changed suppression rule or reason replaces the reviewed identity`` replacement =
         withSuppressionRepository (fun _ write current approved ->
-            write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
+            write "App.fs" "module App\n// axial-allow-raw-effect: live boundary\n"
             let old=approved ()
             write "App.fs" ("module App\n"+replacement+"\n")
             let snapshot=current ()
@@ -103,10 +103,10 @@ module PolicyLockTests =
     [<Fact>]
     let ``moving suppression to another file requires approval`` () =
         withSuppressionRepository (fun _ write current approved ->
-            write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
+            write "App.fs" "module App\n// axial-allow-raw-effect: live boundary\n"
             let old=approved ()
             write "App.fs" "module App\n"
-            write "Other.fs" "module Other\n// axial-allow-AXG001: live boundary\n"
+            write "Other.fs" "module Other\n// axial-allow-raw-effect: live boundary\n"
             let snapshot=current ()
             test <@ Set.difference old.Suppressions snapshot.Suppressions |> Set.count = 1 @>
             test <@ (diff old snapshot).SuppressionsAdded.Length=1 @>
@@ -115,7 +115,7 @@ module PolicyLockTests =
     [<Fact>]
     let ``removing suppression strengthens policy without approval`` () =
         withSuppressionRepository (fun _ write current approved ->
-            write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
+            write "App.fs" "module App\n// axial-allow-raw-effect: live boundary\n"
             let old=approved ()
             write "App.fs" "module App\n"
             let snapshot=current ()
@@ -138,9 +138,9 @@ module PolicyLockTests =
     [<Fact>]
     let ``legacy line numbered suppression lock is readable but requires reapproval`` () =
         withSuppressionRepository (fun root write current _ ->
-            write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
+            write "App.fs" "module App\n// axial-allow-raw-effect: live boundary\n"
             let snapshot=current ()
-            let legacy={snapshot with Suppressions=set ["src/App.fs:2:// axial-allow-AXG001: live boundary"]}
+            let legacy={snapshot with Suppressions=set ["src/App.fs:2:// axial-allow-raw-effect: live boundary"]}
             let path=Path.Combine(root,LockName)
             // Literal version 1 header keeps this a legacy fixture after the writer migrates.
             let records=(serialize legacy).Split('\n') |> Array.skip 1 |> String.concat "\n"
@@ -159,7 +159,7 @@ module PolicyLockTests =
                          Baseline=[{Rule="effects.ambient";File="src/App.fs";Fingerprint="abc";Count=1}]
                          Capabilities=set ["src/Capabilities/**"]
                          Boundaries=set ["vendor.props"]
-                         Suppressions=set ["src/App.fs:2:// axial-allow-AXG001: reason"] }
+                         Suppressions=set ["src/App.fs:2:// axial-allow-raw-effect: reason"] }
         let changes=diff old current
         let summary=formatSummary changes
         test <@ changes.RulesDowngraded.Length=1 @>
@@ -171,25 +171,25 @@ module PolicyLockTests =
 
     [<Fact>]
     let ``readable summary groups suppressions and lists every item without a diff command`` () =
-        let items = [ for n in 1..74 -> $"src/App.fs\t{n}\t// axial-allow-AXG001: reason" ]
-        let changes = { diff empty empty with SuppressionsAdded=items @ ["src/Other.fs\t1\t// axial-allow-AXG002: other"] }
+        let items = [ for n in 1..74 -> $"src/App.fs\t{n}\t// axial-allow-raw-effect: reason" ]
+        let changes = { diff empty empty with SuppressionsAdded=items @ ["src/Other.fs\t1\t// axial-allow-stale-allow: other"] }
         let summary = formatSummary changes
         let lines = summary.Split(System.Environment.NewLine)
         test <@ lines |> Array.filter ((=) "    src/App.fs") |> Array.length = 1 @>
-        test <@ lines |> Array.contains "      #1  // axial-allow-AXG001: reason" @>
-        test <@ lines |> Array.contains "      #74  // axial-allow-AXG001: reason" @>
+        test <@ lines |> Array.contains "      #1  // axial-allow-raw-effect: reason" @>
+        test <@ lines |> Array.contains "      #74  // axial-allow-raw-effect: reason" @>
         test <@ lines |> Array.contains "    src/Other.fs" @>
         test <@ not (summary.Contains("and ")) @>
-        test <@ changes.SuppressionsAdded = items @ ["src/Other.fs\t1\t// axial-allow-AXG002: other"] @>
+        test <@ changes.SuppressionsAdded = items @ ["src/Other.fs\t1\t// axial-allow-stale-allow: other"] @>
 
     [<Fact>]
     let ``readable summary lists effect allowances first under their own heading`` () =
-        let changes = { diff empty empty with SuppressionsAdded=["src/App.fs\t1\t// axial-allow-AXG002: other"; "src/Pay.fs\t1\t// axial-allow-AXG001: (why: checks the live clock)"] }
+        let changes = { diff empty empty with SuppressionsAdded=["src/App.fs\t1\t// axial-allow-stale-allow: other"; "src/Pay.fs\t1\t// axial-allow-raw-effect: (why: checks the live clock)"] }
         let lines = (formatSummary changes).Split(System.Environment.NewLine)
         test <@ lines[1] = "  EFFECT ALLOWANCES ADDED (raw effects or concurrency outside a capability; read each one):" @>
-        test <@ lines[2] = "    src/Pay.fs" && lines[3] = "      #1  // axial-allow-AXG001: (why: checks the live clock)" @>
+        test <@ lines[2] = "    src/Pay.fs" && lines[3] = "      #1  // axial-allow-raw-effect: (why: checks the live clock)" @>
         test <@ not (lines |> Array.skip 4 |> Array.exists (fun line -> line.Contains "AXG001")) @>
-        test <@ lines |> Array.contains "      #1  // axial-allow-AXG002: other" @>
+        test <@ lines |> Array.contains "      #1  // axial-allow-stale-allow: other" @>
 
     [<Fact>]
     let ``readable summary puts other category items on separate indented lines`` () =
@@ -411,7 +411,7 @@ host = ["src/Z/*.fsproj"]
 
     [<Fact>]
     let ``lock serialization is deterministic and sorted`` () =
-        let snapshot={empty with Hashes=Map ["z",String.replicate 64 "2";"a",String.replicate 64 "1"]; Capabilities=set ["z/**";"a/**"]; Boundaries=set ["src/Host.fs"]; Suppressions=set ["src/Host.fs:1:// axial-allow-AXG001: host boundary"]}
+        let snapshot={empty with Hashes=Map ["z",String.replicate 64 "2";"a",String.replicate 64 "1"]; Capabilities=set ["z/**";"a/**"]; Boundaries=set ["src/Host.fs"]; Suppressions=set ["src/Host.fs:1:// axial-allow-raw-effect: host boundary"]}
         let first=serialize snapshot
         let second=serialize snapshot
         test <@ first=second @>

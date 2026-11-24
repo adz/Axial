@@ -45,6 +45,8 @@ let trackWith (record: CliContext -> XElement list) (rule: string) (analyzer: An
                 | Ok _ when GuardrailConfig.isGeneratedSource config ctx.FileName -> return Ok([], [], true)
                 | Ok true ->
                     let! findings = analyzer ctx
+                    // Each finding leads with its rule's name; the build code stays the number.
+                    let findings = findings |> List.map (fun finding -> { finding with Message = RuleNames.label finding.Code finding.Message })
                     return Ok(GuardrailConfig.capSeverity config findings, record ctx, false)
                 // A policy-selected empty result is complete coverage, not an infrastructure skip.
                 | Ok false -> return Ok([], record ctx, false)
