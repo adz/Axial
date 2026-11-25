@@ -49,7 +49,7 @@ module PolicyLockTests =
             File.WriteAllText(fixture,"module Fixture\n")
             File.AppendAllText(Path.Combine(root,ConfigName),"\n[suppressions]\nignore = [\"tests/Axial.Guardrails*/**\", \"tests/Axial.PrintfFixture/**\", \"benchmarks/Axial.Comparative/**\"]\n")
             let old=approved ()
-            let text="let fixture = \"// axial-allow-raw-effect: x\"\n"
+            let text="// axial-allow-raw-effect: x\n"
             File.AppendAllText(fixture,text)
             test <@ diff old (current ()) |> isEmpty @>
             write "App.fs" text
@@ -63,7 +63,7 @@ module PolicyLockTests =
             let directory=Path.Combine(root,"tests/Axial.Guardrails.Tests")
             Directory.CreateDirectory(directory) |> ignore
             let old=approved ()
-            File.WriteAllText(Path.Combine(directory,"Fixture.fs"),"let fixture = \"// axial-allow-raw-effect: x\"\n")
+            File.WriteAllText(Path.Combine(directory,"Fixture.fs"),"// axial-allow-raw-effect: x\n")
             test <@ (diff old (current ())).SuppressionsAdded.Length=1 @>)
 
     [<Fact>]
