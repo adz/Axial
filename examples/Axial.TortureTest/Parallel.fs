@@ -32,6 +32,20 @@ let run (round: Round) : Flow<unit, Never, Check list> =
         let processed = ResizeArray<int>()
         do! items |> Flow.forEachPar (Parallelism.ofProcessors id) (fun value -> Flow.delay (fun () -> lock processed (fun () -> processed.Add value); Flow.ok ()))
 
+        // forEach runs the items one at a time in order, stops at a failing one, and disposes the sequence either way.
+        let visited = ResizeArray<int>()
+        let disposed = ref 0
+        let stopAt = items.[round.Next items.Length]
+        let counted = seq { try yield! items finally increment disposed |> ignore }
+
+        let! stopped =
+            counted
+            |> Flow.forEach (fun value ->
+                Flow.delay (fun () ->
+                    visited.Add value
+                    if value = stopAt then Flow.fail value else Flow.ok ()))
+            |> exitOf
+
         // Pooled resources: each is used by one item at a time, and every one acquired is released.
         let acquired = ref 0
         let released = ref 0
@@ -118,6 +132,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
         return
             [ check "a bounded traversal never ran more than its bound, and kept input order" (peak.Value <= bound && doubled = List.map ((*) 2) items)
               check "forEachPar processed every item exactly once" (List.sort (List.ofSeq processed) = items)
+              check "forEach ran items in order up to the failing one, then disposed the sequence" (stopped = Exit.Failure(Cause.Fail stopAt) && List.ofSeq visited = (items |> List.takeWhile ((<>) stopAt)) @ [ stopAt ] && disposed.Value = 1)
               check "no pooled resource was used by two items at once, and every one was released" (not shared.Value && pooled = items && acquired.Value = released.Value && acquired.Value <= 2 * bound)
               check "a failing item failed the traversal, and every started item cleaned up" (failed = Exit.Failure(Cause.Fail failAt) && started.Value = cleaned.Value)
               check "zipPar failed fast and interrupted the other side" (failFast = Exit.Failure(Cause.Fail "left") && otherInterrupted.Value)

@@ -17,6 +17,8 @@ Run it with `dotnet run --project examples/Axial.TortureTest -- parallel 100`.
 - `Flow.traverseParUsing` and `Flow.forEachParUsing` give each running item a resource from a pool and record whether
   two items ever held the same one.
 - One random item of a traversal fails.
+- `Flow.forEach` runs the items one at a time over a sequence that counts its disposal, and stops at a random failing
+  item.
 - `Flow.zipPar` runs a failing side against one that never ends, and two failing sides. `Flow.sequencePar` runs items of
   random length.
 - Fifty `Flow.race`s run two sides of random length, each signalling a `Deferred` when it ends.
@@ -29,6 +31,7 @@ Run it with `dotnet run --project examples/Axial.TortureTest -- parallel 100`.
 | --- | --- |
 | A bounded traversal never ran more than its bound, and kept input order | The bound is respected, and results come back in input order whatever order they finish in. |
 | forEachPar processed every item exactly once | No item is skipped or repeated. |
+| forEach ran items in order up to the failing one, then disposed the sequence | The sequential form runs one item at a time, stops at the first failure, and releases its input either way. |
 | No pooled resource was used by two items at once, and every one was released | A resource is held by one item at a time, and the pool releases everything it acquired. |
 | A failing item failed the traversal, and every started item cleaned up | Fail-fast interrupts the other items, and their cleanup still runs. |
 | zipPar failed fast and interrupted the other side | A failure does not wait for the other side to finish on its own. |

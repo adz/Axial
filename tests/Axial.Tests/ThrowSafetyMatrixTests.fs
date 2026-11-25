@@ -639,6 +639,10 @@ module ThrowSafetyMatrix =
           die "Flow.tracedError/flow" (fun c -> c.Bad |> Flow.tracedError "matrix")
           die "Flow.traverse/fn" (fun c -> c.Later([ 1; 2 ] |> Flow.traverse (fun item -> if item = 2 then c.Throw() else Flow.ok item)))
           die "Flow.traverse/flow" (fun c -> [ 1; 2 ] |> Flow.traverse (fun item -> if item = 2 then c.Bad else Flow.ok item))
+          die "Flow.forEach/fn" (fun c ->
+              c.Later([ 1; 2 ] |> Flow.forEach (fun item -> if item = 2 then c.Throw() else Flow.ok ())))
+          die "Flow.forEach/flow" (fun c ->
+              [ 1; 2 ] |> Flow.forEach (fun item -> if item = 2 then c.BadOf<unit, string, unit>() else Flow.ok ()))
           die "Flow.traversePar/fn" (fun c ->
               c.Later([ 1; 2 ] |> Flow.traversePar (Parallelism.bounded 2) (fun item -> if item = 2 then c.Throw() else c.Waiter)))
           |> sib
