@@ -177,7 +177,12 @@ module HttpError =
     /// Builds a schedule that retries only transient HTTP errors, with exponential backoff from
     /// <paramref name="baseDelay" /> capped at 65536 times it. <paramref name="retries" /> counts retries after the
     /// first attempt.
-    /// <example><code>workflow |&gt; Flow.retry (HttpError.transientRetry 3 (TimeSpan.FromMilliseconds 200.0))</code></example>
+    /// <example>
+    /// <code>
+    /// workflow
+    /// |&gt; Flow.retry (HttpError.transientRetry 3 (TimeSpan.FromMilliseconds 200.0))
+    /// </code>
+    /// </example>
     let transientRetry (retries: int) (baseDelay: TimeSpan) : Schedule<'env, HttpError, int> =
         Retry.schedule
             { Retries = retries
@@ -480,7 +485,13 @@ module Http =
         }
 
     /// Sends a request and returns the response body text.
-    /// <example><code>Http.get url |&gt; Request.bearer token |&gt; Http.text</code></example>
+    /// <example>
+    /// <code>
+    /// Http.get url
+    /// |&gt; Request.bearer token
+    /// |&gt; Http.text
+    /// </code>
+    /// </example>
     let text<'env when 'env :> IHasHttp> (request: HttpRequest) : Flow<'env, HttpError, string> =
         send request |> Flow.map Response.text
 
@@ -490,7 +501,13 @@ module Http =
         send request |> Flow.map Response.bytes
 
     /// Sends a request and decodes the JSON response body with the supplied decoder.
-    /// <example><code>Http.get url |&gt; Request.acceptJson |&gt; Http.json (Json.deserializeResult codec)</code></example>
+    /// <example>
+    /// <code>
+    /// Http.get url
+    /// |&gt; Request.acceptJson
+    /// |&gt; Http.json (Json.deserializeResult codec)
+    /// </code>
+    /// </example>
     let json<'env, 'value when 'env :> IHasHttp>
         (decode: string -> Result<'value, string>)
         (request: HttpRequest)
@@ -535,7 +552,12 @@ module Http =
 
     /// Retries a workflow on transient HTTP errors with exponential backoff.
     /// Permanent failures such as 404 or decode errors are never retried.
-    /// <example><code>Http.getJson decode url |&gt; Http.retryTransient 3 (TimeSpan.FromMilliseconds 200.0)</code></example>
+    /// <example>
+    /// <code>
+    /// Http.getJson decode url
+    /// |&gt; Http.retryTransient 3 (TimeSpan.FromMilliseconds 200.0)
+    /// </code>
+    /// </example>
     let retryTransient
         (retries: int)
         (baseDelay: TimeSpan)
@@ -813,5 +835,11 @@ module DSL =
     /// <example><code>GET $"{root}/users/{id}" |&gt; fetchJson (Json.deserializeResult codec)</code></example>
     let inline fetchJson decode request = Http.json decode request
     /// Retries transient failures with exponential backoff.
-    /// <example><code>GET $"{root}/users" |&gt; fetchJson decode |&gt; withRetries 3</code></example>
+    /// <example>
+    /// <code>
+    /// GET $"{root}/users"
+    /// |&gt; fetchJson decode
+    /// |&gt; withRetries 3
+    /// </code>
+    /// </example>
     let withRetries retries workflow = Http.retryTransient retries (TimeSpan.FromMilliseconds 200.0) workflow

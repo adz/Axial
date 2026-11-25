@@ -69,6 +69,15 @@ module StackSafetyTests =
         test <@ (match exit with Exit.Success values -> values.Length = iterations && List.last values = iterations - 1 | _ -> false) @>
 
     [<Fact>]
+    let ``Flow forEach with synchronous steps is stack safe`` () =
+        let visited = ref 0
+        let workflow : Flow<unit, string, unit> =
+            Seq.init iterations id |> Flow.forEach (fun _ -> Flow.delay (fun () -> visited.Value <- visited.Value + 1; Flow.ok ()))
+
+        test <@ onSmallStack (fun () -> Flow.runSync () workflow) = Exit.Success () @>
+        test <@ visited.Value = iterations @>
+
+    [<Fact>]
     let ``left-nested bind chains are stack safe`` () =
         let workflow : Flow<unit, string, int> =
             Seq.init iterations id

@@ -26,6 +26,7 @@
     <Compile Include="ExecutionTests.fs" />
     <Compile Include="AppTests.fs" />
     <Compile Include="WorkflowBasicTests.fs" />
+    <Compile Include="CollectionExamplesTests.fs" />
     <Compile Include="StackSafetyTests.fs" />
     <Compile Include="TrampolineTests.fs" />
     <Compile Include="WorkflowConcurrencyTests.fs" />

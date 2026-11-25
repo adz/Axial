@@ -18,7 +18,7 @@ api:
     - id: combine
       title: Combine and sequence
       order: 30
-      members: ["zip", "map2", "apply", "map3", "(<!>)", "(<*>)", "traverse", "sequence", "traversePar", "traverseParUsing", "forEachPar", "forEachParUsing"]
+      members: ["zip", "map2", "apply", "map3", "(<!>)", "(<*>)", "traverse", "forEach", "sequence", "traversePar", "traverseParUsing", "forEachPar", "forEachParUsing"]
       facets:
         task: [combine]
     - id: errors

@@ -30,7 +30,8 @@ module Culture =
     /// <remarks>Under <c>Flow.runTest</c> this is the invariant culture, not the culture of the test process.</remarks>
     /// <example>
     /// <code>
-    /// Culture.system |> Flow.map (fun culture -> Format.date culture System.DateTimeOffset.UnixEpoch)
+    /// Culture.system
+    /// |> Flow.map (fun culture -> Format.date culture System.DateTimeOffset.UnixEpoch)
     /// </code>
     /// </example>
     let system<'env, 'error> : Flow<'env, 'error, Culture> =
@@ -132,7 +133,8 @@ module TimeZone =
     /// </remarks>
     /// <example>
     /// <code>
-    /// TimeZone.local |> Flow.map (fun zone -> TimeZone.toLocal zone System.DateTimeOffset.UnixEpoch)
+    /// TimeZone.local
+    /// |> Flow.map (fun zone -> TimeZone.toLocal zone System.DateTimeOffset.UnixEpoch)
     /// </code>
     /// </example>
     let toLocal (zone: Axial.TimeZone) (instant: DateTimeOffset) : DateTimeOffset =

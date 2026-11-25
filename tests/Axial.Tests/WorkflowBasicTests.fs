@@ -307,6 +307,37 @@ module WorkflowBasicTests =
         test <@ Flow.runSync () failWorkflow = Exit.Failure (Cause.Fail "error") @>
 
     [<Fact>]
+    let ``Flow forEach runs each value in order, stops at the first failure and disposes the sequence`` () =
+        let seen = ResizeArray<int>()
+        let disposed = ref 0
+        let values () =
+            seq {
+                try
+                    for value in 1..5 do
+                        yield value
+                finally
+                    disposed.Value <- disposed.Value + 1
+            }
+        let record value : Flow<unit, string, unit> =
+            Flow.delay (fun () ->
+                seen.Add value
+                if value = 3 then Flow.fail "three" else Flow.ok ())
+
+        let workflow = values () |> Flow.forEach record
+        test <@ seen.Count = 0 @>
+        test <@ Flow.runSync () workflow = Exit.Failure(Cause.Fail "three") @>
+        test <@ List.ofSeq seen = [ 1; 2; 3 ] @>
+        test <@ disposed.Value = 1 @>
+
+        seen.Clear()
+        test <@ Flow.runSync () (values () |> Flow.forEach (fun value -> Flow.delay (fun () -> seen.Add value; Flow.ok ()))) = Exit.Success () @>
+        test <@ List.ofSeq seen = [ 1..5 ] @>
+        test <@ disposed.Value = 2 @>
+
+        let empty : Exit<unit, string> = Seq.empty |> Flow.forEach (fun (_: int) -> Flow.ok ()) |> Flow.runSync ()
+        test <@ empty = Exit.Success () @>
+
+    [<Fact>]
     let ``flow builder overloads stay aligned with the Fable 5 mapping`` () =
         let publicMethods = publicInstanceMethodNames typeof<FlowBuilder>
         let argumentTypeNames = flowBuilderBindAndReturnFromArgumentNames ()

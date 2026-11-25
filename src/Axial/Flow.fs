@@ -36,7 +36,8 @@ module Resource =
     /// </remarks>
     /// <example>
     /// <code>
-    /// Resource.create openConnection (fun connection -&gt; Flow.delay (fun () -&gt; connection.Close(); Flow.succeed ()))
+    /// Resource.create openConnection (fun connection -&gt;
+    ///     Flow.delay (fun () -&gt; connection.Close(); Flow.succeed ()))
     /// </code>
     /// </example>
     let create
@@ -641,7 +642,10 @@ module Flow =
     /// <returns>The wrapped flow, or <paramref name="source" /> unchanged for <c>Inline</c>.</returns>
     /// <example>
     /// <code>
-    /// let parallel = jobs |&gt; List.map (fun job -&gt; compute job |&gt; Flow.runOn RunOn.ThreadPool) |&gt; Flow.sequencePar
+    /// let parallel =
+    ///     jobs
+    ///     |&gt; List.map (fun job -&gt; compute job |&gt; Flow.runOn RunOn.ThreadPool)
+    ///     |&gt; Flow.sequencePar
     /// </code>
     /// </example>
     /// <platforms>Fable compatible; JavaScript runs every case inline. Custom schedulers are .NET only.</platforms>
@@ -702,7 +706,11 @@ module Flow =
     /// <platforms>Fable compatible</platforms>
     /// <example>
     /// <code>
-    /// let commits = Flow.fromBlocking (fun _ -> repository.Commits |> Seq.truncate 50 |> List.ofSeq)
+    /// let commits =
+    ///     Flow.fromBlocking (fun _ ->
+    ///         repository.Commits
+    ///         |> Seq.truncate 50
+    ///         |> List.ofSeq)
     /// </code>
     /// </example>
     let fromBlocking (operation: CancellationToken -> 'value) : Flow<'env, 'error, 'value> =
@@ -847,7 +855,8 @@ module Flow =
     /// <platforms>.NET only</platforms>
     /// <example>
     /// <code>
-    /// let connect = Flow.attemptUnitTask (fun token -> socket.ConnectAsync(host, port, token).AsTask())
+    /// let connect =
+    ///     Flow.attemptUnitTask (fun token -> socket.ConnectAsync(host, port, token).AsTask())
     /// </code>
     /// </example>
     let attemptUnitTask (factory: CancellationToken -> Task) : Flow<'env, exn, unit> =
@@ -1447,7 +1456,8 @@ module Flow =
     /// <code>
     /// fetch |&gt; Flow.retry (Schedule.recurs 3)
     ///
-    /// fetch |&gt; Flow.retry (Retry.schedule { Retry.defaults with When = HttpError.isTransient })
+    /// let transientOnly = { Retry.defaults with When = HttpError.isTransient }
+    /// fetch |&gt; Flow.retry (Retry.schedule transientOnly)
     /// </code>
     /// </example>
     let retry<'env, 'error, 'value, 'output>
@@ -2130,7 +2140,8 @@ module Flow =
     /// <returns>A flow that produces the memoized flow.</returns>
     /// <example>
     /// <code>
-    /// let readConfig : Flow&lt;unit, string, string&gt; = Flow.delay (fun () -&gt; Flow.ok "config")
+    /// let readConfig : Flow&lt;unit, string, string&gt; =
+    ///     Flow.delay (fun () -&gt; Flow.ok "config")
     ///
     /// let sameConfig : Flow&lt;unit, string, bool&gt; =
     ///     flow {
@@ -2294,6 +2305,29 @@ module Flow =
 
     /// <summary>Runs all flows concurrently and returns their values in input order.</summary>
     /// <remarks>An empty input succeeds immediately. Branches start inline, like async methods passed to <c>Task.WhenAll</c>; use <c>Flow.runOn RunOn.ThreadPool</c> for synchronous CPU-heavy branches. If any flow fails, remaining flows are interrupted through the same structured parallel composition as <c>zipPar</c>. Scoped resources follow <c>zipPar</c> too: when every flow succeeds they move to the caller's scope; when any fails, all of them are released before <c>sequencePar</c> returns.</remarks>
+    /// <example>
+    /// <code>
+    /// let after (ms: float) (name: string) =
+    ///     flow {
+    ///         printfn "start %s" name
+    ///         do! Flow.sleep (TimeSpan.FromMilliseconds ms)
+    ///         printfn "done %s" name
+    ///         return name
+    ///     }
+    ///
+    /// [ after 400.0 "a"; after 100.0 "b"; after 200.0 "c" ]
+    /// |&gt; Flow.sequencePar
+    /// |&gt; Flow.run ()
+    /// // prints: start a, start b, start c, done b, done c, done a (all at once, with no limit)
+    /// // result = Success ["a"; "b"; "c"] (input order, though a finished last)
+    ///
+    /// [ after 400.0 "a"; Flow.fail "b failed"; after 200.0 "c" ]
+    /// |&gt; Flow.sequencePar
+    /// |&gt; Flow.run ()
+    /// // prints: start a, start c (b fails, so a and c are interrupted before they are done)
+    /// // result = Failure (Cause.Fail "b failed")
+    /// </code>
+    /// </example>
     let sequencePar (flows: Flow<'env, 'error, 'value> list) : Flow<'env, 'error, 'value list> =
         match flows with
         | [] -> ok []
@@ -2760,7 +2794,8 @@ module Flow =
     /// <returns>A flow that succeeds with the source's exit.</returns>
     /// <example>
     /// <code>
-    /// let observed : Flow&lt;'env, Never, Exit&lt;int, string&gt;&gt; = Flow.fail "boom" |&gt; Flow.exit
+    /// let observed : Flow&lt;'env, Never, Exit&lt;int, string&gt;&gt; =
+    ///     Flow.fail "boom" |&gt; Flow.exit
     /// </code>
     /// </example>
     let exit (source: Flow<'env, 'error, 'value>) : Flow<'env, 'nextError, Exit<'value, 'error>> =
@@ -2837,7 +2872,8 @@ module Flow =
     /// <param name="flow">The source flow.</param>
     /// <example>
     /// <code>
-    /// render frame |&gt; Flow.ensuring (Flow.delay (fun () -&gt; canvas.Unlock(); Flow.ok ()))
+    /// render frame
+    /// |&gt; Flow.ensuring (Flow.delay (fun () -&gt; canvas.Unlock(); Flow.ok ()))
     /// </code>
     /// </example>
     let ensuring (finalizer: Flow<'env, Never, unit>) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
@@ -2873,7 +2909,8 @@ module Flow =
     /// // Runs the worker until the service is interrupted, then lets it drain its queue.
     /// let serve (jobs: Queue&lt;string&gt;) (worker: Flow&lt;unit, Never, unit&gt;) : Flow&lt;unit, Never, unit&gt; =
     ///     flow {
-    ///         let! _ = worker |&gt; Flow.forkGraceful (Dequeue.shutdown jobs) (TimeSpan.FromSeconds 5.0)
+    ///         let! _ =
+    ///             worker |&gt; Flow.forkGraceful (Dequeue.shutdown jobs) (TimeSpan.FromSeconds 5.0)
     ///         return! Flow.never
     ///     }
     /// </code>
@@ -2892,7 +2929,9 @@ module Flow =
     /// <returns>A <see cref="T:Axial`3" /> that converts recoverable exceptions into typed errors.</returns>
     /// <example>
     /// <code>
-    /// let flow = Flow.die (System.Exception("boom")) |> Flow.catch (fun ex -> "caught: " + ex.Message)
+    /// let flow =
+    ///     Flow.die (System.Exception("boom"))
+    ///     |> Flow.catch (fun ex -> "caught: " + ex.Message)
     /// </code>
     /// </example>
     let catch
@@ -2922,7 +2961,9 @@ module Flow =
     /// <returns>A flow that recovers from errors using the fallback function.</returns>
     /// <example>
     /// <code>
-    /// let flow = Flow.fail "error" |> Flow.orElseWith (fun err -> Flow.succeed "recovered")
+    /// let flow =
+    ///     Flow.fail "error"
+    ///     |> Flow.orElseWith (fun err -> Flow.succeed "recovered")
     /// </code>
     /// </example>
     let orElseWith
@@ -2953,7 +2994,9 @@ module Flow =
     /// <code>
     /// let optionalSettings (load: Flow&lt;'env, FileSystemError, Settings&gt;)
     ///     : Flow&lt;'env, Never, Settings option&gt; =
-    ///     load |&gt; Flow.map Some |&gt; Flow.recover (fun _ -&gt; Flow.ok None)
+    ///     load
+    ///     |&gt; Flow.map Some
+    ///     |&gt; Flow.recover (fun _ -&gt; Flow.ok None)
     /// </code>
     /// </example>
     let private retypeUnrecovered (cause: Cause<'error>) : Cause<'nextError> =
@@ -3182,7 +3225,8 @@ module Flow =
     /// <returns>A flow containing the mapped value.</returns>
     /// <example>
     /// <code>
-    /// let flow = Flow.map3 (fun x y z -> x + y + z) (Flow.succeed 1) (Flow.succeed 2) (Flow.succeed 3)
+    /// let flow =
+    ///     Flow.map3 (fun x y z -> x + y + z) (Flow.succeed 1) (Flow.succeed 2) (Flow.succeed 3)
     /// </code>
     /// </example>
     let map3
@@ -3295,7 +3339,19 @@ module Flow =
     /// <returns>A flow containing a list of the successful mapped values.</returns>
     /// <example>
     /// <code>
-    /// let flows = [1; 2; 3] |> Flow.traverse (fun x -> Flow.succeed (x * 2))
+    /// let double n = Flow.sync (fun () -&gt; printfn "double %d" n; n * 2)
+    /// [1; 2; 3]
+    /// |&gt; Flow.traverse double
+    /// |&gt; Flow.run ()
+    /// // prints: double 1, double 2, double 3 (one at a time, in order)
+    /// // result = Success [2; 4; 6]
+    ///
+    /// let positive n = if n &gt; 0 then double n else Flow.fail $"{n} is not positive"
+    /// [1; -2; 3]
+    /// |&gt; Flow.traverse positive
+    /// |&gt; Flow.run ()
+    /// // prints: double 1 (it stops at -2, so 3 never runs)
+    /// // result = Failure (Cause.Fail "-2 is not positive")
     /// </code>
     /// </example>
     let traverse
@@ -3312,6 +3368,38 @@ module Flow =
                         |> Execution.map (fun mapped -> mapped :: results)))
                 (Execution.ofValue [])
             |> Execution.map List.rev)
+
+    /// <summary>Runs a flow for each value in order and stops at the first failure, keeping no results.</summary>
+    /// <remarks>
+    /// The same as a <c>for</c> loop in <c>flow { }</c>. The sequence is read one value at a time when the flow runs,
+    /// so a long or lazy sequence costs no more than its current item, and it is disposed however the loop ends.
+    /// Prefer it to <c>Flow.traverse action |&gt; Flow.ignore</c>, which keeps every result in a list.
+    /// </remarks>
+    /// <param name="action">The flow to run for each value.</param>
+    /// <param name="values">The values to process.</param>
+    /// <example>
+    /// <code>
+    /// let save n = Flow.sync (fun () -&gt; printfn "saved %d" n)
+    /// [1; 2; 3]
+    /// |&gt; Flow.forEach save
+    /// |&gt; Flow.run ()
+    /// // prints: saved 1, saved 2, saved 3 (one at a time, in order)
+    /// // result = Success () (no list is kept)
+    ///
+    /// let saveOdd n = if n % 2 = 0 then Flow.fail $"{n} is even" else save n
+    /// [1; 2; 3]
+    /// |&gt; Flow.forEach saveOdd
+    /// |&gt; Flow.run ()
+    /// // prints: saved 1 (it stops at 2, so 3 is never saved)
+    /// // result = Failure (Cause.Fail "2 is even")
+    /// </code>
+    /// </example>
+    let forEach (action: 'value -> Flow<'env, 'error, unit>) (values: seq<'value>) : Flow<'env, 'error, unit> =
+        delay (fun () ->
+            let enumerator = values.GetEnumerator()
+            Flow(fun environment ct ->
+                Platform.whileLoop enumerator.MoveNext (fun () -> invoke (action enumerator.Current) environment ct))
+            |> ensuring (sync enumerator.Dispose))
 
     // Runs a mapping over `items` with at most `parallelism` workers, each taking the next index from a shared
     // counter so a slow item delays only its own worker. Workers are combined with sequencePar, which runs each as a
@@ -3434,7 +3522,28 @@ module Flow =
     /// <returns>A flow containing the mapped values in the order of <paramref name="values" />.</returns>
     /// <example>
     /// <code>
-    /// let! pages = urls |&gt; Flow.traversePar (Parallelism.bounded 8) fetchPage
+    /// let fetch (name: string, ms: float) =
+    ///     flow {
+    ///         printfn "start %s" name
+    ///         do! Flow.sleep (TimeSpan.FromMilliseconds ms)
+    ///         printfn "done %s" name
+    ///         return name.ToUpper()
+    ///     }
+    ///
+    /// [ "a", 400.0; "b", 100.0; "c", 100.0 ]
+    /// |&gt; Flow.traversePar (Parallelism.bounded 2) fetch
+    /// |&gt; Flow.run ()
+    /// // prints: start a, start b, done b, start c, done c, done a
+    /// // (at most 2 at once: c starts when b is done; about 400 ms in all, not 600)
+    /// // result = Success ["A"; "B"; "C"] (input order, though a finished last)
+    ///
+    /// let fetchUnlessB (name, ms) =
+    ///     if name = "b" then Flow.fail "b failed" else fetch (name, ms)
+    /// [ "a", 400.0; "b", 100.0; "c", 100.0 ]
+    /// |&gt; Flow.traversePar (Parallelism.bounded 2) fetchUnlessB
+    /// |&gt; Flow.run ()
+    /// // prints: start a (b fails at once, so a is interrupted before it is done and c never starts)
+    /// // result = Failure (Cause.Fail "b failed")
     /// </code>
     /// </example>
     let traversePar
@@ -3446,6 +3555,23 @@ module Flow =
 
     /// <summary>Runs flows with bounded concurrency and the placement carried by <paramref name="parallelism"/>.</summary>
     /// <remarks>Results preserve input order. Failure, interruption, and scoped resources behave as in <c>sequencePar</c>.</remarks>
+    /// <example>
+    /// <code>
+    /// let after (ms: float) (name: string) =
+    ///     flow {
+    ///         printfn "start %s" name
+    ///         do! Flow.sleep (TimeSpan.FromMilliseconds ms)
+    ///         printfn "done %s" name
+    ///         return name
+    ///     }
+    ///
+    /// [ after 400.0 "a"; after 100.0 "b"; after 100.0 "c" ]
+    /// |&gt; Flow.sequenceParWith (Parallelism.bounded 2)
+    /// |&gt; Flow.run ()
+    /// // prints: start a, start b, done b, start c, done c, done a (at most 2 at once)
+    /// // result = Success ["a"; "b"; "c"] (input order)
+    /// </code>
+    /// </example>
     let sequenceParWith
         (parallelism: Parallelism)
         (flows: seq<Flow<'env, 'error, 'value>>)
@@ -3468,7 +3594,20 @@ module Flow =
     /// <returns>A flow containing the mapped values in the order of <paramref name="values" />.</returns>
     /// <example>
     /// <code>
-    /// let! matches = commits |&gt; Flow.traverseParUsing (Parallelism.ofProcessors id) openReader (fun reader commit -&gt; search reader commit)
+    /// let connection =
+    ///     Resource.create
+    ///         (Flow.sync (fun () -&gt; printfn "open"; "connection"))
+    ///         (fun _ -&gt; Flow.sync (fun () -&gt; printfn "close"))
+    ///
+    /// let load connection n =
+    ///     Flow.sleep (TimeSpan.FromMilliseconds 10.0)
+    ///     |&gt; Flow.map (fun () -&gt; n * 10)
+    ///
+    /// [1..6]
+    /// |&gt; Flow.traverseParUsing (Parallelism.bounded 2) connection load
+    /// |&gt; Flow.run ()
+    /// // prints: open twice and close twice (one connection per worker, reused for all six values)
+    /// // result = Success [10; 20; 30; 40; 50; 60] (input order)
     /// </code>
     /// </example>
     let traverseParUsing
@@ -3486,7 +3625,26 @@ module Flow =
     /// <param name="values">The values to process.</param>
     /// <example>
     /// <code>
-    /// do! files |&gt; Flow.forEachPar (Parallelism.ofProcessors id) indexFile
+    /// let index (name: string, ms: float) =
+    ///     flow {
+    ///         printfn "start %s" name
+    ///         do! Flow.sleep (TimeSpan.FromMilliseconds ms)
+    ///         printfn "done %s" name
+    ///     }
+    ///
+    /// [ "a", 400.0; "b", 100.0; "c", 100.0 ]
+    /// |&gt; Flow.forEachPar (Parallelism.bounded 2) index
+    /// |&gt; Flow.run ()
+    /// // prints: start a, start b, done b, start c, done c, done a (at most 2 at once)
+    /// // result = Success () (no list is kept)
+    ///
+    /// let indexUnlessB (name, ms) =
+    ///     if name = "b" then Flow.fail "b failed" else index (name, ms)
+    /// [ "a", 400.0; "b", 100.0; "c", 100.0 ]
+    /// |&gt; Flow.forEachPar (Parallelism.bounded 2) indexUnlessB
+    /// |&gt; Flow.run ()
+    /// // prints: start a (b fails at once, so a is interrupted before it is done and c never starts)
+    /// // result = Failure (Cause.Fail "b failed")
     /// </code>
     /// </example>
     let forEachPar
@@ -3504,6 +3662,22 @@ module Flow =
     /// <param name="resource">The resource each worker acquires.</param>
     /// <param name="action">The flow to run for each value, given the worker's resource.</param>
     /// <param name="values">The values to process.</param>
+    /// <example>
+    /// <code>
+    /// let connection =
+    ///     Resource.create
+    ///         (Flow.sync (fun () -&gt; printfn "open"; "connection"))
+    ///         (fun _ -&gt; Flow.sync (fun () -&gt; printfn "close"))
+    ///
+    /// let store connection n = Flow.sleep (TimeSpan.FromMilliseconds 10.0)
+    ///
+    /// [1..6]
+    /// |&gt; Flow.forEachParUsing (Parallelism.bounded 2) connection store
+    /// |&gt; Flow.run ()
+    /// // prints: open twice and close twice (one connection per worker, reused for all six values)
+    /// // result = Success () (no list is kept)
+    /// </code>
+    /// </example>
     let forEachParUsing
         (parallelism: Parallelism)
         (resource: Resource<'env, 'error, 'resource>)
@@ -3521,7 +3695,19 @@ module Flow =
     /// <returns>A flow containing a list of the successful values.</returns>
     /// <example>
     /// <code>
-    /// Flow.sequence [Flow.succeed 1; Flow.succeed 2] |> Flow.run ()
+    /// let step n = Flow.sync (fun () -&gt; printfn "step %d" n; n)
+    /// let steps = [ step 1; step 2; step 3 ] // prints nothing: a flow runs only when it is run
+    /// steps
+    /// |&gt; Flow.sequence
+    /// |&gt; Flow.run ()
+    /// // prints: step 1, step 2, step 3 (one at a time, in order)
+    /// // result = Success [1; 2; 3]
+    ///
+    /// [ step 1; Flow.fail "stop"; step 3 ]
+    /// |&gt; Flow.sequence
+    /// |&gt; Flow.run ()
+    /// // prints: step 1 (it stops at the failure, so step 3 never runs)
+    /// // result = Failure (Cause.Fail "stop")
     /// </code>
     /// </example>
     let sequence (flows: seq<Flow<'env, 'error, 'value>>) : Flow<'env, 'error, 'value list> =

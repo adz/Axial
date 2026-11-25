@@ -53,7 +53,8 @@ module SubscriptionRef =
     /// <code>
     /// open Axial.State
     ///
-    /// let temperature : Flow&lt;unit, Never, SubscriptionRef&lt;float&gt;&gt; = SubscriptionRef.make 20.0
+    /// let temperature : Flow&lt;unit, Never, SubscriptionRef&lt;float&gt;&gt; =
+    ///     SubscriptionRef.make 20.0
     /// </code>
     /// </example>
     let make (value: 'a) : Flow<'env, 'error, SubscriptionRef<'a>> =

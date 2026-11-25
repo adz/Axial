@@ -119,10 +119,11 @@ module Layer =
     /// closes. Use <see cref="M:Axial.Layer.acquireRelease``2" /> inside <paramref name="acquire" />
     /// when each instance owns a resource that needs an explicit release.
     /// </remarks>
-    /// <example>
+    /// <example data-livedocs="no-check" reason="FSharpChecker comes from FSharp.Compiler.Service, which the documentation build does not reference.">
     /// <code>
     /// let checkerPool =
-    ///     Layer.pool 4 (fun _ -> Layer.succeed (FSharpChecker.Create(keepAssemblyContents = true)))
+    ///     Layer.pool 4 (fun _ ->
+    ///         Layer.succeed (FSharpChecker.Create(keepAssemblyContents = true)))
     /// </code>
     /// </example>
     let pool

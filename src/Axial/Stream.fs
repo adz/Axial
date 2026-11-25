@@ -276,7 +276,13 @@ module FlowStream =
     /// stream ends or fails. When the consumer stops early, the producer fiber is interrupted.
     /// </para>
     /// </remarks>
-    /// <example><code>samples |&gt; FlowStream.buffer (QueueStrategy.Sliding 1) |&gt; FlowStream.runForEachFlow render</code></example>
+    /// <example>
+    /// <code>
+    /// samples
+    /// |&gt; FlowStream.buffer (QueueStrategy.Sliding 1)
+    /// |&gt; FlowStream.runForEachFlow render
+    /// </code>
+    /// </example>
     let buffer (strategy: QueueStrategy) (stream: FlowStream<'env, 'error, 'value>) : FlowStream<'env, 'error, 'value> =
         FlowStream(fun env cancellationToken ->
             match QueueCore.validate strategy with
@@ -300,7 +306,13 @@ module FlowStream =
     /// failure rather than dropped; one that settles after the failure was delivered is reported through the fiber
     /// observer. When the consumer stops early, every stream is interrupted.
     /// </remarks>
-    /// <example><code>[ readerA; readerB; readerC ] |&gt; FlowStream.mergePar |&gt; FlowStream.runIntoQueue controlInputs</code></example>
+    /// <example>
+    /// <code>
+    /// [ readerA; readerB; readerC ]
+    /// |&gt; FlowStream.mergePar
+    /// |&gt; FlowStream.runIntoQueue controlInputs
+    /// </code>
+    /// </example>
     let mergePar (streams: FlowStream<'env, 'error, 'value> list) : FlowStream<'env, 'error, 'value> =
         FlowStream(fun env cancellationToken ->
             match streams with
@@ -546,7 +558,13 @@ module FlowStream =
     /// are ever acquired, and each is reused across many values. The resources are released when the consuming Flow
     /// ends. Use it for per-connection or per-handle work that is not safe to share between concurrent mappings.
     /// </remarks>
-    /// <example><code>commits |&gt; FlowStream.mapFlowParUsing (Parallelism.bounded 4) openReader (fun reader commit -&gt; diff reader commit)</code></example>
+    /// <example>
+    /// <code>
+    /// commits
+    /// |&gt; FlowStream.mapFlowParUsing (Parallelism.bounded 4) openReader (fun reader commit -&gt;
+    ///     diff reader commit)
+    /// </code>
+    /// </example>
     let mapFlowParUsing
         (parallelism: Parallelism)
         (resource: Resource<'env, 'error, 'resource>)
@@ -789,7 +807,13 @@ module FlowStream =
     /// When upstream ends, the running flow is allowed to finish. The first failure stops the stream. Use it for
     /// search-as-you-type and autocomplete, where a result for stale input is worthless.
     /// </remarks>
-    /// <example><code>queries |&gt; FlowStream.debounce (TimeSpan.FromMilliseconds 200.0) |&gt; FlowStream.switchMapFlow search</code></example>
+    /// <example>
+    /// <code>
+    /// queries
+    /// |&gt; FlowStream.debounce (TimeSpan.FromMilliseconds 200.0)
+    /// |&gt; FlowStream.switchMapFlow search
+    /// </code>
+    /// </example>
     let private switchMapFlowWithCompletionPriority preferCompleted (mapper: 'value -> Flow<'env, 'error, 'next>) stream : FlowStream<'env, 'error, 'next> =
         let (FlowStream op) = stream
 
@@ -1044,7 +1068,12 @@ module FlowStream =
     /// Each pull runs the flow once, so the stream never runs ahead of its consumer. Bound it with <c>take</c> or
     /// <c>takeWhile</c>, or pace it with <c>throttle</c>. A failure ends the stream.
     /// </remarks>
-    /// <example><code>FlowStream.repeatFlow readSensor |&gt; FlowStream.takeWhile (fun reading -&gt; reading.Ok)</code></example>
+    /// <example>
+    /// <code>
+    /// FlowStream.repeatFlow readSensor
+    /// |&gt; FlowStream.takeWhile (fun reading -&gt; reading.Ok)
+    /// </code>
+    /// </example>
     let repeatFlow (flow: Flow<'env, 'error, 'value>) : FlowStream<'env, 'error, 'value> =
         let rec pull env ct () =
             Flow.invoke flow env ct |> Execution.map (fun value -> Next(value, pull env ct))
@@ -1062,8 +1091,14 @@ module FlowStream =
     /// <example>
     /// <code>
     /// let lines path =
-    ///     FlowStream.using (Resource.create (Flow.fromBlocking (fun _ -&gt; File.OpenText path)) (fun reader -&gt; Flow.delay (fun () -&gt; reader.Dispose(); Flow.succeed ())))
-    ///         (fun reader -&gt; FlowStream.repeatFlow (Flow.fromBlocking (fun _ -&gt; reader.ReadLine())) |&gt; FlowStream.takeWhile (isNull &gt;&gt; not))
+    ///     let file =
+    ///         Resource.create
+    ///             (Flow.fromBlocking (fun _ -&gt; File.OpenText path))
+    ///             (fun reader -&gt; Flow.delay (fun () -&gt; reader.Dispose(); Flow.succeed ()))
+    ///
+    ///     FlowStream.using file (fun reader -&gt;
+    ///         FlowStream.repeatFlow (Flow.fromBlocking (fun _ -&gt; reader.ReadLine()))
+    ///         |&gt; FlowStream.takeWhile (isNull &gt;&gt; not))
     /// </code>
     /// </example>
     let using
@@ -1172,7 +1207,9 @@ module FlowStream =
     /// </remarks>
     /// <example>
     /// <code>
-    /// source |&gt; FlowStream.ofAsyncEnumerable |&gt; FlowStream.runCollect
+    /// source
+    /// |&gt; FlowStream.ofAsyncEnumerable
+    /// |&gt; FlowStream.runCollect
     /// </code>
     /// </example>
     let ofAsyncEnumerable

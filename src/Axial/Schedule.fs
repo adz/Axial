@@ -172,7 +172,9 @@ module Schedule =
     /// <returns>A new schedule where each delay is multiplied by <c>sample () + 0.5</c>, giving a factor between 0.5 and 1.5, capped at <see cref="P:System.TimeSpan.MaxValue"/>.</returns>
     /// <example>
     /// <code>
-    /// let schedule = Schedule.spaced (TimeSpan.FromSeconds 1.0) |> Schedule.jitteredWith (fun () -> 0.25)
+    /// let schedule =
+    ///     Schedule.spaced (TimeSpan.FromSeconds 1.0)
+    ///     |> Schedule.jitteredWith (fun () -> 0.25)
     /// // Every delay becomes 750ms.
     /// </code>
     /// </example>
@@ -325,7 +327,8 @@ module Schedule =
     /// <param name="schedule">The schedule to cap.</param>
     /// <example>
     /// <code>
-    /// Schedule.exponential (TimeSpan.FromMilliseconds 100.0) |&gt; Schedule.recursAtMost 5
+    /// Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
+    /// |&gt; Schedule.recursAtMost 5
     /// </code>
     /// </example>
     let recursAtMost (n: int) (Schedule op: Schedule<'env, 'input, 'output>) : Schedule<'env, 'input, 'output> =
@@ -338,7 +341,12 @@ module Schedule =
     /// <summary>Transforms a schedule's output, keeping its decisions and delays.</summary>
     /// <param name="mapper">Maps each output.</param>
     /// <param name="schedule">The schedule whose output is mapped.</param>
-    /// <example><code>Schedule.exponential (TimeSpan.FromMilliseconds 100.0) |&gt; Schedule.map (fun delay -&gt; delay.TotalSeconds)</code></example>
+    /// <example>
+    /// <code>
+    /// Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
+    /// |&gt; Schedule.map (fun delay -&gt; delay.TotalSeconds)
+    /// </code>
+    /// </example>
     let map (mapper: 'output -> 'next) (Schedule op: Schedule<'env, 'input, 'output>) : Schedule<'env, 'input, 'next> =
         Schedule(fun input context ->
             op input context |> flowMap (fun (decision, delay) -> Option.map mapper decision, delay))
@@ -348,7 +356,12 @@ module Schedule =
     /// Combine it with <c>whileOutput</c> to stop after a total time, or with <c>intersect</c> to add the elapsed
     /// time to another schedule's output. <c>upTo</c> is the shorthand for a time budget.
     /// </remarks>
-    /// <example><code>Schedule.elapsed |&gt; Schedule.whileOutput (fun elapsed -&gt; elapsed &lt; TimeSpan.FromMinutes 2.0)</code></example>
+    /// <example>
+    /// <code>
+    /// Schedule.elapsed
+    /// |&gt; Schedule.whileOutput (fun elapsed -&gt; elapsed &lt; TimeSpan.FromMinutes 2.0)
+    /// </code>
+    /// </example>
     let elapsed<'env, 'input> : Schedule<'env, 'input, TimeSpan> =
         Schedule(fun _ context -> ok (Some(context.ExecutionEnded - context.LoopStarted), TimeSpan.Zero))
 
@@ -399,7 +412,8 @@ module Schedule =
     /// <example>
     /// <code>
     /// // Retry with backoff, but give up after two minutes in total
-    /// Schedule.exponential (TimeSpan.FromMilliseconds 200.0) |&gt; Schedule.upTo (TimeSpan.FromMinutes 2.0)
+    /// Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
+    /// |&gt; Schedule.upTo (TimeSpan.FromMinutes 2.0)
     /// </code>
     /// </example>
     let upTo (budget: TimeSpan) (Schedule op: Schedule<'env, 'input, 'output>) : Schedule<'env, 'input, 'output> =
@@ -424,7 +438,9 @@ module Schedule =
     /// // Three quick retries, then slower ones
     /// Schedule.spaced (TimeSpan.FromMilliseconds 100.0)
     /// |&gt; Schedule.recursAtMost 3
-    /// |&gt; Schedule.andThen (Schedule.exponential (TimeSpan.FromSeconds 1.0) |&gt; Schedule.recursAtMost 5)
+    /// |&gt; Schedule.andThen (
+    ///     Schedule.exponential (TimeSpan.FromSeconds 1.0)
+    ///     |&gt; Schedule.recursAtMost 5)
     /// </code>
     /// </example>
     let andThen
@@ -463,7 +479,10 @@ module Schedule =
     /// <param name="schedule">The schedule whose count restarts.</param>
     /// <example>
     /// <code>
-    /// worker |&gt; Flow.supervise (Schedule.recurs 5 |&gt; Schedule.resetAfter (TimeSpan.FromMinutes 10.0))
+    /// worker
+    /// |&gt; Flow.supervise (
+    ///     Schedule.recurs 5
+    ///     |&gt; Schedule.resetAfter (TimeSpan.FromMinutes 10.0))
     /// </code>
     /// </example>
     let resetAfter (healthy: TimeSpan) (Schedule op: Schedule<'env, 'input, 'output>) : Schedule<'env, 'input, 'output> =
@@ -520,7 +539,8 @@ module Retry =
     /// <summary>Three retries with exponential backoff from 100 ms, capped at 10 s, retrying every input.</summary>
     /// <example>
     /// <code>
-    /// fetch |&gt; Flow.retry (Retry.schedule { Retry.defaults with Retries = 5; When = HttpError.isTransient })
+    /// let fiveTransient = { Retry.defaults with Retries = 5; When = HttpError.isTransient }
+    /// fetch |&gt; Flow.retry (Retry.schedule fiveTransient)
     /// </code>
     /// </example>
     let defaults<'input> : Retry<'input> =
