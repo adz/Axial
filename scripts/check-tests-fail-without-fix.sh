@@ -41,7 +41,7 @@ if grep -qE "error FS|error CS" "$scratch/test.log"; then
     exit 0
 elif [[ $code -ne 0 ]] && grep -qE "Failed: +[1-9]" "$scratch/test.log"; then
     echo "OK: the tests fail against src/ at $base:"
-    grep -oE "^\s+Failed [^ ]+" "$scratch/test.log" | sed 's/^ */  /' | sort -u | head -20
+    grep -oE "^\s+Failed .+ \[[^]]+\]$" "$scratch/test.log" | sed -E "s/^ */  /; s/ \[[^]]+\]$//" | sort -u | head -20
     exit 0
 elif grep -qE "Total: +0|No test matches" "$scratch/test.log"; then
     echo "No tests matched filter '$filter'." >&2

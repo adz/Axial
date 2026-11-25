@@ -65,6 +65,11 @@ Cancellation remains `Cause.Interrupt`. A stage or overall timeout recorded firs
 
 Every execution starts the coordinator, including a single command without optional policies, so caller interruption and output-destination failure always have a live stop path. The ladder runs once per execution, including when `Close` races a timeout. If cancellation and a stage timeout both happen, the one observed first decides the result: a timeout recorded before cancellation keeps `StageTimedOut`, and otherwise the result is `Cause.Interrupt`. The later cause waits for the running ladder rather than killing early. Output-cap failures, broken pipeline destinations, and failed output callbacks also stop the remaining stages instead of waiting for their natural exit; the original output or destination failure remains the result.
 
+A stage that exits with a code outside its success codes stops the stages still running. When no other stage is
+running, nothing is stopped: Axial reads the remaining output as it does after a successful exit, so `StageFailed`
+carries all the output the process wrote, and output past a `maxOutputBytes` cap still fails with `OutputTooLarge`.
+A streaming run delivers that output before it fails.
+
 `CloseStdIn` requests feeder cancellation and closes the pipe without waiting, so a blocking cancellation callback or a child that never reads its input cannot hold the ladder at that step.
 
 A user `InputSource.Stream` is consumed by the stdin feeder fiber; only each stream write crosses the BCL task bridge. When a process exits or stdin is closed, Axial asks that fiber to stop and closes the pipe, which also releases a write blocked on a full pipe. The process execution then waits for the feeder, with no time limit, before it returns. A typed input failure or defect the feeder settles with is the execution's failure, including one raised while it stops; interruption and the pipe-closed errors caused by closing the pipe are not failures.

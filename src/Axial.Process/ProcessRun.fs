@@ -499,7 +499,11 @@ module internal ProcessRun =
                             let state = stages[stage]
                             state.Exited <- true
                             if state.Feeder.IsSome && not state.StdinClosed then do! stopFeeder state
-                            if not (commands[stage].SuccessCodes.Value.Contains code) then
+                            // A failing stage stops the stages still running. With none left there is nothing to
+                            // stop: stopping would abandon the output still in the pipes, losing it and any
+                            // output-cap failure the readers have yet to reach.
+                            if not (commands[stage].SuccessCodes.Value.Contains code)
+                               && stages |> Array.exists (fun other -> not other.Exited && isLive other) then
                                 let! ignored = Deferred.make<unit, Never, StopCause, _> ()
                                 do! stop WorkerFailure ignored
                         | Close(stage, request, initiateShutdown, reply) ->

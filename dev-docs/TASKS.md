@@ -75,6 +75,11 @@ lists the queue. Work on main.
   - Hedging as a documented recipe over `Flow.race`; a "Coming from Polly" page mapping every Polly strategy.
   - Adaptive concurrency stays a `dev-docs/current-ideas/` sketch until an application needs it.
 
+- [ ] T41: A failing pipeline stage stops the others without losing output already written
+  - A stage exiting outside its success codes stops the stages still running, and the stop abandons every pipe, so
+    output the exited stage or a downstream stage wrote but Axial had not read is lost. Stop only the live stages and
+    keep reading each pipe to EOF (killed stages close theirs); pin it with a background-writer test like
+    `a failing exit keeps all the output the process wrote`.
 - [ ] T39: Add native Windows CloseMainWindow/CloseStdIn escalation coverage, including repeated Close acceptance during grace and timeout-owned shutdown.
 - [ ] T38: Harden `HttpServiceTests.live service posts JSON bodies and reads status errors`
   - Failed once under full-suite load (2026-11-02 verify at 66f1d42c5), passes 15/15 alone; make its live-server timing deterministic.

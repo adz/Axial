@@ -43,6 +43,21 @@ module ProcessStreamingTests =
             Assert.NotEmpty(error.Command)
         | other -> failwithf "Expected OutputTooLarge, got %A" other
 
+    /// Waits, through the process service, until the process with this id has exited (gone or a zombie), and fails
+    /// after ten seconds. Tests use it to fail a consumer only once a child has really ended.
+    let private untilExited (pid: string) =
+        let rec poll attempt =
+            flow {
+                let! result = shText $"ps -o stat= -p {pid} || true" |> toFlow |> Flow.mapError string
+                let state = result.StdOut.Trim()
+                if state = "" || state.StartsWith "Z" then return ()
+                elif attempt >= 1000 then return! Flow.fail $"process {pid} still running"
+                else
+                    do! Flow.sleep (TimeSpan.FromMilliseconds 10.0)
+                    return! poll (attempt + 1)
+            }
+        poll 0
+
     [<Fact>]
     let ``OutputTooLarge terminates unbounded batch stdout`` () =
         let started = Diagnostics.Stopwatch.StartNew()
@@ -98,6 +113,34 @@ module ProcessStreamingTests =
         |> maxOutputBytes (Some 65536L) None
         |> Process.tryRun
         |> tooLarge 0 OutputChannel.StdOut 65536L
+
+    [<Fact>]
+    let ``an exit before the output is read does not conceal an overflow`` () =
+        // The background writer starts only once the shell has exited and been reaped, so the run has seen the exit
+        // before any output arrives.
+        shText "{ while kill -0 $$ 2>/dev/null; do sleep 0.01; done; head -c 200000 /dev/zero; } & exit 3"
+        |> maxOutputBytes (Some 65536L) None
+        |> Process.tryRun
+        |> tooLarge 0 OutputChannel.StdOut 65536L
+
+    [<Theory>]
+    [<InlineData(false, false)>]
+    [<InlineData(true, false)>]
+    [<InlineData(false, true)>]
+    [<InlineData(true, true)>]
+    let ``a failing exit keeps all the output the process wrote`` stderr capped =
+        let redirect = if stderr then " >&2" else ""
+        let cap = if capped then Some 65536L else None
+        // The background writer starts only once the shell has exited and been reaped, so the run has seen the exit
+        // before any output arrives.
+        let script = $"{{ while kill -0 $$ 2>/dev/null; do sleep 0.01; done; head -c 60000 /dev/zero{redirect}; }} & exit 3"
+        match shText script |> maxOutputBytes cap cap |> Process.tryRun with
+        | Exit.Failure(Cause.Fail(ProcessError.StageFailed failure)) ->
+            let capture = if stderr then failure.Result.StdErrCapture else failure.Result.StdOutCapture
+            Assert.Equal(3, failure.Stage.ExitCode)
+            Assert.Equal(60000, capture.Bytes.Length)
+            Assert.False(capture.Truncated)
+        | other -> failwithf "Expected StageFailed, got %A" other
 
     [<Theory>]
     [<InlineData(false, 64)>]
@@ -595,20 +638,39 @@ module ProcessStreamingTests =
     [<Fact>]
     let ``producer and consumer failures during the same published callback both survive`` () =
         let outcome =
-            shText "echo ready; sleep 0.05; exit 7"
+            // The shell sleeps until the run, failing on the stderr overflow, kills it.
+            shText "echo $$; head -c 100 /dev/zero >&2; sleep 30"
+            |> maxOutputBytes None (Some 10L)
             |> streamStdoutLines
-            |> ProcessStream.runForEachFlow (fun _ ->
+            |> ProcessStream.runForEachFlow (fun pid ->
                 flow {
-                    // axial-note guessed-wait: delay the consumer failure until after the child's nonzero exit to test preservation of both failures.
-                    do! Flow.fromAsync (async { do! Async.Sleep 200 })
+                    do! untilExited pid
                     return! Flow.fail "consumer"
                 })
             |> Process.tryRun
 
         match outcome with
         | Exit.Failure(Cause.Both(Cause.Fail(ProcessStreamError.ConsumerFailed "consumer"),
-                                  Cause.Fail(ProcessStreamError.ProcessFailed(ProcessError.StageFailed _)))) -> ()
+                                  Cause.Fail(ProcessStreamError.ProcessFailed(ProcessError.OutputTooLarge _)))) -> ()
         | other -> failwithf "Expected both observed failures, got %A" other
+
+    [<Fact>]
+    let ``a failing exit waits for its output to be consumed`` () =
+        // The exit is not a failure of the run until its output has been delivered, as with a successful exit. A
+        // consumer that fails on that output reports only its own failure.
+        let outcome =
+            shText "echo $$; exit 7"
+            |> streamStdoutLines
+            |> ProcessStream.runForEachFlow (fun pid ->
+                flow {
+                    do! untilExited pid
+                    return! Flow.fail "consumer"
+                })
+            |> Process.tryRun
+
+        match outcome with
+        | Exit.Failure(Cause.Fail(ProcessStreamError.ConsumerFailed "consumer")) -> ()
+        | other -> failwithf "Expected the consumer failure, got %A" other
 
     [<Fact>]
     let ``shell patterns route per-stage stderr append files tee and generated input`` () =
