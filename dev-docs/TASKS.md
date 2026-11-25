@@ -75,6 +75,13 @@ lists the queue. Work on main.
   - Hedging as a documented recipe over `Flow.race`; a "Coming from Polly" page mapping every Polly strategy.
   - Adaptive concurrency stays a `dev-docs/current-ideas/` sketch until an application needs it.
 
+- [ ] T42: A process whose descendant keeps its output pipes open must not hang the run
+  - Seen in FsLiveDocs 0.14.6: `dotnet build`/`dotnet msbuild` left a reusable MSBuild node (and possibly the build
+    server) holding the inherited stdout/stderr, so the run drained to EOF until the node shut down and CI hit the
+    job timeout. The default drain-to-EOF behaviour waits on any descendant that holds the pipes, after any exit.
+  - Decide the fix: a default bound on draining once every direct stage has exited (reporting the descendant), or
+    keep drain-to-EOF and document node reuse and build servers with `-nodeReuse:false` and `drainTimeout` as remedies.
+    Pin it with a test whose child leaves a background process holding stdout.
 - [ ] T41: A failing pipeline stage stops the others without losing output already written
   - A stage exiting outside its success codes stops the stages still running, and the stop abandons every pipe, so
     output the exited stage or a downstream stage wrote but Axial had not read is lost. Stop only the live stages and
