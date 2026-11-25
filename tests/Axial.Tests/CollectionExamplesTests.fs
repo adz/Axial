@@ -10,6 +10,20 @@ open Xunit
 module CollectionExamplesTests =
     let private record (lines: ResizeArray<string>) (line: string) = lock lines (fun () -> lines.Add line)
 
+    /// Runs an example's sleeps on a test clock, so the order they finish in follows from their durations and not from
+    /// the machine's load. Before each step it waits until that many sleeps are registered, then advances the clock to
+    /// the next deadline.
+    let private onTestClock (steps: int list) (example: Flow<unit, 'error, 'value>) : Exit<'value, 'error> =
+        let platform = TestPlatform.create ()
+        flow {
+            let! running = Flow.fork example
+            for sleeping in steps do
+                do! TestClock.awaitSleepers sleeping
+                do! Flow.sync (fun () -> platform.Clock.AdvanceToNextDeadline() |> ignore)
+            return! Fiber.join running
+        }
+        |> Flow.runTestWith platform ()
+
     [<Fact>]
     let ``traverse runs one at a time in order, returns a list and stops at the first failure`` () =
         let lines = ResizeArray<string>()
@@ -68,7 +82,7 @@ module CollectionExamplesTests =
                 return name.ToUpper()
             }
         let all : Exit<string list, string> =
-            [ "a", 400.0; "b", 100.0; "c", 100.0 ] |> Flow.traversePar (Parallelism.bounded 2) fetch |> Flow.run ()
+            [ "a", 400.0; "b", 100.0; "c", 100.0 ] |> Flow.traversePar (Parallelism.bounded 2) fetch |> onTestClock [ 2; 2; 1 ]
         test <@ List.ofSeq lines = [ "start a"; "start b"; "done b"; "start c"; "done c"; "done a" ] @>
         test <@ all = Exit.Success [ "A"; "B"; "C" ] @>
 
@@ -89,7 +103,7 @@ module CollectionExamplesTests =
                 printfn "done %s" name
             }
         let all : Exit<unit, string> =
-            [ "a", 400.0; "b", 100.0; "c", 100.0 ] |> Flow.forEachPar (Parallelism.bounded 2) index |> Flow.run ()
+            [ "a", 400.0; "b", 100.0; "c", 100.0 ] |> Flow.forEachPar (Parallelism.bounded 2) index |> onTestClock [ 2; 2; 1 ]
         test <@ List.ofSeq lines = [ "start a"; "start b"; "done b"; "start c"; "done c"; "done a" ] @>
         test <@ all = Exit.Success () @>
 
@@ -110,7 +124,8 @@ module CollectionExamplesTests =
                 printfn "done %s" name
                 return name
             }
-        let all : Exit<string list, string> = Flow.sequencePar [ after 400.0 "a"; after 100.0 "b"; after 200.0 "c" ] |> Flow.run ()
+        let all : Exit<string list, string> =
+            Flow.sequencePar [ after 400.0 "a"; after 100.0 "b"; after 200.0 "c" ] |> onTestClock [ 3; 2; 1 ]
         test <@ List.ofSeq lines = [ "start a"; "start b"; "start c"; "done b"; "done c"; "done a" ] @>
         test <@ all = Exit.Success [ "a"; "b"; "c" ] @>
 
@@ -131,7 +146,7 @@ module CollectionExamplesTests =
                 return name
             }
         let all : Exit<string list, string> =
-            Flow.sequenceParWith (Parallelism.bounded 2) [ after 400.0 "a"; after 100.0 "b"; after 100.0 "c" ] |> Flow.run ()
+            Flow.sequenceParWith (Parallelism.bounded 2) [ after 400.0 "a"; after 100.0 "b"; after 100.0 "c" ] |> onTestClock [ 2; 2; 1 ]
         test <@ List.ofSeq lines = [ "start a"; "start b"; "done b"; "start c"; "done c"; "done a" ] @>
         test <@ all = Exit.Success [ "a"; "b"; "c" ] @>
 

@@ -197,7 +197,9 @@ module DashboardTests =
 
     [<Fact>]
     let ``a mandatory failure interrupts the slow sibling`` () =
-        let mutable siblingCancelled = false
+        // The flow stops waiting for the task as soon as it is interrupted, so the task records its own cancellation
+        // here and the test waits for that record, not for the flow.
+        let siblingCancelled = TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously)
         // Orders fail only once the slow sibling is running; failing first could interrupt the sibling before it
         // starts, leaving nothing to cancel.
         let siblingStarted = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
@@ -210,9 +212,10 @@ module DashboardTests =
 
                         try
                             do! Task.Delay(30_000, cancellationToken)
+                            siblingCancelled.TrySetResult false |> ignore
                             return Ok []
                         with :? OperationCanceledException ->
-                            siblingCancelled <- true
+                            siblingCancelled.TrySetResult true |> ignore
                             return Ok []
                     } }
 
@@ -230,7 +233,8 @@ module DashboardTests =
         let exit = Flow.runSync env (WithFlow.loadPage "a-1")
 
         test <@ (match exit with Exit.Failure cause -> (string cause).Contains "OrdersUnavailable" | _ -> false) @>
-        test <@ siblingCancelled @>
+        let cancelled : Exit<bool, Never> = Flow.awaitStartedTask siblingCancelled.Task |> Flow.runSync ()
+        test <@ cancelled = Exit.Success true @>
 
 module WorkspaceTests =
     open ScopedWorkspace
