@@ -14,24 +14,17 @@ Write asynchronous F# workflows whose expected failures and required dependencie
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 > [!NOTE]
-> Axial is close to 1.0. No large API changes are planned before then; expect small refinements.
+> Axial is close to 1.0. Expect small refinements, not large API changes.
 
-## Integration and ergonomics
-
-- **Works with the `Task`, `Async` and `TaskResult` code you already have.** An `Async` binds directly in
-  `flow { }`. A `CancellationToken -> Task` becomes a cold `ColdTask` that receives the flow's token, and a
-  `Task<Result<_, _>>`, such as FsToolkit.ErrorHandling's `TaskResult`, keeps its `Error` as a typed failure.
-  `Flow.cancellationToken` reads the token for any other .NET API that takes one. An exception thrown by that code
-  becomes a defect, never a typed error. Convert one module at a time:
-  [Add Axial to an existing Task application](docs/01-getting-started/03-existing-task-application.md),
-  [Failures and defects](docs/04-error-handling/_index.md).
-- **Cancellation and time are part of the model.** Interrupting a flow interrupts its child fibers and closes their
-  scopes, and the runtime waits for their cleanup. `Flow.timeout`, `Flow.retry` with a `Schedule`, and sleeps all
-  read the runtime clock, so `Flow.runTest` replaces it with a test clock that moves only when the test advances it:
-  [Concurrency](docs/08-concurrency-and-state/_index.md), [Runtime services](docs/06-services/01-platform-services/_index.md).
-- **`Axial.Guardrails` is optional.** Core `Axial` needs no analyzer and no policy file. Add Guardrails when the code
-  settles, or when coding agents write it: the build then reports a raw clock read, a `Task` nothing owns or an
-  exception raised inside `flow { }`, and says what to use instead: [Guardrails](docs/guardrails/_index.md).
+- **Works with the code you have.** `Async` binds directly in `flow { }`. `Task` and `Task<Result<_, _>>`
+  (FsToolkit's `TaskResult`) bind through `ColdTask`, which passes in the flow's cancellation token. If that code
+  throws, the exception is a defect, not one of your errors.
+  [Add Axial to an existing Task application](docs/01-getting-started/03-existing-task-application.md)
+- **Cancellation and time belong to the runtime.** Interrupting a flow stops its child fibers and waits for their
+  cleanup. Timeouts, retries and sleeps read the runtime clock, so a test controls time.
+  [Concurrency](docs/08-concurrency-and-state/_index.md)
+- **Guardrails is optional.** Core Axial needs no analyzer. Add `Axial.Guardrails` when the code settles, or when an
+  agent is writing it. [Guardrails](docs/guardrails/_index.md)
 
 ## Your first flow
 
@@ -63,8 +56,7 @@ let checkout orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
 
 The application supplies live functions. A test supplies a record of fakes. The workflow does not change.
 
-Adding a timeout and a retry policy leaves the `Flow<CheckoutEnv, CheckoutError, Receipt>` signature unchanged.
-The runtime supplies its clock and owns cancellation, retries, and cleanup:
+Adding a timeout and a retry leaves the signature unchanged:
 
 ```fsharp
 open System
@@ -75,15 +67,10 @@ let checkoutOrder orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
     |> Flow.timeout (TimeSpan.FromSeconds 5.0) (PaymentDeclined "checkout timed out")
 ```
 
-Flow also carries concurrency, scheduling, streams, and structured child fibers through the same runtime.
-Clock, random and GUID values are scoped runtime services; application authority stays in `'env`. Use
-`Flow.withClock`, `Flow.withRandom` and `Flow.withGuid` to override values for a flow and its descendants.
-`Log.info` writes to the current `ILogSink` (Information+ on stderr by default); install or decorate destinations
-with `Flow.withLogSink` / `Flow.mapLogSink`, and observation callbacks with `Flow.withTelemetry`.
-
-Core `Axial` ships these runtime services under the `Axial` namespace. `Flow.runTest env` creates a
-fresh epoch manual clock, seeded random, sequential GUIDs and a recording log. Timed tests explicitly advance
-`TestClock` after observing sleeper registration; time never advances automatically. See [runtime services](docs/06-services/01-platform-services/_index.md).
+Clock, random, GUID and logging come from the runtime, not from `'env`. `Flow.runTest env` swaps in a manual clock,
+seeded random, sequential GUIDs and a recording log; time moves only when the test advances it. Override one for a
+single flow with `Flow.withClock`, `Flow.withRandom`, `Flow.withGuid` or `Flow.withLogSink`.
+See [runtime services](docs/06-services/01-platform-services/_index.md).
 
 ## Install
 
