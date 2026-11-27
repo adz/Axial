@@ -316,6 +316,7 @@ module internal NativeProcess =
         original
         observed
         text
+        ending
         =
         task {
             do! observerGate.WaitAsync token
@@ -330,6 +331,7 @@ module internal NativeProcess =
                             ObservedChannel = observed
                             Text = text
                             Timestamp = timestamp
+                            Ending = ending
                         })
             finally
                 observerGate.Release() |> ignore

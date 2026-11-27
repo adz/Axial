@@ -23,8 +23,24 @@ type OutputChannel =
 /// Selects arbitrary decoded chunks or complete decoded lines for streamed events.
 [<RequireQualifiedAccess>]
 type OutputFraming =
+    /// Decoded text as it arrives, split wherever the reads fall.
     | Chunks
+    /// Lines as <c>StreamReader.ReadLine</c> reads them: LF, CRLF and a bare CR each end a line, and the text
+    /// excludes the terminator. <c>ProcessOutput.Ending</c> says which terminator it was.
     | Lines
+
+/// How a streamed line ended. Text plus ending reproduces the output exactly.
+[<RequireQualifiedAccess>]
+type LineEnding =
+    /// A line feed.
+    | Lf
+    /// A carriage return then a line feed.
+    | CrLf
+    /// A bare carriage return. Progress output (<c>git --progress</c>, <c>curl</c>) ends a line this way to redraw
+    /// it, so a display replaces the line that follows a <c>Cr</c> line instead of adding it below.
+    | Cr
+    /// The output ended without a terminator.
+    | EndOfOutput
 
 /// Supplies bytes to the first process stage.
 [<RequireQualifiedAccess>]
@@ -200,6 +216,8 @@ type ProcessOutput = {
     OriginalChannel: OutputChannel
     Text: string
     Timestamp: DateTimeOffset
+    /// How the line ended under <c>OutputFraming.Lines</c>; None for chunks.
+    Ending: LineEnding option
 }
 
 /// Completion information and captured output for one stage.

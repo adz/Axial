@@ -55,6 +55,35 @@ the values and completion directly. `Completed result` includes the final `Proce
 timestamp, `ObservedChannel`, and `OriginalChannel` metadata. `streamOutputs` includes all readable,
 unconnected channels. A merged stderr value has observed channel stdout and original channel stderr.
 
+## What counts as a line
+
+Lines end where `StreamReader.ReadLine` ends them: at LF, CRLF or a bare CR, with the terminator left out of the
+text. Progress output such as `git --progress` or `curl` redraws one line by ending it with a bare CR, so each redraw
+arrives as its own line as soon as it is written. A long run of redraws never builds up into one line over the
+`maxLineLength` limit.
+
+With `framing OutputFraming.Lines`, each observation's `Ending` says which terminator it was: `Lf`, `CrLf`, `Cr`,
+or `EndOfOutput` for final text without one. A display that shows progress replaces the line that follows a `Cr`
+line instead of adding it below. Text plus ending rebuilds the output exactly. Chunk observations have `Ending = None`.
+
+```fsharp
+let progress =
+    cmd $"printf 'Counting 1/2\rCounting 2/2\ndone\n'"
+    |> framing OutputFraming.Lines
+    |> streamOutputs
+    |> ProcessStream.map (fun output -> output.Text, output.Ending)
+    |> ProcessStream.runCollect
+```
+
+```fsharp run
+let redraws, _ = progress |> Process.run
+shouldEqual
+    [ "Counting 1/2", Some LineEnding.Cr
+      "Counting 2/2", Some LineEnding.Lf
+      "done", Some LineEnding.Lf ]
+    redraws
+```
+
 ## Handle output with application effects
 
 Use `runForEachFlow` when a line needs a console, filesystem, or other application service. `runForEach` takes a

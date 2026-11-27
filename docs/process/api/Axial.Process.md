@@ -46,6 +46,7 @@ api:
         - Axial.Process.CapturedOutput
         - Axial.Process.OutputChannel
         - Axial.Process.OutputFraming
+        - Axial.Process.LineEnding
         - Axial.Process.OutputRetention
         - Axial.Process.OutputTarget
         - Axial.Process.ProcessOutput

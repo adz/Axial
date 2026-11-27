@@ -212,7 +212,7 @@ module ProcessStreamingTests =
         Assert.Equal("output", full.StdOut)
 
     [<Fact>]
-    let ``line framing preserves blank lines bare CR and final text`` () =
+    let ``line framing ends lines at LF CRLF and a bare CR and keeps blank lines and final text`` () =
         let values, finish =
             shText "printf 'one\r\n\nthree\rfour\nlast'"
             |> streamStdoutLines
@@ -220,8 +220,70 @@ module ProcessStreamingTests =
             |> Process.tryRun
             |> succeeded
 
-        Assert.Equal<string list>([ "one"; ""; "three\rfour"; "last" ], values)
+        Assert.Equal<string list>([ "one"; ""; "three"; "four"; "last" ], values)
         completed finish |> ignore
+
+    let private linesWithEndings source =
+        let values, finish =
+            source
+            |> framing OutputFraming.Lines
+            |> streamOutputs
+            |> ProcessStream.runCollect
+            |> Process.tryRun
+            |> succeeded
+        completed finish |> ignore
+        values |> List.map (fun (output: ProcessOutput) -> output.Text, output.Ending)
+
+    let private rebuild (lines: (string * LineEnding option) list) =
+        lines
+        |> List.map (fun (text, ending) ->
+            match ending with
+            | Some LineEnding.Lf -> text + "\n"
+            | Some LineEnding.CrLf -> text + "\r\n"
+            | Some LineEnding.Cr -> text + "\r"
+            | Some LineEnding.EndOfOutput | None -> text)
+        |> String.concat ""
+
+    [<Fact>]
+    let ``each line says how it ended so redrawn progress is told apart and the output rebuilds exactly`` () =
+        // The shape of git --progress on stderr: a counter redrawn with bare CRs, finished with LF.
+        let lines = linesWithEndings (shText "printf 'Counting: 1%%\rCounting: 50%%\rdone.\nnext\r\n\rlast' >&2")
+        Assert.Equal<(string * LineEnding option) list>(
+            [ "Counting: 1%", Some LineEnding.Cr
+              "Counting: 50%", Some LineEnding.Cr
+              "done.", Some LineEnding.Lf
+              "next", Some LineEnding.CrLf
+              "", Some LineEnding.Cr
+              "last", Some LineEnding.EndOfOutput ],
+            lines)
+        Assert.Equal("Counting: 1%\rCounting: 50%\rdone.\nnext\r\n\rlast", rebuild lines)
+
+    [<Fact>]
+    let ``a CR and LF that arrive in separate reads end one line`` () =
+        let lines = linesWithEndings (shText "printf 'one\r'; sleep 0.2; printf '\ntwo\r'")
+        Assert.Equal<(string * LineEnding option) list>([ "one", Some LineEnding.CrLf; "two", Some LineEnding.Cr ], lines)
+
+    [<Fact>]
+    let ``progress redrawn past the line limit is many short lines not one long one`` () =
+        let values, _ =
+            shText "for i in 1 2 3 4 5 6 7 8; do printf '12345678\r'; done; printf 'done\n'"
+            |> maxLineLength 10
+            |> streamStdoutLines
+            |> ProcessStream.runCollect
+            |> Process.tryRun
+            |> succeeded
+        Assert.Equal<string list>(List.replicate 8 "12345678" @ [ "done" ], values)
+
+    [<Fact>]
+    let ``chunks carry no line ending`` () =
+        let values, _ =
+            shText "printf 'a\rb\n'"
+            |> streamStdout
+            |> ProcessStream.runCollect
+            |> Process.tryRun
+            |> succeeded
+        Assert.All(values, fun (output: ProcessOutput) -> Assert.Equal(None, output.Ending))
+        Assert.Equal("a\rb\n", values |> List.map _.Text |> String.concat "")
 
     [<Fact>]
     let ``line limit counts UTF16 units and rejects unterminated lines`` () =
@@ -533,6 +595,15 @@ module ProcessStreamingTests =
         Assert.Empty(result.Stages[0].StdOutCapture.Bytes)
 
     [<Fact>]
+    let ``fan in forwards a bare CR as a line end so redrawn progress stays under the line limit`` () =
+        let result =
+            mergeStdout [ shText "printf 'a1\ra2\ra3\r\n'"; cmd $"true" ] |> maxLineLength 3
+            => cmd $"cat"
+            |> Process.tryRun
+            |> succeeded
+        Assert.Equal("a1\ra2\ra3\r\n", result.StdOut)
+
+    [<Fact>]
     let ``fan in line limits apply to UTF16 characters instead of encoded bytes`` () =
         let outcome =
             mergeStdout [ shText "printf abcd"; cmd $"true" ] |> maxLineLength 3
@@ -612,6 +683,7 @@ module ProcessStreamingTests =
                     OriginalChannel = OutputChannel.StdOut
                     Text = "first"
                     Timestamp = DateTimeOffset.UnixEpoch
+                    Ending = Some LineEnding.Lf
                 }, cancellationToken = token)
                 try
                     do! Task.Delay(Timeout.Infinite, token)

@@ -632,36 +632,44 @@ module internal ProcessRun =
                             let pending = if decoding then StringBuilder() else null
                             let gate = if observed = OutputChannel.StdOut then outputGates[stage] else errorGates[stage]
 
-                            let publish text =
-                                NativeProcess.publishObservation (clock.UtcNow()) observe observerGate token stage original observed text
+                            let publish ending text =
+                                NativeProcess.publishObservation (clock.UtcNow()) observe observerGate token stage original observed text ending
+                            // A CR waits for the next character to tell CRLF from a bare CR, which may arrive in a later read.
+                            let crPending = ref false
+                            let line ending = task {
+                                do! publish (Some ending) (pending.ToString())
+                                pending.Clear() |> ignore
+                            }
+                            let lineTooLong () =
+                                // axial-allow-raise-in-flow: task bridge translates this back to the typed channel
+                                raise (ProcessPumpFailure (ProcessError.LineTooLong {
+                                    Stage = stage; OriginalChannel = original; Limit = specification.MaxLineLength }))
 
                             let decode count flush = task {
                                 let length = decoder.GetChars(buffer, 0, count, chars, 0, flush)
                                 match specification.Framing with
                                 | OutputFraming.Chunks ->
-                                    if length > 0 then do! publish (String(chars, 0, length))
+                                    if length > 0 then do! publish None (String(chars, 0, length))
                                 | OutputFraming.Lines ->
                                     for index in 0 .. length - 1 do
                                         let value = chars[index]
-                                        if value = '\n' then
-                                            if pending.Length > 0 && pending[pending.Length - 1] = '\r' then
-                                                pending.Length <- pending.Length - 1
-                                            do! publish (pending.ToString())
-                                            pending.Clear() |> ignore
+                                        let afterCr = crPending.Value
+                                        crPending.Value <- false
+                                        if afterCr && value = '\n' then
+                                            do! line LineEnding.CrLf
                                         else
-                                            pending.Append value |> ignore
-                                            if pending.Length > specification.MaxLineLength
-                                               && not (pending.Length = specification.MaxLineLength + 1 && value = '\r') then
-                                                // axial-allow-raise-in-flow: task bridge translates this back to the typed channel
-                                                raise (ProcessPumpFailure (ProcessError.LineTooLong {
-                                                    Stage = stage; OriginalChannel = original; Limit = specification.MaxLineLength }))
-                                    if flush && pending.Length > 0 then
-                                        if pending.Length > specification.MaxLineLength then
-                                            // axial-allow-raise-in-flow: task bridge translates this back to the typed channel
-                                            raise (ProcessPumpFailure (ProcessError.LineTooLong {
-                                                Stage = stage; OriginalChannel = original; Limit = specification.MaxLineLength }))
-                                        do! publish (pending.ToString())
-                                        pending.Clear() |> ignore
+                                            if afterCr then do! line LineEnding.Cr
+                                            if value = '\r' then crPending.Value <- true
+                                            elif value = '\n' then do! line LineEnding.Lf
+                                            else
+                                                pending.Append value |> ignore
+                                                if pending.Length > specification.MaxLineLength then lineTooLong ()
+                                    if flush then
+                                        if crPending.Value then
+                                            crPending.Value <- false
+                                            do! line LineEnding.Cr
+                                        elif pending.Length > 0 then
+                                            do! line LineEnding.EndOfOutput
                             }
 
                             let mutable reading = true
@@ -707,11 +715,12 @@ module internal ProcessRun =
                         let decoded = Array.zeroCreate<char>(commands[source].Encoding.Value.GetMaxCharCount 1)
                         let singleByte = Array.zeroCreate<byte> 1
                         let mutable lineLength = 0
-                        let mutable lastWasCR = false
+                        // Bytes pending up to and including a CR whose line end is not yet known: the next character
+                        // decides between CRLF (one end) and a bare CR (the line ended at the CR). -1 when there is none.
+                        let crEnd = ref -1L
 
                         let checkLength () =
-                            if lineLength > specification.MaxLineLength
-                               && not (lineLength = specification.MaxLineLength + 1 && lastWasCR) then
+                            if lineLength > specification.MaxLineLength then
                                 Error (ProcessError.LineTooLong {
                                     Stage = source
                                     OriginalChannel = channel
@@ -729,14 +738,24 @@ module internal ProcessRun =
                                         singleByte[0] <- value
                                         let length = decoder.GetChars(singleByte, 0, 1, decoded, 0, false)
                                         for charIndex in 0 .. length - 1 do
-                                            if decoded[charIndex] = '\n' then
+                                            let value = decoded[charIndex]
+                                            if crEnd.Value >= 0L && value <> '\n' then
+                                                // A bare CR ended the line: forward it, keep the bytes of this character.
+                                                let bytes = pending.ToArray()
+                                                let cut = int crEnd.Value
+                                                do! write bytes[.. cut - 1]
+                                                pending.SetLength 0L
+                                                pending.Write(bytes, cut, bytes.Length - cut)
+                                                lineLength <- 0
+                                            crEnd.Value <- -1L
+                                            if value = '\n' then
                                                 do! write (pending.ToArray())
                                                 pending.SetLength 0L
                                                 lineLength <- 0
-                                                lastWasCR <- false
+                                            elif value = '\r' then
+                                                crEnd.Value <- pending.Length
                                             else
                                                 lineLength <- lineLength + 1
-                                                lastWasCR <- decoded[charIndex] = '\r'
                                                 match checkLength () with
                                                 | Ok () -> ()
                                                 | Error error -> return! Flow.fail error

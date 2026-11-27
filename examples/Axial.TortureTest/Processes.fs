@@ -23,7 +23,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
                 runs <- runs+1
                 for item in input do
                     do! observe {Stage=0;ObservedChannel=OutputChannel.StdOut;OriginalChannel=OutputChannel.StdOut
-                                 Text=string item;Timestamp=DateTimeOffset(1970,1,1,0,0,0,TimeSpan.Zero)}
+                                 Text=string item;Timestamp=DateTimeOffset(1970,1,1,0,0,0,TimeSpan.Zero);Ending=None}
                 return result
             }
             member _.Launch(_) = Flow.ok ()}
