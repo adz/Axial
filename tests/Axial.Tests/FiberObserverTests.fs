@@ -94,6 +94,59 @@ module FiberObserverTests =
         | other -> failwithf "Expected one unobserved defect with fiber metadata, got %A" other
 
     [<Fact>]
+    let ``Discarded fork that dies with several defects reports each one`` () =
+        // Found by the T23 law scenario: a fiber whose cause held two defects reported only the first.
+        let recording = Recording()
+        let retained = ref None
+        let both : Flow<unit, string, int> =
+            Flow.ofExit (Exit.Failure(Cause.both (Cause.Die(InvalidOperationException "first")) (Cause.Die(InvalidOperationException "second"))))
+
+        let result =
+            flow {
+                let! fiber = Flow.fork both
+                retained.Value <- Some fiber
+                do! waitForSettled fiber
+                return "done"
+            }
+            |> Flow.withFiberObserver recording.Observer
+            |> Flow.runSync ()
+
+        retained.Value <- None
+
+        test <@ result = Exit.Success "done" @>
+        test <@ recording.Unobserved |> List.map (fun (_, defect) -> defect.Message) |> List.sort = [ "first"; "second" ] @>
+
+    [<Fact>]
+    let ``A join that gives up leaves the fiber's later defect to be reported as unobserved`` () =
+        let recording = Recording()
+        let retained = ref None
+
+        let result =
+            flow {
+                let! release = Deferred.make<unit, string, unit, _> ()
+                let! child =
+                    flow {
+                        do! Deferred.await release
+                        return! Flow.die (InvalidOperationException "after the join gave up")
+                    }
+                    |> Flow.fork
+                retained.Value <- Some child
+                let! gaveUp = Fiber.join child |> Flow.timeoutOption (TimeSpan.FromMilliseconds 20.0)
+                let! _ = Deferred.succeed () release
+                do! waitForSettled child
+                return gaveUp
+            }
+            |> Flow.withFiberObserver recording.Observer
+            // A limit outside Flow, so a join that ignores the timeout fails the test instead of hanging it.
+            |> fun workflow -> workflow.StartAsTask((), CancellationToken.None)
+
+        let finished = result.Wait(TimeSpan.FromSeconds 10.0)
+        retained.Value <- None
+
+        test <@ finished && result.Result = Exit.Success None @>
+        test <@ recording.Unobserved |> List.map (fun (_, defect) -> defect.Message) = [ "after the join gave up" ] @>
+
+    [<Fact>]
     let ``Joined fiber defect is not reported as unobserved`` () =
         let recording = Recording()
 
@@ -375,7 +428,7 @@ module FiberObserverTests =
                 },
                 recording.Observer)
 
-        tracker.Settled(Some(InvalidOperationException "once"))
+        tracker.Settled [ InvalidOperationException "once" ]
         tracker.TryReport()
         tracker.TryReport()
         GC.SuppressFinalize tracker
@@ -399,7 +452,7 @@ module FiberObserverTests =
             }
 
         let tracker = FiberDefectTracker(metadata, recording.Observer)
-        tracker.Settled(Some(InvalidOperationException "boom"))
+        tracker.Settled [ InvalidOperationException "boom" ]
         tracker.MarkObserved()
         tracker.TryReport()
         GC.SuppressFinalize tracker
@@ -423,7 +476,7 @@ module FiberObserverTests =
                 },
                 recording.Observer)
 
-        tracker.Settled(Some(InvalidOperationException "collected"))
+        tracker.Settled [ InvalidOperationException "collected" ]
 
     [<Fact>]
     let ``GC net reports a collected unobserved tracker through its finalizer`` () =

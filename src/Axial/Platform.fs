@@ -1791,6 +1791,103 @@ let awaitExitTaskAsSuccess (exitTask: ExitTask<'value, 'error>) : Execution<Exit
     }
     |> ofAwaitable
 
+/// What a fiber's join reports about its wait, so the fiber can tell a consumed outcome from an abandoned wait.
+type IExitWaiter =
+    /// The join is about to wait for an outcome that is not there yet.
+    abstract Waiting: unit -> unit
+    /// The join received the outcome.
+    abstract Delivered: unit -> unit
+    /// The join stopped waiting without the outcome, because the joining flow was interrupted.
+    abstract GaveUp: unit -> unit
+
+/// Waits for a fiber's exit and maps it with <paramref name="onExit" />, or stops waiting with an interruption when
+/// <paramref name="cancellationToken" /> is cancelled first: interrupting a join stops the wait, not the fiber.
+let awaitFiberExit
+    (exitTask: ExitTask<'value, 'error>)
+    (cancellationToken: CancellationToken)
+    (waiter: IExitWaiter)
+    (onExit: Exit<'value, 'error> -> Exit<'result, 'resultError>)
+    : Execution<'result, 'resultError> =
+#if FABLE_COMPILER
+    // Fable's tokens have no CanBeCanceled, so every wait registers with its token.
+    if cancellationToken.IsCancellationRequested then
+        ofExit (Exit.Failure Cause.Interrupt)
+    else
+        waiter.Waiting()
+        async {
+            return!
+                Async.FromContinuations(fun (resolveContinuation, _, _) ->
+                    let settled = ref false
+                    let registration: IDisposable option ref = ref None
+                    let captured = captureAmbient ()
+
+                    let settle (exit: Exit<'result, 'resultError>) =
+                        if not settled.Value then
+                            settled.Value <- true
+                            registration.Value |> Option.iter (fun disposable -> disposable.Dispose())
+                            resumeWith captured resolveContinuation exit
+
+                    startImmediate (async {
+                        let! exit = exitTask
+                        if not settled.Value then
+                            waiter.Delivered()
+                            settle (onExit exit)
+                    }) None
+
+                    // Fable's registration is a plain `{ Dispose }` object; its F# type does not expose Dispose.
+                    let disposable =
+                        unbox<IDisposable> (box (cancellationToken.Register(fun () ->
+                            if not settled.Value then
+                                waiter.GaveUp()
+                                settle (Exit.Failure Cause.Interrupt))))
+
+                    if settled.Value then disposable.Dispose() else registration.Value <- Some disposable)
+        }
+#else
+    if exitTask.IsCompleted then
+        waiter.Delivered()
+        ofExit (onExit exitTask.Result)
+    elif cancellationToken.IsCancellationRequested then
+        ofExit (Exit.Failure Cause.Interrupt)
+    else
+        waiter.Waiting()
+
+        ValueTask<Exit<'result, 'resultError>>(
+            task {
+#if NET
+                // WaitAsync is one runtime object; cancellation surfaces as an OperationCanceledException.
+                try
+                    let! exit = exitTask.WaitAsync cancellationToken
+                    waiter.Delivered()
+                    return onExit exit
+                with :? OperationCanceledException ->
+                    if exitTask.IsCompleted then
+                        waiter.Delivered()
+                        return onExit exitTask.Result
+                    else
+                        waiter.GaveUp()
+                        return Exit.Failure Cause.Interrupt
+#else
+                let cancellation = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+                let registration = cancellationToken.Register(fun () -> cancellation.TrySetResult() |> ignore)
+
+                // try/finally rather than `use`: a task's `use` compiles to TaskBuilderBase.Using, which the
+                // FSharp.Core that dotnet fsi loads does not have.
+                try
+                    let! completed = Task.WhenAny(exitTask :> Task, cancellation.Task :> Task)
+
+                    if obj.ReferenceEquals(completed, exitTask :> Task) || exitTask.IsCompleted then
+                        waiter.Delivered()
+                        return onExit exitTask.Result
+                    else
+                        waiter.GaveUp()
+                        return Exit.Failure Cause.Interrupt
+                finally
+                    registration.Dispose()
+#endif
+            })
+#endif
+
 /// Invokes a callback when a fiber settles without consuming its outcome.
 let observeExitTask (exitTask: ExitTask<'value, 'error>) (observer: Exit<'value, 'error> -> unit) : unit =
 #if FABLE_COMPILER

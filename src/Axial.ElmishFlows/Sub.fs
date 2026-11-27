@@ -35,7 +35,7 @@ module Sub =
                             let! _ = Fiber.interrupt fiber
                             return ()
                         })
-                        let! outcome = Fiber.awaitExit fiber
+                        let! outcome = Diagnostics.awaitOwned fiber
                         if Volatile.Read(&stopped) = 0 then
                             match outcome with
                             | Exit.Success () -> ()

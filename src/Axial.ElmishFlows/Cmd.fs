@@ -53,7 +53,7 @@ module Cmd =
                             match latest, version with
                             | Some key, Some v -> runtime.SetCurrent(key, v, fiber.Metadata.Id)
                             | _ -> ()
-                            let! outcome = Fiber.awaitExit fiber
+                            let! outcome = Diagnostics.awaitOwned fiber
                             let wasCurrent = current ()
                             if wasCurrent then
                                 match outcome with
@@ -110,7 +110,7 @@ module Cmd =
                 let job : Flow<'env, Never, unit> =
                     flow {
                         let! fiber = Flow.forkNamed name (Flow.annotate "elmish.command" name workflow)
-                        let! outcome = Fiber.awaitExit fiber
+                        let! outcome = Diagnostics.awaitOwned fiber
                         match outcome with
                         | Exit.Success () -> ()
                         | Exit.Failure cause -> Diagnostics.causeUnlessInterrupted name runtime.Options cause
@@ -228,7 +228,7 @@ module Cmd =
                                 |> Flow.annotate "elmish.command" key
                             let! fiber = Flow.forkNamed key work
                             runtime.SetCurrent(key, version, fiber.Metadata.Id)
-                            let! outcome = Fiber.awaitExit fiber
+                            let! outcome = Diagnostics.awaitOwned fiber
                             if runtime.IsCurrent(key, version) then
                                 match outcome with
                                 | Exit.Success () -> finish ()

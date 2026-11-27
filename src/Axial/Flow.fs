@@ -1749,12 +1749,13 @@ module Flow =
                         metadata.SettledTick <- Some(clock.Elapsed())
                         metadata.Status <- status
 
-                        let defect =
+                        let defects =
                             match exit with
-                            | Exit.Success _ -> None
-                            | Exit.Failure cause -> Cause.defects cause |> List.tryHead
+                            | Exit.Success _ -> []
+                            | Exit.Failure cause -> Cause.defects cause
 
-                        tracker.Settled defect
+                        let defect = List.tryHead defects
+                        tracker.Settled defects
 
                         if status = FiberStatus.Failed && not parentRuntime.Registries.IsEmpty then
                             match exit with
@@ -1875,7 +1876,14 @@ module Flow =
             if settled.Value.IsSome then
                 FiberInterrupts.remove metadata.Id
 
-            let fiber = Fiber(metadata, exitTask, cts, tracker, settled)
+            // Fable forks get an independent cancellation source, so there no fiber follows its forking token.
+            let follows =
+#if FABLE_COMPILER
+                Platform.Cancellation.never
+#else
+                parentToken
+#endif
+            let fiber = Fiber(metadata, exitTask, cts, tracker, settled, follows)
 
 #if !FABLE_COMPILER
             // GC net: keep the tracker alive exactly as long as the fiber handle is reachable. When a
@@ -3778,6 +3786,9 @@ module Fiber =
     /// <remarks>
     /// Joining preserves the child's error channel: a <c>Cause.Fail</c> becomes the same typed error, and
     /// interruption and defects remain interruption and defects. Use <c>awaitExit</c> to inspect the outcome instead.
+    /// Interrupting the joining flow (a timeout, a race it loses, a scope closing) stops the wait, not the fiber; a
+    /// join that gives up does not consume the outcome, so a defect the fiber settles with later is still reported
+    /// as unobserved.
     /// </remarks>
     /// <param name="fiber">The fiber to join.</param>
     /// <returns>A flow that completes with the fiber's value.</returns>
@@ -3796,9 +3807,13 @@ module Fiber =
     /// </code>
     /// </example>
     let join (fiber: Fiber<'error, 'value>) : Flow<'env, 'error, 'value> =
-        Flow(fun _ _ ->
-            fiber.MarkObserved()
-            Platform.joinExitTask fiber.ExitTask)
+        Flow(fun _ cancellationToken ->
+            if fiber.Follows cancellationToken then
+                // Interrupting this join interrupts the fiber too, so the plain wait ends with it.
+                fiber.MarkObserved()
+                Platform.joinExitTask fiber.ExitTask
+            else
+                Platform.awaitFiberExit fiber.ExitTask cancellationToken fiber.Waiter id)
 
     /// <summary>Waits for a fiber and returns its <see cref="T:Axial.Exit`2" />, never failing.</summary>
     /// <remarks>
@@ -3819,9 +3834,12 @@ module Fiber =
     /// </code>
     /// </example>
     let awaitExit (fiber: Fiber<'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error>> =
-        Flow(fun _ _ ->
-            fiber.MarkObserved()
-            Platform.awaitExitTaskAsSuccess fiber.ExitTask)
+        Flow(fun _ cancellationToken ->
+            if fiber.Follows cancellationToken then
+                fiber.MarkObserved()
+                Platform.awaitExitTaskAsSuccess fiber.ExitTask
+            else
+                Platform.awaitFiberExit fiber.ExitTask cancellationToken fiber.Waiter Exit.Success)
 
     /// Waits without consuming the outcome so an internal supervisor can decide whether to report its defect.
     let internal awaitUnobserved (fiber: Fiber<'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error>> =

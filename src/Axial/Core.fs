@@ -749,9 +749,12 @@ type FiberRegistry(historyCapacity: int) =
 /// </summary>
 type internal FiberDefectTracker(metadata: FiberMetadata, observer: FiberObserver) =
     let gate = obj()
-    let mutable defect: exn option = None
+    let mutable defects: exn list = []
     let mutable reported = false
     let mutable observed = false
+    // Joins waiting for the outcome right now, and whether a report came due while one was.
+    let mutable waiting = 0
+    let mutable deferred = false
 
 #if !FABLE_COMPILER
     static let sentinels = System.Runtime.CompilerServices.ConditionalWeakTable<obj, FiberDefectTracker>()
@@ -762,27 +765,50 @@ type internal FiberDefectTracker(metadata: FiberMetadata, observer: FiberObserve
     member _.MarkObserved() =
         lock gate (fun () -> observed <- true)
 
-    /// Records the defect the fiber settled with, if any.
-    member _.Settled(settledDefect: exn option) =
-        lock gate (fun () -> defect <- settledDefect)
+    /// A join starts waiting for the outcome.
+    member _.BeginWait() =
+        lock gate (fun () -> waiting <- waiting + 1)
 
-    /// Reports the fiber's defect as unobserved if it has one, was never observed, and was not already
+    /// A join stops waiting, having consumed the outcome (after <c>MarkObserved</c>) or given up. When the last
+    /// waiting join gives up after a report came due, the report is made now.
+    member this.EndWait() =
+        let retry =
+            lock gate (fun () ->
+                waiting <- waiting - 1
+                waiting = 0 && deferred && not observed)
+
+        if retry then this.TryReport()
+
+    /// Records every defect the fiber settled with: a compound cause can hold several, and each is reported.
+    member _.Settled(settledDefects: exn list) =
+        lock gate (fun () -> defects <- settledDefects)
+
+    /// Reports each of the fiber's defects as unobserved if it has any, was never observed, and was not already
     /// reported. Safe to call from the scope sweep and the GC net concurrently.
     member _.TryReport() =
         let toReport =
             lock gate (fun () ->
-                if not reported && not observed then
-                    match defect with
-                    | Some _ ->
+                if not reported && not observed && not defects.IsEmpty then
+                    if waiting > 0 then
+                        // A waiting join may still consume the outcome; report only if every join gives up.
+                        deferred <- true
+                        []
+                    else
                         reported <- true
-                        defect
-                    | None -> None
+                        defects
                 else
-                    None)
+                    [])
 
-        match toReport with
-        | Some exn -> FiberObserver.notifyUnobservedDefect observer (Some metadata) exn
-        | None -> ()
+        for exn in toReport do
+            FiberObserver.notifyUnobservedDefect observer (Some metadata) exn
+
+    interface Platform.IExitWaiter with
+        member this.Waiting() = this.BeginWait()
+        member _.Delivered() =
+            lock gate (fun () ->
+                observed <- true
+                waiting <- waiting - 1)
+        member this.GaveUp() = this.EndWait()
 
 #if !FABLE_COMPILER
     /// Keeps <paramref name="tracker" /> alive exactly as long as <paramref name="fiberHandle" /> is
@@ -815,7 +841,8 @@ type Fiber<'error, 'value>
         exitTask: Platform.ExitTask<'value, 'error>,
         interruptSource: CancellationTokenSource,
         tracker: FiberDefectTracker,
-        settled: Exit<'value, 'error> option ref
+        settled: Exit<'value, 'error> option ref,
+        follows: CancellationToken
     ) =
     /// <summary>Diagnostic metadata for the running fiber.</summary>
     member _.Metadata = metadata
@@ -831,6 +858,18 @@ type Fiber<'error, 'value>
 
     /// Reports the fiber's settled defect if its outcome was not consumed.
     member internal _.ReportUnobserved() = tracker.TryReport()
+
+    /// What a join tells the fiber about its wait; see <c>FiberDefectTracker</c>.
+    member internal _.Waiter = tracker :> Platform.IExitWaiter
+
+    /// Whether interrupting a flow running under <paramref name="token" /> also interrupts this fiber, because the
+    /// fiber follows that token. A join under it then ends when the fiber does, without a wait of its own.
+    member internal _.Follows(token: CancellationToken) =
+#if FABLE_COMPILER
+        obj.ReferenceEquals(token, follows)
+#else
+        token.Equals follows
+#endif
 
     /// The fiber's exit once it has settled.
     member internal _.Settled = settled.Value

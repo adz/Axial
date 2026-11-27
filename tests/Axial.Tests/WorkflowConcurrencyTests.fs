@@ -311,6 +311,53 @@ module WorkflowConcurrencyTests =
 
         test <@ Flow.runSync () workflow = Exit.Success(Exit.Failure(Cause.Fail "boom"), Exit.Success 7) @>
 
+    // Runs a flow with a limit kept outside Flow, so a wait that ignores interruption fails the test instead of hanging it.
+    let private within (flow: Flow<unit, string, 'value>) : Exit<'value, string> option =
+        let running = flow.StartAsTask((), CancellationToken.None)
+        if running.Wait(TimeSpan.FromSeconds 10.0) then Some running.Result else None
+
+    // Found by the T23 law scenario: a timeout around a scoped fork could not stop a flow waiting in Fiber.join. A
+    // fiber forked inside the timeout follows the token outside it, so only the scope's close would interrupt the
+    // child, and the scope could not close while the join ignored the timeout's interruption.
+    [<Fact>]
+    let ``A timeout stops a flow waiting in Fiber.join, and the fork's scope then interrupts the child`` () =
+        let childInterrupted = ref false
+        let workflow : Flow<unit, string, int option * bool> =
+            flow {
+                let! timedOut =
+                    flow {
+                        let! child =
+                            (Flow.never : Flow<unit, string, int>)
+                            |> Flow.onInterrupt (Flow.delay (fun () -> childInterrupted.Value <- true; Flow.ok ()))
+                            |> Flow.fork
+                        return! Fiber.join child
+                    }
+                    |> Flow.scoped
+                    |> Flow.timeoutOption (TimeSpan.FromMilliseconds 20.0)
+                return timedOut, childInterrupted.Value
+            }
+
+        test <@ within workflow = Some(Exit.Success(None, true)) @>
+
+    [<Fact>]
+    let ``Interrupting Fiber.awaitExit stops the wait, not the fiber`` () =
+        let workflow : Flow<unit, string, int option * Exit<int, string>> =
+            flow {
+                let! release = Deferred.make<unit, string, unit, _> ()
+                let! child =
+                    flow {
+                        do! Deferred.await release
+                        return 7
+                    }
+                    |> Flow.fork
+                let! gaveUp = Fiber.awaitExit child |> Flow.map (fun _ -> 0) |> Flow.timeoutOption (TimeSpan.FromMilliseconds 20.0)
+                let! _ = Deferred.succeed () release
+                let! later = Fiber.awaitExit child
+                return gaveUp, later
+            }
+
+        test <@ within workflow = Some(Exit.Success(None, Exit.Success 7)) @>
+
     [<Fact>]
     let ``Fiber.poll reports None until the fiber settles`` () =
         let workflow : Flow<unit, string, Exit<unit, string> option * Exit<unit, string> option> =

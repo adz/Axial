@@ -3,6 +3,12 @@ namespace Axial.ElmishFlows
 open Axial
 
 module internal Diagnostics =
+    /// Waits for the fiber a runtime job forked and owns. Interrupting the job (the runtime stopping) stops the wait,
+    /// not the fiber, so the job then stops the fiber itself and takes its outcome: a defect from the fiber's cleanup
+    /// still reaches the job's report instead of being lost.
+    let awaitOwned (fiber: Fiber<'error, 'value>) : Flow<'env, Never, Exit<'value, 'error>> =
+        Fiber.awaitExit fiber |> Flow.foldCauseFlow Flow.ok (fun _ -> Fiber.interrupt fiber)
+
     let report (options: ElmishRuntimeOptions) defect =
         // A failing diagnostic sink has no further safe destination; never fail the runtime job.
         // axial-note swallowed-exn: OnDefect is the final reporting sink; its own failure cannot be sent back to it or fail the runtime job.

@@ -156,7 +156,7 @@ module ElmishRuntime =
             let job : Flow<'env, Never, unit> =
                 flow {
                     let! fiber = Flow.forkNamed name (Flow.annotate "elmish.service" name service)
-                    let! outcome = Fiber.awaitExit fiber
+                    let! outcome = Diagnostics.awaitOwned fiber
                     match outcome with
                     | Exit.Success () ->
                         if not runtime.IsStopping then
