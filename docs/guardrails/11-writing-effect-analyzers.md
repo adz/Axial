@@ -6,7 +6,7 @@ description: Build and package an analyzer that detects direct access to effects
 
 # Write an effect-boundary analyzer
 
-[Effect-boundary guardrails](/guardrails/guardrails.html) describes how `Axial.Guardrails` detects direct calls to ambient .NET effects. You can apply the same pattern to an effect owned by your package.
+[Guardrails](/guardrails/index.html) describes how `Axial.Guardrails` detects direct calls to ambient .NET effects. You can apply the same pattern to an effect owned by your package.
 
 For example, callers can bypass an HTTP, queue, or database service interface by using the underlying .NET API. A package-specific analyzer can detect that access during the build.
 

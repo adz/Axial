@@ -131,8 +131,8 @@ Build-time effect-boundary analysis and the `axial` policy CLI.
 | `Axial.ElmishFlows` | Incubating | Elmish commands backed by Axial workflows. | [Elmish](/elmish/elmish.html) |
 | `Axial.Telemetry` | Experimental | .NET tracing and OpenTelemetry integration. | [Telemetry](/telemetry/) |
 | `Axial.Telemetry.JavaScript` | Experimental | Fable JavaScript span export. | [JavaScript telemetry](/telemetry/javascript.html) |
-| `Axial.Guardrails` | Incubating | Build-time analyzer that flags direct ambient effects. | [Guardrails](/guardrails/guardrails.html) |
-| `Axial.Tool` | Experimental | The `axial` command for initializing, checking, and approving Guardrails policy. | [Guardrails](/guardrails/guardrails.html) |
+| `Axial.Guardrails` | Incubating | Build-time analyzer that flags direct ambient effects. | [Guardrails](/guardrails/index.html) |
+| `Axial.Tool` | Experimental | The `axial` command for initializing, checking, and approving Guardrails policy. | [Guardrails](/guardrails/index.html) |
 
 See [Package maturity](/notes/package-maturity.html) for evidence and promotion criteria.
 

@@ -74,14 +74,10 @@ Use `dotnet build -p:AxialGuardrailsMode=Full` to run the typed checks in an ord
 codebase, `axial policy baseline --rule <id>` prepares baseline entries for current findings; a person reviews them
 and runs `axial policy approve`.
 
-Keep intentional effects in host-role files, or in the implementation of a declared capability, which may call only
-the API it owns. To omit a
-package-specific rule set entirely, remove its `AxialGuardrail` MSBuild item; this disables that rule set rather than
-changing finding severity. Roles, rule levels, baselines and suppressions are documented in
-[Effect-boundary guardrails](/guardrails/guardrails.html).
-
-See [Effect-boundary guardrails](/guardrails/guardrails.html) for the diagnostic list, configuration options, and
-suppression syntax.
+Keep intentional effects in host-role files, or in a file that claims the capability it implements.
+[Get started with Guardrails](/guardrails/getting-started.html) walks through the setup;
+[The policy file](/guardrails/policy-file.html) covers roles and levels, and [Diagnostics](/guardrails/diagnostics/index.html)
+lists every rule.
 
 ## Related guides
 
@@ -89,5 +85,5 @@ suppression syntax.
   entry points.
 - [Platform services](/services/platform-services/index.html) introduces the explicit clock, logging, random, GUID,
   culture, time-zone, and formatting services. Configuration lives in the [Configuration set](/configuration/).
-- [Effect-boundary guardrails](/guardrails/guardrails.html) is the analyzer that enforces those contracts as a build
+- [Guardrails](/guardrails/index.html) is the analyzer that enforces those contracts as a build
   check instead of a review convention.

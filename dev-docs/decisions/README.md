@@ -279,7 +279,7 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
 ## 2026-11-05: Guardrails are backpressure, not gates
 
 Folded from the implemented Guardrails sketches (fast mode, review, exceptionless rules, protected files). The
-consumer contract is `docs/guardrails/01-guardrails.md`; these are the reasons behind it.
+consumer contract is `docs/guardrails/`; these are the reasons behind it.
 
 - **Influence, not infer.** Policy is the checked-in `Axial.Guardrails.toml`, baseline and lock. Roles come from
   explicit `[files]` > `[projects]` > `[default]` (`domain`) assignments, never from project names, test SDKs, `CI`,

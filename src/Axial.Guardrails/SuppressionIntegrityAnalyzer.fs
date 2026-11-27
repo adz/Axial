@@ -89,7 +89,7 @@ let private findingForDirective (config: Config) (ctx: CliContext) directive =
         Some(report "Remove this malformed suppression, or replace it with a rule-specific suppression and a non-empty reason as documented.")
     | Some _ when (renameOf directive).IsSome -> renameOf directive |> Option.map report
     | Some ruleId when not (knownRuleIds.Contains ruleId) ->
-        Some(report $"Replace the unknown rule `{ruleId}` with the name of the rule this allows, such as `raw-effect` (the rule names are listed in docs/guardrails/01-guardrails.md), or remove the comment.")
+        Some(report $"Replace the unknown rule `{ruleId}` with the name of the rule this allows, such as `raw-effect` (the rule names are listed in docs/guardrails/08-diagnostics/_index.md), or remove the comment.")
     | Some _ when directive.Reason = "" ->
         Some(report "Add a non-empty reason explaining why this intentional boundary cannot use the recommended API.")
     | Some ruleId when Set.contains ruleId (set [ "AXG010"; "AXG011"; "AXG012"; "AXG013"; "AXG014" ]) ->

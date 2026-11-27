@@ -1,30 +1,56 @@
 ---
 title: Guardrails
 linkTitle: Guardrails
-description: Detect ambient effects, exceptions in workflows, and unsafe concurrency with Axial.Guardrails and the axial CLI.
+description: Axial.Guardrails finds ambient effects, exceptions in workflows and unowned concurrency during the build.
 ---
 
 # Guardrails
 
-`Axial.Guardrails` is an FSharp.Analyzers.SDK analyzer package plus the `axial` CLI used to review policy. Install it
-in the projects that should enforce effect boundaries:
+A flow that reads `DateTime.UtcNow` compiles and works. Its test does not: the test installs a test clock with
+`Flow.runTest`, and the flow never asks for it. Nothing in the function's signature says it reads the clock, so the
+reviewer cannot see it either.
 
-```bash
-dotnet add package Axial.Guardrails
+This happened in Axial itself. `Schedule.jittered` created its own `System.Random`, so a test could not fix its
+jitter, and `FiberDump` read `DateTimeOffset.UtcNow`, so its timestamps ignored the test clock. Both compiled.
+
+`Axial.Guardrails` catches this during the build:
+
+```fsharp
+open System
+
+/// Reported.
+let isExpiredByWallClock (deadline: DateTimeOffset) =
+    DateTimeOffset.UtcNow > deadline   // error raw-effect: ... use Axial.IClock (Clock.now)
 ```
 
-The analyzer runs during compilation. `axial check`, `axial policy review`, and `axial policy approve` manage the
-repository policy, baseline, and lock.
+```fsharp
+/// Fixed.
+let isExpired (deadline: DateTimeOffset) =
+    flow {
+        let! now = Clock.now
+        return now > deadline   // the test clock decides
+    }
+```
 
-## Guides
+Other rules catch an exception raised inside `flow { }`, a `Task` that nothing owns, a cancellation token that is
+thrown away, and a test that sleeps and hopes. Each finding says what to use instead.
 
-1. [Effect-boundary guardrails](/guardrails/guardrails.html): policy, roles, rules, and daily workflow.
-2. [Diagnostics](diagnostics.html): every `AXG` rule and how to resolve it.
-3. [Rule authoring](rule-authoring.html): write and test an analyzer rule.
-4. [Writing effect analyzers](/guardrails/writing-effect-analyzers.html): build an analyzer for a new effect boundary.
-5. [Analyzer packaging](/guardrails/analyzer-packaging.html): package and publish analyzers and their build props.
+The `axial` command, from the `Axial.Tool` package, manages the policy file and its review.
+
+## Start here
+
+1. [Get started](getting-started.html): install the package, create the policy, see a first finding.
+2. [The policy file](policy-file.html): roles, rule levels and which files may make raw calls.
+3. [Allowances and notes](allowances-and-notes.html): mark a deliberate raw call or exception.
+4. [Fast and Full](fast-and-full.html): the quick default build check and the complete one.
+5. [Policy review](policy-review.html): how loosened policy is reviewed and approved.
+6. [Adopt with a baseline](baseline.html): accept the findings an existing codebase already has.
+7. [Guardrails per package](per-package.html): turn rule sets on and off.
 
 ## Reference
 
-The generated Guardrails API reference covers the analyzer and policy surface. The `Axial.Tool` package provides the
-`axial` command; the [diagnostics](diagnostics.html) page lists every rule and its resolution.
+- [Diagnostics](diagnostics/index.html): one page per rule, with what it reports and how to fix it.
+- [Capabilities](capabilities.html): define your own service that owns a raw API.
+- [Package rules](package-rules.html): ship simple rules with a package.
+- [Write an effect analyzer](writing-effect-analyzers.html) and [package it](analyzer-packaging.html).
+- [Build reports](build-reports.html): the report each build writes, timings and caching.

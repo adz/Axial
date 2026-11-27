@@ -128,6 +128,6 @@ let private trend (ctx: CliContext) =
     [ FastSyntax.taskSites (GuardrailConfig.load ()) ctx.FileName ctx.SourceText ctx.ParseFileResults.ParseTree ]
 
 [<CliAnalyzer("TaskSurface", "Guides raw Task out of domain code and keeps task bridges thin.",
-              "https://github.com/adz/Axial/blob/main/docs/guardrails/02-diagnostics.md#axg014-keep-raw-task-at-the-edge")>]
+              "https://github.com/adz/Axial/blob/main/docs/guardrails/08-diagnostics/14-task-surface.md")>]
 let taskSurfaceAnalyzer: Analyzer<CliContext> =
     fun ctx -> Execution.trackWith trend "TaskSurface" (fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) ctx }) ctx
