@@ -8,6 +8,8 @@ Guardrails defaults to Fast syntax hints. Use `-p:AxialGuardrailsMode=Full` for 
 
 Axial is an asynchronous F# workflow library. Its public model is `Flow<'env,'error,'value>`: required dependencies and expected failures are visible in the workflow type.
 
+Axial is close to 1.0; no large API changes are planned before then. It binds existing `Task`, `Async` and `Task<Result<_,_>>` (FsToolkit `TaskResult`) code, so it can be adopted one module at a time: `/getting-started/existing-task-application.html`. `Axial.Guardrails` is optional.
+
 Load `/llms.txt` for API selection, execution, resources, concurrency, services, hosting, and platform guidance. User documentation starts at `/index.html`.
 
 Elmish integration: install `Axial.ElmishFlows`, open `Axial.ElmishFlows`, and read `/elmish/elmish.html`.

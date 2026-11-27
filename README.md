@@ -13,8 +13,25 @@ Write asynchronous F# workflows whose expected failures and required dependencie
 [![NuGet](https://img.shields.io/nuget/v/Axial.svg)](https://www.nuget.org/packages/Axial)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-> [!WARNING]
-> Axial is pre-1.0 and its API may change before the first stable release.
+> [!NOTE]
+> Axial is close to 1.0. No large API changes are planned before then; expect small refinements.
+
+## Integration and ergonomics
+
+- **Works with the `Task`, `Async` and `TaskResult` code you already have.** An `Async` binds directly in
+  `flow { }`. A `CancellationToken -> Task` becomes a cold `ColdTask` that receives the flow's token, and a
+  `Task<Result<_, _>>`, such as FsToolkit.ErrorHandling's `TaskResult`, keeps its `Error` as a typed failure.
+  `Flow.cancellationToken` reads the token for any other .NET API that takes one. An exception thrown by that code
+  becomes a defect, never a typed error. Convert one module at a time:
+  [Add Axial to an existing Task application](docs/01-getting-started/03-existing-task-application.md),
+  [Failures and defects](docs/04-error-handling/_index.md).
+- **Cancellation and time are part of the model.** Interrupting a flow interrupts its child fibers and closes their
+  scopes, and the runtime waits for their cleanup. `Flow.timeout`, `Flow.retry` with a `Schedule`, and sleeps all
+  read the runtime clock, so `Flow.runTest` replaces it with a test clock that moves only when the test advances it:
+  [Concurrency](docs/08-concurrency-and-state/_index.md), [Runtime services](docs/06-services/01-platform-services/_index.md).
+- **`Axial.Guardrails` is optional.** Core `Axial` needs no analyzer and no policy file. Add Guardrails when the code
+  settles, or when coding agents write it: the build then reports a raw clock read, a `Task` nothing owns or an
+  exception raised inside `flow { }`, and says what to use instead: [Guardrails](docs/guardrails/_index.md).
 
 ## Your first flow
 

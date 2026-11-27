@@ -7,6 +7,11 @@ description: Adopt Flow in one module of a Task-based application without changi
 
 Convert one module to `Flow` and turn it back into a `Task` at the boundary. Callers above it can stay on `Task`, and the host need not change.
 
+Inside the module, the code you already have keeps working. An `Async` binds directly in `flow { }`. A task-returning
+function becomes a `ColdTask`, which receives the flow's cancellation token. A `Task<Result<_, _>>`, such as
+FsToolkit.ErrorHandling's `TaskResult`, keeps its `Error` as a typed failure. `Flow.cancellationToken` reads the
+token for any other API that takes one. An exception from any of them becomes a defect, not a typed error.
+
 This page assumes you have read [Get started](index.html) and repeats its `checkout` workflow so the example below
 compiles on its own.
 
@@ -154,31 +159,78 @@ let handleOrder (provider: IServiceProvider) (orderId: int) (token: Cancellation
     handleCheckout env orderId token
 ```
 
-## Convert leaf functions last
+## Bind the code you already have
 
-Before binding a `CancellationToken -> Task<_>` function, wrap it in `ColdTask`. The wrapper keeps task creation cold
-and receives Flow's runtime cancellation token.
+Leaf functions keep their `Task` and `Async` signatures. Each kind binds into a flow without a rewrite:
 
-When the task returns `Result<'value,'error>`, the builder sends `Error` to the expected-error channel.
+```fsharp
+/// An existing Async function.
+let loadExchangeRate (currency: string) : Async<decimal> =
+    async { return if currency = "EUR" then 0.92m else 1.0m }
 
-Use `Flow.fromTask` or `Flow.fromTaskResult` when you compose without `flow { }`. Use `Flow.awaitStartedTask` only when
-a host API has already started the operation.
+/// An existing Task<Result<_, _>> function, the shape FsToolkit.ErrorHandling calls TaskResult.
+let findOrderTotal (orderId: int) (cancellationToken: CancellationToken) : Task<Result<decimal, CheckoutError>> =
+    Task.FromResult(if orderId = 42 then Ok 19.95m else Error(OrderNotFound orderId))
+
+/// An existing .NET API that takes a token.
+let recordQuote (orderId: int) (amount: decimal) (cancellationToken: CancellationToken) : Task<string> =
+    Task.FromResult $"quote-{orderId}-{amount}"
+
+let quote orderId : Flow<unit, CheckoutError, string> =
+    flow {
+        // Async binds directly.
+        let! rate = loadExchangeRate "EUR"
+
+        // ColdTask creates the task when the flow runs and hands it the flow's token;
+        // Error from the Result becomes a typed failure.
+        let! total =
+            ColdTask(fun cancellationToken -> findOrderTotal orderId cancellationToken)
+            |> Flow.fromColdTaskResult
+
+        // Any other call that takes a token: read the flow's token and pass it on.
+        let! cancellationToken = Flow.cancellationToken
+        return! Flow.awaitStartedTask (recordQuote orderId (total * rate) cancellationToken)
+    }
+```
+
+```fsharp run
+quote 42 |> Flow.run () |> shouldEqual (Exit.Success "quote-42-18.3540")
+quote 7 |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail(OrderNotFound 7)))
+```
+
+Nothing above `quote` passes a token: the runtime owns it. Cancelling the run, a `Flow.timeout` around it, or a lost
+`Flow.race` cancels that token, so the .NET calls stop too.
+
+Prefer `ColdTask` (or `Flow.fromTask` / `Flow.fromTaskResult` outside `flow { }`): it creates the task only when the
+flow runs, so a retry starts it again. Use `Flow.awaitStartedTask` only for a task that is already running.
+
+An exception from foreign code is a defect. It does not become a `CheckoutError`, so a typed handler cannot mistake a
+crash for an expected failure:
+
+```fsharp
+let crashingLookup : Flow<unit, CheckoutError, decimal> =
+    Flow.fromTask (fun _ -> Task.FromException<decimal>(InvalidOperationException "database unavailable"))
+```
+
+```fsharp run
+match crashingLookup |> Flow.run () with
+| Exit.Failure cause -> Cause.defects cause |> List.map _.Message |> shouldEqual [ "database unavailable" ]
+| Exit.Success _ -> failwith "expected a defect"
+```
+
+[Failures and defects](/error-handling/index.html) explains the difference and how to recover from each.
 
 Some legacy APIs do not accept a cancellation token. You can adapt one with `ColdTask(fun _ -> legacyCall ())`, but
-Flow cancellation cannot stop the underlying operation.
+Flow cancellation cannot stop the underlying operation. Prefer cancellation-aware overloads, and add cancellation
+support to adapters you control.
 
-Prefer cancellation-aware overloads. Add cancellation support to adapters that you control.
+## Add Guardrails when you are ready
 
-## Check effect boundaries during migration
-
-Add `Axial.Guardrails` while you migrate modules to find dependencies that the existing signatures do not expose.
-The analyzer detects ambient access to clocks, randomness, the console, and other operational effects.
-
-The default warning severity does not fail an existing build. Resolve findings in each module as you migrate it,
-then configure the analyzer to report errors when the project is clean.
-
-For installation and configuration, see
-[Installation](installation.html#add-effect-boundary-guardrails-optional).
+`Axial.Guardrails` is optional; nothing on this page needs it. Once a module is converted, it finds what the old
+signatures hid: a raw clock read, a `Task` nothing owns, an exception raised inside `flow { }`. Its default build
+check only advises and never fails a build, so you can add it to an existing codebase and fix each module as you
+convert it. See [Get started with Guardrails](/guardrails/getting-started.html) and
+[Adopt with a baseline](/guardrails/baseline.html).
 
 ## Related guides
 
@@ -187,5 +239,4 @@ For installation and configuration, see
 - [Expected errors and defects](/error-handling/index.html) explains which failures belong in `'error` and which
   belong in the defect channel.
 - [Your first application](first-application.html) replaces the host entirely when a Flow is the application root.
-- [Effect-boundary guardrails](/guardrails/index.html) covers what the analyzer checks and how to mark an
-  intended boundary.
+- [Guardrails](/guardrails/index.html) covers what the analyzer checks and how to mark an intended boundary.

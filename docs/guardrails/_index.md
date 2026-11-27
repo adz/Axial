@@ -32,6 +32,10 @@ let isExpired (deadline: DateTimeOffset) =
     }
 ```
 
+Guardrails is optional. Core `Axial` needs no analyzer and no policy file, so you can prototype without it. Add it
+when the code settles, or when a coding agent writes it: an agent takes the shortcut a reviewer misses, and the build
+then catches it every time.
+
 Other rules catch an exception raised inside `flow { }`, a `Task` that nothing owns, a cancellation token that is
 thrown away, and a test that sleeps and hopes. Each finding says what to use instead.
 

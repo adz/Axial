@@ -19,5 +19,11 @@ Structured concurrency with fibers, shared state with Ref and STM, coordination 
 - [Scheduling and retries](/scheduling-and-retries/): `Schedule` with `Flow.retry` and `Flow.repeat`.
 - [Streams](/streams/): incremental `FlowStream` data.
 
+Cancellation follows the same tree: interrupting a flow interrupts its child fibers, closes their scopes and waits
+for their cleanup. A .NET call inside a flow gets the runtime's token through `ColdTask` or `Flow.cancellationToken`
+([Async and Task interop](/the-flow-type/task-async-interop.html)). Timeouts, retries and sleeps read the runtime
+clock, so `Flow.runTest` replaces it with a test clock that moves only when the test advances it
+([Runtime services](/services/platform-services/index.html)).
+
 The [torture tests](torture-tests/index.html) run every construct in this section under interruption, failure, and
 shutdown, and check every guarantee it makes.

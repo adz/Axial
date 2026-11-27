@@ -7,6 +7,21 @@
 - Use `Flow<'value>`, `Flow<'error,'value>`, `EnvFlow<'env,'value>`, `ExnFlow<'value>`, or
   `ExnEnvFlow<'env,'value>` when the shorter channel combination is sufficient.
 
+## Adoption and stability
+
+- Axial is close to 1.0. No large API changes are planned before then; expect small refinements.
+- Adopt it one module at a time. An `Async` binds directly in `flow { }`. Wrap a `CancellationToken -> Task<_>` in
+  `ColdTask` (it receives the flow's token). A `Task<Result<_,_>>`, including FsToolkit.ErrorHandling's `TaskResult`,
+  binds with `Flow.fromColdTaskResult` or `Flow.fromTaskResult` and keeps `Error` typed. `Flow.cancellationToken`
+  reads the token for any other API. Exceptions from foreign code become defects (`Cause.Die`). Guide:
+  `/getting-started/existing-task-application.html`.
+- Do not thread `CancellationToken` through flow signatures: the runtime owns it, and interruption (a timeout, a lost
+  race, a cancelled run) cancels it for every child fiber and .NET call.
+- `Flow.timeout`, `Flow.retry` with `Schedule`, and `Flow.sleep` use the runtime clock; `Flow.runTest` installs a test
+  clock that moves only when the test advances it.
+- `Axial.Guardrails` is optional. Core `Axial` needs no analyzer or policy file. Add it when code settles or when
+  coding agents write it; each finding names the replacement. Guide: `/guardrails/index.html`.
+
 ## Execution and dependencies
 
 - Pass a record environment and read it with `Flow.envWith`.
