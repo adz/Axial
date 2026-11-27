@@ -42,6 +42,7 @@
     <Compile Include="../../examples/Axial.TortureTest/Streams.fs" Link="TortureTest/Streams.fs" />
     <Compile Include="../../examples/Axial.TortureTest/Interop.fs" Link="TortureTest/Interop.fs" />
     <Compile Include="../../examples/Axial.TortureTest/Processes.fs" Link="TortureTest/Processes.fs" />
+    <Compile Include="../../examples/Axial.TortureTest/Laws.fs" Link="TortureTest/Laws.fs" />
     <Compile Include="../../examples/Axial.TortureTest/Scenarios.fs" Link="TortureTest/Scenarios.fs" />
     <Compile Include="TortureTests.fs" />
   </ItemGroup>

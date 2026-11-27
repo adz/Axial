@@ -160,8 +160,9 @@ dotnet run --project examples/Axial.TortureTest -- queues 200
 
 Source: [examples/Axial.TortureTest](https://github.com/adz/Axial/tree/main/examples/Axial.TortureTest)
 
-Sixteen scenarios drive queues, hubs, semaphores, deferreds, refs, STM, fibers, caches, schedules, parallel
+The scenarios drive queues, hubs, semaphores, deferreds, refs, STM, fibers, caches, schedules, parallel
 combinators, errors, scopes, layers, streams, and Task and Async interop under random interruption, failure, and
-shutdown. The program reports each invariant it checks and exits with a non-zero code if any was violated. The
+shutdown, and one generates random compositions of fork, race, zipPar, scopes, timeouts, and interruption and checks
+the concurrency laws on each. The program reports each invariant it checks and exits with a non-zero code if any was violated. The
 [torture tests](/concurrency-and-state/torture-tests/index.html) section walks through each scenario and what each
 check proves.

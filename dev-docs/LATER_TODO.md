@@ -102,7 +102,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Expand `Axial.HttpClient` into a practical HTTP service package covering common requests/responses, headers, text/JSON/byte content, per-request timeout, cancellation, error classification, host-owned `HttpClient` configuration, live tests, and user guides.
 - [x] Expand `Axial.Process` into a practical process service package covering commands and pipelines, environment and working-directory configuration, structured and streaming output, cancellation, exit handling, typed errors, live tests, scripts, and user guides.
 - [x] Add explicit process timeout/deadline configuration and tests (`Process.timeout` / DSL `timeout` on `ProcessSpec`, enforced via `Flow.timeout` with `ProcessError.TimedOut` and process-tree termination; live integration test in `ProcessServiceTests`).
-- [ ] Add an Avalonia example app; the UI-dispatcher part is covered by `Axial.ElmishFlows`'s host-supplied `Post` (T16).
+- [x] Decided not to add an Avalonia example app (T7, 2026-11-27): gitkay and LogDug are the Avalonia applications, and the UI-dispatcher part is `Axial.ElmishFlows`'s host-supplied `Post`.
 - [ ] Design `Axial.Network` after the core v1 service/layer surface is stable.
 - [x] Decide whether telemetry needs explicit service contracts under a future telemetry package: it remains runtime instrumentation through `Axial.Telemetry` — see `decisions/README.md` (2026-07-14). Logging stays the explicit `ILog` service.
 - [x] Define telemetry-service composition with annotations, `ActivitySource`, `Microsoft.Extensions.Logging`, layers, and host-provider boundaries — not applicable; no telemetry service contracts are introduced per the decision above.
@@ -131,15 +131,15 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Fiber-local state similar to FiberRef/FiberRefs: done in 0.11.
 - [x] Add supervision hooks for fiber start/end/failure/interruption (`FiberObserver` with `OnStart`/`OnEnd`/`OnUnobservedDefect`, installed via `Flow.withFiberObserver`; interruption is reported through `OnEnd` status; unobserved defects are detected at race/timeout discard sites, scope close, and a GC net).
 - [x] Add `Flow.supervise` restart-on-defect combinator (`SupervisePolicy`, fresh child scope per attempt) and `Flow.forkDetached` for explicit fire-and-forget.
-- [ ] Add runtime flags and execution strategy where they materially affect .NET behavior.
+- [ ] Add runtime flags and execution strategy where they materially affect .NET behavior. T7 (2026-11-27): no evidence in gitkay, LogDug or FsLiveDocs.
 - [x] Add structured fiber dumps and richer runtime diagnostics: enriched `FiberDump` (name, annotations, settle time), `Flow.forkNamed`, `FiberRegistry` live-fiber tree dumps, `FiberMetrics` on the `Axial` meter, and `FiberDumpTelemetry.record` for dump events on traces.
 
 ## 11. Post-v1.0 STM Expansion
 
-- [ ] Replace or extend the current global-lock STM with a design that can scale while preserving correctness.
+- [ ] Replace or extend the current global-lock STM with a design that can scale while preserving correctness. T7 (2026-11-27): none of gitkay, LogDug or FsLiveDocs uses STM.
 - [x] Add `TRef.modify`, `getAndSet`, `getAndUpdate`, and `updateAndGet` (`src/Axial/State.fs`).
 - [x] Add the transactional collections with concrete demand: `TQueue` (bounded/unbounded offer/take with retry), `TSemaphore`, and `TPromise` (`succeed`/`fail`/`await`/`poll`).
-- [ ] Add the remaining transactional collections on demand: array, map, set, priority queue, hub, random, and reentrant lock.
+- [ ] Add the remaining transactional collections on demand: array, map, set, priority queue, hub, random, and reentrant lock. T7 (2026-11-27): none of gitkay, LogDug or FsLiveDocs uses STM.
 - [ ] Strengthen `retry` and `orElse` semantics with tests for wakeups, lost notifications, and concurrent commits.
 - [ ] Add STM interop tests with fibers and cancellation.
 
@@ -148,30 +148,42 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Decide against a chunked pull model: `FlowStream` stays value-by-value; .NET streaming interop is `FlowStream.ofAsyncEnumerable` (which also covers `ChannelReader.ReadAllAsync`), not a public `Chunk` type.
 - [x] Add core stream constructors: `empty`, `singleton`, `fromSeq`, `fromFlow`, `unfoldFlow`.
 - [x] Add queue-backed and resource-owning constructors: `fromDequeue`, `repeatFlow`, and `using` (a stream that owns a `Resource` until consumption ends). A range is `fromSeq [a..b]`.
-- [ ] Add an async-callback constructor (events pushed into a stream) if pushing into a `Queue` and using `fromDequeue` proves awkward.
+- [ ] Add an async-callback constructor (events pushed into a stream) if pushing into a `Queue` and using `fromDequeue` proves awkward. T7 (2026-11-27): not awkward in practice; gitkay pushes search results through `Inbox`, LogDug through `Hub`.
 - [x] Add stream combinators: `map`, `mapError`, `mapFlow`, `mapFlowPar`, `mapFlowParUsing`, `tapFlow`, `filter`, `choose`, `take`/`skip`/`takeWhile`/`skipWhile`, `chunkBySize`, `groupedWithin`, `throttle`, `debounce`, `switchMapFlow`, `indexed`, `scan`, `distinctUntilChangedBy`, `append`, `collect`, `zip`.
-- [ ] Add remaining combinators only on demand: retry, timeout/timeoutBetween. (`mergePar`, `buffer`, `fromSchedule`, `fromHub`, `runIntoQueue`, and `runIntoHub` exist.)
+- [ ] Add remaining combinators only on demand: retry, timeout/timeoutBetween. (`mergePar`, `buffer`, `fromSchedule`, `fromHub`, `runIntoQueue`, and `runIntoHub` exist.) **Retry has demand (T7, 2026-11-27):** gitkay restarts a failed `Files.watch` stream by counting failures in its model (`WatchFailures`/`WatchRestarts`, at most 3 in a row); a stream `retry` taking a `Schedule` that resets after a success would replace it.
 - [x] Add sinks: `runFold`, `runCollect`, `runDrain`, `runForEach`, `runForEachFlow`, `runTryHead`, `runTryLast`, `runCount`.
-- [ ] Add `runExactlyOne` and failure capture on demand.
-- [ ] Add pipelines for text encoding/decoding and compression with the transport packages (`current-ideas/flow-transport-packages.md`).
-- [ ] Add channel internals only when needed to support stream correctness and composition.
+- [ ] Add `runExactlyOne` and failure capture on demand. T7 (2026-11-27): no evidence in gitkay, LogDug or FsLiveDocs.
+- [ ] Add pipelines for text encoding/decoding and compression with the transport packages (`current-ideas/flow-transport-packages.md`). T7 (2026-11-27): weak evidence only; LogDug decodes whole archives in memory (`Archive.decode` under `Flow.attemptBlocking`).
+- [ ] Add channel internals only when needed to support stream correctness and composition. T7 (2026-11-27): no evidence in gitkay, LogDug or FsLiveDocs.
 - [x] Add stream tests for backpressure, interruption, finalizers, failures, and chunk boundaries.
 - [x] Run stream behavior tests under Fable, not only a compile check (`tests/Axial.Fable.Tests` via `scripts/run-fable-tests.sh`, in CI).
 
 ## 13. Post-v1.0 Collections and Internal Infrastructure
 
 - [x] Decide not to add chunk and non-empty chunk types; the chunked pull model was rejected.
-- [ ] Add differ/patch support if reloadable services or environment updates require it.
+- [ ] Add differ/patch support if reloadable services or environment updates require it. T7 (2026-11-27): no evidence in gitkay, LogDug or FsLiveDocs.
 - [x] Add internal ring-buffer and queue strategies for stream/hub performance (`QueueStrategy`: back-pressure, dropping, sliding, unbounded).
 - [ ] Keep these internals hidden until a public API has a clear user story.
 
 ## 14. Post-v1.0 ZIO Parity Work
 
 - [x] Add `Hub` pub-sub with per-subscription strategies, scope-owned subscriptions, and draining shutdown (`src/Axial/Hub.fs`).
-- [ ] Add latch, barrier, async mutex, reentrant lock, and concurrent map/set helpers where they compose with `Flow` cancellation and failure.
+- [ ] Add latch, barrier, async mutex, reentrant lock, and concurrent map/set helpers where they compose with `Flow` cancellation and failure. T7 (2026-11-27): no evidence; the apps' concurrent collections are memo caches and one worker queue that `Flow.forEachParUsing` covers.
 - [x] Add metrics primitives: `Metrics.counter`/`gauge`/`histogram` over `System.Diagnostics.Metrics`, with `Metrics.add`/`record` to emit values from a workflow.
-- [ ] Add labels (tagged measurements), metric listeners, and runtime connectors on demand.
-- [ ] Add tracing/source-location model adapted to F# and .NET stack traces.
-- [ ] Add source-generator or build-time codegen equivalents for accessor and reloadable-service ergonomics.
+- [ ] Add labels (tagged measurements), metric listeners, and runtime connectors on demand. T7 (2026-11-27): no evidence in gitkay, LogDug or FsLiveDocs.
+- [ ] Add tracing/source-location model adapted to F# and .NET stack traces. T7 (2026-11-27): FsLiveDocs hand-rolls a phase tracer (`Timing.fs`: global lock, `Stopwatch`); check whether `Axial.Telemetry` spans with a local sink already cover it before building anything.
+- [ ] Add source-generator or build-time codegen equivalents for accessor and reloadable-service ergonomics. T7 (2026-11-27): no evidence; each app has 4 or 5 hand-written environment interface implementations.
 - [ ] Use the local ZIO JS files only as behavior and platform-constraint references.
 - [ ] Use the local ZIO Native files only as compatibility-lens references.
+
+## 15. Gaps Found by T7 (gitkay, LogDug, FsLiveDocs; 2026-11-27)
+
+Evidence in `reassessment/{gitkay,logdug,fslivedocs}.md`. The work-application reports may add to or reorder these.
+
+- [x] Process line framing ends a line at a bare CR, as `StreamReader.ReadLine` does, and `ProcessOutput.Ending` says how each line ended (0.17.0). gitkay's C# `GitRunner` existed to show `git --progress` redraws; it can move to `Axial.Process`.
+- [ ] Run a Flow from C# UI code: a `Task<Result>`-returning or callback call on `ElmishRuntime` that is still a named, interruptible command fiber. gitkay wrote it as `UiFlow.run` (`Host.fs`).
+- [ ] A synchronous host start for `ElmishRuntime.startLayer`: gitkay and LogDug both block on it before the UI starts, spelled two different ways (`Async.RunSynchronously`; `Flow.fromAsyncResult |> Flow.run |> Exit.getOrThrow`).
+- [ ] A console progress/status fiber in `Axial.Console` that runs beside the work, stops with its scope, and writes through `IConsole`. FsLiveDocs runs a spinner on `Task.Run` with `Thread.Sleep` (`Actions.fs`).
+- [ ] Desktop services (clipboard, folder picker) as capabilities with fakes, only together with an Avalonia package. LogDug's two remaining raw effects, both in view code.
+- [x] Decided that memo caches for pure functions are not an Axial gap: remembering a pure function's results is not an effect (as with Elm's `Html.lazy`), and any LRU serves. An effectful lookup belongs in a `Cache` built in a layer and held in the environment, so it lives as long as the runtime and each test gets its own; gitkay's `commitImageCache` (repository blobs in a process-wide global) is that case and moves into `GitEnv`.
+

@@ -1,6 +1,6 @@
 ---
 title: Torture Tests
-description: "Sixteen runnable scenarios that drive every concurrency construct under interruption, failure, and shutdown, and check the guarantees each one makes."
+description: "Runnable scenarios that drive every concurrency construct under interruption, failure, and shutdown, and check the guarantees each one makes."
 ---
 
 # Torture Tests
@@ -104,3 +104,4 @@ fibers that lost their scope after a long synchronous stretch.
 | [Layers](layers.html) | Resources provisioned in sequence and in parallel, with failures and interruption. |
 | [Streams](streams.html) | Every stream operator, against the List model or the property it promises. |
 | [Interop](interop.html) | Task, ValueTask, Async, and blocking calls, interrupted at random. |
+| [Laws](laws.html) | Random compositions of fork, race, zipPar, scopes, timeouts, and interruption, each checked against the concurrency laws. |

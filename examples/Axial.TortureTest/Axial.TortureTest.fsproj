@@ -26,6 +26,7 @@
     <Compile Include="Streams.fs" />
     <Compile Include="Interop.fs" />
     <Compile Include="Processes.fs" />
+    <Compile Include="Laws.fs" />
     <Compile Include="Scenarios.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

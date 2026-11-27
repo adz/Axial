@@ -7,11 +7,6 @@ lists the queue. Work on main.
 
 ## Queue
 
-- [ ] T23: Property-based concurrency law suite
-  - Generate random flows over fork/race/zipPar/scope/interrupt and check the laws: a flow that starts work waits for it,
-    cleanup runs once and after cancellation, a loser settles before `race` returns, defects are reported exactly once,
-    interruption is never swallowed by `fold`/`recover`. Extend `examples/Axial.TortureTest` seeds, not a new harness.
-  - Every law that fails becomes a fix with a pinning test. Benchmarks if a runtime path changes.
 - [ ] T24: Fiber dumps show the root, what each fiber waits on, and attach late
   - Design: `dev-docs/current-ideas/fiber-dump-root-waits-attach.md`. Benchmarks required (FiberCost, Race, Pingpong/Threadring,
     a tiny `runSync` loop); allocation identical, time within noise. The torture watchdog shows waits in its stall dump.
@@ -19,10 +14,10 @@ lists the queue. Work on main.
   - Rewrite blocking waits and delays in tests as flows run with `Flow.runTest` on the `TestPlatform` fakes, not tasks.
   - A test file that checks the real thing (a live server, the real clock) claims that capability on its `Compile`
     item instead. Referencing a package is not testing it.
-- [ ] T26: Spike: absorb FIO's continuation runtime (MIT) behind `Flow`-as-data, torture it with T23
-  - Needs T23 first. Copy only the interpreter and scheduler, with FIO's licence in THIRD-PARTY-NOTICES, a source header naming
+- [ ] T26: Spike: absorb FIO's continuation runtime (MIT) behind `Flow`-as-data, torture it with the `laws` scenario
+  - Copy only the interpreter and scheduler, with FIO's licence in THIRD-PARTY-NOTICES, a source header naming
     the upstream commit, and bugs sent upstream. Design: `dev-docs/current-ideas/flow-as-data.md`.
-  - Accept only if every T23 law passes on both runtimes, Pingpong/Threadring improve, and nothing else regresses beyond
+  - Accept only if every law in the `laws` torture scenario (T23, done in 0.17.0) passes on both runtimes, Pingpong/Threadring improve, and nothing else regresses beyond
     noise. Fable and NativeAOT must work or it stays a .NET-only switch.
 
 - [ ] T16: Reassess extraction of packages using Reified once their product boundary is settled

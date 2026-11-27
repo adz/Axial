@@ -20,6 +20,7 @@ let all : Scenario list =
       Layers.scenario
       Streams.scenario
       Interop.scenario
-      Processes.scenario ]
+      Processes.scenario
+      Laws.scenario ]
 
 let tryFind (name: string) : Scenario option = all |> List.tryFind (fun scenario -> scenario.Name = name)
