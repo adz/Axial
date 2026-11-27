@@ -97,10 +97,13 @@ So the honest delta is small:
 
 ## 5. Open for the T25a comparison
 
-To check once T25a has shipped:
+T25a has shipped. The first question is answered; the rest stay open until T26 or an application asks:
 
 - Cost of runtime-context reads vs env reads (spec benchmark) versus language-ext's cached `Has<M,RT,V>.ask` static. If the runtime
   context read is not within noise, language-ext's static-cached trait read is the model to copy at the type level.
+  **Answered (T25a):** `PlatformReadBenchmarks.ClockNowX1000` went from 454 to 431 µs (−5%) when the clock moved from the
+  environment to the runtime context, with allocation inside the 2% gate (`dev-docs/benchmarks/t25a-final.md`). Nothing to
+  copy from language-ext here.
 - Whether `Flow-as-data` (T26, FIO's continuation runtime) gives handler-style interpretation for free: with the program as data, a
   test interpreter that records or reorders effects is a second *runtime*, not a new effect system. This is the algebraic-effects
   benefit reached from below, and preferable to a user-visible handler API.
