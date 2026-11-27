@@ -53,3 +53,10 @@ a change.
 Fable, NativeAOT and solution restores share intermediate paths within a worktree. Run them serially, and restore
 again before a solution build after a Fable restore. Runtime optimizations must preserve source single-consumption,
 stack safety, runtime-context restoration, and waiting for owned cleanup in every completion mode.
+
+## Results on record
+
+- [.NET 11 runtime and runtime async](benchmarks/2026-11-28-dotnet11-runtime-async.md): the .NET 11 runtime makes
+  fork, race and suspending interop 5–12% faster with no change; F# runtime async in `Platform.fold` gave no gain.
+- [Structured cancellation and race](benchmarks/2026-10-27-structured-cancellation-and-race.md).
+- [T25a final](benchmarks/t25a-final.md).
