@@ -39,6 +39,7 @@ lists the queue. Work on main.
   - The remaining reference applications are work applications, reassessed from a separate (work-account) checkout.
     Brief: `dev-docs/handoffs/T7-reference-app-reassessment.md`; findings come back as
     `dev-docs/reassessment/<app>.md` on `chore/t7-reassessment-<app>` branches or patches.
+  - Done for the local apps (2026-11-27): `dev-docs/reassessment/{gitkay,logdug,fslivedocs}.md`.
   - Then merge the findings into `LATER_TODO.md` (promote, defer, or delete items) and close this task.
 - [ ] T22: Resilience policies for Polly parity (shared, stateful policies beside the stateless `Schedule`)
   - Bulkhead: a bounded wait queue on `Semaphore` that rejects with a typed error when full.
