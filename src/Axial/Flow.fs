@@ -1102,7 +1102,7 @@ module Flow =
         withRuntime
             (fun runtime ->
                 runtime
-                |> RuntimeContext.withObserver (FiberObserver.compose runtime.Observer registry.Observer)
+                |> RuntimeContext.withObserver (FiberObserver.compose runtime.Observer (registry.ObserverAt runtime.Platform.Clock))
                 |> RuntimeContext.withRegistry registry)
             flow
 

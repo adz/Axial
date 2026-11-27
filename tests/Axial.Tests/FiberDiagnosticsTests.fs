@@ -89,6 +89,33 @@ module FiberDiagnosticsTests =
         | other -> failwith $"unexpected exit {other}"
 
     [<Fact>]
+    let ``an unobserved defect is timed by the clock of the runtime the registry is installed in`` () =
+        let registry = FiberRegistry()
+        let start = DateTimeOffset(2026, 7, 16, 10, 0, 0, TimeSpan.Zero)
+        let platform = TestPlatform.createAt start
+
+        let exit =
+            flow {
+                do! TestClock.advance (TimeSpan.FromMinutes 5.0)
+                // Nobody joins it, so its defect is reported as unobserved when the run's scope closes.
+                let! _ = Flow.die (InvalidOperationException "lost") |> Flow.fork
+                return ()
+            }
+            |> Flow.withFiberRegistry registry
+            |> Flow.runTestWith platform ()
+
+        test <@ exit = Exit.Success () @>
+        let defects = registry.UnobservedDefects()
+        test <@ defects |> List.map _.Defect |> List.exists (fun text -> text.Contains "lost") @>
+        test <@ defects |> List.forall (fun defect -> defect.At = start + TimeSpan.FromMinutes 5.0) @>
+
+    [<Fact>]
+    let ``Parallelism.count reads back the bound a parallelism was made with`` () =
+        test <@ Parallelism.bounded 3 |> Parallelism.count = 3 @>
+        test <@ Parallelism.ofProcessors (fun _ -> 0) |> Parallelism.count = 1 @>
+        test <@ Parallelism.ofProcessors id |> Parallelism.count = Environment.ProcessorCount @>
+
+    [<Fact>]
     let ``withFiberRegistry composes with an already-installed observer`` () =
         let registry = FiberRegistry()
         let started = ResizeArray<FiberId>()

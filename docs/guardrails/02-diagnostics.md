@@ -19,7 +19,7 @@ install, severity, and suppression choices; this page is the per-diagnostic refe
 | `random` | Construction of `System.Random` | `IRandom`, `Random.service`, or `Random.nextDouble` |
 | `guid` | `Guid.NewGuid()` | `IGuid`, `Guid.service`, or `Guid.newGuid` |
 | `clock` | Ambient date and time properties, `Stopwatch`, and `Task.Delay` | `IClock`, `Clock.service`, `Clock.utcNow`, `Clock.timed`, `Flow.sleep`, or `Schedule` |
-| `environment` | Ambient environment variables, machine or process properties, and `TimeZoneInfo.Local` | `IEnvironment` or a value passed through `'env`; an explicit `TimeZoneInfo` for conversions; `Parallelism.ofProcessors` for `ProcessorCount` |
+| `environment` | Ambient environment variables, machine or process properties, and `TimeZoneInfo.Local` | `IEnvironment` or a value passed through `'env`; an explicit `TimeZoneInfo` for conversions; `Parallelism.ofProcessors` for `ProcessorCount`, with `Parallelism.count` for the number |
 | `console` | Any `System.Console` member | `Axial.Console.IConsole` |
 | `filesystem` | Any `System.IO.File` or `System.IO.Directory` member | `Axial.FileSystem.IFileSystem` |
 | `process` | `System.Diagnostics.Process.Start` | `Axial.Process.IProcess` |

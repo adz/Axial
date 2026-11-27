@@ -44,5 +44,13 @@ module Parallelism =
     /// <summary>Creates a fresh adaptive learner for each traversal run.</summary>
     let adaptive count = create count RunOn.adaptive
 
+    /// <summary>How many items run at once under <paramref name="parallelism" />.</summary>
+    /// <remarks>
+    /// For code that divides work itself, such as splitting a batch into one chunk per worker:
+    /// <c>Parallelism.ofProcessors (fun processors -> processors / 2) |> Parallelism.count</c> sizes it from the
+    /// machine without the file reading the processor count.
+    /// </remarks>
+    let count (parallelism: Parallelism) = parallelism.Count
+
     let internal value parallelism = parallelism.Count
     let internal placement parallelism = parallelism.Placement()

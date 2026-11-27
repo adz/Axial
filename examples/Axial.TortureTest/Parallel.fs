@@ -28,7 +28,8 @@ let run (round: Round) : Flow<unit, Never, Check list> =
             }
             |> Flow.ensuring (Flow.delay (fun () -> decrement active |> ignore; Flow.ok ()))
 
-        let! doubled = items |> Flow.traversePar (Parallelism.bounded bound) tracked
+        let parallelism = Parallelism.bounded bound
+        let! doubled = items |> Flow.traversePar parallelism tracked
         let processed = ResizeArray<int>()
         do! items |> Flow.forEachPar (Parallelism.ofProcessors id) (fun value -> Flow.delay (fun () -> lock processed (fun () -> processed.Add value); Flow.ok ()))
 
@@ -130,7 +131,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
             | Exit.Success _ -> []
 
         return
-            [ check "a bounded traversal never ran more than its bound, and kept input order" (peak.Value <= bound && doubled = List.map ((*) 2) items)
+            [ check "a bounded traversal never ran more than its bound, and kept input order" (peak.Value <= Parallelism.count parallelism && Parallelism.count parallelism = bound && doubled = List.map ((*) 2) items)
               check "forEachPar processed every item exactly once" (List.sort (List.ofSeq processed) = items)
               check "forEach ran items in order up to the failing one, then disposed the sequence" (stopped = Exit.Failure(Cause.Fail stopAt) && List.ofSeq visited = (items |> List.takeWhile ((<>) stopAt)) @ [ stopAt ] && disposed.Value = 1)
               check "no pooled resource was used by two items at once, and every one was released" (not shared.Value && pooled = items && acquired.Value = released.Value && acquired.Value <= 2 * bound)

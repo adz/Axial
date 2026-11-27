@@ -210,7 +210,8 @@ calculatePar [ 1; 2; 3 ]
 ```
 
 Use `Flow.runOn RunOn.ThreadPool` around the mapping flow, not around the whole traversal; this lets the bounded workers overlap
-while preserving the requested limit. `Parallelism.ofProcessors` clamps the bound to at least 1. The first failure
+while preserving the requested limit. `Parallelism.ofProcessors` clamps the bound to at least 1. Code that divides work itself, such as one chunk per worker,
+reads the bound back with `Parallelism.count`, so sizing from the machine still goes through `Parallelism`. The first failure
 interrupts the flows still running and waits for their cleanup, so no sibling keeps running after the traversal has
 failed.
 

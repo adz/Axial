@@ -11,7 +11,9 @@ tree and `registry.Snapshot()` returns structured `FiberDump` values.
   as well as defects.
 - `registry.Stats()` returns totals per fiber name since the registry was installed: how many ran, failed, and were
   interrupted, with total and longest duration. Unnamed fibers are counted under `(unnamed)`.
-- `registry.UnobservedDefects()` returns defects that nobody joined or awaited.
+- `registry.UnobservedDefects()` returns defects that nobody joined or awaited, each with `At`, when it was reported.
+  Installed with `Flow.withFiberRegistry`, that time comes from the runtime's clock, so it is the test clock under
+  `Flow.runTest`; an observer composed by hand reads the system clock.
 - `registry.StartedCount` counts every fiber started.
 - `registry.Interrupt id` signals one live fiber to stop, and `registry.InterruptByName "name"` signals every live
   fiber with that name and returns how many it signalled. Neither waits; whoever joins or awaits the fiber sees

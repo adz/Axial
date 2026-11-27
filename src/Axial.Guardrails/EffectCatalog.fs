@@ -173,7 +173,7 @@ let private builtInRuleTable: EffectRule list =
       rule "environment.processor-count" CoreGuardrail "processors"
           (MembersOf("System.Environment", [ "get_ProcessorCount"; "ProcessorCount" ]))
           "reads Environment.ProcessorCount directly to size concurrency"
-          "Parallelism.ofProcessors (fun n -> ...)"
+          "Parallelism.ofProcessors (fun n -> ...), and Parallelism.count when the code needs the number"
 
       rule "clock.task-delay" CoreGuardrail "clock" (MembersOf("System.Threading.Tasks.Task", [ "Delay" ]))
           "calls Task.Delay directly, which makes scheduled waits untestable and bypasses fiber interruption"

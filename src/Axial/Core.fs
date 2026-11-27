@@ -559,6 +559,12 @@ type UnobservedDefect =
         Fiber: FiberDump option
         /// <summary>The defect's exception type and message.</summary>
         Defect: string
+        /// <summary>
+        /// When the defect was reported, read from the runtime's clock when the registry was installed with
+        /// <c>Flow.withFiberRegistry</c> (the test clock under <c>Flow.runTest</c>), or the system clock when
+        /// <c>registry.Observer</c> was composed by hand.
+        /// </summary>
+        At: DateTimeOffset
     }
 
 /// The interrupt handle of every running forked fiber, keyed by fiber id. Filled by <c>Flow.fork</c> and emptied as
@@ -647,7 +653,7 @@ type FiberRegistry(historyCapacity: int) =
                     TotalDuration = previous.TotalDuration + duration
                     MaxDuration = max previous.MaxDuration duration })
 
-    let observer =
+    let observerAt (now: unit -> DateTimeOffset) =
         { FiberObserver.none with
             OnStart =
                 fun metadata ->
@@ -661,7 +667,11 @@ type FiberRegistry(historyCapacity: int) =
                         enqueueBounded
                             unobserved
                             { Fiber = metadata |> Option.map FiberDump.ofMetadata
-                              Defect = Platform.dieDescription defect }) }
+                              Defect = Platform.dieDescription defect
+                              At = now () }) }
+
+    // Composed by hand there is no runtime to ask, so the time of an unobserved defect is the system clock's.
+    let observer = observerAt (fun () -> DateTimeOffset.UtcNow)
 
     /// <summary>Creates a registry that remembers the last 200 settled fibers and unobserved defects.</summary>
     new() = FiberRegistry(200)
@@ -692,6 +702,10 @@ type FiberRegistry(historyCapacity: int) =
 
     /// <summary>The lifecycle observer that feeds the registry. Compose it if installing observers manually.</summary>
     member _.Observer : FiberObserver = observer
+
+    /// The observer <c>Flow.withFiberRegistry</c> installs: the same hooks, with unobserved defects timed by
+    /// <paramref name="clock" />, the clock of the runtime the registry is installed in.
+    member internal _.ObserverAt(clock: IClock) : FiberObserver = observerAt clock.UtcNow
 
     /// <summary>The number of live fibers currently tracked.</summary>
     member _.LiveFiberCount : int = lock gate (fun () -> live.Count)
